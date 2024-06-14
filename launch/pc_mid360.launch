@@ -1,0 +1,21 @@
+
+<launch>
+<!-- Launch file for Livox MID360 LiDAR -->
+	<arg name="rviz" default="true" />
+
+	<param name="localization_mode" type="bool" value="1"/>
+	<param name="offline_mode" type="bool" value="0"/>
+	<param name="fast" type="bool" value="0"/>
+	<param name="just_show_mode" type="bool" value="0"/>
+	<param name="log_folder" type="string" value="/home/"/>
+    <param name="show_rviz" type="bool" value="1"/>
+   
+	<group if="$(arg rviz)">
+	<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find lidar_slam)/rviz_cfg/loam_livox.rviz" />
+	</group>
+
+    <node pkg="lidar_slam" type="slam_interface" name="slam_interface" output="screen"/> 
+
+
+
+</launch>

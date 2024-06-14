@@ -1,0 +1,41 @@
+common:
+    time_sync_en: false         # not used
+
+preprocess:
+    blind: 0.2
+    point_filter_num: 3
+obstacle:
+    max_range:  2.5
+    max_height: 0.5
+    min_height: -0.1 # above wheel center
+    filter_size: 20
+mapping:
+    acc_cov: 0.1 # not used
+    gyr_cov: 0.1 # not used
+    b_acc_cov: 0.0001 # not used
+    b_gyr_cov: 0.0001 # not used
+    fov_degree:    360 # not used
+    extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
+    extrinsic_T: [ 0, -0.02329, 0.04412 ]
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1]
+
+    Lidar_In_Wheel: [0.935,  0,  0.354, 0.336,
+                         0,  1,      0,     0,
+                    -0.354,  0,  0.935, 0.139,
+                         0,  0,      0,     1]
+
+    cloud_leaf_size: 0.5
+    key_frame_distance: 1.0
+    key_frame_angle: 0.2
+    loopSearchDistance: 1.5
+    
+
+ikdtree:
+    cube_len: 400.0
+    det_range: 40.0
+    kdTreeReconstructRadius: 400.0
+    kdTreeReconstructKeyFrameLeafSize: 10.0
+    kdTreeReconstructPointLeafSize: 1.0
+    map_leaf_size: 0.5

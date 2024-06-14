@@ -1,0 +1,1 @@
+/usr/bin/c++  -O3 -DNDEBUG   CMakeFiles/core-test.dir/core-test.cc.o  -o ../bin/core-test  -Wl,-rpath,/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/build -Wno-stringop-overflow libtest-main.a ../libfmt.so.8.1.1 gtest/libgtest.a -lpthread -Wl,--as-needed 
