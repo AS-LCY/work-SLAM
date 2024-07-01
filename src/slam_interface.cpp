@@ -488,6 +488,7 @@ void showThread()
 
 int main(int argc,char **argv)
 {
+    // ROS_INFO("test");
 
     ROS_INFO("start interface");
 	ros::init(argc,argv,"slam_interface");		
