@@ -18,11 +18,11 @@ livox_lidar_def.h
 stdint.h
 -
 
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/main.cpp
+/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/main.cpp
 livox_lidar_def.h
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/livox_lidar_def.h
+/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/livox_lidar_def.h
 livox_lidar_api.h
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/livox_lidar_api.h
+/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/multi_lidars_upgrade/livox_lidar_api.h
 condition_variable
 -
 mutex

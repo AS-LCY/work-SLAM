@@ -54,9 +54,10 @@ endif()
 add_library(Sophus::Sophus INTERFACE IMPORTED)
 
 set_target_properties(Sophus::Sophus PROPERTIES
+  INTERFACE_COMPILE_DEFINITIONS "SOPHUS_USE_BASIC_LOGGING=1"
   INTERFACE_COMPILE_FEATURES "cxx_auto_type;cxx_decltype;cxx_nullptr;cxx_right_angle_brackets;cxx_variadic_macros;cxx_variadic_templates"
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "Eigen3::Eigen;fmt::fmt"
+  INTERFACE_LINK_LIBRARIES "Eigen3::Eigen"
 )
 
 if(CMAKE_VERSION VERSION_LESS 3.0.0)

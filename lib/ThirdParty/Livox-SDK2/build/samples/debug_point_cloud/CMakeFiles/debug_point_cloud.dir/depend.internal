@@ -4,4 +4,4 @@
 samples/debug_point_cloud/CMakeFiles/debug_point_cloud.dir/main.cpp.o
  ../include/livox_lidar_api.h
  ../include/livox_lidar_def.h
- /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/debug_point_cloud/main.cpp
+ /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/debug_point_cloud/main.cpp

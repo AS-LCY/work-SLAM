@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG -fPIC -fvisibility=hidden -fvisibility-inlines-hidden  
 
 CXX_DEFINES = -DFMT_EXPORT -DFMT_LOCALE -Dfmt_EXPORTS
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/include 
+CXX_INCLUDES = -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/include 
 

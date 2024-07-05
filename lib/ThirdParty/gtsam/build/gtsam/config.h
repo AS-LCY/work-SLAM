@@ -25,7 +25,7 @@
 #define GTSAM_VERSION_STRING "4.3a0"
 
 // Paths to example datasets distributed with GTSAM
-#define GTSAM_SOURCE_TREE_DATASET_DIR "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/examples/Data"
+#define GTSAM_SOURCE_TREE_DATASET_DIR "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/examples/Data"
 #define GTSAM_INSTALLED_DATASET_DIR "/gtsam_examples/Data"
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)

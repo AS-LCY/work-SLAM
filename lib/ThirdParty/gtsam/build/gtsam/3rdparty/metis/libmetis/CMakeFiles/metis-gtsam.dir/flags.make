@@ -6,5 +6,5 @@ C_FLAGS =  -DLINUX -D_FILE_OFFSET_BITS=64 -std=c99 -fno-strict-aliasing -fPIC -W
 
 C_DEFINES = -DGTSAM_ENABLE_BOOST_SERIALIZATION -DGTSAM_USE_BOOST_FEATURES
 
-C_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/include -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/libmetis -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/GKlib -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/libmetis/. 
+C_INCLUDES = -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/include -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/libmetis -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/GKlib -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam/3rdparty/metis/libmetis/. 
 

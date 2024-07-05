@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2
+CMAKE_SOURCE_DIR = /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build
+CMAKE_BINARY_DIR = /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build
 
 # Include any dependencies generated for this target.
 include sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/depend.make
@@ -59,445 +59,445 @@ include sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o: ../3rdparty/FastCRC/FastCRCsw.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp > CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp > CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/3rdparty/FastCRC/FastCRCsw.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/__/3rdparty/FastCRC/FastCRCsw.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o: ../sdk_core/device_manager.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/device_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/device_manager.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o: ../sdk_core/livox_lidar_sdk.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp > CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp > CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/livox_lidar_sdk.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/livox_lidar_sdk.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o: ../sdk_core/params_check.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp > CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp > CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/params_check.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/params_check.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o: ../sdk_core/parse_cfg_file.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp > CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp > CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/parse_cfg_file.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/parse_cfg_file.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o: ../sdk_core/upgrade_manager.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade_manager.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o: ../sdk_core/base/io_loop.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_loop.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_loop.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o: ../sdk_core/base/thread_base.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/thread_base.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/thread_base.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o: ../sdk_core/base/io_thread.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/io_thread.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/io_thread.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o: ../sdk_core/base/logging.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/logging.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/logging.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o: ../sdk_core/base/network/unix/network_util.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/network/unix/network_util.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/network/unix/network_util.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o: ../sdk_core/base/multiple_io/multiple_io_base.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_base.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_base.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o: ../sdk_core/base/multiple_io/multiple_io_epoll.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_epoll.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_epoll.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o: ../sdk_core/base/multiple_io/multiple_io_poll.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_poll.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_poll.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o: ../sdk_core/base/multiple_io/multiple_io_select.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_select.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_select.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o: ../sdk_core/base/multiple_io/multiple_io_kqueue.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/multiple_io/multiple_io_kqueue.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/multiple_io/multiple_io_kqueue.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o: ../sdk_core/base/wake_up/unix/wake_up_pipe.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp > CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/base/wake_up/unix/wake_up_pipe.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/base/wake_up/unix/wake_up_pipe.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o: ../sdk_core/comm/comm_port.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/comm_port.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/comm_port.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o: ../sdk_core/comm/sdk_protocol.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/sdk_protocol.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/sdk_protocol.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o: ../sdk_core/comm/generate_seq.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp > CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/comm/generate_seq.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/comm/generate_seq.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o: ../sdk_core/upgrade/firmware.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/firmware.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/firmware.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o: ../sdk_core/upgrade/livox_lidar_upgrader.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp > CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/upgrade/livox_lidar_upgrader.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/upgrade/livox_lidar_upgrader.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o: ../sdk_core/logger_handler/logger_manager.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_manager.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o: ../sdk_core/logger_handler/logger_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/logger_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/logger_handler.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o: ../sdk_core/logger_handler/file_manager.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/logger_handler/file_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/logger_handler/file_manager.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o: ../sdk_core/data_handler/data_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/data_handler/data_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/data_handler/data_handler.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o: ../sdk_core/command_handler/command_impl.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/command_impl.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/command_impl.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o: ../sdk_core/command_handler/general_command_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/general_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/general_command_handler.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o: ../sdk_core/command_handler/hap_command_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/hap_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/hap_command_handler.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o: ../sdk_core/command_handler/mid360_command_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/mid360_command_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/mid360_command_handler.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o: ../sdk_core/command_handler/build_request.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/build_request.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/build_request.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o: ../sdk_core/command_handler/parse_lidar_state_info.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp > CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/command_handler/parse_lidar_state_info.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/command_handler/parse_lidar_state_info.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o: ../sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp > CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_manager.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_manager.cpp.s
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/flags.make
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o: ../sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o -c /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o -c /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.i"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.i
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp > CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.i
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.s"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.s
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/debug_point_cloud_handler/debug_point_cloud_handler.cpp -o CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.s
 
 # Object files for target livox_lidar_sdk_static
 livox_lidar_sdk_static_OBJECTS = \
@@ -575,9 +575,9 @@ sdk_core/liblivox_lidar_sdk_static.a: sdk_core/CMakeFiles/livox_lidar_sdk_static
 sdk_core/liblivox_lidar_sdk_static.a: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/debug_point_cloud_handler/debug_point_cloud_handler.cpp.o
 sdk_core/liblivox_lidar_sdk_static.a: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/build.make
 sdk_core/liblivox_lidar_sdk_static.a: sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Linking CXX static library liblivox_lidar_sdk_static.a"
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -P CMakeFiles/livox_lidar_sdk_static.dir/cmake_clean_target.cmake
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/livox_lidar_sdk_static.dir/link.txt --verbose=$(VERBOSE)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Linking CXX static library liblivox_lidar_sdk_static.a"
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -P CMakeFiles/livox_lidar_sdk_static.dir/cmake_clean_target.cmake
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/livox_lidar_sdk_static.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/build: sdk_core/liblivox_lidar_sdk_static.a
@@ -585,10 +585,10 @@ sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/build: sdk_core/liblivox_lidar_sd
 .PHONY : sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/build
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/clean:
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -P CMakeFiles/livox_lidar_sdk_static.dir/cmake_clean.cmake
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core && $(CMAKE_COMMAND) -P CMakeFiles/livox_lidar_sdk_static.dir/cmake_clean.cmake
 .PHONY : sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/clean
 
 sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/depend:
-	cd /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2 /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2 /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : sdk_core/CMakeFiles/livox_lidar_sdk_static.dir/depend
 

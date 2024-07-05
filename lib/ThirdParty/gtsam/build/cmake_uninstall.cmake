@@ -2,11 +2,11 @@
 # File that provides "make uninstall" target
 #  We use the file 'install_manifest.txt'
 # -----------------------------------------------
-if(NOT EXISTS "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt")
-  message(FATAL_ERROR "Cannot find install manifest: \"/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt\"")
-endif(NOT EXISTS "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt")
+if(NOT EXISTS "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: \"/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt\"")
+endif(NOT EXISTS "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt")
 
-file(READ "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt" files)
+file(READ "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/build/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 foreach(file ${files})
   message(STATUS "Uninstalling \"$ENV{DESTDIR}${file}\"")

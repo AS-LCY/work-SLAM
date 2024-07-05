@@ -83,7 +83,8 @@ include_directories(
 
 catkin_package(
   CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs 
-  DEPENDS EIGEN3 PCL  GTSAM 
+  DEPENDS EIGEN3 PCL  
+  # GTSAM 
   INCLUDE_DIRS
 )
 
@@ -111,8 +112,15 @@ include_directories(
 
 
 message(${CMAKE_CURRENT_SOURCE_DIR})
-add_executable(slam_interface src/slam_interface.cpp)
-target_link_libraries(slam_interface ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pangolin_LIBRARIES} gicp lidar_slam ${OpenCV_LIBS} ${cv_bridge_LIBRARIES} gtsam fmt yaml-cpp  livox_sdk) 
+# add_executable(slam_interface src/slam_interface.cpp)
+# target_link_libraries(slam_interface ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pangolin_LIBRARIES} gicp lidar_slam ${OpenCV_LIBS} ${cv_bridge_LIBRARIES} gtsam fmt yaml-cpp  livox_sdk) 
+
+add_executable(localization_module 
+  src/slam_main.cpp
+  src/localization_module/localization_module.cpp
+  src/localization_module/publish_common.cpp  
+  )
+target_link_libraries(localization_module ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pangolin_LIBRARIES} gicp lidar_slam ${OpenCV_LIBS} ${cv_bridge_LIBRARIES} gtsam fmt yaml-cpp  livox_sdk) 
 
 
 #add_executable(camera_driver src/camera_driver.cpp include/serial_lib/src/serial.cc include/serial_lib/src/impl/unix.cc include/serial_lib/src/impl/list_ports/list_ports_linux.cc)
@@ -122,10 +130,10 @@ target_link_libraries(slam_interface ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pang
 #############
 ## Install ##
 #############
-install(TARGETS slam_interface 
-        ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+# install(TARGETS slam_interface 
+#         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/build/liblidar_slam.so
         DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

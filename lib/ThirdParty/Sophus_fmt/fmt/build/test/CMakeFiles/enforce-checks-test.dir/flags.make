@@ -6,5 +6,5 @@ CXX_FLAGS = -O3 -DNDEBUG -fvisibility=hidden -fvisibility-inlines-hidden   -fno-
 
 CXX_DEFINES = -DFMT_ENFORCE_COMPILE_STRING -DFMT_LOCALE -DFMT_SHARED -DGTEST_HAS_STD_WSTRING=1 -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING=1
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/include -isystem /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/test/gtest/. 
+CXX_INCLUDES = -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/include -isystem /home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/fmt/test/gtest/. 
 

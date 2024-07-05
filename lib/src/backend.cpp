@@ -770,7 +770,7 @@ PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double 
     return show_map;
 }
 
-bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom)
+bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
       cout << "****************************************************" << endl;
       cout << "Saving map to pcd files ..."<<saveMapDirectory << endl;
@@ -780,8 +780,22 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
       ScInfo infos[(int)KeyPoses.size()];
       // 注意：拼接地图时，keyframe是lidar系，而fastlio更新后的存到的cloudKeyPoses6D 关键帧位姿是body系下的，需要把
       //cloudKeyPoses6D  转换为T_world_lidar 。 T_world_lidar = T_world_body * T_body_lidar , T_body_lidar 是外参
+    int start = 0, end=0;
+    int KeyPosesSize = (int)KeyPoses.size();
+    if (start_index == 0 && end_index == 0){
+        start = 0;
+        end = KeyPosesSize -1;
+    }else{
+        start = start_index;
+        end = end_index;
+        if (end > KeyPosesSize-1){
+            end = KeyPosesSize -1;
+        }        
+    }
+      
 
-      for (int i = 0; i < (int)KeyPoses.size(); i++) {
+    //   for (int i = 0; i < (int)KeyPoses.size(); i++) {
+      for (int i = start; i <= end; i++) {
             *globalMapCloud   += *transformPointCloud(KeyFrameCloud[i],T_map_odom * KeyPoses[i].pose);
             ScInfo info;
             info.id = i;
@@ -795,7 +809,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         downSizeFilter.setLeafSize(resolution, resolution, resolution);
         downSizeFilter.filter(*globalSurfCloudDS);
 
-      int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/GlobalMap.pcd", *globalSurfCloudDS);       //  稠密地图  
+      int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/cloud_map.pcd", *globalSurfCloudDS);       //  稠密地图  
       cout << "Saving map to pcd files completed\n" << endl;    
       cout << "Saving loop data\n" << endl; 
         std::ofstream file(saveMapDirectory + "/data");

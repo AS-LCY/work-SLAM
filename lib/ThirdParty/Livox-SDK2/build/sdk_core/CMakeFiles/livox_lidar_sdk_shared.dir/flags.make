@@ -6,5 +6,5 @@ CXX_FLAGS =  -pthread -fPIC   -Wall -std=gnu++11
 
 CXX_DEFINES = -Dlivox_lidar_sdk_shared_EXPORTS
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../3rdparty -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../3rdparty/spdlog -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/. 
+CXX_INCLUDES = -I/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include -I/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../3rdparty -I/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../3rdparty/spdlog -I/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/. 
 

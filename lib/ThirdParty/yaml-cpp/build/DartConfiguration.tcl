@@ -4,14 +4,14 @@
 
 
 # Configuration directories and files
-SourceDirectory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/yaml-cpp
-BuildDirectory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/yaml-cpp/build
+SourceDirectory: /home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/yaml-cpp
+BuildDirectory: /home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/yaml-cpp/build
 
 # Where to place the cost data store
 CostDataFile: 
 
 # Site is something like machine.domain, i.e. pragmatic.crd
-Site: zac-Legion-Y9000P-IRX8
+Site: topeet
 
 # Build name is osname-revision-compiler, i.e. Linux-2.4.2-2smp-c++
 BuildName: Linux-c++
@@ -26,7 +26,7 @@ SubmitURL: http://
 NightlyStartTime: 00:00:00 EDT
 
 # Commands for the build/test/submit cycle
-ConfigureCommand: "/usr/bin/cmake" "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/yaml-cpp"
+ConfigureCommand: "/usr/bin/cmake" "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/yaml-cpp"
 MakeCommand: /usr/bin/cmake --build . --config "${CTEST_CONFIGURATION_TYPE}"
 DefaultCTestConfigurationType: Release
 
@@ -39,12 +39,12 @@ CVSCommand: CVSCOMMAND-NOTFOUND
 CVSUpdateOptions: -d -A -P
 
 # Subversion options
-SVNCommand: /usr/bin/svn
+SVNCommand: SVNCOMMAND-NOTFOUND
 SVNOptions: 
 SVNUpdateOptions: 
 
 # Git options
-GITCommand: /usr/bin/git
+GITCommand: GITCOMMAND-NOTFOUND
 GITInitSubmodules: 
 GITUpdateOptions: 
 GITUpdateCustom: 

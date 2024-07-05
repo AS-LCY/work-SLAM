@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/test/core
+# Install script for directory: /home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/test/core
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

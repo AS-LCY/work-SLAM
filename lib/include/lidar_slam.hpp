@@ -86,18 +86,23 @@ class LidarSlam
         void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in);
         void image_cbk(const cv::Mat& img,double time);
         void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
-        bool save_map(string saveMapDirectory,double resolution){ 
+        bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
              if (param.localization_mode){
-                
+                return true;
              }
                 
              else
-                return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap());
+                return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap(), start_index, end_index);
         };
         bool load_map(string directory){
             globalLocalizationSuccess = false;
             sleep(1);
             localization->loadMap(directory);
+            return true;
+        }
+
+        int get_curr_pose_index(){
+            return back_end->getCurrentPoseIndex();
         }
         
         PointCloudXYZI::Ptr get_lidar_cloud()

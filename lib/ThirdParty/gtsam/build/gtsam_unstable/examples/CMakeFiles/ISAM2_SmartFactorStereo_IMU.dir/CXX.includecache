@@ -1544,7 +1544,7 @@ vector
 gtsam_unstable/slam/SmartStereoProjectionFactor.h
 -
 
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam_unstable/examples/ISAM2_SmartFactorStereo_IMU.cpp
+/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam_unstable/examples/ISAM2_SmartFactorStereo_IMU.cpp
 gtsam/navigation/CombinedImuFactor.h
 -
 gtsam/nonlinear/ISAM2.h

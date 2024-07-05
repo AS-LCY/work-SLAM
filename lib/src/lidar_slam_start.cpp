@@ -57,7 +57,7 @@ void showThread()
             }
 
             if (control_status.saveMap && !localization_mode)
-                slam -> save_map(CURRENT_DIR+std::string("/map/"),0.1);
+                slam -> save_map(CURRENT_DIR+std::string("/map/"),0.1,0,0);
             test_view.Finish();  
         }
         auto end = std::chrono::steady_clock::now();

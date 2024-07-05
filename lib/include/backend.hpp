@@ -62,7 +62,8 @@ public:
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
     bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped,PointCloudXYZI::Ptr lidar_cloud,double time);
     void performLoopClosure(double time);
-    bool saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom);
+    // if start_index == end_index == 0; save all;
+    bool saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index);
     bool correctPoses();
     void recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize);
     PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);
@@ -74,6 +75,11 @@ public:
     std::vector<KeyPose> getKeyframePoses()
     {
         return KeyPoses;
+    }
+    int getCurrentPoseIndex(){
+        int temp_index = int(KeyPoses.size())-1;
+        int curr_index = temp_index < 0 ? 0 : temp_index;
+        return curr_index;
     }
     map<int, int> getloopIndex()
     {

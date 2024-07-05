@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/debug_point_cloud
+# Install script for directory: /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/debug_point_cloud
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

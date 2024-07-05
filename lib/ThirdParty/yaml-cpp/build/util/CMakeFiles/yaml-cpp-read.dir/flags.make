@@ -6,5 +6,5 @@ CXX_FLAGS =   -std=gnu++11
 
 CXX_DEFINES = -DYAML_CPP_STATIC_DEFINE
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/yaml-cpp/include 
+CXX_INCLUDES = -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/yaml-cpp/include 
 

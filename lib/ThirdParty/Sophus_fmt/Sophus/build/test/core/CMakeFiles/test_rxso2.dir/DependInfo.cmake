@@ -4,14 +4,13 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/test/core/test_rxso2.cpp" "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/build/test/core/CMakeFiles/test_rxso2.dir/test_rxso2.cpp.o"
+  "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/test/core/test_rxso2.cpp" "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus/build/test/core/CMakeFiles/test_rxso2.dir/test_rxso2.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # Preprocessor definitions for this target.
 set(CMAKE_TARGET_DEFINITIONS_CXX
-  "FMT_LOCALE"
-  "FMT_SHARED"
+  "SOPHUS_USE_BASIC_LOGGING=1"
   )
 
 # The include file search paths:

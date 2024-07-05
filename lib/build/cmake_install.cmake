@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib
+# Install script for directory: /home/panmiaomiao/catkin_ws/ws_localization/src/localization_module/lib
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/zac/catkin_ws/src/lidar_slam/lib/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/panmiaomiao/catkin_ws/ws_localization/src/localization_module/lib/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

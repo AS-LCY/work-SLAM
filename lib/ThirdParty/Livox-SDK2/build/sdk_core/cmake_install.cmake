@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core
+# Install script for directory: /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -38,14 +38,14 @@ if(NOT DEFINED CMAKE_CROSSCOMPILING)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_static.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_static.a")
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES
-    "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_def.h"
-    "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_api.h"
-    "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_cfg.h"
+    "/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_def.h"
+    "/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_api.h"
+    "/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include/livox_lidar_cfg.h"
     )
 endif()
 
@@ -56,7 +56,7 @@ if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xUnspecifiedx" OR NOT CMAKE_INSTALL_
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/liblivox_lidar_sdk_shared.so"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_shared.so")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE SHARED_LIBRARY FILES "/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_shared.so")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/liblivox_lidar_sdk_shared.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/liblivox_lidar_sdk_shared.so")
     if(CMAKE_INSTALL_DO_STRIP)

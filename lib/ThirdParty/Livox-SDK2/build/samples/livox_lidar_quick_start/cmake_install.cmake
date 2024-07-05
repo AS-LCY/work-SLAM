@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/livox_lidar_quick_start
+# Install script for directory: /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples/livox_lidar_quick_start
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

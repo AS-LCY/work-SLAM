@@ -67,7 +67,9 @@ if (APR_FOUND)
   message(${APR_LIBRARIES})
 endif (APR_FOUND)
 
-  find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    /usr/local/lib)
+  # find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    /usr/local/lib)
+  set(THIRDPARTY_DIR /home/panmiaomiao/thirdparty/install)
+  find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
 
 include_directories(
   ${EIGEN3_INCLUDE_DIR}
@@ -80,7 +82,8 @@ include_directories(
   ${YAML_CPP_INCLUDE_DIR}
   include
   ThirdParty/fast_gicp/include
-  ThirdParty/Livox-SDK2/include
+  # ThirdParty/Livox-SDK2/include
+  ${THIRDPARTY_DIR}/Livox-SDK2/x86/include
   ${APR_INCLUDE_DIRS}
   ThirdParty/livox_ros_driver2/3rdparty
   ThirdParty/livox_ros_driver2/src)
@@ -91,7 +94,8 @@ include_directories(
 #   ${GTSAM_LIBRARY_DIRS}
    ${OpenCV_LIBRARY_DIRS}
    ThirdParty/fast_gicp/build/devel/lib/
-   ThirdParty/Livox-SDK2/build/sdk_core/
+  #  ThirdParty/Livox-SDK2/build/sdk_core/
+   ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib
  )
  
 set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})

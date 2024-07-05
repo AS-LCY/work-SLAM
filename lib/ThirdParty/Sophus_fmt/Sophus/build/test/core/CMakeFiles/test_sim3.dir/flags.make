@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_FLAGS =  -Wall -Werror -Wextra -std=c++14 -Wno-deprecated-declarations -ftemplate-backtrace-limit=0 -O3   -std=gnu++14
 
-CXX_DEFINES = -DFMT_LOCALE -DFMT_SHARED
+CXX_DEFINES = -DSOPHUS_USE_BASIC_LOGGING=1
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus -isystem /usr/local/include/eigen3 
+CXX_INCLUDES = -I/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/Sophus_fmt/Sophus -isystem /usr/local/include/eigen3 
 

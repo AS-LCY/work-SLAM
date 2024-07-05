@@ -652,7 +652,7 @@ optional
 gtsam/inference/VariableIndex-inl.h
 -
 
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/examples/UGM_small.cpp
+/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/examples/UGM_small.cpp
 gtsam/base/Vector.h
 -
 gtsam/discrete/DiscreteFactorGraph.h

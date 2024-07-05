@@ -6,5 +6,5 @@ CXX_FLAGS =  -pthread -pthread   -std=gnu++11
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include 
+CXX_INCLUDES = -I/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/sdk_core/../include 
 

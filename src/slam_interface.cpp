@@ -377,7 +377,7 @@ void command_cbk(const std_msgs::Int32 &msg_in)
     switch(msg_in.data){
         case 0:
             printf("save_map\n");
-            slam -> save_map(CURRENT_DIR+std::string("/lib/map/"),0.1);
+            slam -> save_map(CURRENT_DIR+std::string("/lib/map/"),0.1, 0, 0);
             break;
         case 1:
             printf("load map\n");
@@ -473,7 +473,7 @@ void showThread()
             }
 
             if (control_status.saveMap && !localization_mode)
-                slam -> save_map(CURRENT_DIR+std::string("/map/"),0.1);
+                slam -> save_map(CURRENT_DIR+std::string("/map/"),0.1, 0, 0);
             test_view.Finish();  
         }
         auto end = std::chrono::steady_clock::now();
@@ -571,16 +571,16 @@ int main(int argc,char **argv)
             continue;
         } 
         if (slam->run()&&show_rviz){
-             if (!localization_mode || slam->isGloalLocalizationSuccess())
+            if (!localization_mode || slam->isGloalLocalizationSuccess())
                 pub_odom_cloud(slam->get_odom_cloud());
-                pub_test_cloud(slam->getTestCloud());
-                pub_lidar_cloud(slam->get_lidar_cloud());
-                pub_obstacle_cloud(slam->getObstacleCloud());
-                pub_filtered_obstacle_cloud(slam->getFilteredObstacleCloud());
-                publish_unoptimized_path(slam->get_unoptimized_path());
-                publish_optimized_path(slam->get_optimized_path(),string("odom"));
-                visualizeLoopClosure(slam->getloopIndex());
-                publish_transform(slam->getOdomToMap(),string("map"),string("odom"));
+            pub_test_cloud(slam->getTestCloud());
+            pub_lidar_cloud(slam->get_lidar_cloud());
+            pub_obstacle_cloud(slam->getObstacleCloud());
+            pub_filtered_obstacle_cloud(slam->getFilteredObstacleCloud());
+            publish_unoptimized_path(slam->get_unoptimized_path());
+            publish_optimized_path(slam->get_optimized_path(),string("odom"));
+            visualizeLoopClosure(slam->getloopIndex());
+            publish_transform(slam->getOdomToMap(),string("map"),string("odom"));
 	//     pub_kdtree_cloud(slam->get_kdtree_cloud());		//not used yet
 		 }
          if(!localization_mode){

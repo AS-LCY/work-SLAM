@@ -11,7 +11,8 @@
 	<param name="log_folder" type="string" value="/home/"/>
     <param name="show_rviz" type="bool" value="0"/>
    
-    <node pkg="lidar_slam" type="slam_interface" name="slam_interface" output="screen"/> 
+    <!-- <node pkg="lidar_slam" type="slam_interface" name="slam_interface" output="screen"/>  -->
+    <node pkg="lidar_slam" type="localization_module" name="localization_module" output="screen"/> 
 
 
 

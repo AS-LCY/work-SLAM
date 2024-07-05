@@ -52,7 +52,7 @@ set_target_properties(gtsam_unstable PROPERTIES
 # Import target "gtsam_unstable" for configuration "Release"
 set_property(TARGET gtsam_unstable APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(gtsam_unstable PROPERTIES
-  IMPORTED_LOCATION_RELEASE "/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/build/gtsam_unstable/libgtsam_unstable.so.4.3a0"
+  IMPORTED_LOCATION_RELEASE "/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/build/gtsam_unstable/libgtsam_unstable.so.4.3a0"
   IMPORTED_SONAME_RELEASE "libgtsam_unstable.so.4"
   )
 

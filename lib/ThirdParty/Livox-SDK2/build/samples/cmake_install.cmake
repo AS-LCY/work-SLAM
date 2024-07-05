@@ -1,4 +1,4 @@
-# Install script for directory: /home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples
+# Install script for directory: /home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/samples
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -39,10 +39,10 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
-  include("/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/livox_lidar_quick_start/cmake_install.cmake")
-  include("/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/multi_lidars_upgrade/cmake_install.cmake")
-  include("/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/logger/cmake_install.cmake")
-  include("/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/debug_point_cloud/cmake_install.cmake")
+  include("/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/livox_lidar_quick_start/cmake_install.cmake")
+  include("/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/multi_lidars_upgrade/cmake_install.cmake")
+  include("/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/logger/cmake_install.cmake")
+  include("/home/panmiaomiao/catkin_ws/ws_lidar_slam/src/lidar_slam/lib/ThirdParty/Livox-SDK2/build/samples/debug_point_cloud/cmake_install.cmake")
 
 endif()
 

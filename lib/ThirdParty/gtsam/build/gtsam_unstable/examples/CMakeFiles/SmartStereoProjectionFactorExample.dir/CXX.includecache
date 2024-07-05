@@ -1438,7 +1438,7 @@ vector
 gtsam_unstable/slam/SmartStereoProjectionFactor.h
 -
 
-/home/zac/catkin_ws/src/lidar_slam/lib/ThirdParty/gtsam/gtsam_unstable/examples/SmartStereoProjectionFactorExample.cpp
+/home/topeet/work/ws_mower/src/lidar_slam/lib/ThirdParty/gtsam/gtsam_unstable/examples/SmartStereoProjectionFactorExample.cpp
 gtsam/geometry/Pose3.h
 -
 gtsam/geometry/Cal3_S2Stereo.h
