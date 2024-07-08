@@ -45,7 +45,7 @@
 
 // livox
 // #include <livox_ros_driver2/CustomMsg.h>
-#include <flbot_msgs/LivoxCustomMsg.h>
+#include "fairland_msgs/LivoxCustomMsg.h"
 
 #include "lidar_slam.hpp"
 #include <Viewer.hpp>
@@ -93,7 +93,7 @@ private:
 
     void command_cbk(const std_msgs::Int32 &msg_in);
     // void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
-    void livox_pcl_cbk(const flbot_msgs::LivoxCustomMsg::ConstPtr &msg_in);
+    void livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
 
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
 

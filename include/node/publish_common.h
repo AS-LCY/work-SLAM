@@ -45,8 +45,7 @@
 
 // livox
 // #include <livox_ros_driver2/CustomMsg.h>
-#include <flbot_msgs/LivoxCustomMsg.h>
-
+#include "fairland_msgs/LivoxCustomMsg.h"
 #include <Viewer.hpp>
 #include "v4l2cam.h"
 #include "lidar_slam.hpp"

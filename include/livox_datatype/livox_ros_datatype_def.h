@@ -1,7 +1,7 @@
 #ifndef LIVOX_ROS_DATATYPE_DEF_H
 #define LIVOX_ROS_DATATYPE_DEF_H
 
-#include "flbot_msgs/LivoxCustomMsg.h"
+#include "fairland_msgs/LivoxCustomMsg.h"
 
 namespace livox_ros {
 
@@ -19,8 +19,8 @@ typedef enum {
   kLivoxImuMsg = 3,
 } TransferType;
 
-// using CustomMsg = flbot_msgs::LivoxCustomMsg;
-// using CustomPoint = flbot_msgs::LivoxCustomPoint;
+// using CustomMsg = fairland_msgs::LivoxCustomMsg;
+// using CustomPoint = fairland_msgs::LivoxCustomPoint;
 
 /** Type-Definitions based on ROS versions */
 /*using Publisher = ros::Publisher;

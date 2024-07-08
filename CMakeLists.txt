@@ -87,7 +87,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   message_generation
   eigen_conversions
-  flbot_msgs
+  fairland_msgs
 )
 
 find_package(Boost 1.54 REQUIRED COMPONENTS
@@ -171,7 +171,7 @@ catkin_package(
   sensor_msgs 
   std_msgs 
   tf
-  flbot_msgs
+  fairland_msgs
 
   DEPENDS 
   # EIGEN3 
@@ -238,7 +238,7 @@ add_executable(lidar_slam_node
 )
 
 
-add_dependencies(lidar_slam_node flbot_msgs_generate_messages_cpp)
+# add_dependencies(lidar_slam_node )
 
 target_link_libraries(lidar_slam_node 
   ${catkin_LIBRARIES} 

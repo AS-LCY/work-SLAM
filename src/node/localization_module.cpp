@@ -191,7 +191,7 @@ void LocalizationModule::command_cbk(const std_msgs::Int32 &msg_in){
 }
 
 // void LocalizationModule::livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in){
-void LocalizationModule::livox_pcl_cbk(const flbot_msgs::LivoxCustomMsg::ConstPtr &msg_in){
+void LocalizationModule::livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in){
     if(control_status_.reset||offline_mode_)
        return;
 	std::shared_ptr<livox_ros::LidarMsg> msg(new livox_ros::LidarMsg);
