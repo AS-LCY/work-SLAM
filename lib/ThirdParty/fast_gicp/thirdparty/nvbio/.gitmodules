@@ -1,3 +1,0 @@
-[submodule "contrib/cub"]
-	path = contrib/cub
-	url = https://github.com/NVlabs/cub.git

@@ -1,21 +1,27 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(lidar_slam)
 
-SET(CMAKE_BUILD_TYPE "Release")  
+## Compile as C++11, supported in ROS Kinetic and newer
+# add_compile_options(-std=c++11)
 
+
+SET(CMAKE_BUILD_TYPE "Release")  
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 ADD_COMPILE_OPTIONS(-std=c++14 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
 set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
 
-add_definitions(-DROOT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\")
-
+add_compile_options(-fPIC)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread -std=c++0x -std=c++14 -fexceptions")
+set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
+
 get_filename_component(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
 add_compile_definitions(CURRENT_DIR="${CURRENT_DIR}")
+
 message("Current CPU archtecture: ${CMAKE_SYSTEM_PROCESSOR}")
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" )
   include(ProcessorCount)
@@ -36,120 +42,258 @@ else()
   add_definitions(-DMP_PROC_NUM=1)
 endif()
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
 
-set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+################### check CPU type #####################
+if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
+  # add_definitions(-DCPU_AARCH64)
+  set(CPU_TYPE "aarch64")
+elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "x86_64")
+  # add_definitions(-DCPU_X86)
+  set(CPU_TYPE "x86")
+else()
+  # add_definitions(-DCPU_UNKNOWN)
+  set(CPU_TYPE "unknown")
+  message("Unknown CPU type!")
+endif()
+message("********* CPU: ${CPU_TYPE} *********")
+#---------------- check CPU type end --------------------
+
+### setting ${THIRDPARTY_DIR}
+set(THIRDPARTY_DIR ${CMAKE_SOURCE_DIR}/flbot_thirdparty)  
+# set(THIRDPARTY_DIR /home/pan/catkin_ws/ws_localization2/src/flbot_thirdparty)  
+message("********* THIRDPARTY_DIR: ${THIRDPARTY_DIR} *********")
+
+
+################### find_package #####################
+find_package(OpenMP QUIET)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
+
+
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  cv_bridge
   geometry_msgs
+  image_transport
   nav_msgs
-  sensor_msgs
+  pcl_ros
   roscpp
   rospy
+  sensor_msgs
   std_msgs
-  pcl_ros
   tf
-  livox_ros_driver2
   message_generation
   eigen_conversions
+  flbot_msgs
 )
 
-find_package( GTSAMCMakeTools )
+find_package(Boost 1.54 REQUIRED COMPONENTS
+  system
+  thread
+  chrono
+)
+
 find_package(PCL REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED)
-find_package(GTSAM REQUIRED QUIET)
-find_package( FMT REQUIRED )
-find_package(Pangolin REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_package(cv_bridge REQUIRED)
-find_package(image_transport REQUIRED)
+find_package(PkgConfig)
 
-include_directories(
-	${catkin_INCLUDE_DIRS} 
-  ${EIGEN3_INCLUDE_DIR}
-  ${PCL_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
-  ${Sophus_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-  ${GTSAM_INCLUDE_DIR}
-  ${Pangolin_INCLUDE_DIRS}
-  ${YAML_CPP_INCLUDE_DIR}
-  include
-  include/serial_lib/include/
-  )
+################### set thirdparty #####################
+### setting fast_gicp
+set(FAST_GICP_INCLUDE_DIR ${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/include/)
+set(FAST_GICP_LIBRARY_DIR ${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/)
+file(GLOB FAST_GICP_LIBRARY
+    "${FAST_GICP_LIBRARY_DIR}/libfast_gicp.so"
+)
+
+### setting livox_sdk
+set(LIVOX_SDK2_INCLUDE_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/include)
+set(LIVOX_SDK2_LIBRARY_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/lib)
+
+find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
+
+### setting Eigen3
+set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
+find_package(Eigen3 REQUIRED)
+message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
+
+### setting fmt
+set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
+find_package( fmt REQUIRED )
 
 
+### setting Sophus
+set(Sophus_DIR ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/share/sophus/cmake)
+find_package(Sophus REQUIRED)
+set(Sophus_INCLUDE_DIRS ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/include/)
+message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
+# message("********* Sophus_LIBRARIES: ${Sophus_LIBRARIES} *********")
+# Sophus 安装的库为模板类，没有libs
+
+
+### setting Pangolin
+set (Pangolin_DIR ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/cmake/Pangolin)
+find_package(Pangolin REQUIRED)
+# set (Pangolin_INCLUDE_DIRS ${THIRDPARTY_DIR}/pangolin/x86/include)
+message("********* Pangolin_INCLUDE_DIR: ${Pangolin_INCLUDE_DIR} *********")
+message("********* Pangolin_INCLUDE_DIRS: ${Pangolin_INCLUDE_DIRS} *********")
+message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
+
+### setting OpenCV
+set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/cmake/opencv4)
+find_package(OpenCV REQUIRED QUIET)
+message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
+message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
+
+### setting gtsam
+set (GTSAM_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAM)
+find_package(GTSAM REQUIRED QUIET)
+message("********* GTSAM_INCLUDE_DIR: ${GTSAM_INCLUDE_DIR} *********")
+message("********* gtsam: ${gtsam} *********")
+
+set (GTSAMCMakeTools_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAMCMakeTools)
+find_package(GTSAMCMakeTools)
+
+message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
+message("********* find_package end *********")
 
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs 
-  DEPENDS EIGEN3 PCL  
+  CATKIN_DEPENDS 
+  cv_bridge 
+  geometry_msgs 
+  image_transport 
+  nav_msgs 
+  pcl_ros 
+  roscpp 
+  rospy 
+  sensor_msgs 
+  std_msgs 
+  tf
+  flbot_msgs
+
+  DEPENDS 
+  # EIGEN3 
+  PCL  
   # GTSAM 
   INCLUDE_DIRS
 )
 
+
+set(flbot_msgs_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../devel/include)
+
 ###########
 ## Build ##
 ###########
-add_library(lidar_slam SHARED IMPORTED)
-set_target_properties(lidar_slam PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/build/liblidar_slam.so )
-add_library(gicp SHARED IMPORTED)
-set_target_properties(gicp PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/fast_gicp/build/devel/lib/libfast_gicp.so)
-add_library(livox_sdk SHARED IMPORTED)
-set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_shared.so)
 
 include_directories(
-# include
+  include
+  include/lidar_slam
+  include/node
+  include/livox_datatype
+  ${flbot_msgs_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/include/
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/fast_gicp/include/
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/Livox-SDK2/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/livox_ros_driver2/3rdparty
-  ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/livox_ros_driver2/src
+  ${FAST_GICP_INCLUDE_DIR}
+  ${LIVOX_SDK2_INCLUDE_DIR}
+  ${EIGEN3_INCLUDE_DIR}
+  ${Sophus_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${Pangolin_INCLUDE_DIRS}
+  ${GTSAM_INCLUDE_DIR}
+  # below TODO
+  ${YAML_CPP_INCLUDE_DIR}
+  ${APR_INCLUDE_DIRS}
+  )
+
+
+# link directories
+link_directories(
+  ${FAST_GICP_LIBRARY_DIR}
+  ${LIVOX_SDK2_LIBRARY_DIR}
+  ${OpenCV_LIBRARY_DIRS}
+)
+ 
+set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
+add_library(livox_sdk SHARED IMPORTED)
+set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
+
+
+
+add_executable(lidar_slam_node
+  # node
+  src/slam_main.cpp
+  src/node/localization_module.cpp
+  src/node/publish_common.cpp 
+  # slam core
+  src/lidar_slam/lidar_slam.cpp 
+  src/lidar_slam/preprocess.cpp
+  src/lidar_slam/Scancontext.cpp
+  src/lidar_slam/IMU_Processing.cpp
+  src/lidar_slam/localization.cpp
+  src/lidar_slam/backend.cpp
 )
 
 
+add_dependencies(lidar_slam_node flbot_msgs_generate_messages_cpp)
 
+target_link_libraries(lidar_slam_node 
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${Pangolin_LIBRARIES} 
+  ${FAST_GICP_LIBRARY}
+  gtsam  
+  ikd_Tree 
+  fmt::fmt 
+  yaml-cpp 
+  liblivox_lidar_sdk_shared.so
+  ) 
 
-message(${CMAKE_CURRENT_SOURCE_DIR})
-# add_executable(slam_interface src/slam_interface.cpp)
-# target_link_libraries(slam_interface ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pangolin_LIBRARIES} gicp lidar_slam ${OpenCV_LIBS} ${cv_bridge_LIBRARIES} gtsam fmt yaml-cpp  livox_sdk) 
-
-add_executable(localization_module 
-  src/slam_main.cpp
-  src/localization_module/localization_module.cpp
-  src/localization_module/publish_common.cpp  
-  )
-target_link_libraries(localization_module ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${Pangolin_LIBRARIES} gicp lidar_slam ${OpenCV_LIBS} ${cv_bridge_LIBRARIES} gtsam fmt yaml-cpp  livox_sdk) 
-
-
-#add_executable(camera_driver src/camera_driver.cpp include/serial_lib/src/serial.cc include/serial_lib/src/impl/unix.cc include/serial_lib/src/impl/list_ports/list_ports_linux.cc)
-#target_link_libraries(camera_driver ${catkin_LIBRARIES} ${OpenCV_LIBS} ${cv_bridge_LIBRARIES})
 
 
 #############
 ## Install ##
 #############
-# install(TARGETS slam_interface 
-#         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/build/liblidar_slam.so
-        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/fast_gicp/build/devel/lib/libfast_gicp.so
-        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib/ThirdParty/Livox-SDK2/build/sdk_core/liblivox_lidar_sdk_shared.so
-        DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+# all install targets should use catkin DESTINATION variables
+# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
-install(DIRECTORY include/${PROJECT_NAME}/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION} 
-        FILES_MATCHING PATTERN "*.h" 
-        PATTERN ".svn" EXCLUDE)
+## Mark executable scripts (Python etc.) for installation
+## in contrast to setup.py, you can choose the destination
+# catkin_install_python(PROGRAMS
+#   scripts/my_python_script
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
-install(DIRECTORY lib/config
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+## Mark executables for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
+# install(TARGETS ${PROJECT_NAME}_node
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
-install(DIRECTORY launch
-        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+## Mark libraries for installation
+## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
+# install(TARGETS ${PROJECT_NAME}
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+# )
+
+## Mark cpp header files for installation
+# install(DIRECTORY include/${PROJECT_NAME}/
+#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#   FILES_MATCHING PATTERN "*.h"
+#   PATTERN ".svn" EXCLUDE
+# )
+
+## Mark other files for installation (e.g. launch and bag files, etc.)
+# install(FILES
+#   # myfile1
+#   # myfile2
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATITestON}
+# )
+
 

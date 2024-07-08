@@ -4,12 +4,12 @@
 
 	<arg name="rviz" default="true" />
 
-	<param name="localization_mode" type="bool" value="1"/>
+	<param name="localization_mode" type="bool" value="0"/>
 	<param name="offline_mode" type="bool" value="0"/>
 	<param name="fast" type="bool" value="0"/>
 	<param name="just_show_mode" type="bool" value="0"/>
 	<param name="log_folder" type="string" value="/home/"/>
-    <param name="show_rviz" type="bool" value="0"/>
+    <param name="show_rviz" type="bool" value="1"/>
    
     <!-- <node pkg="lidar_slam" type="slam_interface" name="slam_interface" output="screen"/>  -->
     <node pkg="lidar_slam" type="localization_module" name="localization_module" output="screen"/> 

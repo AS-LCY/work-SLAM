@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include "localization_module/localization_module.h"
+#include "node/localization_module.h"
 
 
 int main(int argc,char **argv){
@@ -17,7 +17,7 @@ int main(int argc,char **argv){
     localization_module::LocalizationModule localization_mod(curr_path);
     
 
-    ros::MultiThreadedSpinner spinner(5);
+    ros::MultiThreadedSpinner spinner(10);
     spinner.spin();
     return 0;
 }

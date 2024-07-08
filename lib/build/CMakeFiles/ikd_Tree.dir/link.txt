@@ -1,2 +1,0 @@
-/usr/bin/ar qc libikd_Tree.a  CMakeFiles/ikd_Tree.dir/src/ikd_Tree.cpp.o
-/usr/bin/ranlib libikd_Tree.a
