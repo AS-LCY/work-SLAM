@@ -125,12 +125,18 @@ void LocalizationModule::start_mapping(bool module_mode){
     // localization_mode_;
     // offline_mode_;
     // 初始位姿？
-    ROS_INFO("create lidar_slam, slam_mode: start mapping");
-	// slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
-	slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
-    ROS_INFO("create lidar_slam success");
-    start_index_ = -1;
-    end_index_ = -1;
+    if (running_slam_ ){
+        start_index_ = -1;
+        end_index_ = -1;
+    }else{
+        ROS_INFO("create lidar_slam, slam_mode: start mapping");
+        // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
+        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
+        ROS_INFO("create lidar_slam success");
+        start_index_ = -1;
+        end_index_ = -1;
+        running_slam_ = true;
+    }
 }
 
 void LocalizationModule::mark_start_point(){
@@ -146,7 +152,6 @@ void LocalizationModule::mark_end_point(int save_id){
     std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
     if (save_id > 0){
         slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
-        return;
     }
 
     cout << "start_index_: "<< start_index_<<endl;
@@ -164,8 +169,18 @@ void LocalizationModule::relocalize_and_mapping(){
 }
 
 void LocalizationModule::stop_mapping(){
+    /////////////////////////////////////////////////////
+    int save_id = 1;
+    std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
+    if (save_id > 0){
+        slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
+    }
+
+    /////////////////////////////////////////////////////
+
+
     ROS_INFO("start stop mapping");
-    control_status_.reset = true;
+    // control_status_.reset = true;
     running_slam_ = false;
     sleep(1);
     // TODO：退出
@@ -175,12 +190,10 @@ void LocalizationModule::stop_mapping(){
     // // slam_->reset(work_path,localization_mode_,offline_mode_);
     // bool flag = (slam_==nullptr);
     // cout<<"if slam_==nullptr: "<< flag <<endl;
-
     // lidar_slam::LidarSlam *temp_slam = slam_.release();
     // ROS_INFO("release successfully");
     // flag = (slam_==nullptr);
     // cout<<"if slam_==nullptr: "<< flag <<endl;
-
     // delete temp_slam;
     // temp_slam=nullptr;
     // ROS_INFO("delete successfully");
@@ -196,23 +209,27 @@ void LocalizationModule::stop_mapping(){
 void LocalizationModule::relocalize_and_localization(bool module_mode, int map_id){
     // 
     ROS_INFO("create lidar_slam, slam_mode: relocalize_and_localization");
-	// slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
-	slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
-    ROS_INFO("create lidar_slam success");
-    start_index_ = -1;
-    end_index_ = -1;
+    if(running_slam_){
 
-    std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
-    slam_ -> load_map(pcd_path);
+    }else{
+        // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
+        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
+        ROS_INFO("create lidar_slam success");
+        start_index_ = -1;
+        end_index_ = -1;
 
-    running_slam_ = true;
+        std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
+        slam_ -> load_map(pcd_path);
+
+        running_slam_ = true;
+    }
 }
 
 
 void LocalizationModule::stop_localization(){
     // 
     ROS_INFO("start stop mapping");
-    control_status_.reset = true;
+    // control_status_.reset = true;
     running_slam_ = false;
     sleep(1);
 
@@ -220,6 +237,8 @@ void LocalizationModule::stop_localization(){
     delete temp_slam;
     temp_slam = nullptr;
     ROS_INFO("localization stopped !");
+
+    running_slam_ = false;
 }
 
 

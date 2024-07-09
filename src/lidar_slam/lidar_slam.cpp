@@ -316,12 +316,16 @@ void LidarSlam::localizationThread()
         pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
         }
         if (!globalLocalizationSuccess){
+            cout << "start globalLocalization ... "<<endl;
 
             //state.state("lost");
             mutex mtx_lidar_cloud;
             globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
+            cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
+            
         }
         else{
+            cout << "localizing ... "<<endl;
             localization->localize(temp);
 
             //state.state("normal");
@@ -760,6 +764,7 @@ bool LidarSlam::run()
                 loop_closure_wait = true;
                 bool insert = back_end->saveKeyFramesAndFactor(T_odom_lidar,undistortCloud,lidar_end_time); // TODO add transform
                 if (insert){
+                    cout<<"************* keyPosesCount: "<<back_end->getKeyframePoses().size()<<endl;
                     back_end->saveCurrentCloud(undistortCloud,getLidarInMap());//注意这里只是为了取水平面，后端还是在odom坐标系
                     {
                         std::lock_guard<std::mutex> lk(mtx_path);
