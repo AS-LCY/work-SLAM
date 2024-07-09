@@ -816,7 +816,8 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         if (file.is_open()){
 
         }
-        for (int i = 0; i < (int)KeyPoses.size(); i++) {
+        // for (int i = 0; i < (int)KeyPoses.size(); i++) {
+      for (int i = start; i <= end; i++) {
             file << infos[i].id << ',';
             Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", ",", "", "", "", "");
             file << (infos[i].pose).matrix().format(fmt) << ',';

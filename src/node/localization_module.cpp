@@ -136,6 +136,7 @@ void LocalizationModule::start_mapping(bool module_mode){
 void LocalizationModule::mark_start_point(){
     // TODO：标记起点的 POSE
     start_index_ = slam_->get_curr_pose_index();
+    cout << "start_index_: "<< start_index_<<endl;
 }
 
 void LocalizationModule::mark_end_point(int save_id){
@@ -147,6 +148,9 @@ void LocalizationModule::mark_end_point(int save_id){
         slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
         return;
     }
+
+    cout << "start_index_: "<< start_index_<<endl;
+    cout << "end_index_: "<< end_index_<<endl;
 }
 
 void LocalizationModule::clear_curr_element(){
