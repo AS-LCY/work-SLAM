@@ -87,6 +87,9 @@ private:
     void relocalize_and_mapping();
     void stop_mapping();
 
+    void relocalize_and_localization(bool module_mode);
+    void stop_localization();
+
     // callback 
     void mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
@@ -131,7 +134,7 @@ private:
 
     // 建图 *******************************************
     bool running_slam_ = false;
-    MappingStatus mapping_status_ = MODULE_INACTIVE; // if change to module_status_??
+    MappingStatus slam_status_ = MODULE_INACTIVE; // if change to module_status_??
 
     int start_index_ = -1;
     int end_index_ = -1;

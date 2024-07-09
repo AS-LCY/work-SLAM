@@ -136,8 +136,12 @@ message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
 ### setting Pangolin
 set (Pangolin_DIR ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/cmake/Pangolin)
 find_package(Pangolin REQUIRED)
-# set (Pangolin_INCLUDE_DIRS ${THIRDPARTY_DIR}/pangolin/x86/include)
-message("********* Pangolin_INCLUDE_DIR: ${Pangolin_INCLUDE_DIR} *********")
+# set (Pangolin_INCLUDE_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/include)
+set (Pangolin_LIBRARY_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib)
+# file(GLOB Pangolin_LIBRARIES
+#     "${Pangolin_LIBRARY_DIRS}/lib*"
+# )
+
 message("********* Pangolin_INCLUDE_DIRS: ${Pangolin_INCLUDE_DIRS} *********")
 message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 
@@ -213,6 +217,7 @@ link_directories(
   ${FAST_GICP_LIBRARY_DIR}
   ${LIVOX_SDK2_LIBRARY_DIR}
   ${OpenCV_LIBRARY_DIRS}
+  ${Pangolin_LIBRARY_DIRS}
 )
  
 set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -221,20 +226,36 @@ add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
 add_library(livox_sdk SHARED IMPORTED)
 set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
 
-
-
-add_executable(lidar_slam_node
-  # node
-  src/slam_main.cpp
-  src/node/localization_module.cpp
-  src/node/publish_common.cpp 
-  # slam core
+# build: slam core
+add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/preprocess.cpp
   src/lidar_slam/Scancontext.cpp
   src/lidar_slam/IMU_Processing.cpp
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
+)
+
+target_link_libraries(lidar_slam 
+  ${Sophus_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  ${Pangolin_LIBRARIES} 
+  ${FAST_GICP_LIBRARY}
+  ${OpenCV_LIBS}
+  gtsam  
+  ikd_Tree 
+  fmt::fmt 
+  yaml-cpp 
+  livox_sdk
+) 
+
+
+# build: ros-node
+add_executable(lidar_slam_node
+  # node
+  src/slam_main.cpp
+  src/node/localization_module.cpp
+  src/node/publish_common.cpp 
 )
 
 
@@ -245,11 +266,13 @@ target_link_libraries(lidar_slam_node
   ${PCL_LIBRARIES} 
   ${Pangolin_LIBRARIES} 
   ${FAST_GICP_LIBRARY}
-  gtsam  
-  ikd_Tree 
+  ${OpenCV_LIBS}
+  ${cv_bridge_LIBRARIES}
+  lidar_slam
+  gtsam
   fmt::fmt 
   yaml-cpp 
-  liblivox_lidar_sdk_shared.so
+  livox_sdk
   ) 
 
 

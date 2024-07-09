@@ -1,3 +1,6 @@
+map/*
+*.pcd
+
 # Prerequisites
 *.d
 
