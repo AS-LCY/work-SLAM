@@ -27,16 +27,20 @@ bool Localization::loadMap(std::string path){
         CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
         show_map_points.clear();
         PointCloudXYZI::Ptr TempMap(new PointCloudXYZI());
-        if (std::filesystem::exists(path+std::string("GlobalMap.pcd"))){
-            pcl::io::loadPCDFile(path+std::string("GlobalMap.pcd"), *TempMap); 
+
+        std::string cloud_map_file_path = path+std::string("cloud_map.pcd");
+        if (std::filesystem::exists(cloud_map_file_path)){
+            pcl::io::loadPCDFile(cloud_map_file_path, *TempMap); 
             *CloudGlobalMap = *TempMap;
-            std::cout << "load map from : " << path+std::string("GlobalMap.pcd")<<"size "<<TempMap->points.size() << std::endl;
+            std::cout << "load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() << std::endl;
         }
-        if (std::filesystem::exists(path+std::string("ComplementMap.pcd"))){
+
+        std::string ComplementMap_file_path = path+std::string("ComplementMap.pcd");
+        if (std::filesystem::exists(ComplementMap_file_path)){
             TempMap->points.clear();
-            pcl::io::loadPCDFile(path+std::string("ComplementMap.pcd"), *TempMap); 
+            pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap); 
             *CloudGlobalMap += *TempMap;
-            std::cout << "load map from : " << path+std::string("ComplementMap.pcd")<<"size "<<TempMap->points.size() << std::endl;
+            std::cout << "load map from : " << ComplementMap_file_path<<"size "<<TempMap->points.size() << std::endl;
         }  
         pcl::copyPointCloud(*(CloudGlobalMap), *CloudGlobalMapIn);
         pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;

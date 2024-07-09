@@ -87,7 +87,7 @@ private:
     void relocalize_and_mapping();
     void stop_mapping();
 
-    void relocalize_and_localization(bool module_mode);
+    void relocalize_and_localization(bool module_mode, int map_id);
     void stop_localization();
 
     // callback 

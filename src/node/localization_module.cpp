@@ -64,6 +64,7 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
      *      9000: 退出建图 ////
      * 
      *      6000: 重定位，并开始定位
+     *      7000: 退出定位
      *      
      * to be continued
      */  
@@ -105,7 +106,10 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
         slam_status_ = MODULE_INACTIVE;
     }else if(ctrl_type == 6000){// 开始定位，（先重定位，再定位）
         localization_mode_ = 1;
-        relocalize_and_localization(localization_mode_);
+        int map_id = msg.data % 1000;
+        relocalize_and_localization(localization_mode_, map_id);
+        running_slam_ = true;
+        slam_status_ = MAPPING_STARTED;
     }else if(ctrl_type == 7000){// 结束定位
         stop_localization();
     }else{
@@ -185,7 +189,7 @@ void LocalizationModule::stop_mapping(){
     ROS_INFO("mapping stopped !");
 }
 
-void LocalizationModule::relocalize_and_localization(bool module_mode){
+void LocalizationModule::relocalize_and_localization(bool module_mode, int map_id){
     // 
     ROS_INFO("create lidar_slam, slam_mode: relocalize_and_localization");
 	// slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
@@ -193,6 +197,11 @@ void LocalizationModule::relocalize_and_localization(bool module_mode){
     ROS_INFO("create lidar_slam success");
     start_index_ = -1;
     end_index_ = -1;
+
+    std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
+    slam_ -> load_map(pcd_path);
+
+    running_slam_ = true;
 }
 
 

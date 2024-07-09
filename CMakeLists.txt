@@ -5,6 +5,7 @@ project(lidar_slam)
 # add_compile_options(-std=c++11)
 
 
+# SET(CMAKE_BUILD_TYPE "Debug")  
 SET(CMAKE_BUILD_TYPE "Release")  
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 ADD_COMPILE_OPTIONS(-std=c++14 )

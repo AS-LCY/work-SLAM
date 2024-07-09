@@ -89,12 +89,12 @@ class LidarSlam
         void image_cbk(const cv::Mat& img,double time);
         void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
-             if (param.localization_mode){
+            if (param.localization_mode){
                 return true;
-             }
-                
-             else
+            }else{
                 return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap(), start_index, end_index);
+            }
+                
         };
         bool load_map(string directory){
             globalLocalizationSuccess = false;
@@ -219,7 +219,8 @@ class LidarSlam
         deque<PointCloudXYZI::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
         bool lidar_pushed = false;
-        atomic<double> lidar_end_time = 0;
+        // atomic<double> lidar_end_time = 0;
+        atomic<double> lidar_end_time;
         double lidar_mean_scantime = 0.0;
         double first_lidar_time = 0.0;
         int scan_num = 0;

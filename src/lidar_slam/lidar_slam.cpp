@@ -159,7 +159,8 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
   //  Eigen::Matrix3d rotation_matrix = param.T_wheel_lidar.matrix().block(0, 0, 3, 3);
    // std::cout <<"ypr "<< rotation_matrix.eulerAngles(2, 1, 0)<<std::endl;
 
-    param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
+    // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
+    param.load_map_path = work_path + std::string("map/");
     std::cout << "load map path: " <<  param.load_map_path << std::endl;
     param.cloud_leaf_size = config["mapping"]["cloud_leaf_size"].as<double>();
     param.map_leaf_size = config["ikdtree"]["map_leaf_size"].as<double>();
@@ -207,7 +208,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
     }
     else{
-        localization->loadMap(param.load_map_path);
+        // localization->loadMap(param.load_map_path);
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
     }
     show_thread.reset(new std::thread(&LidarSlam::showThread, this));  
