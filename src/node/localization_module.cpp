@@ -45,7 +45,7 @@ LocalizationModule::LocalizationModule(const std::string work_path){
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
     sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>("/livox/imu", 200000, &LocalizationModule::imu_cbk, this);
-    // ros::Subscriber sub_command  = nh.subscribe("/command" ,200000,command_cbk);
+    ros::Subscriber sub_command  = nh_.subscribe("/command" ,200000,&LocalizationModule::command_cbk, this);
 
     ROS_INFO("module start ");
 }
@@ -72,6 +72,7 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     auto msg = msg_in;
     int ctrl_type = msg.data/1000 * 1000;
     if (ctrl_type == 1000){//开始建图, CREATE_FIRST_ZONE in mapmanager
+        localization_mode_ = 0;
         start_mapping(localization_mode_);
         running_slam_ = true;
         slam_status_ = MAPPING_STARTED;
@@ -157,6 +158,7 @@ void LocalizationModule::relocalize_and_mapping(){
 void LocalizationModule::stop_mapping(){
     ROS_INFO("start stop mapping");
     control_status_.reset = true;
+    running_slam_ = false;
     sleep(1);
     // TODO：退出
 
@@ -196,6 +198,11 @@ void LocalizationModule::relocalize_and_localization(bool module_mode){
 
 void LocalizationModule::stop_localization(){
     // 
+    ROS_INFO("start stop mapping");
+    control_status_.reset = true;
+    running_slam_ = false;
+    sleep(1);
+
     lidar_slam::LidarSlam *temp_slam = slam_.release();
     delete temp_slam;
     temp_slam = nullptr;

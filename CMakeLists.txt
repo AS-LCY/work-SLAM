@@ -148,6 +148,7 @@ message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 ### setting OpenCV
 set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/cmake/opencv4)
 find_package(OpenCV REQUIRED QUIET)
+set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/)
 message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
 message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
 
@@ -226,16 +227,23 @@ add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
 add_library(livox_sdk SHARED IMPORTED)
 set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
 
+add_library(Scancontext src/lidar_slam/Scancontext.cpp)
+target_link_libraries(Scancontext ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+
+add_library(sensor_data_preproc 
+  src/lidar_slam/preprocess.cpp 
+  src/lidar_slam/IMU_Processing.cpp
+  )
+target_link_libraries(sensor_data_preproc ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+
 # build: slam core
 add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
-  src/lidar_slam/preprocess.cpp
-  src/lidar_slam/Scancontext.cpp
-  src/lidar_slam/IMU_Processing.cpp
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
+  # src/lidar_slam/preprocess.cpp
+  # src/lidar_slam/IMU_Processing.cpp
 )
-
 target_link_libraries(lidar_slam 
   ${Sophus_LIBRARIES} 
   ${PCL_LIBRARIES} 
@@ -243,16 +251,16 @@ target_link_libraries(lidar_slam
   ${FAST_GICP_LIBRARY}
   ${OpenCV_LIBS}
   gtsam  
-  ikd_Tree 
   fmt::fmt 
   yaml-cpp 
-  livox_sdk
+  ikd_Tree 
+  Scancontext
+  sensor_data_preproc
 ) 
 
 
 # build: ros-node
 add_executable(lidar_slam_node
-  # node
   src/slam_main.cpp
   src/node/localization_module.cpp
   src/node/publish_common.cpp 
@@ -272,7 +280,6 @@ target_link_libraries(lidar_slam_node
   gtsam
   fmt::fmt 
   yaml-cpp 
-  livox_sdk
   ) 
 
 
@@ -280,6 +287,27 @@ target_link_libraries(lidar_slam_node
 #############
 ## Install ##
 #############
+
+
+file(GLOB OPENCV_LIBRARY "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/libopencv*")
+
+install(TARGETS lidar_slam_node lidar_slam ikd_Tree Scancontext sensor_data_preproc
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch config rviz_cfg
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+
+install(FILES 
+  ${FAST_GICP_LIBRARY}
+  ${cv_bridge_LIBRARIES}
+  ${OPENCV_LIBRARY} 
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
