@@ -171,9 +171,13 @@ void LocalizationModule::relocalize_and_mapping(){
 void LocalizationModule::stop_mapping(){
     /////////////////////////////////////////////////////
     if (!running_slam_){
-        cout << " not running slam, no map, return !"<<endl;
+        cout << " not running slam, skip, return !"<<endl;
         return;
     }
+
+    // save global map  (save all to one single map file)
+    std::string pcd_path = curr_dir_ + std::string("/map/");
+    slam_->save_map(pcd_path, 0.1, 0, 0);
 
     /////////////////////////-debug-////////////////////////////
     // int save_id = 1;

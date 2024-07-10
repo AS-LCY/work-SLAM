@@ -794,8 +794,7 @@ bool LidarSlam::run()
                 if(LoopIsClosed)
                    back_end->recontructIKdTree(*ikdtree,param.kdTreeReconstructRadius,param.kdTreeReconstructKeyFrameLeafSize,param.kdTreeReconstructPointLeafSize);
                 loop_closure_wait = false;
-            }
-            else{
+            }else{
                     {
                         std::lock_guard<std::mutex> lk(mtx_path);
                         unoptimized_path.emplace_back(getWheelInMap());//TODO max size

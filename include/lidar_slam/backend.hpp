@@ -6,12 +6,14 @@
 #include <math.h>
 #include <thread>
 #include <fstream>
+#include <filesystem>
 #include <csignal>
 #include <unistd.h>
 #include "common_lib.h"
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
+// pcl
 #include <pcl/search/impl/search.hpp>
 #include <pcl/range_image/range_image.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -64,6 +66,7 @@ public:
     void performLoopClosure(double time);
     // if start_index == end_index == 0; save all;
     bool saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index);
+    bool create_directory_if_not_exists(const std::string &directoryPath);
     bool correctPoses();
     void recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize);
     PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);

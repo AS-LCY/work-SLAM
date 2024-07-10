@@ -772,8 +772,13 @@ PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double 
 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
-    cout << "****************************************************" << endl;
-    cout << "Saving map to pcd files ..."<<saveMapDirectory << endl;
+    cout << "****************************************************" << endl;        
+    if (create_directory_if_not_exists(saveMapDirectory)) {
+        std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
+    } else {
+        std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
+    }
+    std::string pcd_file_path = "";
 
     PointCloudXYZI::Ptr globalMapCloud(new PointCloudXYZI());
     PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
@@ -785,18 +790,23 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     if (start_index == 0 && end_index == 0){
         start = 0;
         end = KeyPosesSize -1;
+        pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
+    }else if(start_index == -1 || end_index == -1){
+        cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
+        start = 0;
+        end = KeyPosesSize -1;
+        pcd_file_path = saveMapDirectory + "/cloud_map.pcd";
     }else{
         start = start_index;
         end = end_index;
         if (end > KeyPosesSize-1){
             end = KeyPosesSize -1;
-        }        
+        }
+        pcd_file_path = saveMapDirectory + "/cloud_map.pcd";
     }
-      
 
     //   for (int i = 0; i < (int)KeyPoses.size(); i++) {
     for (int i = start; i <= end; i++) {
-
         *globalMapCloud   += *transformPointCloud(KeyFrameCloud[i],T_map_odom * KeyPoses[i].pose);
         ScInfo info;
         info.id = i;
@@ -810,9 +820,10 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     downSizeFilter.setLeafSize(resolution, resolution, resolution);
     downSizeFilter.filter(*globalSurfCloudDS);
 
-    int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/cloud_map.pcd", *globalSurfCloudDS);       //  稠密地图  
-    cout << "Saving map to pcd files completed\n" << endl;    
-    cout << "Saving loop data\n" << endl; 
+    cout << "Saving map to pcd file: "<<pcd_file_path << endl;
+    int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
+    cout << "Saving map to pcd files completed" << endl;    
+    cout << "Saving loop data" << endl; 
     std::ofstream file(saveMapDirectory + "/data");
     if (file.is_open()){
 
@@ -825,8 +836,26 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         file << infos[i].polarcontext.rows() << ',' << infos[i].polarcontext.cols() << ',';
         file << infos[i].polarcontext.format(fmt) << '\n';
     }
-    cout << "Saving loop data completed\n" << endl;
+    cout << "Saving loop data completed" << endl;
     cout << "****************************************************" << endl;
     return ret;
 }
+
+bool BackEnd::create_directory_if_not_exists(const std::string& directoryPath){
+    std::filesystem::path path(directoryPath);
+
+    if (!std::filesystem::exists(path)){
+        try {
+            std::filesystem::create_directories(path);
+            return true; // 创建目录成功
+        }catch (const std::filesystem::filesystem_error& ex){
+            std::cerr << "Error creating directory: " << ex.what() << std::endl;
+            return false; // 创建目录失败
+        }
+    } else {
+        return true; // 目录已存在
+    }
+}
+
+
 }
