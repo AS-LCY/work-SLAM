@@ -170,10 +170,15 @@ void LocalizationModule::relocalize_and_mapping(){
 
 void LocalizationModule::stop_mapping(){
     /////////////////////////////////////////////////////
+    if (!running_slam_){
+        cout << " not running slam, no map, return !"<<endl;
+        return;
+    }
     int save_id = 1;
     std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
+    // 判断 slam_ 
     if (save_id > 0){
-        slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
+        slam_->save_map(pcd_path, 0.1, 0, 0);
     }
 
     /////////////////////////////////////////////////////
