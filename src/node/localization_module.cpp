@@ -375,7 +375,7 @@ void LocalizationModule::make_slam_obj(string work_path, bool localization_mode,
     end_index_ = -1;
     localization_mode_ = localization_mode;
 
-    // running_slam_ = true; // 在 Start_mapping 和 start_localization 中修改状态
+    // running_slam_ = true; // 在 start_mapping 和 relocalization_localize 中修改状态
     if(localization_mode){
         slam_mode_ = LOCALIZATION;
     }else{
@@ -420,7 +420,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
     
     // ROS_INFO("trying to get loaded map...");
-    if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
+    // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
+    if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
         // ROS_INFO("load map");
         sleep(1);
         sensor_msgs::PointCloud2 loadMap;
