@@ -160,7 +160,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
    // std::cout <<"ypr "<< rotation_matrix.eulerAngles(2, 1, 0)<<std::endl;
 
     // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
-    param.load_map_path = work_path + std::string("map/");
+    param.load_map_path = work_path + std::string("map/");//这个参数现在未使用
     std::cout << "load map path: " <<  param.load_map_path << std::endl;
     param.cloud_leaf_size = config["mapping"]["cloud_leaf_size"].as<double>();
     param.map_leaf_size = config["ikdtree"]["map_leaf_size"].as<double>();
@@ -648,189 +648,190 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
 
 bool LidarSlam::run()
 {
-        /// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
+    /// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
     static int frame_num = 0;
     static double aver_time_consu = 0, aver_time_icp = 0,aver_time_incre = 0, aver_time_solve = 0;
     double t0, t1, t2, t3, t4, t5, match_start, solve_start,run_start,run_end;
     run_start = omp_get_wtime();
     if (sync_packages(Measures))
     {
-            //第一帧lidar数据
-            if (flg_first_scan)
-            {
-                first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
-                p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
-                flg_first_scan = false;
-                return false;
-            }
-         
-            t0 = omp_get_wtime();
-            //根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
-            {
-                std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
-                undistortCloud->clear();
-                p_imu->Process(Measures, kf, undistortCloud);
-            }
-            state_ikfom state_point;
-            state_point = kf.get_x();
-            Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix());// TODO 不优化外参数就提出去
-            Eigen::Isometry3d T_odom_b(Sophus::SE3d(state_point.rot, state_point.pos).matrix());
-            {
-                std::lock_guard<std::mutex> lk(mtx_pose);
-                T_odom_lidar  =  T_odom_b * T_b_lidar;  //TODO check this
-            }
-          //  pos_lid = state_point.pos + state_point.rot * state_point.offset_T_L_I; // global系 lidar位置
-            t1 = omp_get_wtime();
-            if (undistortCloud->empty() || (undistortCloud == NULL))
-            {
-                std::cout << "No point, skip this scan!\n"<< std::endl;
-                return false;
-            }
-
-            // 检查当前lidar数据时间，与最早lidar数据时间是否足够
-            bool flg_EKF_inited = (Measures.lidar_beg_time - first_lidar_time) < 0.1 ? false : true;
-
-            /*** Segment the map in lidar FOV ***/
-            ikdtree->lasermap_fov_segment(T_odom_lidar.translation()); // 根据lidar在W系下的位置，重新确定局部地图的包围盒角点，移除远端的点
-            t2 = omp_get_wtime();
-            /*** downsample the feature points in a scan ***/
-            downSizeFilterCloud.setInputCloud(undistortCloud);//zx 0.5?
-            downSizeFilterCloud.filter(*FilteredUndistortCloud);
-
-            double feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
-            PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
-            double filter_time = omp_get_wtime();
-            /*** initialize the map kdtree ***/
-            if (ikdtree->Root_Node == nullptr)
-            {
-                if (feats_down_size > 5)
-                {
-                    ikdtree->set_downsample_param(param.map_leaf_size);//0.5 默认0.2
-                    ikdtree->set_cube_len(param.cube_len);
-                    ikdtree->set_det_range(param.det_range);
-
-                    FilteredUndistortCloudInOdom->resize(feats_down_size);
-                 //   for (int i = 0; i < feats_down_size; i++)
-                 //   {
-                    FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud, T_odom_lidar); // point转到odom系下
-                 //   }
-                    // world系下对当前帧降采样后的点云，初始化lkd-tree
-                    ikdtree->Build(FilteredUndistortCloudInOdom->points);
-                }
-                std::cout << "build ikdtree! "<<feats_down_size<< std::endl;
-                return false;
-            }
-
-            int featsFromMapNum = ikdtree->validnum();
-            int kdtree_size_st = ikdtree->size();
-            
-            // cout<<"[ mapping ]: In num: "<<feats_undistort->points.size()<<" downsamp "<<feats_down_size<<" Map num: "<<featsFromMapNum<<"effect num:"<<effct_feat_num<<endl;
-
-            /*** ICP and iterated Kalman filter update ***/
-            if (feats_down_size < 5)
-            {
-                std::cout <<"No point after filter, skip this scan!"<<std::endl;
-                return false;
-            }
-            FilteredUndistortCloudInOdom->resize(feats_down_size);
-
-          /* if (true) // If you need to see map point, change to "if(1)" //zx delete this publish
-            {
-                PointVector().swap(ikdtree.PCL_Storage);
-                ikdtree.flatten(ikdtree.Root_Node, ikdtree.PCL_Storage, NOT_RECORD);
-                kdtreeCloud->clear();
-                kdtreeCloud->points = ikdtree.PCL_Storage;
-               // publish_map(pubLaserCloudMap);
-            }*/
-            vector<PointVector> Nearest_Points;
-            Nearest_Points.resize(feats_down_size);
-
-            /*** iterated state estimation ***/
-            double t_update_start = omp_get_wtime();
-            kf.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud, *ikdtree, Nearest_Points, 4, false);
-            double t_update_end = omp_get_wtime();
-            state_point = kf.get_x();
-            T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
-            T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix();  
+        // cout<<"sync_packages success"<<endl;
+        //第一帧lidar数据
+        if (flg_first_scan)
+        {
+            first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
+            p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
+            flg_first_scan = false;
+            return false;
+        }
+        
+        t0 = omp_get_wtime();
+        //根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
+        {
+            std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
+            undistortCloud->clear();
+            p_imu->Process(Measures, kf, undistortCloud);
+        }
+        state_ikfom state_point;
+        state_point = kf.get_x();
+        Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix());// TODO 不优化外参数就提出去
+        Eigen::Isometry3d T_odom_b(Sophus::SE3d(state_point.rot, state_point.pos).matrix());
+        {
+            std::lock_guard<std::mutex> lk(mtx_pose);
             T_odom_lidar  =  T_odom_b * T_b_lidar;  //TODO check this
-          //  double t_update_end = omp_get_wtime();
-         //   while(localization_wait){ // TODO check
+        }
+        //  pos_lid = state_point.pos + state_point.rot * state_point.offset_T_L_I; // global系 lidar位置
+        t1 = omp_get_wtime();
+        if (undistortCloud->empty() || (undistortCloud == NULL))
+        {
+            std::cout << "No point, skip this scan!\n"<< std::endl;
+            return false;
+        }
 
-         //   }
-            localization_base.imu_state = state_point;
-            localization_base.base_time = lidar_end_time;
-            localization_base.update_time = lidar_end_time;
-            if (!param.localization_mode){
-                loop_closure_wait = true;
-                bool insert = back_end->saveKeyFramesAndFactor(T_odom_lidar,undistortCloud,lidar_end_time); // TODO add transform
-                if (insert){
-                    cout<<"************* keyPosesCount: "<<back_end->getKeyframePoses().size()<<endl;
-                    back_end->saveCurrentCloud(undistortCloud,getLidarInMap());//注意这里只是为了取水平面，后端还是在odom坐标系
-                    {
-                        std::lock_guard<std::mutex> lk(mtx_path);
-                        unoptimized_path.emplace_back(getWheelInMap());//TODO max size
-                        if (unoptimized_path.size() > 200)
-                            unoptimized_path.pop_front();
-                    }
-                    T_odom_lidar = back_end->getCurrentPose().pose;
-                    T_odom_b = T_odom_lidar * T_b_lidar.inverse();
-                    state_ikfom state_updated = kf.get_x();
-                    state_updated.pos = T_odom_b.translation();
-                    state_updated.rot =  Sophus::SO3d(T_odom_b.rotation());
-                    kf.change_x(state_updated); 
-                }
+        // 检查当前lidar数据时间，与最早lidar数据时间是否足够
+        bool flg_EKF_inited = (Measures.lidar_beg_time - first_lidar_time) < 0.1 ? false : true;
 
-               // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
-                bool LoopIsClosed = back_end->correctPoses();
+        /*** Segment the map in lidar FOV ***/
+        ikdtree->lasermap_fov_segment(T_odom_lidar.translation()); // 根据lidar在W系下的位置，重新确定局部地图的包围盒角点，移除远端的点
+        t2 = omp_get_wtime();
+        /*** downsample the feature points in a scan ***/
+        downSizeFilterCloud.setInputCloud(undistortCloud);//zx 0.5?
+        downSizeFilterCloud.filter(*FilteredUndistortCloud);
+
+        double feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
+        PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
+        double filter_time = omp_get_wtime();
+        /*** initialize the map kdtree ***/
+        if (ikdtree->Root_Node == nullptr)
+        {
+            if (feats_down_size > 5)
+            {
+                ikdtree->set_downsample_param(param.map_leaf_size);//0.5 默认0.2
+                ikdtree->set_cube_len(param.cube_len);
+                ikdtree->set_det_range(param.det_range);
+
+                FilteredUndistortCloudInOdom->resize(feats_down_size);
+                //   for (int i = 0; i < feats_down_size; i++)
+                //   {
+                FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud, T_odom_lidar); // point转到odom系下
+                //   }
+                // world系下对当前帧降采样后的点云，初始化lkd-tree
+                ikdtree->Build(FilteredUndistortCloudInOdom->points);
+            }
+            std::cout << "build ikdtree! "<<feats_down_size<< std::endl;
+            return false;
+        }
+
+        int featsFromMapNum = ikdtree->validnum();
+        int kdtree_size_st = ikdtree->size();
+        
+        // cout<<"[ mapping ]: In num: "<<feats_undistort->points.size()<<" downsamp "<<feats_down_size<<" Map num: "<<featsFromMapNum<<"effect num:"<<effct_feat_num<<endl;
+
+        /*** ICP and iterated Kalman filter update ***/
+        if (feats_down_size < 5)
+        {
+            std::cout <<"No point after filter, skip this scan!"<<std::endl;
+            return false;
+        }
+        FilteredUndistortCloudInOdom->resize(feats_down_size);
+
+        /* if (true) // If you need to see map point, change to "if(1)" //zx delete this publish
+        {
+            PointVector().swap(ikdtree.PCL_Storage);
+            ikdtree.flatten(ikdtree.Root_Node, ikdtree.PCL_Storage, NOT_RECORD);
+            kdtreeCloud->clear();
+            kdtreeCloud->points = ikdtree.PCL_Storage;
+            // publish_map(pubLaserCloudMap);
+        }*/
+        vector<PointVector> Nearest_Points;
+        Nearest_Points.resize(feats_down_size);
+
+        /*** iterated state estimation ***/
+        double t_update_start = omp_get_wtime();
+        kf.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud, *ikdtree, Nearest_Points, 4, false);
+        double t_update_end = omp_get_wtime();
+        state_point = kf.get_x();
+        T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
+        T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix();  
+        T_odom_lidar  =  T_odom_b * T_b_lidar;  //TODO check this
+        //  double t_update_end = omp_get_wtime();
+        //   while(localization_wait){ // TODO check
+
+        //   }
+        localization_base.imu_state = state_point;
+        localization_base.base_time = lidar_end_time;
+        localization_base.update_time = lidar_end_time;
+        if (!param.localization_mode){
+            loop_closure_wait = true;
+            bool insert = back_end->saveKeyFramesAndFactor(T_odom_lidar,undistortCloud,lidar_end_time); // TODO add transform
+            if (insert){
+                cout<<"************* keyPosesCount: "<<back_end->getKeyframePoses().size()<<endl;
+                back_end->saveCurrentCloud(undistortCloud,getLidarInMap());//注意这里只是为了取水平面，后端还是在odom坐标系
                 {
                     std::lock_guard<std::mutex> lk(mtx_path);
-                    optimized_path.clear();
-                    std::vector<KeyPose> lidar_in_odom;
-                    lidar_in_odom = back_end->getKeyframePoses();
-                    for(int i = 0;i < lidar_in_odom.size();i++){//TODO max size
-                        optimized_path.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel);
-                    }
+                    unoptimized_path.emplace_back(getWheelInMap());//TODO max size
+                    if (unoptimized_path.size() > 200)
+                        unoptimized_path.pop_front();
                 }
-                if(LoopIsClosed)
-                   back_end->recontructIKdTree(*ikdtree,param.kdTreeReconstructRadius,param.kdTreeReconstructKeyFrameLeafSize,param.kdTreeReconstructPointLeafSize);
-                loop_closure_wait = false;
-            }else{
-                    {
-                        std::lock_guard<std::mutex> lk(mtx_path);
-                        unoptimized_path.emplace_back(getWheelInMap());//TODO max size
-                        if (unoptimized_path.size() > 200)
-                            unoptimized_path.pop_front();
-                    }             
-            }
-       //     std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
-            if (!param.localization_mode){
-
+                T_odom_lidar = back_end->getCurrentPose().pose;
+                T_odom_b = T_odom_lidar * T_b_lidar.inverse();
+                state_ikfom state_updated = kf.get_x();
+                state_updated.pos = T_odom_b.translation();
+                state_updated.rot =  Sophus::SO3d(T_odom_b.rotation());
+                kf.change_x(state_updated); 
             }
 
-
+            // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
+            bool LoopIsClosed = back_end->correctPoses();
             {
-                std::lock_guard<std::mutex> lk(mtx_odom_cloud);
-                UndistortCloudInOdom->resize(undistortCloud->points.size());
-                UndistortCloudInOdom = transformPointCloud(undistortCloud, T_odom_lidar); 
+                std::lock_guard<std::mutex> lk(mtx_path);
+                optimized_path.clear();
+                std::vector<KeyPose> lidar_in_odom;
+                lidar_in_odom = back_end->getKeyframePoses();
+                for(int i = 0;i < lidar_in_odom.size();i++){//TODO max size
+                    optimized_path.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel);
+                }
             }
-            t3 = omp_get_wtime();
+            if(LoopIsClosed)
+                back_end->recontructIKdTree(*ikdtree,param.kdTreeReconstructRadius,param.kdTreeReconstructKeyFrameLeafSize,param.kdTreeReconstructPointLeafSize);
+            loop_closure_wait = false;
+        }else{
+                {
+                    std::lock_guard<std::mutex> lk(mtx_path);
+                    unoptimized_path.emplace_back(getWheelInMap());//TODO max size
+                    if (unoptimized_path.size() > 200)
+                        unoptimized_path.pop_front();
+                }             
+        }
+    //     std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
+        if (!param.localization_mode){
 
-            /*** add the feature points to map kdtree ***/
-            FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud, T_odom_lidar);
-            
-            t4 = omp_get_wtime();
-            ikdtree->map_incremental(FilteredUndistortCloudInOdom,Nearest_Points,flg_EKF_inited);
-            t5 = omp_get_wtime();
-            {
-                frame_num++;
-                int kdtree_size_end = ikdtree->size();
-               // std::cout <<"??? " <<aver_time_consu * (frame_num - 1) / frame_num << " "<<(t5 - t0) / frame_num<< " "<<frame_num<< std::endl;
-                aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t5 - t0) / frame_num;
-                aver_time_icp = aver_time_icp * (frame_num - 1) / frame_num + (t_update_end - t_update_start) / frame_num;
+        }
 
-             //   printf("[ mapping ]: time: IMU process: %0.6f,kdtree size %d test %0.6f,test1 %0.6f, ave ICP: %0.6f, map incre: %0.6f ave total: %0.6f \n"
-             //   , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end, aver_time_icp, t5 - t4, aver_time_consu);
-            }
+
+        {
+            std::lock_guard<std::mutex> lk(mtx_odom_cloud);
+            UndistortCloudInOdom->resize(undistortCloud->points.size());
+            UndistortCloudInOdom = transformPointCloud(undistortCloud, T_odom_lidar); 
+        }
+        t3 = omp_get_wtime();
+
+        /*** add the feature points to map kdtree ***/
+        FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud, T_odom_lidar);
+        
+        t4 = omp_get_wtime();
+        ikdtree->map_incremental(FilteredUndistortCloudInOdom,Nearest_Points,flg_EKF_inited);
+        t5 = omp_get_wtime();
+        {
+            frame_num++;
+            int kdtree_size_end = ikdtree->size();
+            // std::cout <<"??? " <<aver_time_consu * (frame_num - 1) / frame_num << " "<<(t5 - t0) / frame_num<< " "<<frame_num<< std::endl;
+            aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t5 - t0) / frame_num;
+            aver_time_icp = aver_time_icp * (frame_num - 1) / frame_num + (t_update_end - t_update_start) / frame_num;
+
+            //   printf("[ mapping ]: time: IMU process: %0.6f,kdtree size %d test %0.6f,test1 %0.6f, ave ICP: %0.6f, map incre: %0.6f ave total: %0.6f \n"
+            //   , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end, aver_time_icp, t5 - t4, aver_time_consu);
+        }
         run_end =  omp_get_wtime();
         if (run_end - run_start > 0.1)
             printf("lidar slam lose rate");

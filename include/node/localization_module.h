@@ -60,12 +60,34 @@ using namespace Eigen;
 using namespace pcl;
 using namespace sensor_msgs;
 
+enum SlamCtrlCmd{
+    MAPPING_START           = 1000,  // 开始建图
+    MAPPING_POINT_BEGIN     = 2000,  // 设置起点
+    MAPPING_ELE_DELETE      = 3000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
+    MAPPING_POINT_END       = 4000,  // 设置终点
+    RELOCALIZATION_MAP      = 5000,  // 重定位->建图
+    RELOCALIZATION_LOC      = 6000,  // 重定位->定位
+    EXIT_LOCALIZATION       = 7000,  // 退出定位
+    EXIT_MAPPING            = 9000,  // 退出建图
+    CMD_MAX
+};
+
 enum MappingStatus{
-    MODULE_INACTIVE = 0,    // 初始状态
+    MAPPING_INACTIVE = 0,    // 初始状态
     MAPPING_STARTED = 1,    // 在建图中，等待设置起点
     STARTPOINT_SET = 2,     // 已设置起点，等待设置终点(或闭合)
-    ENDPOINT_SET            // 已设置终点（或已闭合），当前元素创建结束
+    ENDPOINT_SET  = 3       // 已设置终点（或已闭合），当前元素创建结束
 };
+
+enum SlamMode{
+    INACTIVE = 0,       // 未激活状态
+    MAPPING = 1,        // 建图模式
+    LOCALIZATION = 2    // 定位模式
+};
+
+
+#define CASE_STR(x) case x : return #x; break; 
+
 
 class LocalizationModule{
 public:
@@ -90,6 +112,10 @@ private:
     void relocalize_and_localization(bool module_mode, int map_id);
     void stop_localization();
 
+
+    void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
+    void release_slam_obj();
+
     // callback 
     void mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
@@ -104,6 +130,29 @@ private:
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
+
+    string print_MappingStatus(MappingStatus e){
+        switch (e){
+        CASE_STR(MAPPING_INACTIVE);
+        CASE_STR(MAPPING_STARTED);
+        CASE_STR(STARTPOINT_SET);
+        CASE_STR(ENDPOINT_SET);
+        default:
+            break;
+        }
+        return "UNKNOW_MappingStatus!";
+    }
+
+    string print_SlamMode(SlamMode e){
+        switch (e){
+        CASE_STR(INACTIVE);
+        CASE_STR(MAPPING);
+        CASE_STR(LOCALIZATION);
+        default:
+            break;
+        }
+        return "UNKNOW_SlamMode!";
+    }
 
 public:
 
@@ -134,7 +183,8 @@ private:
 
     // 建图 *******************************************
     bool running_slam_ = false;
-    MappingStatus slam_status_ = MODULE_INACTIVE; // if change to module_status_??
+    SlamMode slam_mode_ = INACTIVE;
+    MappingStatus mapping_status_ = MAPPING_INACTIVE; // if change to module_status_??
 
     int start_index_ = -1;
     int end_index_ = -1;

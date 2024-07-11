@@ -72,96 +72,183 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
 
     auto msg = msg_in;
     int ctrl_type = msg.data/1000 * 1000;
-    if (ctrl_type == 1000){//开始建图, CREATE_FIRST_ZONE in mapmanager
-        localization_mode_ = 0;
-        start_mapping(localization_mode_);
-        running_slam_ = true;
-        slam_status_ = MAPPING_STARTED;
-    }else if(ctrl_type == 2000){//设置起点
-        // if(slam_status_ == MAPPING_STARTED){
-        if(running_slam_ && slam_status_ >= MAPPING_STARTED){
+    auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
+
+    switch (curr_cmd){
+        case MAPPING_START:{
+            bool localization_mode = 0;
+            start_mapping(localization_mode);
+            break;
+        }case MAPPING_POINT_BEGIN:{
             mark_start_point();
-        }else{
-            ROS_INFO("please make sure: slam_status_ == MAPPING_STARTED!");
-        }
-        slam_status_ = STARTPOINT_SET;
-    }else if(ctrl_type == 3000){// 创建地图元素过程中，清除当前元素
-        if(slam_status_ == STARTPOINT_SET){
+            break;
+        }case MAPPING_ELE_DELETE:{
             clear_curr_element();
-        }
-        slam_status_ = MAPPING_STARTED;
-    }else if(ctrl_type == 4000){//设置终点
-        if(slam_status_ == STARTPOINT_SET){
+            break;
+        }case MAPPING_POINT_END:{
             int ele_id = msg.data % 1000;
             mark_end_point(ele_id);
-        }else{
-            ROS_INFO("please set start-point first!");
+            break;
+        }case RELOCALIZATION_MAP:{// 重定位，并开始建图，/// TODO/////////////////////////////////////
+            relocalize_and_mapping();
+            break;
+        }case EXIT_MAPPING:{
+            stop_mapping();
+            break;
+        }case RELOCALIZATION_LOC:{// 开始定位，（先重定位，再定位）
+            bool localization_mode = 1;
+            int map_id = msg.data % 1000;
+            relocalize_and_localization(localization_mode, map_id);
+            break;
+        }case EXIT_LOCALIZATION:{
+            stop_localization();
+            break;
+        }default:{
+            ROS_INFO("mapping ctrl msg: %u invalid!", msg.data);
+            break;
         }
-        slam_status_ = ENDPOINT_SET;
-    }else if(ctrl_type == 5000){// 重定位，并开始建图，/// TODO/////////////////////////////////////
-        relocalize_and_mapping();
-    }else if(ctrl_type == 9000){// 是否任何状态下均可退出建图 ？？？？
-        stop_mapping();
-        running_slam_ = false;
-        slam_status_ = MODULE_INACTIVE;
-    }else if(ctrl_type == 6000){// 开始定位，（先重定位，再定位）
-        localization_mode_ = 1;
-        int map_id = msg.data % 1000;
-        relocalize_and_localization(localization_mode_, map_id);
-        running_slam_ = true;
-        slam_status_ = MAPPING_STARTED;
-    }else if(ctrl_type == 7000){// 结束定位
-        stop_localization();
-    }else{
-        ROS_INFO("mapping ctrl msg: %u invalid!", msg.data);
     }
 
-    // delete map element , 不用操作
-
+    // if (ctrl_type == 1000){//开始建图, CREATE_FIRST_ZONE in mapmanager
+    //     bool localization_mode = 0;
+    //     start_mapping(localization_mode);
+    // }else if(ctrl_type == 2000){//设置起点
+    //     mark_start_point();
+    // }else if(ctrl_type == 3000){// 创建地图元素过程中，清除当前元素
+    //     clear_curr_element();
+    // }else if(ctrl_type == 4000){//设置终点
+    //     int ele_id = msg.data % 1000;
+    //     mark_end_point(ele_id);
+    // }else if(ctrl_type == 5000){// 重定位，并开始建图，/// TODO/////////////////////////////////////
+    //     relocalize_and_mapping();
+    // }else if(ctrl_type == 9000){// 是否任何状态下均可退出建图 ？？？？
+    //     stop_mapping();
+    // }else if(ctrl_type == 6000){// 开始定位，（先重定位，再定位）
+    //     bool localization_mode = 1;
+    //     int map_id = msg.data % 1000;
+    //     relocalize_and_localization(localization_mode, map_id);
+    // }else if(ctrl_type == 7000){// 结束定位
+    //     stop_localization();
+    // }else{
+    //     ROS_INFO("mapping ctrl msg: %u invalid!", msg.data);
+    // }
 }
 
-void LocalizationModule::start_mapping(bool module_mode){
+void LocalizationModule::start_mapping(bool localization_mode){
     // TODO: 启动建图前，需要确定哪些参数？？
     // localization_mode_;
     // offline_mode_;
     // 初始位姿？
-    if (running_slam_ ){
-        start_index_ = -1;
-        end_index_ = -1;
-    }else{
-        ROS_INFO("create lidar_slam, slam_mode: start mapping");
-        // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
-        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
-        ROS_INFO("create lidar_slam success");
-        start_index_ = -1;
-        end_index_ = -1;
+
+    ROS_INFO("trying to create lidar_slam, localization_mode: %u", localization_mode);
+
+    std::string workpath = curr_dir_+std::string("/");
+    if (!running_slam_){// slam 未激活
+        ROS_INFO("slam not running now");
+        make_slam_obj(workpath, localization_mode, offline_mode_);
         running_slam_ = true;
+        localization_mode_ = 0;
+        mapping_status_ = MAPPING_STARTED;//////////////// TODO, 状态调整或细化？加入定位？
+        return;
+    }else if (running_slam_ && slam_mode_==MAPPING){// slam 已经启动，且状态为: mapping 
+        ROS_INFO("skip, already running mapping now");//////////////////// TODO 要不要重置 start_index_ end_index_ ？？？
+        // reset start & end point
+        // ROS_INFO("running mapping now, reset start and end point");
+        // start_index_ = -1;
+        // end_index_ = -1;
+        return;
+    }else if (running_slam_ && slam_mode_==LOCALIZATION){// slam 已经启动，但状态为: localization
+        ROS_INFO("skip, running localizing now, please stop localizing first");
+        // stop_localization();
+        // make_slam_obj(workpath, localization_mode, offline_mode_);
+        // mapping_status_ = MAPPING_STARTED;//////////////// TODO
+        return;
+    }else{
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
+        return;
     }
 }
 
+
 void LocalizationModule::mark_start_point(){
-    // TODO：标记起点的 POSE
-    start_index_ = slam_->get_curr_pose_index();
-    cout << "start_index_: "<< start_index_<<endl;
+    // 标记起点的 POSE
+    if(running_slam_ && slam_mode_==MAPPING && 
+        (mapping_status_ == MAPPING_STARTED || mapping_status_ == ENDPOINT_SET)){
+        start_index_ = slam_->get_curr_pose_index();
+        end_index_ = -1;
+        ROS_INFO("start_index: %d", start_index_);
+        ROS_INFO("end_index  : %d", end_index_);
+        mapping_status_ = STARTPOINT_SET;
+    }else if(!running_slam_){
+        ROS_INFO("skip, not running slam !");
+    }else if(running_slam_ && slam_mode_==LOCALIZATION){
+        ROS_INFO("skip, running slam (mode: localization) !");
+    } else {
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
+    }
 }
 
 void LocalizationModule::mark_end_point(int save_id){
-    // TODO：当前地图元素完成，判断是否保存点云地图
-    end_index_ = slam_->get_curr_pose_index();
-    // std::string pcd_path = curr_dir_  +std::string("/lib/map/") + std::to_string(save_id);
-    std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
-    if (save_id > 0){
-        slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
-    }
+    // 当前地图元素完成，判断是否保存点云地图
+    if(running_slam_ && slam_mode_==MAPPING && mapping_status_ == STARTPOINT_SET){
+        end_index_ = slam_->get_curr_pose_index();
+        mapping_status_ = ENDPOINT_SET;
+        ROS_INFO("start_index: %d", start_index_);
+        ROS_INFO("end_index  : %d", end_index_);
+        
+        std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
+        if (save_id > 0){ // save_id == 0, 表示是禁区， 不保存小的 pcd
+            ROS_INFO("saving cloud map of current element ...");
+            slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
+        }
 
-    cout << "start_index_: "<< start_index_<<endl;
-    cout << "end_index_: "<< end_index_<<endl;
+    }else if(running_slam_ && slam_mode_==MAPPING && mapping_status_ != STARTPOINT_SET){
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("skip, 'mapping_status==STARTPOINT_SET' required, please set start-point first!");
+    }else{
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
+    }
 }
 
 void LocalizationModule::clear_curr_element(){
-    // TODO：清除当前正在创建的元素，清除 标记的Pose
-    start_index_ = -1;
-    end_index_ = -1;
+    // 清除当前正在创建的元素，清除 标记的Pose
+
+    if(running_slam_ && (slam_mode_==MAPPING) && (mapping_status_ == STARTPOINT_SET)){
+        start_index_ = -1;
+        end_index_ = -1;
+        mapping_status_ = MAPPING_STARTED;
+        ROS_INFO("reset start & end point!");
+        ROS_INFO("start_index: %d", start_index_);
+        ROS_INFO("end_index  : %d", end_index_);
+        return;
+    }else if (!running_slam_){
+        ROS_INFO("skip, not running slam !");
+        return;
+    }else if(running_slam_ && (slam_mode_ == LOCALIZATION)){
+        ROS_INFO("skip, running slam (mode: localization) !");
+        return;
+    }else if(running_slam_ && (slam_mode_==MAPPING) && (mapping_status_ != STARTPOINT_SET)){
+        ROS_INFO("skip, please make sure: slam_status == STARTPOINT_SET !");
+        return;
+    }else{
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
+    }
 }
 
 void LocalizationModule::relocalize_and_mapping(){
@@ -170,33 +257,52 @@ void LocalizationModule::relocalize_and_mapping(){
 
 void LocalizationModule::stop_mapping(){
     /////////////////////////////////////////////////////
-    if (!running_slam_){
-        cout << " not running slam, skip, return !"<<endl;
+    if(running_slam_ && slam_mode_==MAPPING && 
+        (mapping_status_ == ENDPOINT_SET || mapping_status_ == MAPPING_STARTED)){
+
+        //////////////////////// TODO， 添加保存判断，是否没有地图元素就不保存 GlobalMap.pcd
+
+        // save global map  (save all to one single map file)
+        ROS_INFO("saving global map");
+        std::string pcd_path = curr_dir_ + std::string("/map/");
+        slam_->save_map(pcd_path, 0.1, 0, 0);
+
+        ROS_INFO("start stop mapping");
+        // control_status_.reset = true;
+        running_slam_ = false;
+        mapping_status_ = MAPPING_INACTIVE;
+        sleep(1);
+        lidar_slam::LidarSlam *temp_slam = slam_.release();
+        delete temp_slam;
+        temp_slam = nullptr;
+        ROS_INFO("mapping stopped !");
+    }else if (running_slam_ && slam_mode_==MAPPING && mapping_status_ == STARTPOINT_SET){
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("skip, please finish current map-element, or delete it first !");
+    }else if (!running_slam_){
+        cout << "skip, not running slam !"<<endl;
         return;
+    }else if(running_slam_ && slam_mode_==LOCALIZATION){
+        ROS_INFO("skip, running slam (mode: localization)!");
+        return;
+    }else {
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
     }
 
-    // save global map  (save all to one single map file)
-    std::string pcd_path = curr_dir_ + std::string("/map/");
-    slam_->save_map(pcd_path, 0.1, 0, 0);
-
-    /////////////////////////-debug-////////////////////////////
+    /////////////////////////-used when testing-////////////////////////////
     // int save_id = 1;
     // std::string pcd_path = curr_dir_ + std::string("/map/") + std::to_string(save_id)+std::string("/");
     // // 判断 slam_ 
     // if (save_id > 0){
     //     slam_->save_map(pcd_path, 0.1, 0, 0);
     // }
-
     /////////////////////////////////////////////////////
 
-
-    ROS_INFO("start stop mapping");
-    // control_status_.reset = true;
-    running_slam_ = false;
-    sleep(1);
-    // TODO：退出
-
-    // // used when test 
+    // //////////////////-debug-////////////////////////
     // const std::string work_path = curr_dir_+std::string("/");
     // // slam_->reset(work_path,localization_mode_,offline_mode_);
     // bool flag = (slam_==nullptr);
@@ -210,48 +316,86 @@ void LocalizationModule::stop_mapping(){
     // ROS_INFO("delete successfully");
     // flag = (slam_==nullptr);
     // cout<<"if slam_==nullptr: "<< flag <<endl;
+    ////////////////////////////////////////////////////////////
 
-    lidar_slam::LidarSlam *temp_slam = slam_.release();
-    delete temp_slam;
-    temp_slam = nullptr;
-    ROS_INFO("mapping stopped !");
+    return;
+
 }
 
-void LocalizationModule::relocalize_and_localization(bool module_mode, int map_id){
+void LocalizationModule::relocalize_and_localization(bool localization_mode, int map_id){
     // 
-    ROS_INFO("create lidar_slam, slam_mode: relocalize_and_localization");
-    if(running_slam_){
+    ROS_INFO("trying to create lidar_slam, localization_mode: %u", localization_mode);
+    std::string workpath = curr_dir_+std::string("/");
+    std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
 
-    }else{
-        // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),module_mode,offline_mode_);	
-        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),module_mode,offline_mode_);	
-        ROS_INFO("create lidar_slam success");
-        start_index_ = -1;
-        end_index_ = -1;
-
-        std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
+    if(!running_slam_){
+        // slam
+        make_slam_obj(workpath, localization_mode, offline_mode_);
+        // 加载地图
+        ROS_INFO("load map dir: %s", pcd_path.c_str());
         slam_ -> load_map(pcd_path);
-
         running_slam_ = true;
+        localization_mode_ = 1;
+    }else if(running_slam_ && slam_mode_ == MAPPING){	
+        ROS_INFO("skip, running mapping now, please stop mapping first!");
+    }else{
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
     }
 }
 
-
 void LocalizationModule::stop_localization(){
-    // 
-    ROS_INFO("start stop mapping");
-    // control_status_.reset = true;
-    running_slam_ = false;
-    sleep(1);
+    if(running_slam_ && slam_mode_==LOCALIZATION){
+        running_slam_ = false;
+        // control_status_.reset = true;
+        sleep(1);
+        release_slam_obj();
+    }else if (!running_slam_){
+        ROS_INFO("skip, not running slam, return !");
+        return;
+    }else if(running_slam_ && slam_mode_==MAPPING){
+        ROS_INFO("skip, running slam (mode: mapping), return !");
+        return;
+    }else {
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("****************************");
+    }
+}
 
+void LocalizationModule::make_slam_obj(string work_path, bool localization_mode, bool offline_mode){
+    ROS_INFO("creating lidar_slam ");
+
+    slam_ = std::make_unique<lidar_slam::LidarSlam>(work_path, localization_mode, offline_mode);
+    start_index_ = -1;
+    end_index_ = -1;
+    localization_mode_ = localization_mode;
+
+    // running_slam_ = true; // 在 Start_mapping 和 start_localization 中修改状态
+    if(localization_mode){
+        slam_mode_ = LOCALIZATION;
+    }else{
+        slam_mode_ = MAPPING;
+    }
+    ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+    ROS_INFO("create lidar_slam successfully");
+}
+
+void LocalizationModule::release_slam_obj(){
+    ROS_INFO("start stopping localization");
     lidar_slam::LidarSlam *temp_slam = slam_.release();
     delete temp_slam;
     temp_slam = nullptr;
+
+    start_index_ = -1;
+    end_index_ = -1;
+    mapping_status_ = MAPPING_INACTIVE;
     ROS_INFO("localization stopped !");
-
-    running_slam_ = false;
 }
-
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
@@ -274,7 +418,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         control_status_.reset = false;
 
     }
-
+    
+    // ROS_INFO("trying to get loaded map...");
     if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
         // ROS_INFO("load map");
         sleep(1);
@@ -332,7 +477,6 @@ void LocalizationModule::command_cbk(const std_msgs::Int32 &msg_in){
         default:
            break;
     }
-
 }
 
 // void LocalizationModule::livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in){
