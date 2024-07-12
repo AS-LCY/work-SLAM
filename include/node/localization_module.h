@@ -106,14 +106,15 @@ private:
     void mark_start_point();
     void mark_end_point(int save_id);
     void clear_curr_element();
-    void relocalize_and_mapping();
+    void start_second_mapping(bool localization_mode, int map_id);
     void stop_mapping();
 
-    void relocalize_and_localization(bool module_mode, int map_id);
+    void start_localization(bool module_mode, int map_id);
     void stop_localization();
 
+    void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
 
-    void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
+    // void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
     void release_slam_obj();
 
     // callback 
@@ -186,6 +187,8 @@ private:
     SlamMode slam_mode_ = INACTIVE;
     MappingStatus mapping_status_ = MAPPING_INACTIVE; // if change to module_status_??
 
+    // 二次建图
+    bool second_mapping_ = false;
     int start_index_ = -1;
     int end_index_ = -1;
 

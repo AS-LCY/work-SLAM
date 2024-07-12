@@ -24,13 +24,13 @@
 // }
 
 namespace lidar_slam {
-LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool offline){
+LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool offline,bool second_mapping){
     // if (!offline){
     //     start_driver(work_path);
     // }
     
 
-    LidarSlam::reset(work_path,localization_mode,offline);
+    LidarSlam::reset(work_path,localization_mode,offline,second_mapping);
 
      
 }
@@ -86,7 +86,7 @@ LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool off
 //   livox_node.imudata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::ImuDataPollThread, &livox_node);
 // }
 
-void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline){
+void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline, bool second_mapping){
     reseting = true;
     
     sleep(1);
@@ -131,6 +131,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
         std::cout<<"read config error!"<<std::endl;
     }
 
+    sec_mapping_ = second_mapping;
     param.localization_mode = localization_mode;
     param.offline_mode = offline;
     param.log_keep_time = 500;
@@ -161,7 +162,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
 
     // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
     param.load_map_path = work_path + std::string("map/");//这个参数现在未使用
-    std::cout << "load map path: " <<  param.load_map_path << std::endl;
+    // std::cout << "load map path: " <<  param.load_map_path << std::endl;
     param.cloud_leaf_size = config["mapping"]["cloud_leaf_size"].as<double>();
     param.map_leaf_size = config["ikdtree"]["map_leaf_size"].as<double>();
     param.cube_len = config["ikdtree"]["cube_len"].as<double>();
@@ -200,18 +201,25 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
         thread->join();
         show_thread->join();
         thread_run = true;
+        if(second_mapping){
+            second_mapping_thread->join();
+        }
     }
 
     
     reseting = false;
     if(!param.localization_mode){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
+        if (second_mapping){
+            second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
+        }
     }
     else{
         // localization->loadMap(param.load_map_path);
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
     }
     show_thread.reset(new std::thread(&LidarSlam::showThread, this));  
+    cout << "slam reset finished"<<endl;
 }
 
 bool LidarSlam::sync_packages(MeasureGroup &meas) 
@@ -341,6 +349,52 @@ void LidarSlam::localizationThread()
     }
 }
 
+
+void LidarSlam::relocalizationForMappingThread(){
+    const int frequency = 1.0; // 频率为1Hz
+    const std::chrono::milliseconds period(1000 / frequency);
+
+    while (thread_run&&reseting == false)
+    {
+        auto start = std::chrono::steady_clock::now();
+        //WorkState state;
+      //  pcl::PointCloud<PointType>::Ptr temp(new pcl::PointCloud<PointType>());//TODO change to xyzi
+        if (!globalLocalizationSuccess){
+
+            // check 
+            if(!getLoadMap()){
+                cout << "globalLocalization failed: map not ready ... "<<endl;
+            }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                cout << "globalLocalization failed: cloud empty ... "<<endl;
+            // check end
+            }else{
+                pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+                {
+                    std::lock_guard<std::mutex> lk(mtx_odom_cloud);
+                    pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
+                }
+
+                // cout << "start globalLocalization ... "<<endl;
+
+                //state.state("lost");
+                mutex mtx_lidar_cloud;
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
+                cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
+
+            }
+
+
+        }
+
+        auto end = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        if (elapsed < period)
+        {
+            std::this_thread::sleep_for(period - elapsed);
+        }
+    }
+}
+
 void LidarSlam::showThread()
 {
     const int frequency = 1.0; // 频率为1Hz
@@ -357,7 +411,6 @@ void LidarSlam::showThread()
         }
     }
 }
-
 
 void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in)
 {
@@ -409,6 +462,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
 }
+
 void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
 {
     PointCloudXYZI::Ptr wheel_cloud(new PointCloudXYZI());
@@ -464,6 +518,7 @@ void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
         }
     }
 }
+
 void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
 {
     if (reseting)
@@ -520,6 +575,7 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
 }
+
 void LidarSlam::image_cbk(const cv::Mat& img,double time)
 {
   //  printf("image in %f \n",time);
@@ -692,6 +748,7 @@ bool LidarSlam::run()
         bool flg_EKF_inited = (Measures.lidar_beg_time - first_lidar_time) < 0.1 ? false : true;
 
         /*** Segment the map in lidar FOV ***/
+        // 动态调整局部地图,在拿到eskf前馈结果后
         ikdtree->lasermap_fov_segment(T_odom_lidar.translation()); // 根据lidar在W系下的位置，重新确定局部地图的包围盒角点，移除远端的点
         t2 = omp_get_wtime();
         /*** downsample the feature points in a scan ***/

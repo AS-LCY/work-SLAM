@@ -65,21 +65,26 @@ struct Localization_base{
 class LidarSlam
 {
     public:
-        LidarSlam(const std::string work_path,bool localization_mode,bool offline);
+        LidarSlam(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
         LidarSlam()= delete;
         LidarSlam(const LidarSlam&) = delete; 
-        void reset(const std::string work_path,bool localization_mode,bool offline);
-        void start_driver(const std::string work_path);
+        void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
+        // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
-         thread_run = false;
-         thread->join();
-         thread.reset(nullptr);
-         show_thread->join();
-         show_thread.reset(nullptr);
-        //  LivoxLidarSdkUninit();// disable start_driver of lidar
+            cout<<"destruct"<<endl;
+            thread_run = false;
+            thread->join();
+            thread.reset(nullptr);
+            show_thread->join();
+            show_thread.reset(nullptr);
+            if(sec_mapping_){
+                second_mapping_thread->join();
+                second_mapping_thread.reset(nullptr);
+            }
 
-        // show_thread->join();
-        // show_thread.reset(nullptr);
+            //  LivoxLidarSdkUninit();// disable start_driver of lidar
+
+            cout<<"destruct end"<<endl;
          };
         bool run();
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
@@ -94,8 +99,8 @@ class LidarSlam
             }else{
                 return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap(), start_index, end_index);
             }
-                
         };
+       
         bool load_map(string directory){
             globalLocalizationSuccess = false;
             sleep(1);
@@ -138,9 +143,12 @@ class LidarSlam
            return back_end->getloopIndex();
         }
         Eigen::Isometry3d getOdomToMap(){
-           if (param.localization_mode)
+            if (param.localization_mode)
                return localization->getOdomToMap();
             else{
+                if (sec_mapping_){
+                    return localization->getOdomToMap();
+                }
                 Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
                 transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
                 return transform;
@@ -255,6 +263,7 @@ class LidarSlam
         std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree= nullptr;
         std::unique_ptr<std::thread> thread = nullptr;
         std::unique_ptr<std::thread> show_thread = nullptr; 
+        std::unique_ptr<std::thread> second_mapping_thread = nullptr; 
         mutex mtx_buffer;
         mutex mtx_odom_cloud;
         mutex mtx_lidar_cloud;
@@ -276,12 +285,13 @@ class LidarSlam
         PointCloudXYZI::Ptr kdtreeCloud;
         PointCloudXYZI::Ptr ObstacleCloud;
         PointCloudXYZI::Ptr FilteredObstacleCloud;
-
+        bool sec_mapping_ = false;
 
 
         bool sync_packages(MeasureGroup &meas);
         void loopClosureThread();
         void localizationThread();
+        void relocalizationForMappingThread();
         void showThread();
         void delete_log_file(double keep_time);
 

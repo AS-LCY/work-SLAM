@@ -79,31 +79,41 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
             bool localization_mode = 0;
             start_mapping(localization_mode);
             break;
-        }case MAPPING_POINT_BEGIN:{
+        }
+        case MAPPING_POINT_BEGIN:{
             mark_start_point();
             break;
-        }case MAPPING_ELE_DELETE:{
+        }
+        case MAPPING_ELE_DELETE:{
             clear_curr_element();
             break;
-        }case MAPPING_POINT_END:{
+        }
+        case MAPPING_POINT_END:{
             int ele_id = msg.data % 1000;
             mark_end_point(ele_id);
             break;
-        }case RELOCALIZATION_MAP:{// 重定位，并开始建图，/// TODO/////////////////////////////////////
-            relocalize_and_mapping();
+        }
+        case RELOCALIZATION_MAP:{// 重定位，并开始建图，/// TODO/////////////////////////////////////
+            bool localization_mode = 0;
+            int map_id = msg.data % 1000;
+            start_second_mapping(localization_mode, map_id);
             break;
-        }case EXIT_MAPPING:{
+        }
+        case EXIT_MAPPING:{
             stop_mapping();
             break;
-        }case RELOCALIZATION_LOC:{// 开始定位，（先重定位，再定位）
+        }
+        case RELOCALIZATION_LOC:{// 开始定位，（先重定位，再定位）
             bool localization_mode = 1;
             int map_id = msg.data % 1000;
-            relocalize_and_localization(localization_mode, map_id);
+            start_localization(localization_mode, map_id);
             break;
-        }case EXIT_LOCALIZATION:{
+        }
+        case EXIT_LOCALIZATION:{
             stop_localization();
             break;
-        }default:{
+        }
+        default:{
             ROS_INFO("mapping ctrl msg: %u invalid!", msg.data);
             break;
         }
@@ -120,13 +130,13 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     //     int ele_id = msg.data % 1000;
     //     mark_end_point(ele_id);
     // }else if(ctrl_type == 5000){// 重定位，并开始建图，/// TODO/////////////////////////////////////
-    //     relocalize_and_mapping();
+    //     start_second_mapping();
     // }else if(ctrl_type == 9000){// 是否任何状态下均可退出建图 ？？？？
     //     stop_mapping();
     // }else if(ctrl_type == 6000){// 开始定位，（先重定位，再定位）
     //     bool localization_mode = 1;
     //     int map_id = msg.data % 1000;
-    //     relocalize_and_localization(localization_mode, map_id);
+    //     start_localization(localization_mode, map_id);
     // }else if(ctrl_type == 7000){// 结束定位
     //     stop_localization();
     // }else{
@@ -145,7 +155,8 @@ void LocalizationModule::start_mapping(bool localization_mode){
     std::string workpath = curr_dir_+std::string("/");
     if (!running_slam_){// slam 未激活
         ROS_INFO("slam not running now");
-        make_slam_obj(workpath, localization_mode, offline_mode_);
+        bool second_mapping = false;
+        make_slam_obj(workpath, localization_mode, offline_mode_, second_mapping);
         running_slam_ = true;
         localization_mode_ = 0;
         mapping_status_ = MAPPING_STARTED;//////////////// TODO, 状态调整或细化？加入定位？
@@ -251,8 +262,33 @@ void LocalizationModule::clear_curr_element(){
     }
 }
 
-void LocalizationModule::relocalize_and_mapping(){
-    // TODO：重定位
+void LocalizationModule::start_second_mapping(bool localization_mode, int map_id){
+    // 重定位
+    ROS_INFO("trying to create lidar_slam, localization_mode: %u", localization_mode);
+    std::string workpath = curr_dir_+std::string("/");
+    std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
+
+    if(!running_slam_){
+        // slam
+        bool second_mapping  = true;
+        make_slam_obj(workpath, localization_mode, offline_mode_, second_mapping);
+        // 加载地图
+        ROS_INFO("load map dir: %s", pcd_path.c_str());
+        slam_ -> load_map(pcd_path);
+        second_mapping_ = true;
+        running_slam_ = true;
+        localization_mode_ = 1;
+        mapping_status_ = MAPPING_STARTED;
+    }else if(running_slam_ && slam_mode_ == MAPPING){	
+        ROS_INFO("skip, running mapping now, please stop mapping first!");
+    }else{
+        ROS_INFO("skip, slam status error!");
+        ROS_INFO("running_slam: %u", running_slam_);
+        ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
+        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("****************************");
+    }
+
 }
 
 void LocalizationModule::stop_mapping(){
@@ -272,9 +308,7 @@ void LocalizationModule::stop_mapping(){
         running_slam_ = false;
         mapping_status_ = MAPPING_INACTIVE;
         sleep(1);
-        lidar_slam::LidarSlam *temp_slam = slam_.release();
-        delete temp_slam;
-        temp_slam = nullptr;
+        release_slam_obj();
         ROS_INFO("mapping stopped !");
     }else if (running_slam_ && slam_mode_==MAPPING && mapping_status_ == STARTPOINT_SET){
         ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
@@ -322,7 +356,7 @@ void LocalizationModule::stop_mapping(){
 
 }
 
-void LocalizationModule::relocalize_and_localization(bool localization_mode, int map_id){
+void LocalizationModule::start_localization(bool localization_mode, int map_id){
     // 
     ROS_INFO("trying to create lidar_slam, localization_mode: %u", localization_mode);
     std::string workpath = curr_dir_+std::string("/");
@@ -330,7 +364,8 @@ void LocalizationModule::relocalize_and_localization(bool localization_mode, int
 
     if(!running_slam_){
         // slam
-        make_slam_obj(workpath, localization_mode, offline_mode_);
+        bool second_mapping=false;
+        make_slam_obj(workpath, localization_mode, offline_mode_, second_mapping);
         // 加载地图
         ROS_INFO("load map dir: %s", pcd_path.c_str());
         slam_ -> load_map(pcd_path);
@@ -353,6 +388,7 @@ void LocalizationModule::stop_localization(){
         // control_status_.reset = true;
         sleep(1);
         release_slam_obj();
+        ROS_INFO("localization stopped !");
     }else if (!running_slam_){
         ROS_INFO("skip, not running slam, return !");
         return;
@@ -367,10 +403,10 @@ void LocalizationModule::stop_localization(){
     }
 }
 
-void LocalizationModule::make_slam_obj(string work_path, bool localization_mode, bool offline_mode){
+void LocalizationModule::make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping){
     ROS_INFO("creating lidar_slam ");
 
-    slam_ = std::make_unique<lidar_slam::LidarSlam>(work_path, localization_mode, offline_mode);
+    slam_ = std::make_unique<lidar_slam::LidarSlam>(work_path, localization_mode, offline_mode, sec_mapping);
     start_index_ = -1;
     end_index_ = -1;
     localization_mode_ = localization_mode;
@@ -380,21 +416,24 @@ void LocalizationModule::make_slam_obj(string work_path, bool localization_mode,
         slam_mode_ = LOCALIZATION;
     }else{
         slam_mode_ = MAPPING;
+        mapping_status_ = MAPPING_STARTED;
     }
     ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
     ROS_INFO("create lidar_slam successfully");
 }
 
 void LocalizationModule::release_slam_obj(){
-    ROS_INFO("start stopping localization");
+    ROS_INFO("start stopping lidar_slam");
     lidar_slam::LidarSlam *temp_slam = slam_.release();
+    ROS_INFO("release successfully");
     delete temp_slam;
     temp_slam = nullptr;
+    ROS_INFO("delete successfully");
 
     start_index_ = -1;
     end_index_ = -1;
     mapping_status_ = MAPPING_INACTIVE;
-    ROS_INFO("localization stopped !");
+    ROS_INFO("lidar_slam stopped !");
 }
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
@@ -406,6 +445,11 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         return;
     }
 
+    // if(second_mapping_ && !slam_->isGloalLocalizationSuccess()){
+    //     ROS_INFO("processing GloalLocalization ...");
+    //     return;
+    // }
+
 
     if (control_status_.reset){
         sleep(1);
@@ -413,7 +457,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         sleep(1);
         localization_mode_ = control_status_.localizationMode;
         // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),localization_mode_,offline_mode_);
-        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),localization_mode_,offline_mode_);
+        slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),localization_mode_,offline_mode_, 0);
         show_load_map_ = 0;
         control_status_.reset = false;
 
@@ -471,7 +515,7 @@ void LocalizationModule::command_cbk(const std_msgs::Int32 &msg_in){
             // slam_ -> save_map(curr_dir_+std::string("/lib/map/"),0.1,0,0);
             break;
         case 1:
-            printf("load map\n");
+            printf("load map\n"); // not in use
             slam_ -> load_map(curr_dir_+std::string("/map/"));
             // slam_ -> load_map(curr_dir_+std::string("/lib/map/"));
             break;
@@ -689,7 +733,7 @@ void LocalizationModule::publish_optimized_path(const std::vector<Eigen::Isometr
 		msg.pose.position.z = path[i].translation().z();
 		/*Eigen::Quaterniond quaternion = path[i].rotation();
 		msg.pose.orientation.x = quaternion.x();
-		msg.pose.orientation.y = quaternion.y();
+		msg.pose.orientation.y = quaternion.y();localization_mode_
 		msg.pose.orientation.z = quaternion.z();
 		msg.pose.orientation.w = quaternion.w();*/
 		optimized_path_msg.poses.push_back(msg);

@@ -271,11 +271,11 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         icp.align(*unused_result, init_guess.cast<float>());
         // 未收敛，或者匹配不够好
         if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
-            std::cout << "globalLocalization icp fail with score"<< icp.getFitnessScore()<<std::endl;
+            std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
             return false;
         }
         else{
-            std::cout << "globalLocalization success with score" << icp.getFitnessScore() << std::endl;
+            std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
         }   
         Eigen::Isometry3d lidar_in_map;
         lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
