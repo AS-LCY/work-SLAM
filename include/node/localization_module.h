@@ -215,6 +215,7 @@ private:
     ros::Publisher pubUnoptimizedPath; 
     ros::Publisher pubLoopConstraintEdge;
     ros::Publisher pubOdomAftMapped;
+    ros::Publisher pubLidarInMap;
     ros::Publisher pubLoadMap;
     ros::Publisher pubKeyframePose;
     ros::Publisher pubRgbCloud;

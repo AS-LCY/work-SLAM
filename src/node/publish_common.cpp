@@ -61,6 +61,35 @@ void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
 }
 
 
+void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+{
+	nav_msgs::Odometry odomAftMapped;
+    odomAftMapped.header.frame_id = frameid;
+    odomAftMapped.child_frame_id = child_frameid;
+    odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
+    odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
+    odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
+    odomAftMapped.pose.pose.orientation.x = quaternion.x();
+    odomAftMapped.pose.pose.orientation.y = quaternion.y();
+    odomAftMapped.pose.pose.orientation.z = quaternion.z();
+    odomAftMapped.pose.pose.orientation.w = quaternion.w();
+    pubOdomAftMapped.publish(odomAftMapped);
+    static tf::TransformBroadcaster br;
+    tf::Transform transform;
+    tf::Quaternion q;
+    transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
+                                    odomAftMapped.pose.pose.position.y,
+                                    odomAftMapped.pose.pose.position.z));
+    q.setW(odomAftMapped.pose.pose.orientation.w);
+    q.setX(odomAftMapped.pose.pose.orientation.x);
+    q.setY(odomAftMapped.pose.pose.orientation.y);
+    q.setZ(odomAftMapped.pose.pose.orientation.z);
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, frameid, child_frameid));
+}
+
 void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;

@@ -36,6 +36,7 @@ LocalizationModule::LocalizationModule(const std::string work_path){
 	pubLoopConstraintEdge = nh_.advertise<visualization_msgs::MarkerArray>("/loop_closure_constraints", 1);
     pubKeyframePose = nh_.advertise<visualization_msgs::MarkerArray>("/key_frame_pose", 1);
 	pubOdomAftMapped = nh_.advertise<nav_msgs::Odometry>("/Odometry", 100000);
+	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100000);
     pubLoadMap = nh_.advertise<sensor_msgs::PointCloud2>("/Load_map", 100000);
     pubRgbCloud= nh_.advertise<sensor_msgs::PointCloud2>("rgb_cloud", 1);
   //  image_pub = nh_.advertise<sensor_msgs::Image>("fisheye_image", 1);
@@ -500,6 +501,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
     if(!localization_mode_){
     // pub_rgb_map(slam->getCurrentRGBMap());
+        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
+    }else{
+        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
+        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
     }
     if (show_rviz_){
         publish_static_transform(slam_->getWheelInLidar());

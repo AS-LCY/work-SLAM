@@ -68,6 +68,7 @@ void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
 
 
 void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped);
+void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher publisher);
 
 void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
 

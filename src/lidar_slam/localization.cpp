@@ -83,7 +83,7 @@ bool Localization::loadMap(std::string path){
         KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
         accumulateMap_->points.clear();
         accumulateKeypose_.clear();
-        scManager.reset(new SCManager());
+        scManager.reset(new SCManager());/////////////// TODO，是否每次加载地图都需要 重置ScanContex，即重定位
         for (auto filename:files){
            std::ifstream file(filename);
            if (!file) {
