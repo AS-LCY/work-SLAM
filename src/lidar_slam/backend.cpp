@@ -96,14 +96,14 @@ void BackEnd::addLoopFactor()
 bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,PointCloudXYZI::Ptr lidar_cloud,double time)
 {
 
-    //  计算当前帧与前一帧位姿变换，如果变化太小，不设为关键帧，反之设为关键帧
+    // 计算当前帧与前一帧位姿变换，如果变化太小，不设为关键帧，反之设为关键帧
     if (saveFrame(transformTobeMapped) == false)
         return false;
     // 激光里程计因子(from fast-lio),  输入的是frame_relative pose  帧间位姿(body 系下)
     addOdomFactor(transformTobeMapped);
-    // GPS因子 (UTM -> WGS84)
-  //  addGPSFactor();
-    // 闭环因子 (rs-loop-detect)  基于欧氏距离的检测
+    //// GPS因子 (UTM -> WGS84)
+    // addGPSFactor();
+    //// 闭环因子 (rs-loop-detect)  基于欧氏距离的检测
     addLoopFactor();
     // 执行优化
     isam->update(gtSAMgraph, initialEstimate);
@@ -144,23 +144,23 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
     thisPose6D.yaw = latestEstimate.rotation().yaw();
     KeyPoses.push_back(thisPose6D);
     mtxPose.unlock();
- //   saveCurrentCloud(lidar_cloud,thisPose6D.pose);
+    // saveCurrentCloud(lidar_cloud,thisPose6D.pose);
     return true;
-    //ROS_INFO("key pose %d ",cloudKeyPoses6D->size());
+    // ROS_INFO("key pose %d ",cloudKeyPoses6D->size());
     // 位姿协方差
- //   poseCovariance = isam->marginalCovariance(isamCurrentEstimate.size() - 1);  // TODO gps used
+    // poseCovariance = isam->marginalCovariance(isamCurrentEstimate.size() - 1);  // TODO gps used
 
-    // ESKF状态和方差  更新
-  //  state_ikfom state_updated = kf.get_x(); //  获取cur_pose (还没修正)  // TODO update state getCurrentPose
-  //  Eigen::Vector3d pos(latestEstimate.translation().x(), latestEstimate.translation().y(), latestEstimate.translation().z());
-   // Eigen::Quaterniond q = EulerToQuat(latestEstimate.rotation().roll(), latestEstimate.rotation().pitch(), latestEstimate.rotation().yaw());
+    //// ESKF状态和方差  更新
+    // state_ikfom state_updated = kf.get_x(); //  获取cur_pose (还没修正)  // TODO update state getCurrentPose
+    // Eigen::Vector3d pos(latestEstimate.translation().x(), latestEstimate.translation().y(), latestEstimate.translation().z());
+    // Eigen::Quaterniond q = EulerToQuat(latestEstimate.rotation().roll(), latestEstimate.rotation().pitch(), latestEstimate.rotation().yaw());
 
-    //  更新状态量
-   // state_updated.pos = pos;
-   // state_updated.rot =  Sophus::SO3d(q);
-   // state_point = state_updated; // 对state_point进行更新，state_point可视化用到
+    // //  更新状态量
+    // state_updated.pos = pos;
+    // state_updated.rot =  Sophus::SO3d(q);
+    // state_point = state_updated; // 对state_point进行更新，state_point可视化用到
 
-  //  kf.change_x(state_updated);  //  对cur_pose 进行isam2优化后的修正
+    // kf.change_x(state_updated);  //  对cur_pose 进行isam2优化后的修正
 
     // TODO:  P的修正有待考察，按照yanliangwang的做法，修改了p，会跑飞
     // esekfom::esekf<state_ikfom, 12, input_ikfom>::cov P_updated = kf.get_P(); // 获取当前的状态估计的协方差矩阵
@@ -174,18 +174,18 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
 
     // 当前帧激光角点、平面点，降采样集合
 
-  //  PointCloudXYZI::Ptr thisSurfKeyFrame(new PointCloudXYZI()); // TODO see saveCurrentCloud
+    // PointCloudXYZI::Ptr thisSurfKeyFrame(new PointCloudXYZI()); // TODO see saveCurrentCloud
 
-  //  pcl::copyPointCloud(*feats_undistort, *thisSurfKeyFrame); // 存储关键帧,没有降采样的点云
+    // pcl::copyPointCloud(*feats_undistort, *thisSurfKeyFrame); // 存储关键帧,没有降采样的点云
 
     // 保存特征点降采样集合
 
-  //  surfCloudKeyFrames.push_back(thisSurfKeyFrame);
+    // surfCloudKeyFrames.push_back(thisSurfKeyFrame);
 
- //   scManager.makeAndSaveScancontextAndKeys(*thisSurfKeyFrame);
+    // scManager.makeAndSaveScancontextAndKeys(*thisSurfKeyFrame);
 
 
-  //  updatePath(thisPose6D); //  可视化update后的path  // TODO update path
+    // updatePath(thisPose6D); //  可视化update后的path  // TODO update path
 }
 
 
@@ -203,19 +203,19 @@ void BackEnd::saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose
     euler[0] = 0;
     Eigen::Isometry3d Transform = Eigen::Isometry3d::Identity();
     Transform.matrix().block<3, 3>(0, 0) = ypr2R(euler); 
-   // std::cout << "test martrix "<< R2ypr(Transform.matrix().block<3, 3>(0, 0)).transpose()<<std::endl;
-  //  Eigen::Isometry3d newTransform = Eigen::Isometry3d::Identity();
-  /*  Eigen::Vector3d test = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+    // std::cout << "test martrix "<< R2ypr(Transform.matrix().block<3, 3>(0, 0)).transpose()<<std::endl;
+    // Eigen::Isometry3d newTransform = Eigen::Isometry3d::Identity();
+    /*  Eigen::Vector3d test = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
     std::cout << "test "<<test.transpose()<<std::endl;
     Eigen::Isometry3d testTransform = Eigen::Isometry3d::Identity();
     testTransform.rotate(Eigen::AngleAxisd(test[1], Eigen::Vector3d::UnitY()));
     testTransform.rotate(Eigen::AngleAxisd(test[2], Eigen::Vector3d::UnitX()));
     std::cout << "test martrix "<< testTransform.matrix()<<std::endl;
     std::cout << "euler "<< euler.transpose()<<std::endl;*/
-  /* newTransform.rotate(Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
+    /* newTransform.rotate(Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
     newTransform.rotate(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));*/
-   // newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,pitch,roll)); 
-  //  std::cout << "euler martrix "<< newTransform.matrix()<<std::endl;
+    // newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,pitch,roll)); 
+    // std::cout << "euler martrix "<< newTransform.matrix()<<std::endl;
     gravityAlignedCLoud.reset(new PointCloudXYZI());
     *gravityAlignedCLoud = *transformPointCloud(currentCLoud, Transform);
     scManager.makeAndSaveScancontextAndKeys(*gravityAlignedCLoud);
@@ -228,7 +228,7 @@ bool BackEnd::correctPoses()
     if (aLoopIsClosed)
     {
         // 清空里程计轨迹
-       // globalPath.poses.clear();
+        // globalPath.poses.clear();
         // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿
         int numPoses = isamCurrentEstimate.size();
         mtxPose.lock();
@@ -248,7 +248,7 @@ bool BackEnd::correctPoses()
         }
         mtxPose.unlock();
         // 清空局部map， reconstruct  ikdtree submap
-     //   recontructIKdTree(ikdtree); 
+        // recontructIKdTree(ikdtree); 
         std::cout <<"ISMA2 Update"<< std::endl;
         aLoopIsClosed = false;
         show_index = 0;
@@ -266,50 +266,50 @@ bool BackEnd::correctPoses()
 void BackEnd::recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize){
 
 
-        pcl::KdTreeFLANN<PointType>::Ptr kdtreeGlobalMapPoses(new pcl::KdTreeFLANN<PointType>());
-        PointCloudXYZI::Ptr subMapKeyPoses(new PointCloudXYZI());
-        PointCloudXYZI::Ptr subMapKeyPosesDS(new PointCloudXYZI());
-        PointCloudXYZI::Ptr subMapKeyFrames(new PointCloudXYZI());
-        PointCloudXYZI::Ptr subMapKeyFramesDS(new PointCloudXYZI());
+    pcl::KdTreeFLANN<PointType>::Ptr kdtreeGlobalMapPoses(new pcl::KdTreeFLANN<PointType>());
+    PointCloudXYZI::Ptr subMapKeyPoses(new PointCloudXYZI());
+    PointCloudXYZI::Ptr subMapKeyPosesDS(new PointCloudXYZI());
+    PointCloudXYZI::Ptr subMapKeyFrames(new PointCloudXYZI());
+    PointCloudXYZI::Ptr subMapKeyFramesDS(new PointCloudXYZI());
 
-        // kdtree查找最近一帧关键帧相邻的关键帧集合
-        std::vector<int> pointSearchIndGlobalMap;
-        std::vector<float> pointSearchSqDisGlobalMap;
-        mtxPose.lock();
-        kdtreeGlobalMapPoses->setInputCloud(KeyPoint);
-        kdtreeGlobalMapPoses->radiusSearch(KeyPoint->back(), kdTreeReconstructRadius, pointSearchIndGlobalMap, pointSearchSqDisGlobalMap, 0);// TODO check time
-        
-        for (int i = 0; i < (int)pointSearchIndGlobalMap.size(); ++i)
-            subMapKeyPoses->push_back(KeyPoint->points[pointSearchIndGlobalMap[i]]);     //  subMap的pose集合
-        mtxPose.unlock();    
-        // 降采样
-        pcl::VoxelGrid<PointType> downSizeFilterSubMapKeyPoses;
-        downSizeFilterSubMapKeyPoses.setLeafSize(kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize); // for global map visualization
-        downSizeFilterSubMapKeyPoses.setInputCloud(subMapKeyPoses);
-        downSizeFilterSubMapKeyPoses.filter(*subMapKeyPosesDS);         //  subMap poses  downsample
-        // 提取局部相邻关键帧对应的特征点云
-        for (int i = 0; i < (int)subMapKeyPosesDS->size(); ++i)
-        {
-            // 距离过大
-           // if (pointDistance(subMapKeyPosesDS->points[i], cloudKeyPoses3D->back()) > 1000.0) // TODO 
-                //    continue;
-            int thisKeyInd = (int)subMapKeyPosesDS->points[i].intensity;
-            // *globalMapKeyFrames += *transformPointCloud(cornerCloudKeyFrames[thisKeyInd],  &cloudKeyPoses6D->points[thisKeyInd]);
-            *subMapKeyFrames += *transformPointCloud(KeyFrameCloud[thisKeyInd], KeyPoses[thisKeyInd].pose); //  fast_lio only use  surfCloud
-        }
-        // 降采样，发布
-        pcl::VoxelGrid<PointType> downSizeFilterGlobalMapKeyFrames;                                                                                   // for global map visualization
-        downSizeFilterGlobalMapKeyFrames.setLeafSize(kdTreeReconstructPointLeafSize, kdTreeReconstructPointLeafSize, kdTreeReconstructPointLeafSize); // for global map visualization
-        downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
-        downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
+    // kdtree查找最近一帧关键帧相邻的关键帧集合
+    std::vector<int> pointSearchIndGlobalMap;
+    std::vector<float> pointSearchSqDisGlobalMap;
+    mtxPose.lock();
+    kdtreeGlobalMapPoses->setInputCloud(KeyPoint);
+    kdtreeGlobalMapPoses->radiusSearch(KeyPoint->back(), kdTreeReconstructRadius, pointSearchIndGlobalMap, pointSearchSqDisGlobalMap, 0);// TODO check time
+    
+    for (int i = 0; i < (int)pointSearchIndGlobalMap.size(); ++i)
+        subMapKeyPoses->push_back(KeyPoint->points[pointSearchIndGlobalMap[i]]);     //  subMap的pose集合
+    mtxPose.unlock();    
+    // 降采样
+    pcl::VoxelGrid<PointType> downSizeFilterSubMapKeyPoses;
+    downSizeFilterSubMapKeyPoses.setLeafSize(kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize); // for global map visualization
+    downSizeFilterSubMapKeyPoses.setInputCloud(subMapKeyPoses);
+    downSizeFilterSubMapKeyPoses.filter(*subMapKeyPosesDS);         //  subMap poses  downsample
+    // 提取局部相邻关键帧对应的特征点云
+    for (int i = 0; i < (int)subMapKeyPosesDS->size(); ++i)
+    {
+        // 距离过大
+        // if (pointDistance(subMapKeyPosesDS->points[i], cloudKeyPoses3D->back()) > 1000.0) // TODO 
+            //    continue;
+        int thisKeyInd = (int)subMapKeyPosesDS->points[i].intensity;
+        // *globalMapKeyFrames += *transformPointCloud(cornerCloudKeyFrames[thisKeyInd],  &cloudKeyPoses6D->points[thisKeyInd]);
+        *subMapKeyFrames += *transformPointCloud(KeyFrameCloud[thisKeyInd], KeyPoses[thisKeyInd].pose); //  fast_lio only use  surfCloud
+    }
+    // 降采样，发布
+    pcl::VoxelGrid<PointType> downSizeFilterGlobalMapKeyFrames;                                                                                   // for global map visualization
+    downSizeFilterGlobalMapKeyFrames.setLeafSize(kdTreeReconstructPointLeafSize, kdTreeReconstructPointLeafSize, kdTreeReconstructPointLeafSize); // for global map visualization
+    downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
+    downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
 
-        std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
-        
-        ikdtree.reconstruct(subMapKeyFramesDS->points);
-        std::cout << "Reconstructed  ikdtree " << std::endl;
-        int featsFromMapNum = ikdtree.validnum();
-        int kdtree_size_st = ikdtree.size();
-        std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
+    std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
+    
+    ikdtree.reconstruct(subMapKeyFramesDS->points);
+    std::cout << "Reconstructed  ikdtree " << std::endl;
+    int featsFromMapNum = ikdtree.validnum();
+    int kdtree_size_st = ikdtree.size();
+    std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
 
 }
 
@@ -477,22 +477,22 @@ void BackEnd::performLoopClosure(double time)
     float noiseScore = icp.getFitnessScore() ; //  loop_clousre  noise from icp
     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
     gtsam::noiseModel::Diagonal::shared_ptr constraintNoise = gtsam::noiseModel::Diagonal::Variances(Vector6);
-   // std::cout << "loopNoiseQueue   =   " << noiseScore << std::endl;
+    // std::cout << "loopNoiseQueue   =   " << noiseScore << std::endl;
 
     // 添加闭环因子需要的数据
-  //  mtxLoopInfo.lock(); // TODO 
+    // mtxLoopInfo.lock(); // TODO 
     std::lock_guard<std::mutex> lk(mtxLoopInfo);
     loopIndexQueue.push_back(make_pair(loopKeyCur, loopKeyPre));
     loopPoseQueue.push_back(poseFrom.between(poseTo));
     loopNoiseQueue.push_back(constraintNoise);
     loopIndexContainer[loopKeyCur] = loopKeyPre; //   使用hash map 存储回环对
- //   mtxLoopInfo.unlock();
+    // mtxLoopInfo.unlock();
 
     
 }
 void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
 {
- //   std::cout << "111111111"<<std::endl;
+    // std::cout << "111111111"<<std::endl;
     PointCloudXYZI lidar_cloud_in_map;
     if (KeyPoses.size() == 0)
        return;
@@ -514,7 +514,7 @@ void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
     lidar_to_camera.matrix().block<3, 3>(0, 0) = lidar_to_camera_rotate;
     lidar_to_camera.matrix().block<3, 1>(3, 0) = lidar_to_camera_trans;
     Eigen::Isometry3d map_to_camera = lidar_to_camera * map_to_lidar;
- //   pcl::PointCloud<pcl::PointXYZRGBNormal> rgb_cloud;
+    // pcl::PointCloud<pcl::PointXYZRGBNormal> rgb_cloud;
 
     std::vector<cv::Point3f> pts_3d;
     for (size_t i = 0; i < lidar_cloud_in_map.size(); i += 1) {
@@ -564,10 +564,10 @@ void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
             pts_2d[i].y < image_rows) {
         cv::Scalar color =
             image.at<cv::Vec3b>((int)pts_2d[i].y, (int)pts_2d[i].x);
-       /* if (color[0] == 0 && color[1] == 0 && color[2] == 0) {
+        /* if (color[0] == 0 && color[1] == 0 && color[2] == 0) {
             continue;
         }*/
-       /* if (pts_3d[i].x > 100) {
+        /* if (pts_3d[i].x > 100) {
             continue;
         }*/
         pcl::PointXYZRGB p;
@@ -588,7 +588,7 @@ void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
         downSizeFilter.setInputCloud(show_rgb_map);
         downSizeFilter.setLeafSize(resolution, resolution, resolution);
         downSizeFilter.filter(*show_rgb_map);
-   //     std::cout << "22222222222"<<std::endl;
+        // std::cout << "22222222222"<<std::endl;
 }
 
   /*  void performSCLoopClosure()

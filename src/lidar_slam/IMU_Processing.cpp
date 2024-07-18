@@ -88,10 +88,10 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, esekfom::esekf &kf_state, in
     N ++;
   }
   initial_rotate = g2R(mean_acc);
- // std::cout << "init rotate "<< R2ypr(R0).transpose()<< std::endl;
+  // std::cout << "init rotate "<< R2ypr(R0).transpose()<< std::endl;
   state_ikfom init_state = kf_state.get_x();        //在esekfom.hpp获得x_的状态
   init_state.grav = - mean_acc / mean_acc.norm() * G_m_s2;    //得平均测量的单位方向向量 * 重力加速度预设值
- // init_state.rot = Sophus::SO3d(R0);
+  // init_state.rot = Sophus::SO3d(R0);
   init_state.bg  = mean_gyr;      //角速度测量作为陀螺仪偏差
   init_state.offset_T_L_I = Lidar_T_wrt_IMU;      //将lidar和imu外参传入
   init_state.offset_R_L_I = Sophus::SO3d(Lidar_R_wrt_IMU);

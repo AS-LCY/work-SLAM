@@ -324,12 +324,23 @@ void LidarSlam::localizationThread()
         pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
         }
         if (!globalLocalizationSuccess){
-            cout << "start globalLocalization ... "<<endl;
+            // check 
+            if(!getLoadMap()){
+                cout << "globalLocalization failed: map not ready ... "<<endl;
+            }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                cout << "globalLocalization failed: cloud empty ... "<<endl;
+            // check end
+            }else{
+                cout <<"point(in use) count"<<UndistortCloudInOdom->points.size()<<endl;
 
-            //state.state("lost");
-            mutex mtx_lidar_cloud;
-            globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
-            cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
+                cout << "start globalLocalization ... "<<endl;
+
+                //state.state("lost");
+                mutex mtx_lidar_cloud;
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
+                cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
+
+            }
             
         }
         else{
@@ -368,6 +379,7 @@ void LidarSlam::relocalizationForMappingThread(){
                 cout << "globalLocalization failed: cloud empty ... "<<endl;
             // check end
             }else{
+                cout <<"point(in use) count"<<UndistortCloudInOdom->points.size()<<endl;
                 pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
                 {
                     std::lock_guard<std::mutex> lk(mtx_odom_cloud);
@@ -476,8 +488,8 @@ void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
     float grid_size = 0.05; // 5cm
 
     // 计算点云的范围
- //   PointType min_point, max_point;
- //   pcl::getMinMax3D(*temp_cloud, min_point, max_point);
+    // PointType min_point, max_point;
+    // pcl::getMinMax3D(*temp_cloud, min_point, max_point);
     float max_x = param.obstacle_max_range;
     float max_y = param.obstacle_max_range;
     float min_x = -param.obstacle_max_range;
@@ -524,16 +536,16 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
     if (reseting)
         return;
     
-  //  double preprocess_start_time = omp_get_wtime();
-   // scan_count++;
+    // double preprocess_start_time = omp_get_wtime();
+    // scan_count++;
     if (time_stamp < last_timestamp_lidar)
     {
         printf("lidar loop back, clear buffer");
         lidar_buffer.clear();
     }
- /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
-        printf("lidar lose rate");
-    }*/ 
+    // else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
+    //     printf("lidar lose rate");
+    // }
     last_timestamp_lidar = time_stamp;
 
     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
@@ -563,11 +575,11 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
         filter_obstacle_cloud(temp);
     }
     // 创建半径滤波器对象
-  /*  pcl::RadiusOutlierRemoval<PointType> sor;
-    sor.setInputCloud(ObstacleCloud);
-    sor.setRadiusSearch(0.1);  // 邻域半径
-    sor.setMinNeighborsInRadius(5);  // 最小邻域点数量
-    sor.filter(*FilteredObstacleCloud);*/
+    // pcl::RadiusOutlierRemoval<PointType> sor;
+    // sor.setInputCloud(ObstacleCloud);
+    // sor.setRadiusSearch(0.1);  // 邻域半径
+    // sor.setMinNeighborsInRadius(5);  // 最小邻域点数量
+    // sor.filter(*FilteredObstacleCloud);
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
@@ -580,11 +592,11 @@ void LidarSlam::image_cbk(const cv::Mat& img,double time)
 {
   //  printf("image in %f \n",time);
     for (auto it = poses_buffer.begin(); it != poses_buffer.end(); it++) {
-         if(fabsf(it->first-time)<0.05){
-          //  printf("use pose in %f \n",it->first);
-            back_end->UpdateImage(img,it->second);
-            return;
-         }
+        if(fabsf(it->first-time)<0.05){
+        //  printf("use pose in %f \n",it->first);
+        back_end->UpdateImage(img,it->second);
+        return;
+        }
 
     }
 }
@@ -599,12 +611,12 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
             if (temp_imu_msg.size() > 0){
                 for(auto msg : temp_imu_msg){
                     imu_file << std::fixed << std::setprecision(9) <<msg.time_stamp << " "
-                            << msg.angular_velocity.x() << " "
-                            << msg.angular_velocity.y() << " "
-                            << msg.angular_velocity.z() << " "
-                            << msg.linear_acceleration.x() << " "
-                            << msg.linear_acceleration.y() << " "
-                            << msg.linear_acceleration.z() << std::endl; 
+                        << msg.angular_velocity.x() << " "
+                        << msg.angular_velocity.y() << " "
+                        << msg.angular_velocity.z() << " "
+                        << msg.linear_acceleration.x() << " "
+                        << msg.linear_acceleration.y() << " "
+                        << msg.linear_acceleration.z() << std::endl; 
                 }
                 temp_imu_msg.clear();
             }
@@ -645,15 +657,15 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     localization_wait = true;
     if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
         if (current_pose.base_time < localization_base.base_time - 0.005){
-         //   std::cout << "predicate pose "<<current_pose.imu_state.pos.transpose()<<std::endl;
-         //   std::cout << "update pose "<<localization_base.imu_state.pos.transpose()<<std::endl;
+            // std::cout << "predicate pose "<<current_pose.imu_state.pos.transpose()<<std::endl;
+            // std::cout << "update pose "<<localization_base.imu_state.pos.transpose()<<std::endl;
             current_pose = localization_base;
             for (auto it = imu_buffer.begin(); it != imu_buffer.end(); it++) {
                 const std::shared_ptr<livox_ros::ImuMsg>& msg = *it;
                 if (msg->time_stamp > localization_base.update_time){
                     double dt = msg->time_stamp - localization_base.update_time;
-                   // if (dt < 0 || dt > 0.01)
-                   //    printf("error predicate 1 %f\n",dt);
+                    // if (dt < 0 || dt > 0.01)
+                    //     printf("error predicate 1 %f\n",dt);
                     V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) - current_pose.imu_state.bg;
                     V3D acc   = V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) * G_m_s2 / (p_imu->mean_acc.norm());
                     acc = current_pose.imu_state.rot * (acc - current_pose.imu_state.ba) + current_pose.imu_state.grav; 
@@ -667,8 +679,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
         else{
                 if (msg->time_stamp > localization_base.update_time){
                     double dt = msg->time_stamp - localization_base.update_time;
-                   // if (dt < 0 || dt > 0.01)
-                     //  printf("error predicate 2 %f\n",dt);
+                    // if (dt < 0 || dt > 0.01)
+                    //     printf("error predicate 2 %f\n",dt);
                     V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) - current_pose.imu_state.bg;
                     V3D acc   = V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) * G_m_s2 / (p_imu->mean_acc.norm());
                     acc = current_pose.imu_state.rot * (acc - current_pose.imu_state.ba) + current_pose.imu_state.grav; 
@@ -697,7 +709,7 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
         pcd_file.pop_front();
     }
     imu_file_shift = true;
-   // trim_log_file(keep_time / 60.0 * 2 * 1024 * 1024,param.save_log_path + std::string("imu_data.txt"),imu_file,pcd_file.front());
+    // trim_log_file(keep_time / 60.0 * 2 * 1024 * 1024,param.save_log_path + std::string("imu_data.txt"),imu_file,pcd_file.front());
     imu_file_shift = false;
 }
 
@@ -712,7 +724,7 @@ bool LidarSlam::run()
     if (sync_packages(Measures))
     {
         // cout<<"sync_packages success"<<endl;
-        //第一帧lidar数据
+        // 第一帧lidar数据
         if (flg_first_scan)
         {
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
@@ -722,7 +734,7 @@ bool LidarSlam::run()
         }
         
         t0 = omp_get_wtime();
-        //根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
+        // 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
         {
             std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
             undistortCloud->clear();
@@ -860,7 +872,7 @@ bool LidarSlam::run()
                         unoptimized_path.pop_front();
                 }             
         }
-    //     std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
+        // std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
         if (!param.localization_mode){
 
         }

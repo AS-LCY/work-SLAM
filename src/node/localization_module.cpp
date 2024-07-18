@@ -443,6 +443,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 
     if (!running_slam_){
         ROS_INFO("status: not running slam");
+        sleep(1);
         return;
     }
 
