@@ -185,7 +185,6 @@ void LocalizationModule::start_mapping(bool localization_mode){
     }
 }
 
-
 void LocalizationModule::mark_start_point(){
     // 标记起点的 POSE
     if(running_slam_ && slam_mode_==MAPPING && 
@@ -221,7 +220,6 @@ void LocalizationModule::mark_end_point(int save_id){
             ROS_INFO("saving cloud map of current element ...");
             slam_->save_map(pcd_path, 0.1, start_index_, end_index_);
         }
-
     }else if(running_slam_ && slam_mode_==MAPPING && mapping_status_ != STARTPOINT_SET){
         ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("skip, 'mapping_status==STARTPOINT_SET' required, please set start-point first!");

@@ -9,7 +9,12 @@ obstacle:
     max_height: 0.5
     min_height: -0.1 # above wheel center
     filter_size: 20
+
+global_localization:
+    score_thr: 0.15
+    
 mapping:
+    map_dir: 
     acc_cov: 0.1 # not used
     gyr_cov: 0.1 # not used
     b_acc_cov: 0.0001 # not used

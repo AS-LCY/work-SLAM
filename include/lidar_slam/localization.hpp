@@ -30,7 +30,7 @@ public:
    ~Localization();
    bool loadMap(std::string path);
    void localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud);
-   bool globalLocalization(PointCloudXYZI::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate);
+   bool globalLocalization(PointCloudXYZI::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score);
    Eigen::Isometry3d getOdomToMap(){
       //  Eigen::Isometry3d isometry3d; 
       //  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap.matrix().block<3, 3>(0, 0).cast<double>();

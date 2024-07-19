@@ -166,7 +166,7 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud)
     pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
     gicp->align(*unused_result, correctionOdomToMap.matrix().cast<float>());                    
     if (gicp->hasConverged() == false || gicp->getFitnessScore() > 0.1){// TODO check param
-      //  std::cout << "gicp fail "<<std::endl;
+        std::cout << "gicp fail "<<std::endl;
     }
     else{
         std::cout << "gicp success with score "<< gicp->getFitnessScore() << std::endl;       
@@ -177,7 +177,7 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud)
     }
 }
 
-bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate)
+bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)
 { 
     if (!map_ready_) {
         cout<<"map not ready"<<endl;
@@ -226,8 +226,8 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         double sc_dist = 1.0;
         auto match = scManager->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
         if (match.first != -1){
-          std::cout <<"trans "<< t.first << " " <<t.second;
-          std::cout <<" score"<< " "<<sc_dist<<std::endl;
+          std::cout <<"trans: "<< t.first << " " <<t.second;
+          std::cout <<" score: "<<sc_dist<<std::endl;
         }
         if (sc_dist < min_dist) {
             min_dist = sc_dist;
@@ -274,7 +274,8 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
         icp.align(*unused_result, init_guess.cast<float>());
         // 未收敛，或者匹配不够好
-        if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
+        // if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
+        if (icp.hasConverged() == false || icp.getFitnessScore() > score){//TODO add number in getFitnessScore
             std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
             return false;
         }

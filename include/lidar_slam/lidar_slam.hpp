@@ -52,14 +52,14 @@ struct LidarParam{
 };
 
 struct Localization_base{
-   state_ikfom  imu_state;
-   double base_time = 0;
-   double update_time = 0;
-   Localization_base(){
-      imu_state = state_ikfom();
-      double base_time = 0;
-      double update_time = 0;      
-   }
+    state_ikfom  imu_state;
+    double base_time = 0;
+    double update_time = 0;
+    Localization_base(){
+        imu_state = state_ikfom();
+        double base_time = 0;
+        double update_time = 0;      
+    }
 };
 
 class LidarSlam
@@ -286,6 +286,7 @@ class LidarSlam
         PointCloudXYZI::Ptr ObstacleCloud;
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         bool sec_mapping_ = false;
+        double score_thr_=0;
 
 
         bool sync_packages(MeasureGroup &meas);

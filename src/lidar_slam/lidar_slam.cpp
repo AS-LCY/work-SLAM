@@ -160,6 +160,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
   //  Eigen::Matrix3d rotation_matrix = param.T_wheel_lidar.matrix().block(0, 0, 3, 3);
    // std::cout <<"ypr "<< rotation_matrix.eulerAngles(2, 1, 0)<<std::endl;
 
+    score_thr_ = config["global_localization"]["score_thr"].as<double>();
     // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
     param.load_map_path = work_path + std::string("map/");//这个参数现在未使用
     // std::cout << "load map path: " <<  param.load_map_path << std::endl;
@@ -337,7 +338,7 @@ void LidarSlam::localizationThread()
 
                 //state.state("lost");
                 mutex mtx_lidar_cloud;
-                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr_); 
                 cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
             }
@@ -349,7 +350,7 @@ void LidarSlam::localizationThread()
 
             //state.state("normal");
         }
-      //  state_pub_->publish(&state);
+        // state_pub_->publish(&state);
 
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -390,7 +391,7 @@ void LidarSlam::relocalizationForMappingThread(){
 
                 //state.state("lost");
                 mutex mtx_lidar_cloud;
-                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate); 
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr_); 
                 cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
             }
