@@ -1,0 +1,60 @@
+common:
+  init_module_status: 0
+  time_sync_en: false
+  localization_mode: false
+  offline_mode: false
+  fast_mode: false
+  just_show_mode: false
+  show_rviz: true
+  save_log_dir: "/home/"
+  log_keep_time: 500
+
+extrinsic:    
+  extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
+  extrinsic_T: [ 0, -0.02329, 0.04412 ]
+  extrinsic_R: [ 1, 0, 0,
+                  0, 1, 0,
+                  0, 0, 1]
+
+  Lidar_In_Wheel: [1,  0,  0,  0,
+                    0,  1,  0,  0,
+                    0,  0,  1,  0.1,
+                    0,  0,  0,  1]
+
+lidar_preproc:
+  line_count: 4
+  blind_distance: 0.2
+  point_filter_num: 3
+  feature_enabled: false 
+  obstacle_max_range:  2.5
+  obstacle_max_height: 0.5
+  obstacle_min_height: -0.1 # above wheel center
+  obstacle_filter_size: 20
+  grid_size: 0.05 # unit: m
+
+mapping:
+  acc_cov: 0.1 # not used
+  gyr_cov: 0.1 # not used
+  b_acc_cov: 0.0001 # not used
+  b_gyr_cov: 0.0001 # not used  
+  cloud_leaf_size: 0.5
+  key_frame_distance: 1.0
+  key_frame_angle: 0.2
+  loopSearchDistance: 1.5
+  save_map_dir: 
+  save_map_resolution: 0.1 # unit: m
+
+sec_mapping:
+  load_map_dir: 
+    
+localization:
+  load_map_dir: 
+
+ikdtree:
+  cube_len: 400.0
+  det_range: 40.0
+  kdTreeReconstructRadius: 400.0
+  kdTreeReconstructKeyFrameLeafSize: 10.0
+  kdTreeReconstructPointLeafSize: 1.0
+  map_leaf_size: 0.5  # ???为什么在这里  
+  

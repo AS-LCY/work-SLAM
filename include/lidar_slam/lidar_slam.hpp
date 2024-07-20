@@ -21,6 +21,7 @@
 // #include "driver_node.h"
 // #include "lddc.h"
 #include "livox_ros_datatype_def.h"
+#include "lidar_slam_param_def.h"
 // #include "lds_lidar.h"
 
 namespace lidar_slam {
@@ -62,12 +63,21 @@ struct Localization_base{
     }
 };
 
+enum SlamWorkMode{
+    MAPPING = 1,
+    SEC_MAPPING = 2,
+    LOCALIZATION = 3,
+    UNKNOWN
+};
+
 class LidarSlam
 {
     public:
         LidarSlam(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
-        LidarSlam()= delete;
+        LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode);// new added
+        LidarSlam() = delete;
         LidarSlam(const LidarSlam&) = delete; 
+        void reset(SlamWorkMode work_mode);// new added
         void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
@@ -94,9 +104,10 @@ class LidarSlam
         void image_cbk(const cv::Mat& img,double time);
         void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
-            if (param.localization_mode){
+            // if (param.localization_mode){
+            if (working_mode_ == LOCALIZATION){
                 return true;
-            }else{
+            }else if(working_mode_ == MAPPING || working_mode_ == SEC_MAPPING){
                 return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap(), start_index, end_index);
             }
         };
@@ -143,23 +154,36 @@ class LidarSlam
            return back_end->getloopIndex();
         }
         Eigen::Isometry3d getOdomToMap(){
-            if (param.localization_mode)
+            if (working_mode_ == LOCALIZATION){
                return localization->getOdomToMap();
-            else{
-                if (sec_mapping_){
-                    return localization->getOdomToMap();
-                }
+            }else if(working_mode_ == MAPPING){
                 Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
                 transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
                 return transform;
+            }else if(working_mode_ == SEC_MAPPING){
+                return localization->getOdomToMap();
+            }else{
+                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                return Eigen::Isometry3d::Identity();
             }
+            // if (param.localization_mode)
+            //    return localization->getOdomToMap();
+            // else{
+            //     if (sec_mapping_){
+            //         return localization->getOdomToMap();
+            //     }
+            //     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+            //     transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
+            //     return transform;
+            // }
         }
         Eigen::Isometry3d getLidarInOdom(){
             std::lock_guard<std::mutex> lk(mtx_pose);
-            if(!param.localization_mode){
+            // if(!param.localization_mode){
+            if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING){
                return T_odom_lidar;
             } 
-            else{
+            else if(working_mode_==LOCALIZATION){
                Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
                Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
                Eigen::Isometry3d temp  =   T_odom_b * T_b_lidar;
@@ -180,9 +204,9 @@ class LidarSlam
         }
         Eigen::Isometry3d getLidarInMap(){  //插值
 
-          //  Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
-          //  Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
-         //   Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * T_odom_b * T_b_lidar;
+            // Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
+            // Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
+            // Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * T_odom_b * T_b_lidar;
             Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * getLidarInOdom();
             return  T_map_lidar;
         }
@@ -198,9 +222,10 @@ class LidarSlam
             return localization -> getLoadKeyFrame();
         }
         PointCloudXYZI::Ptr getTestCloud(){
-            if (param.localization_mode)
+            // if (param.localization_mode)
+            if (working_mode_==LOCALIZATION)
                return localization -> getTestCloud();
-            else
+            else if(working_mode_==MAPPING || working_mode_ ==SEC_MAPPING)
                return back_end-> getTestCloud();
         }
         PointCloudXYZI::Ptr getCurrentMap()
@@ -221,8 +246,20 @@ class LidarSlam
             return FilteredObstacleCloud;
         }
 
+        string print_SlamWorkMode(SlamWorkMode e){
+            switch (e){
+            CASE_STR(MAPPING);
+            CASE_STR(SEC_MAPPING);
+            CASE_STR(LOCALIZATION);
+            default:
+                break;
+            }
+            return "UNKNOW_SlamWorkMode!";
+        }
+
     private:
-        LidarParam param;
+        // LidarParam param;
+        LidarSlamParam config_param_;
         deque<double> time_buffer;               // 记录lidar时间
         deque<PointCloudXYZI::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
@@ -273,7 +310,7 @@ class LidarSlam
         mutex mtx_path;
         mutex mtx_pose;
         esekfom::esekf kf;
-        std::unique_ptr<Preprocess> p_pre= nullptr;
+        std::unique_ptr<Preprocess> p_lidar_pre= nullptr;
         std::unique_ptr<ImuProcess> p_imu= nullptr;
         std::unique_ptr<BackEnd> back_end= nullptr;
         std::unique_ptr<Localization> localization= nullptr;
@@ -287,6 +324,7 @@ class LidarSlam
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         bool sec_mapping_ = false;
         double score_thr_=0;
+        SlamWorkMode working_mode_ = UNKNOWN;
 
 
         bool sync_packages(MeasureGroup &meas);

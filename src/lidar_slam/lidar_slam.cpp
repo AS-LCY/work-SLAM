@@ -28,9 +28,20 @@ LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool off
     // if (!offline){
     //     start_driver(work_path);
     // }
-    
 
     LidarSlam::reset(work_path,localization_mode,offline,second_mapping);
+
+     
+}
+
+
+LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode){
+    // if (!offline){
+    //     start_driver(work_path);
+    // }
+    config_param_ = yaml_param;
+
+    LidarSlam::reset(init_mode);
 
      
 }
@@ -86,10 +97,12 @@ LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool off
 //   livox_node.imudata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::ImuDataPollThread, &livox_node);
 // }
 
-void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline, bool second_mapping){
+void LidarSlam::reset(SlamWorkMode work_mode){
     reseting = true;
-    
+
     sleep(1);
+
+    /// 激光和IMU预处理相关 *******************************************
     time_buffer.clear();               // 记录lidar时间
     lidar_buffer.clear(); //记录特征提取或间隔采样后的lidar（特征）数据
     imu_buffer.clear();
@@ -101,91 +114,13 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
     flg_first_scan = true;
     last_timestamp_lidar = 0;
     last_timestamp_imu = -1.0;
-    timediff_lidar_wrt_imu = 0.0;
-    time_sync_en = false;
+    timediff_lidar_wrt_imu = 0.0;// TODO
+    time_sync_en = false;// TODO
     timediff_set_flg = false; // 标记是否已经进行了时间补偿
-    unoptimized_path.clear();
-    optimized_path.clear();
-    Measures = MeasureGroup();
-    T_odom_lidar = Eigen::Isometry3d::Identity();
-    thread_run = true;
-    globalLocalizationSuccess = false;
-    imu_file_shift = false;
-    localization_base = Localization_base();
-    current_pose = Localization_base();
-    temp_imu_msg.clear();
+    Measures = MeasureGroup();// TODO
+    temp_imu_msg.clear();// TODO
 
-    ikdtree.reset(new KD_TREE<pcl::PointXYZINormal>());
-    //std::unique_ptr<std::thread> thread;
-
-    kf = esekfom::esekf();
-
-        
-    std::string config_path = work_path + std::string("config/lidar_slam/mid360.yaml");
-    std::cout << "config path: " << config_path << std::endl;
-    YAML::Node config;
-    try{
-         config = YAML::LoadFile(config_path);
-    } 
-    catch(YAML::BadFile &e) {
-        std::cout<<"read config error!"<<std::endl;
-    }
-
-    sec_mapping_ = second_mapping;
-    param.localization_mode = localization_mode;
-    param.offline_mode = offline;
-    param.log_keep_time = 500;
-    std::vector<double> values =  config["mapping"]["extrinsic_T"].as<std::vector<double>>();
-   // Eigen::Map<Eigen::Vector3d>(param.extrinT.data(), values.size()) = Eigen::Map<const Eigen::VectorXd>(param.extrinT.data(), values.size());
-    param.extrinT<<values[0],values[1],values[2];
-    std::cout <<"extrinsic_T"<< param.extrinT.transpose()<<std::endl;
-    values.clear();
-    values =  config["mapping"]["extrinsic_R"].as<std::vector<double>>();
- //   Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(param.extrinR.data(), 3, 3) = Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(values.data(), 3, 3);
-    param.extrinR<<values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7],values[8];
-    std::cout <<"extrinsic_R "<< param.extrinR<<std::endl;
-
-    values.clear();
-    values =  config["mapping"]["Lidar_In_Wheel"].as<std::vector<double>>();
-    Eigen::Matrix4d T_wheel_lidar;
-    T_wheel_lidar<<values[0],values[1],values[2],values[3],
-            values[4],values[5],values[6],values[7],
-            values[8],values[9],values[10],values[11],
-            values[12],values[13],values[14],values[15];
-    param.T_wheel_lidar.matrix() = T_wheel_lidar;
-    T_lidar_wheel = param.T_wheel_lidar.inverse();
-    std::cout <<"wheel_In_lidar"<< param.T_wheel_lidar.matrix()<<std::endl;
-    std::cout <<"wheel_In_lidar rpy "<< R2ypr(param.T_wheel_lidar.matrix().block(0, 0, 3, 3)).transpose()<<std::endl;
-  //  std::cout <<"wheel_In_lidar"<< T_lidar_wheel.matrix()<<std::endl;
-  //  Eigen::Matrix3d rotation_matrix = param.T_wheel_lidar.matrix().block(0, 0, 3, 3);
-   // std::cout <<"ypr "<< rotation_matrix.eulerAngles(2, 1, 0)<<std::endl;
-
-    score_thr_ = config["global_localization"]["score_thr"].as<double>();
-    // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
-    param.load_map_path = work_path + std::string("map/");//这个参数现在未使用
-    // std::cout << "load map path: " <<  param.load_map_path << std::endl;
-    param.cloud_leaf_size = config["mapping"]["cloud_leaf_size"].as<double>();
-    param.map_leaf_size = config["ikdtree"]["map_leaf_size"].as<double>();
-    param.cube_len = config["ikdtree"]["cube_len"].as<double>();
-    param.det_range = config["ikdtree"]["det_range"].as<double>();
-    param.blind_distance = config["preprocess"]["blind"].as<double>();
-    param.point_filter_num = config["preprocess"]["point_filter_num"].as<int>();
-    param.key_frame_distance = config["mapping"]["key_frame_distance"].as<double>();
-    param.key_frame_angle = config["mapping"]["key_frame_angle"].as<double>();
-    param.loopSearchDistance = config["mapping"]["loopSearchDistance"].as<double>();
-    param.kdTreeReconstructRadius = config["ikdtree"]["kdTreeReconstructRadius"].as<double>();
-    param.kdTreeReconstructKeyFrameLeafSize = config["ikdtree"]["kdTreeReconstructKeyFrameLeafSize"].as<double>();
-    param.kdTreeReconstructPointLeafSize = config["ikdtree"]["kdTreeReconstructPointLeafSize"].as<double>();
-    param.obstacle_max_range = config["obstacle"]["max_range"].as<double>();
-    param.obstacle_min_height = config["obstacle"]["min_height"].as<double>();
-    param.obstacle_max_height = config["obstacle"]["max_height"].as<double>();
-    param.obstacle_filter_size = config["obstacle"]["filter_size"].as<double>();
-    p_pre.reset(new Preprocess());
-    p_pre->set(false,AVIA,param.blind_distance,param.point_filter_num,4,param.obstacle_max_range);
-    p_imu.reset(new ImuProcess());
-    back_end.reset(new BackEnd(param.key_frame_distance,param.key_frame_angle,param.loopSearchDistance));
-    localization.reset(new Localization());
-
+    /// 点云 reset *******************************************
     UndistortCloudInOdom.reset(new PointCloudXYZI());
     undistortCloud.reset(new PointCloudXYZI());  // lidar 系
     FilteredUndistortCloud.reset(new PointCloudXYZI());
@@ -193,34 +128,213 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
     ObstacleCloud.reset(new PointCloudXYZI());
     FilteredObstacleCloud.reset(new PointCloudXYZI());
 
-    double gyr_cov = 0.1, acc_cov = 0.1, b_gyr_cov = 0.0001, b_acc_cov = 0.0001;//TODO add param?
-    p_imu->set_param(param.extrinT, param.extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
-                       V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
-    downSizeFilterCloud.setLeafSize(param.cloud_leaf_size, param.cloud_leaf_size, param.cloud_leaf_size);
+    /// mapping 相关 *******************************************
+    unoptimized_path.clear();
+    optimized_path.clear();
+    T_odom_lidar = Eigen::Isometry3d::Identity();
+    localization_base = Localization_base();
+    current_pose = Localization_base();
+    imu_file_shift = false; // TODO
+
+    auto cloud_leaf_size = config_param_.mapping.cloud_leaf_size;
+    downSizeFilterCloud.setLeafSize(cloud_leaf_size, cloud_leaf_size, cloud_leaf_size);
+
+    auto key_frame_distance = config_param_.mapping.key_frame_distance;
+    auto key_frame_angle = config_param_.mapping.key_frame_angle;
+    auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
+    back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance));
+
+    /// sec_mapping & localizaiton ********************************
+    globalLocalizationSuccess = false;
+
+    /// important objs *******************************************
+    // ikdtree
+    ikdtree.reset(new KD_TREE<pcl::PointXYZINormal>());
+    kf = esekfom::esekf();
+    // lidar & imu 预处理
+    const auto blind_distance = config_param_.lidar_preproc.blind_distance;
+    const auto point_filter_num = config_param_.lidar_preproc.point_filter_num;
+    const auto line_count = config_param_.lidar_preproc.line_count;
+    const auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
+    const auto feature_enabled = config_param_.lidar_preproc.feature_enabled;
+    p_lidar_pre.reset(new Preprocess());
+    p_lidar_pre->set(feature_enabled, AVIA, blind_distance,point_filter_num,line_count,obstacle_max_range);
+    const auto gyr_cov = config_param_.mapping.gyr_cov;
+    const auto acc_cov = config_param_.mapping.acc_cov;
+    const auto b_gyr_cov = config_param_.mapping.b_gyr_cov;
+    const auto b_acc_cov = config_param_.mapping.b_acc_cov;
+    const auto extrinT = config_param_.extrinsic.extrinT;
+    const auto extrinR = config_param_.extrinsic.extrinR;
+    p_imu.reset(new ImuProcess());
+    p_imu->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
+                                       V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
+    // 定位
+    localization.reset(new Localization());
+
+    
+    // 线程相关 ************************************************
     if (thread!=nullptr){
         thread_run = false;
         thread->join();
         show_thread->join();
         thread_run = true;
-        if(second_mapping){
+        if(work_mode == SEC_MAPPING){
             second_mapping_thread->join();
         }
     }
 
-    
     reseting = false;
-    if(!param.localization_mode){
+    if (work_mode == MAPPING){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
-        if (second_mapping){
-            second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
-        }
-    }
-    else{
-        // localization->loadMap(param.load_map_path);
+    }else if (work_mode == SEC_MAPPING){
+        thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
+        second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
+    }else if (work_mode == LOCALIZATION){
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
     }
-    show_thread.reset(new std::thread(&LidarSlam::showThread, this));  
-    cout << "slam reset finished"<<endl;
+    show_thread.reset(new std::thread(&LidarSlam::showThread, this)); 
+    working_mode_ = work_mode;
+    cout << "slam reset successfully"<<endl;
+}
+
+void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline, bool second_mapping){
+    cout << "this reset func has already been disabled, please use the new one"<<endl;
+    return;
+    // reseting = true;
+    
+    // sleep(1);
+    // time_buffer.clear();               // 记录lidar时间
+    // lidar_buffer.clear(); //记录特征提取或间隔采样后的lidar（特征）数据
+    // imu_buffer.clear();
+    // lidar_pushed = false;
+    // lidar_end_time = 0;
+    // lidar_mean_scantime = 0.0;
+    // first_lidar_time = 0.0;
+    // scan_num = 0;
+    // flg_first_scan = true;
+    // last_timestamp_lidar = 0;
+    // last_timestamp_imu = -1.0;
+    // timediff_lidar_wrt_imu = 0.0;
+    // time_sync_en = false;
+    // timediff_set_flg = false; // 标记是否已经进行了时间补偿
+    // unoptimized_path.clear();
+    // optimized_path.clear();
+    // Measures = MeasureGroup();
+    // T_odom_lidar = Eigen::Isometry3d::Identity();
+    // thread_run = true;
+    // globalLocalizationSuccess = false;
+    // imu_file_shift = false;
+    // localization_base = Localization_base();
+    // current_pose = Localization_base();
+    // temp_imu_msg.clear();
+
+    // ikdtree.reset(new KD_TREE<pcl::PointXYZINormal>());
+    // //std::unique_ptr<std::thread> thread;
+
+    // kf = esekfom::esekf();
+
+        
+    // std::string config_path = work_path + std::string("config/lidar_slam/mid360.yaml");
+    // std::cout << "config path: " << config_path << std::endl;
+    // YAML::Node config;
+    // try{
+    //      config = YAML::LoadFile(config_path);
+    // } 
+    // catch(YAML::BadFile &e) {
+    //     std::cout<<"read config error!"<<std::endl;
+    // }
+
+    // sec_mapping_ = second_mapping;
+    // param.localization_mode = localization_mode;
+    // param.offline_mode = offline;
+    // param.log_keep_time = 500;
+    // std::vector<double> values =  config["mapping"]["extrinsic_T"].as<std::vector<double>>();
+    // // Eigen::Map<Eigen::Vector3d>(param.extrinT.data(), values.size()) = Eigen::Map<const Eigen::VectorXd>(param.extrinT.data(), values.size());
+    // param.extrinT<<values[0],values[1],values[2];
+    // std::cout <<"extrinsic_T"<< param.extrinT.transpose()<<std::endl;
+    // values.clear();
+    // values =  config["mapping"]["extrinsic_R"].as<std::vector<double>>();
+    // // Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>>(param.extrinR.data(), 3, 3) = Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(values.data(), 3, 3);
+    // param.extrinR<<values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7],values[8];
+    // std::cout <<"extrinsic_R "<< param.extrinR<<std::endl;
+
+    // values.clear();
+    // values =  config["mapping"]["Lidar_In_Wheel"].as<std::vector<double>>();
+    // Eigen::Matrix4d T_wheel_lidar;
+    // T_wheel_lidar<<values[0],values[1],values[2],values[3],
+    //         values[4],values[5],values[6],values[7],
+    //         values[8],values[9],values[10],values[11],
+    //         values[12],values[13],values[14],values[15];
+    // param.T_wheel_lidar.matrix() = T_wheel_lidar;
+    // T_lidar_wheel = param.T_wheel_lidar.inverse();
+    // std::cout <<"wheel_In_lidar"<< param.T_wheel_lidar.matrix()<<std::endl;
+    // std::cout <<"wheel_In_lidar rpy "<< R2ypr(param.T_wheel_lidar.matrix().block(0, 0, 3, 3)).transpose()<<std::endl;
+    // // std::cout <<"wheel_In_lidar"<< T_lidar_wheel.matrix()<<std::endl;
+    // // Eigen::Matrix3d rotation_matrix = param.T_wheel_lidar.matrix().block(0, 0, 3, 3);
+    // // std::cout <<"ypr "<< rotation_matrix.eulerAngles(2, 1, 0)<<std::endl;
+
+    // score_thr_ = config["global_localization"]["score_thr"].as<double>();
+    // // param.load_map_path = work_path + std::string("map/") + std::string("map/") ;
+    // param.load_map_path = work_path + std::string("map/");//这个参数现在未使用
+    // // std::cout << "load map path: " <<  param.load_map_path << std::endl;
+    // param.cloud_leaf_size = config["mapping"]["cloud_leaf_size"].as<double>();
+    // param.map_leaf_size = config["ikdtree"]["map_leaf_size"].as<double>();
+    // param.cube_len = config["ikdtree"]["cube_len"].as<double>();
+    // param.det_range = config["ikdtree"]["det_range"].as<double>();
+    // param.blind_distance = config["preprocess"]["blind"].as<double>();
+    // param.point_filter_num = config["preprocess"]["point_filter_num"].as<int>();
+    // param.key_frame_distance = config["mapping"]["key_frame_distance"].as<double>();
+    // param.key_frame_angle = config["mapping"]["key_frame_angle"].as<double>();
+    // param.loopSearchDistance = config["mapping"]["loopSearchDistance"].as<double>();
+    // param.kdTreeReconstructRadius = config["ikdtree"]["kdTreeReconstructRadius"].as<double>();
+    // param.kdTreeReconstructKeyFrameLeafSize = config["ikdtree"]["kdTreeReconstructKeyFrameLeafSize"].as<double>();
+    // param.kdTreeReconstructPointLeafSize = config["ikdtree"]["kdTreeReconstructPointLeafSize"].as<double>();
+    // param.obstacle_max_range = config["obstacle"]["max_range"].as<double>();
+    // param.obstacle_min_height = config["obstacle"]["min_height"].as<double>();
+    // param.obstacle_max_height = config["obstacle"]["max_height"].as<double>();
+    // param.obstacle_filter_size = config["obstacle"]["filter_size"].as<double>();
+
+    // p_lidar_pre.reset(new Preprocess());
+    // p_lidar_pre->set(false,AVIA,param.blind_distance,param.point_filter_num,4,param.obstacle_max_range);
+    // p_imu.reset(new ImuProcess());
+    // back_end.reset(new BackEnd(param.key_frame_distance,param.key_frame_angle,param.loopSearchDistance));
+    // localization.reset(new Localization());
+
+    // UndistortCloudInOdom.reset(new PointCloudXYZI());
+    // undistortCloud.reset(new PointCloudXYZI());  // lidar 系
+    // FilteredUndistortCloud.reset(new PointCloudXYZI());
+    // kdtreeCloud.reset(new PointCloudXYZI());
+    // ObstacleCloud.reset(new PointCloudXYZI());
+    // FilteredObstacleCloud.reset(new PointCloudXYZI());
+
+    // double gyr_cov = 0.1, acc_cov = 0.1, b_gyr_cov = 0.0001, b_acc_cov = 0.0001;//TODO add param?
+    // p_imu->set_param(param.extrinT, param.extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
+    //                    V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
+    // downSizeFilterCloud.setLeafSize(param.cloud_leaf_size, param.cloud_leaf_size, param.cloud_leaf_size);
+    // if (thread!=nullptr){
+    //     thread_run = false;
+    //     thread->join();
+    //     show_thread->join();
+    //     thread_run = true;
+    //     if(second_mapping){
+    //         second_mapping_thread->join();
+    //     }
+    // }
+
+    
+    // reseting = false;
+    // if(!param.localization_mode){
+    //     thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
+    //     if (second_mapping){
+    //         second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
+    //     }
+    // }
+    // else{
+    //     // localization->loadMap(param.load_map_path);
+    //     thread.reset(new std::thread(&LidarSlam::localizationThread, this));
+    // }
+    // show_thread.reset(new std::thread(&LidarSlam::showThread, this));  
+    // cout << "slam reset finished"<<endl;
 }
 
 bool LidarSlam::sync_packages(MeasureGroup &meas) 
@@ -430,15 +544,15 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     if (reseting)
         return;
     
-  //  double preprocess_start_time = omp_get_wtime();
-   // scan_count++;
+    // double preprocess_start_time = omp_get_wtime();
+    // scan_count++;
    std::shared_ptr<livox_ros::LidarMsg> msg(new livox_ros::LidarMsg(*msg_in));
     if (msg->time_stamp < last_timestamp_lidar)
     {
         printf("lidar loop back, clear buffer");
         lidar_buffer.clear();
     }
- /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
+    /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
         printf("lidar lose rate");
     }*/ 
     last_timestamp_lidar = msg->time_stamp;
@@ -458,14 +572,14 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
 
     // 特征提取或间隔采样
-    p_pre->process(msg, ptr);
+    p_lidar_pre->process(msg, ptr);
 
     {
         std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
         ObstacleCloud->points.clear();
         FilteredObstacleCloud->points.clear();
-    //  ObstacleCloud = transformPointCloud(p_pre->pl_obstacle, param.T_wheel_lidar);
-        int size = p_pre->pl_obstacle->points.size();
+        // ObstacleCloud = transformPointCloud(p_lidar_pre->pl_obstacle, param.T_wheel_lidar);
+        int size = p_lidar_pre->pl_obstacle->points.size();
 
 
     }
@@ -479,22 +593,24 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
 void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
 {
     PointCloudXYZI::Ptr wheel_cloud(new PointCloudXYZI());
-    wheel_cloud = transformPointCloud(cloud, param.T_wheel_lidar);
+    wheel_cloud = transformPointCloud(cloud, config_param_.extrinsic.T_wheel_lidar);
+    const auto obstacle_max_height = config_param_.lidar_preproc.obstacle_max_height;
+    const auto obstacle_min_height = config_param_.lidar_preproc.obstacle_min_height;
     for(int i = 0; i < wheel_cloud->points.size(); i++){
-        if (wheel_cloud->points[i].z < param.obstacle_max_height && wheel_cloud->points[i].z > param.obstacle_min_height){
+        if (wheel_cloud->points[i].z < obstacle_max_height && wheel_cloud->points[i].z > obstacle_min_height){
             ObstacleCloud->points.push_back(wheel_cloud->points[i]); 
         }
     }
     // 定义方格大小（5cm）
-    float grid_size = 0.05; // 5cm
+    const auto grid_size = config_param_.lidar_preproc.grid_size; // 5cm
 
     // 计算点云的范围
     // PointType min_point, max_point;
     // pcl::getMinMax3D(*temp_cloud, min_point, max_point);
-    float max_x = param.obstacle_max_range;
-    float max_y = param.obstacle_max_range;
-    float min_x = -param.obstacle_max_range;
-    float min_y = -param.obstacle_max_range;
+    const auto max_x = config_param_.lidar_preproc.obstacle_max_range;
+    const auto max_y = config_param_.lidar_preproc.obstacle_max_range;
+    const auto min_x = -config_param_.lidar_preproc.obstacle_max_range;
+    const auto min_y = -config_param_.lidar_preproc.obstacle_max_range;
 
     // 计算x，y方向上的方格数量
     int num_x_grids = std::ceil((max_x - min_x) / grid_size);
@@ -519,13 +635,14 @@ void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
    
 
     // 遍历点云，保留符合条件的点
+    const auto obstacle_filter_size = config_param_.lidar_preproc.obstacle_filter_size;
     for (const auto& point : *ObstacleCloud)
     {
         int x_idx = std::floor((point.x - min_x) / grid_size);
         int y_idx = std::floor((point.y - min_y) / grid_size);
 
         // 检查索引是否在有效范围内，并且方格中的点云数量大于等于10
-        if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids && grid_count[x_idx][y_idx] >= param.obstacle_filter_size)
+        if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids && grid_count[x_idx][y_idx] >= obstacle_filter_size)
         {
             FilteredObstacleCloud->push_back(point);
         }
@@ -567,10 +684,12 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
     pcl::copyPointCloud(*msg_in, *ptr);
     ObstacleCloud->points.clear();
     int size = ptr->points.size();
+    auto blind = config_param_.lidar_preproc.blind_distance;
+    auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
     if (size > 2){
         for(int i = 0; i < size; i++){
             double range = ptr->points[i].x * ptr->points[i].x + ptr->points[i].y * ptr->points[i].y + ptr->points[i].z * ptr->points[i].z;
-            if (range>param.blind_distance*param.blind_distance && range<param.obstacle_max_range*param.obstacle_max_range)
+            if (range>blind*blind && range<obstacle_max_range*obstacle_max_range)
                 temp->points.push_back(ptr->points[i]);
         }
         filter_obstacle_cloud(temp);
@@ -607,7 +726,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     if (reseting)
         return;
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg(*msg_in));
-    if (!param.offline_mode){
+    if (!config_param_.common.offline_mode){
         if (!imu_file_shift){
             if (temp_imu_msg.size() > 0){
                 for(auto msg : temp_imu_msg){
@@ -656,7 +775,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     imu_buffer.push_back(msg);
     last_timestamp_imu = timestamp; // update imu time
     localization_wait = true;
-    if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
+    // if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
+    if (globalLocalizationSuccess || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING){// TODO add lock
         if (current_pose.base_time < localization_base.base_time - 0.005){
             // std::cout << "predicate pose "<<current_pose.imu_state.pos.transpose()<<std::endl;
             // std::cout << "update pose "<<localization_base.imu_state.pos.transpose()<<std::endl;
@@ -696,9 +816,9 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     if (poses_buffer.size() > 200)
         poses_buffer.pop_front();
     localization_wait = false;
-    if (param.localization_mode){
+    // if (param.localization_mode){
 
-    }
+    // }
 }
 
 
@@ -706,7 +826,7 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
     if (pcd_file.size() < 10)
         return;
     if (pcd_file.back() - pcd_file.front() > keep_time){
-        std::filesystem::remove(param.save_log_path + std::to_string(pcd_file.front()) + ".pcd");
+        std::filesystem::remove(config_param_.common.save_log_dir + std::to_string(pcd_file.front()) + ".pcd");
         pcd_file.pop_front();
     }
     imu_file_shift = true;
@@ -776,9 +896,9 @@ bool LidarSlam::run()
         {
             if (feats_down_size > 5)
             {
-                ikdtree->set_downsample_param(param.map_leaf_size);//0.5 默认0.2
-                ikdtree->set_cube_len(param.cube_len);
-                ikdtree->set_det_range(param.det_range);
+                ikdtree->set_downsample_param(config_param_.ikdtree.map_leaf_size);//0.5 默认0.2
+                ikdtree->set_cube_len(config_param_.ikdtree.cube_len);
+                ikdtree->set_det_range(config_param_.ikdtree.det_range);
 
                 FilteredUndistortCloudInOdom->resize(feats_down_size);
                 //   for (int i = 0; i < feats_down_size; i++)
@@ -831,7 +951,8 @@ bool LidarSlam::run()
         localization_base.imu_state = state_point;
         localization_base.base_time = lidar_end_time;
         localization_base.update_time = lidar_end_time;
-        if (!param.localization_mode){
+        // if (!param.localization_mode){
+        if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
             loop_closure_wait = true;
             bool insert = back_end->saveKeyFramesAndFactor(T_odom_lidar,undistortCloud,lidar_end_time); // TODO add transform
             if (insert){
@@ -862,8 +983,12 @@ bool LidarSlam::run()
                     optimized_path.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel);
                 }
             }
-            if(LoopIsClosed)
-                back_end->recontructIKdTree(*ikdtree,param.kdTreeReconstructRadius,param.kdTreeReconstructKeyFrameLeafSize,param.kdTreeReconstructPointLeafSize);
+            if(LoopIsClosed){
+                back_end->recontructIKdTree(*ikdtree,
+                                                config_param_.ikdtree.kdTreeReconstructRadius,
+                                                config_param_.ikdtree.kdTreeReconstructKeyFrameLeafSize,
+                                                config_param_.ikdtree.kdTreeReconstructPointLeafSize);
+            }
             loop_closure_wait = false;
         }else{
                 {
@@ -874,7 +999,8 @@ bool LidarSlam::run()
                 }             
         }
         // std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
-        if (!param.localization_mode){
+        // if (!param.localization_mode){
+        if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
 
         }
 
@@ -909,7 +1035,7 @@ bool LidarSlam::run()
         return true;
     }
     else{
-        delete_log_file(param.log_keep_time);
+        delete_log_file(config_param_.common.log_keep_time);
     }
 
         return false;

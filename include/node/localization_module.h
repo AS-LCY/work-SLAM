@@ -52,6 +52,8 @@
 #include "v4l2cam.h"
 #include "publish_common.h"
 #include "point_type_livox_def.h"
+#include "lidar_slam_param_def.h"
+#include "common_lib.h"
 
 namespace localization_module{
 
@@ -61,38 +63,54 @@ using namespace pcl;
 using namespace sensor_msgs;
 
 enum SlamCtrlCmd{
-    MAPPING_START           = 1000,  // 开始建图
+    START_MAPPING           = 1000,  // 开始建图
     MAPPING_POINT_BEGIN     = 2000,  // 设置起点
     MAPPING_ELE_DELETE      = 3000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
     MAPPING_POINT_END       = 4000,  // 设置终点
-    RELOCALIZATION_MAP      = 5000,  // 重定位->建图
-    RELOCALIZATION_LOC      = 6000,  // 重定位->定位
+    START_SEC_MAPPING       = 5000,  // 重定位->建图
+    START_LOCALIZATION      = 6000,  // 重定位->定位
     EXIT_LOCALIZATION       = 7000,  // 退出定位
     EXIT_MAPPING            = 9000,  // 退出建图
     CMD_MAX
 };
 
+enum ModuleStatus{
+    MODULE_IDLE = 0,
+    MODULE_MAPPING =1,
+    MODULE_SEC_MAPPING =2,
+    MODULE_LOCALIZATION = 3
+};
+
 enum MappingStatus{
-    MAPPING_INACTIVE = 0,    // 初始状态
-    MAPPING_STARTED = 1,    // 在建图中，等待设置起点
-    STARTPOINT_SET = 2,     // 已设置起点，等待设置终点(或闭合)
-    ENDPOINT_SET  = 3       // 已设置终点（或已闭合），当前元素创建结束
+    MAPPING_INACTIVE = 0,
+    MAPPING_RE_LOCALIZING =1,
+    MAPPING_CREATING_ELE = 2,
+    MAPPING_STANDBY =3
 };
 
-enum SlamMode{
-    INACTIVE = 0,       // 未激活状态
-    MAPPING = 1,        // 建图模式
-    LOCALIZATION = 2    // 定位模式
+enum LocalizationStatus{
+    LOCALIZATION_INACTIVE = 0,
+    LOCALIZATION_RE_LOCALIZING =1,
+    LOCALIZATION_LOCALIZING = 2
 };
 
+// enum MappingStatus{
+//     MAPPING_INACTIVE = 0,    // 初始状态
+//     MAPPING_STARTED = 1,    // 在建图中，等待设置起点
+//     STARTPOINT_SET = 2,     // 已设置起点，等待设置终点(或闭合)
+//     ENDPOINT_SET  = 3       // 已设置终点（或已闭合），当前元素创建结束
+// };
 
-#define CASE_STR(x) case x : return #x; break; 
-
+// enum SlamMode{
+//     INACTIVE = 0,       // 未激活状态
+//     MAPPING = 1,        // 建图模式
+//     LOCALIZATION = 2    // 定位模式
+// };
 
 class LocalizationModule{
 public:
     LocalizationModule(){};
-    LocalizationModule(const std::string work_path);
+    LocalizationModule(const std::string work_path, ModuleStatus init_status);
     ~LocalizationModule();
 
 
@@ -101,18 +119,28 @@ private:
 
     void load_params();
 
+    bool load_lidar_slam_param();
+    bool create_ROS_IO();
+
     // 建图
-    void start_mapping(bool module_mode);
+    // void start_mapping(bool module_mode);
+    void start_mapping(ModuleStatus set_status);
     void mark_start_point();
     void mark_end_point(int save_id);
     void clear_curr_element();
-    void start_second_mapping(bool localization_mode, int map_id);
+    // void start_second_mapping(bool localization_mode, int map_id);
+    void start_second_mapping(ModuleStatus set_status, int map_id);
     void stop_mapping();
+
+    void start_localization(ModuleStatus set_status, int map_id);
 
     void start_localization(bool module_mode, int map_id);
     void stop_localization();
 
+
+    bool run_module_by_set_status(ModuleStatus set_status);
     void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
+    bool make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status);
 
     // void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
     void release_slam_obj();
@@ -121,7 +149,7 @@ private:
     void mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
 
-    void command_cbk(const std_msgs::Int32 &msg_in);
+    // void command_cbk(const std_msgs::Int32 &msg_in);
     // void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
     void livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
 
@@ -132,36 +160,68 @@ private:
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
 
-    string print_MappingStatus(MappingStatus e){
+    string print_ModuleStatus(ModuleStatus e){
         switch (e){
-        CASE_STR(MAPPING_INACTIVE);
-        CASE_STR(MAPPING_STARTED);
-        CASE_STR(STARTPOINT_SET);
-        CASE_STR(ENDPOINT_SET);
+        CASE_STR(MODULE_IDLE);
+        CASE_STR(MODULE_MAPPING);
+        CASE_STR(MODULE_SEC_MAPPING);
+        CASE_STR(MODULE_LOCALIZATION);
         default:
             break;
         }
         return "UNKNOW_MappingStatus!";
     }
 
-    string print_SlamMode(SlamMode e){
+    string print_MappingStatus(MappingStatus e){
         switch (e){
-        CASE_STR(INACTIVE);
-        CASE_STR(MAPPING);
-        CASE_STR(LOCALIZATION);
+        CASE_STR(MAPPING_INACTIVE);
+        CASE_STR(MAPPING_RE_LOCALIZING);
+        CASE_STR(MAPPING_CREATING_ELE);
+        CASE_STR(MAPPING_STANDBY);
         default:
             break;
         }
-        return "UNKNOW_SlamMode!";
+        return "UNKNOW_MappingStatus!";
     }
+
+    string print_LocalizationStatus(LocalizationStatus e){
+        switch (e){
+        CASE_STR(LOCALIZATION_INACTIVE);
+        CASE_STR(LOCALIZATION_RE_LOCALIZING);
+        CASE_STR(LOCALIZATION_LOCALIZING);
+        default:
+            break;
+        }
+        return "UNKNOW_LocalizationStatus!";
+    }
+
+    // string print_SlamMode(SlamMode e){
+    //     switch (e){
+    //     CASE_STR(INACTIVE);
+    //     CASE_STR(MAPPING);
+    //     CASE_STR(LOCALIZATION);
+    //     default:
+    //         break;
+    //     }
+    //     return "UNKNOW_SlamMode!";
+    // }
+
+
+    template <class T>
+    void get_param(const std::string& param_str, T& param, bool* is_success){
+        if(!nh_.getParamCached(param_str,param)){
+            ROS_WARN("load param %s failed", param_str.c_str());
+            *is_success = false;
+        }
+    };
 
 public:
 
 private:
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;
-    ros::Subscriber sub_mapping_ctrl_;
 
+    ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
     ros::Subscriber sub_imu_;
 
@@ -181,14 +241,18 @@ private:
     // show thread
     lidar_slam::Control_status control_status_;
 
+    // 模块 localization module
+    ModuleStatus set_module_status_ = MODULE_IDLE;
+    ModuleStatus running_module_status_ = MODULE_IDLE;
 
     // 建图 *******************************************
-    bool running_slam_ = false;
-    SlamMode slam_mode_ = INACTIVE;
+    // bool running_slam_ = false;
+    // SlamMode slam_mode_ = INACTIVE;
     MappingStatus mapping_status_ = MAPPING_INACTIVE; // if change to module_status_??
+    LocalizationStatus localization_status_ = LOCALIZATION_INACTIVE;
 
     // 二次建图
-    bool second_mapping_ = false;
+    // bool second_mapping_ = false;
     int start_index_ = -1;
     int end_index_ = -1;
 
@@ -220,6 +284,10 @@ private:
     ros::Publisher pubKeyframePose;
     ros::Publisher pubRgbCloud;
     //ros::Publisher image_pub;    
+
+
+    /// params load from yaml
+    lidar_slam::LidarSlamParam slam_param_;
 
     
 };

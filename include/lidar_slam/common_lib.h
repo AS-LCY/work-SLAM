@@ -39,6 +39,9 @@ typedef Vector3f V3F;
 typedef Matrix3f M3F;
 
 
+#define CASE_STR(x) case x : return #x; break; 
+
+
 
 
 

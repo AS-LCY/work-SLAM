@@ -5,6 +5,7 @@
 int main(int argc,char **argv){
 
     ros::init(argc, argv, "localization_module");
+    ros::NodeHandle nh;
     std::string curr_path;
     #ifdef CURRENT_DIR
         std::cout<<"CURRENT_DIR is defined"<<std::endl;
@@ -14,7 +15,13 @@ int main(int argc,char **argv){
         exit(0);
     #endif
 
-    localization_module::LocalizationModule localization_mod(curr_path);
+    int init_module_status = 0;
+    nh.param<int>("/flbot/lidar_slam/common/init_module_status", init_module_status, 0);
+
+    localization_module::ModuleStatus init_status = static_cast<localization_module::ModuleStatus>(init_module_status);
+    
+
+    localization_module::LocalizationModule localization_module(curr_path, init_status);
     
 
     ros::MultiThreadedSpinner spinner(10);
