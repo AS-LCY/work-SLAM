@@ -81,7 +81,7 @@ class LidarSlam
         void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
-            cout<<"destruct"<<endl;
+            // cout<<"destruct"<<endl;
             thread_run = false;
             thread->join();
             thread.reset(nullptr);
@@ -94,7 +94,7 @@ class LidarSlam
 
             //  LivoxLidarSdkUninit();// disable start_driver of lidar
 
-            cout<<"destruct end"<<endl;
+            // cout<<"destruct end"<<endl;
          };
         bool run();
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);

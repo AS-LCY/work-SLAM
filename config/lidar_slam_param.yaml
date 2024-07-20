@@ -5,7 +5,7 @@ common:
   offline_mode: false
   fast_mode: false
   just_show_mode: false
-  show_rviz: true
+  show_rviz: false
   save_log_dir: "/home/"
   log_keep_time: 500
 
@@ -41,14 +41,14 @@ mapping:
   key_frame_distance: 1.0
   key_frame_angle: 0.2
   loopSearchDistance: 1.5
-  save_map_dir: 
+  save_map_dir: /home/panmiaomiao/catkin_ws/data/test-save-map # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
 
 sec_mapping:
-  load_map_dir: 
+  load_map_dir: " " # 可以填空字符，但不能不赋值
     
 localization:
-  load_map_dir: 
+  load_map_dir: /home/panmiaomiao/catkin_ws/data/天河草场/2/map # 可以填空字符，但不能不赋值
 
 ikdtree:
   cube_len: 400.0

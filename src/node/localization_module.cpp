@@ -10,14 +10,18 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
     // load_params();
     if (!load_lidar_slam_param()){
         ROS_ERROR("load lidar-slam param failed!");
+    }else {
+        ROS_INFO("load lidar-slam param successfully!");
     }
 
     if(!create_ROS_IO()){
         ROS_ERROR("create ROS-IO failed!");
+    }else {
+        ROS_INFO("create ROS-IO successfully!");
     }
 
     //************************** TODO: 待确认 *******************************
-    if (!show_rviz_){// this param load from lasunch file
+    if (show_rviz_){// this param load from lasunch file
         show_thread_ = std::thread(&LocalizationModule::show_thread, this);
         ROS_INFO("show_thread started");
     }
@@ -45,14 +49,14 @@ bool LocalizationModule::run_module_by_set_status(ModuleStatus set_status){
     set_module_status_ = set_status;
 
     if(set_module_status_ == MODULE_IDLE){
-        ROS_INFO("Running module status: %s", print_ModuleStatus(set_module_status_).c_str());
+        // ROS_INFO("Running module status: %s", print_ModuleStatus(set_module_status_).c_str());
     }else if (set_module_status_ == MODULE_MAPPING){
         start_mapping(set_module_status_);
         running_module_status_ = set_module_status_;
     }else if (set_module_status_ == MODULE_SEC_MAPPING){
-
+        // TODO
     }else if (set_module_status_ == MODULE_LOCALIZATION){
-
+        // TODO
     }
 
 
@@ -167,7 +171,7 @@ void LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_i
     if (running_module_status_ == MODULE_IDLE){
         make_slam_obj(slam_param_, set_status);
         // 加载地图
-        ROS_INFO("load map dir: %s", load_map_dir.c_str());
+        ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout 可以正常打印中文
         slam_ -> load_map(load_map_dir);
         mapping_status_ = MAPPING_STANDBY;
     }else if(running_module_status_ == MODULE_MAPPING || 
@@ -312,7 +316,7 @@ void LocalizationModule::stop_mapping(){
 void LocalizationModule::start_localization(ModuleStatus set_status, int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
-    std::string load_map_dir = slam_param_.sec_mapping.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
+    std::string load_map_dir = slam_param_.localization.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
 
 
     if (running_module_status_ == MODULE_IDLE){
