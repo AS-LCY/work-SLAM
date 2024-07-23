@@ -33,10 +33,10 @@ lidar_preproc:
   grid_size: 0.05 # unit: m
 
 mapping:
-  acc_cov: 0.1 # not used
-  gyr_cov: 0.1 # not used
-  b_acc_cov: 0.0001 # not used
-  b_gyr_cov: 0.0001 # not used  
+  acc_cov: 0.1 # 用于IMU_Processing
+  gyr_cov: 0.1 # 同上
+  b_acc_cov: 0.0001 # 同上
+  b_gyr_cov: 0.0001 # 同上  
   cloud_leaf_size: 0.5
   key_frame_distance: 1.0
   key_frame_angle: 0.2

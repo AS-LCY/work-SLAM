@@ -69,6 +69,7 @@ bool LocalizationModule::run_module_by_set_status(ModuleStatus set_status){
 void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     /** msg_in
      *      1000: 开始建图； ////
+     *      6000: 地图编辑 + 建图
      *      2000: 设置起点 ///
      *      3000: 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
      *      4000: 设置终点 ///  1001: 开始建图 with ID=1；
@@ -77,6 +78,22 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
      * 
      *      6000: 重定位，并开始定位
      *      7000: 退出定位
+     *      
+     * to be continued
+     */  
+    //// topic-name: "/mapping_manager_cmd"
+
+
+    /** msg_in
+     *      1000: 开始建图； ////
+     *      2000: 地图编辑 + 建图
+     *      3000: 设置起点 ///
+     *      4000: 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
+     *      5000: 设置终点 ///  1001: 开始建图 with ID=1；
+     *      6000: 退出建图 ////
+     * 
+     *      7000: 重定位，并开始定位
+     *      8000: 退出定位
      *      
      * to be continued
      */  
@@ -165,7 +182,14 @@ void LocalizationModule::start_mapping(ModuleStatus set_status){
 void LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
-    std::string load_map_dir = slam_param_.sec_mapping.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
+
+    const auto use_ele_pcd_flag = slam_param_.mapping.use_ele_pcd_flag;
+    std::string load_map_dir;
+    if (use_ele_pcd_flag){
+        load_map_dir = slam_param_.sec_mapping.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
+    }else{
+        load_map_dir = slam_param_.sec_mapping.load_map_dir +std::string("/");
+    }
 
 
     if (running_module_status_ == MODULE_IDLE){
@@ -224,13 +248,19 @@ void LocalizationModule::mark_end_point(int save_id){
             ROS_INFO("end_index  : %d", end_index_);
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
 
-            // save pcd
-            std::string pcd_path = slam_param_.mapping.save_map_dir +std::string("/")+ std::to_string(save_id)+std::string("/");
-            if (save_id > 0){ // save_id == 0, 表示是禁区， 不保存小的 pcd
-                ROS_INFO("saving cloud map of current element ...");
-                const auto resolution = slam_param_.mapping.save_map_resolution;
-                slam_->save_map(pcd_path, resolution, start_index_, end_index_);
-            }
+            const auto save_ele_pcd_flag = slam_param_.mapping.save_ele_pcd_flag;
+            if(save_ele_pcd_flag){
+                // save pcd
+                std::string pcd_path = slam_param_.mapping.save_map_dir +std::string("/")+ std::to_string(save_id)+std::string("/");
+                if (save_id > 0){ // save_id == 0, 表示是禁区， 不保存小的 pcd
+                    ROS_INFO("saving cloud map of current element ...");
+                    const auto resolution = slam_param_.mapping.save_map_resolution;
+                    slam_->save_map(pcd_path, resolution, start_index_, end_index_);
+                }
+                return;
+            }else{
+                return;
+            }// 
 
         }else{
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
@@ -316,7 +346,14 @@ void LocalizationModule::stop_mapping(){
 void LocalizationModule::start_localization(ModuleStatus set_status, int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
-    std::string load_map_dir = slam_param_.localization.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
+
+    const auto use_ele_pcd_flag = slam_param_.mapping.use_ele_pcd_flag;
+    std::string load_map_dir = "";
+    if (use_ele_pcd_flag){
+        load_map_dir = slam_param_.localization.load_map_dir +std::string("/")+std::to_string(map_id)+std::string("/");
+    }else{
+        load_map_dir = slam_param_.localization.load_map_dir +std::string("/");
+    }
 
 
     if (running_module_status_ == MODULE_IDLE){

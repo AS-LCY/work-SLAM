@@ -181,13 +181,16 @@ class LidarSlam
             std::lock_guard<std::mutex> lk(mtx_pose);
             // if(!param.localization_mode){
             if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING){
-               return T_odom_lidar;
+                return T_odom_lidar;
             } 
             else if(working_mode_==LOCALIZATION){
-               Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
-               Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
-               Eigen::Isometry3d temp  =   T_odom_b * T_b_lidar;
-               return  temp;
+                Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
+                Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
+                Eigen::Isometry3d temp  =   T_odom_b * T_b_lidar;
+                return  temp;
+            }else{
+                Eigen::Isometry3d temp = Eigen::Isometry3d::Identity();
+                return temp;
             }
         } 
         Eigen::Isometry3d getWheelInOdom(){

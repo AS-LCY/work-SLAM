@@ -787,22 +787,21 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     //cloudKeyPoses6D  转换为T_world_lidar 。 T_world_lidar = T_world_body * T_body_lidar , T_body_lidar 是外参
     int start = 0, end=0;
     int KeyPosesSize = (int)KeyPoses.size();
+    pcd_file_path = saveMapDirectory + "/cloud_map.pcd";
     if (start_index == 0 && end_index == 0){
         start = 0;
         end = KeyPosesSize -1;
-        pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
+        // pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
     }else if(start_index == -1 || end_index == -1){
         cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
         start = 0;
         end = KeyPosesSize -1;
-        pcd_file_path = saveMapDirectory + "/cloud_map.pcd";
     }else{
         start = start_index;
         end = end_index;
         if (end > KeyPosesSize-1){
             end = KeyPosesSize -1;
         }
-        pcd_file_path = saveMapDirectory + "/cloud_map.pcd";
     }
 
     //   for (int i = 0; i < (int)KeyPoses.size(); i++) {

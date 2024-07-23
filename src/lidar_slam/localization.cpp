@@ -34,7 +34,7 @@ bool Localization::loadMap(std::string path){
         *CloudGlobalMap = *TempMap;
         std::cout << "load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() << std::endl;
     }
-
+    // // no ComplementMap.pcd
     std::string ComplementMap_file_path = path+std::string("ComplementMap.pcd");
     if (std::filesystem::exists(ComplementMap_file_path)){
         TempMap->points.clear();
