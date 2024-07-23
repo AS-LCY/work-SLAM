@@ -225,11 +225,14 @@ class LidarSlam
             return localization -> getLoadKeyFrame();
         }
         PointCloudXYZI::Ptr getTestCloud(){
+            PointCloudXYZI::Ptr temp(new PointCloudXYZI());
             // if (param.localization_mode)
             if (working_mode_==LOCALIZATION)
-               return localization -> getTestCloud();
+                return localization -> getTestCloud();
             else if(working_mode_==MAPPING || working_mode_ ==SEC_MAPPING)
-               return back_end-> getTestCloud();
+                return back_end-> getTestCloud();
+            else
+                return temp;
         }
         PointCloudXYZI::Ptr getCurrentMap()
         {
