@@ -41,6 +41,8 @@ mapping:
   key_frame_distance: 1.0
   key_frame_angle: 0.2
   loopSearchDistance: 1.5
+  use_ele_pcd_flag: false
+  save_ele_pcd_flag: false
   save_map_dir: /home/panmiaomiao/catkin_ws/data/test-save-map # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
 

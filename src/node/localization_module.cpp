@@ -775,6 +775,8 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "mapping/key_frame_distance", slam_param_.mapping.key_frame_distance, &success);
     get_param(ns+ "mapping/key_frame_angle", slam_param_.mapping.key_frame_angle, &success);
     get_param(ns+ "mapping/loopSearchDistance", slam_param_.mapping.loopSearchDistance, &success);
+    get_param(ns+ "mapping/use_ele_pcd_flag", slam_param_.mapping.use_ele_pcd_flag, &success);
+    get_param(ns+ "mapping/save_ele_pcd_flag", slam_param_.mapping.save_ele_pcd_flag, &success);
     get_param(ns+ "mapping/save_map_dir", slam_param_.mapping.save_map_dir, &success);
     get_param(ns+ "mapping/save_map_resolution", slam_param_.mapping.save_map_resolution, &success);
     
