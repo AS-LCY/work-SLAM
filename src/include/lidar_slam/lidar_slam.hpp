@@ -109,6 +109,8 @@ class LidarSlam
                 return true;
             }else if(working_mode_ == MAPPING || working_mode_ == SEC_MAPPING){
                 return back_end->saveMap(saveMapDirectory,resolution,getOdomToMap(), start_index, end_index);
+            }else{
+                return true;
             }
         };
        
