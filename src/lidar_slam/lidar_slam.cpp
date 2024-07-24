@@ -342,7 +342,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
     
     if (lidar_buffer.empty() || imu_buffer.empty())
     {
-       // printf("wait lidar data\n");
+        printf("wait lidar data\n");
         return false;
     }
     if (reseting == true)
@@ -427,6 +427,7 @@ void LidarSlam::localizationThread()
 {
     const int frequency = 1.0; // 频率为1Hz
     const std::chrono::milliseconds period(1000 / frequency);
+    const auto score_thr = config_param_.re_localization.score_thr;
 
     while (thread_run&&reseting == false)
     {
@@ -452,7 +453,7 @@ void LidarSlam::localizationThread()
 
                 //state.state("lost");
                 mutex mtx_lidar_cloud;
-                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr_); 
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
                 cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
             }
@@ -479,6 +480,7 @@ void LidarSlam::localizationThread()
 void LidarSlam::relocalizationForMappingThread(){
     const int frequency = 1.0; // 频率为1Hz
     const std::chrono::milliseconds period(1000 / frequency);
+    const auto score_thr = config_param_.re_localization.score_thr;
 
     while (thread_run&&reseting == false)
     {
@@ -505,7 +507,7 @@ void LidarSlam::relocalizationForMappingThread(){
 
                 //state.state("lost");
                 mutex mtx_lidar_cloud;
-                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr_); 
+                globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr); 
                 cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
             }
@@ -766,11 +768,11 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     std::lock_guard<std::mutex> lk(mtx_buffer);
     if (timestamp < last_timestamp_imu)
     {
-        printf("imu loop back, clear buffer");
+        printf("imu loop back, clear buffer\n");
         imu_buffer.clear();
     }
     else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
-        printf("imu lose rate");
+        printf("imu lose rate\n");
     }
     imu_buffer.push_back(msg);
     last_timestamp_imu = timestamp; // update imu time
@@ -1035,10 +1037,11 @@ bool LidarSlam::run()
         return true;
     }
     else{
+        cout << "sync measure failed !"<<endl;
         delete_log_file(config_param_.common.log_keep_time);
     }
 
-        return false;
+    return false;
 
     
 }

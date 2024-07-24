@@ -64,13 +64,13 @@ using namespace sensor_msgs;
 
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
-    MAPPING_POINT_BEGIN     = 2000,  // 设置起点
-    MAPPING_ELE_DELETE      = 3000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
-    MAPPING_POINT_END       = 4000,  // 设置终点
-    START_SEC_MAPPING       = 5000,  // 重定位->建图
-    START_LOCALIZATION      = 6000,  // 重定位->定位
-    EXIT_LOCALIZATION       = 7000,  // 退出定位
-    EXIT_MAPPING            = 9000,  // 退出建图
+    START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
+    MAPPING_POINT_BEGIN     = 3000,  // 设置起点
+    MAPPING_ELE_DELETE      = 4000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
+    MAPPING_POINT_END       = 5000,  // 设置终点
+    EXIT_MAPPING            = 6000,  // 退出建图
+    START_LOCALIZATION      = 7000,  // 重定位->定位
+    EXIT_LOCALIZATION       = 8000,  // 退出定位
     CMD_MAX
 };
 
@@ -124,22 +124,22 @@ private:
 
     // 建图
     // void start_mapping(bool module_mode);
-    void start_mapping(ModuleStatus set_status);
-    void mark_start_point();
-    void mark_end_point(int save_id);
-    void clear_curr_element();
+    bool start_mapping(ModuleStatus set_status);
+    bool mark_start_point();
+    bool mark_end_point(int save_id);
+    bool clear_curr_element();
     // void start_second_mapping(bool localization_mode, int map_id);
-    void start_second_mapping(ModuleStatus set_status, int map_id);
-    void stop_mapping();
+    bool start_second_mapping(ModuleStatus set_status, int map_id);
+    bool stop_mapping();
 
-    void start_localization(ModuleStatus set_status, int map_id);
+    bool start_localization(ModuleStatus set_status, int map_id);
 
-    void start_localization(bool module_mode, int map_id);
-    void stop_localization();
+    // void start_localization(bool module_mode, int map_id);
+    bool stop_localization();
 
 
-    bool run_module_by_set_status(ModuleStatus set_status);
-    void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
+    bool init_module_by_set_status(ModuleStatus set_status);
+    // void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
     bool make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status);
 
     // void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
@@ -194,18 +194,6 @@ private:
         }
         return "UNKNOW_LocalizationStatus!";
     }
-
-    // string print_SlamMode(SlamMode e){
-    //     switch (e){
-    //     CASE_STR(INACTIVE);
-    //     CASE_STR(MAPPING);
-    //     CASE_STR(LOCALIZATION);
-    //     default:
-    //         break;
-    //     }
-    //     return "UNKNOW_SlamMode!";
-    // }
-
 
     template <class T>
     void get_param(const std::string& param_str, T& param, bool* is_success){

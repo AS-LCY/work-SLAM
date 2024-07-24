@@ -82,12 +82,14 @@ class LidarSlam
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
             // cout<<"destruct"<<endl;
+            // cout <<"work mode: "<<print_SlamWorkMode(working_mode_)<<endl;
             thread_run = false;
             thread->join();
             thread.reset(nullptr);
             show_thread->join();
             show_thread.reset(nullptr);
-            if(sec_mapping_){
+            // if(sec_mapping_){
+            if(working_mode_ == SEC_MAPPING){
                 second_mapping_thread->join();
                 second_mapping_thread.reset(nullptr);
             }
@@ -330,8 +332,7 @@ class LidarSlam
         PointCloudXYZI::Ptr kdtreeCloud;
         PointCloudXYZI::Ptr ObstacleCloud;
         PointCloudXYZI::Ptr FilteredObstacleCloud;
-        bool sec_mapping_ = false;
-        double score_thr_=0;
+        
         SlamWorkMode working_mode_ = UNKNOWN;
 
 

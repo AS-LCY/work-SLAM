@@ -9,21 +9,21 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
 
     // load_params();
     if (!load_lidar_slam_param()){
-        ROS_ERROR("load lidar-slam param failed!");
+        ROS_ERROR("Load lidar-slam param failed!");
     }else {
-        ROS_INFO("load lidar-slam param successfully!");
+        ROS_INFO("Load lidar-slam param successfully!");
     }
 
     if(!create_ROS_IO()){
-        ROS_ERROR("create ROS-IO failed!");
+        ROS_ERROR("Create ROS-IO failed!");
     }else {
-        ROS_INFO("create ROS-IO successfully!");
+        ROS_INFO("Create ROS-IO successfully!");
     }
 
     //************************** TODO: 待确认 *******************************
     if (show_rviz_){// this param load from lasunch file
         show_thread_ = std::thread(&LocalizationModule::show_thread, this);
-        ROS_INFO("show_thread started");
+        ROS_INFO("Show_thread started");
     }
 
     // TODO
@@ -33,67 +33,70 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
     }
     //***********************************************************************
 
-    if(!run_module_by_set_status(init_status)){
-        ROS_INFO("try to run module with status: %s, but failed",print_ModuleStatus(init_status).c_str());
+    if(!init_module_by_set_status(init_status)){
+        ROS_INFO("Try to init module with status: %s, but failed",print_ModuleStatus(init_status).c_str());
     }else{
-        ROS_INFO("Localization Module start ");
+        ROS_INFO("Localization Module Start with status: %s", print_ModuleStatus(running_module_status_).c_str());
     }
 
+
+    ROS_INFO("***************************************************");
 }
 
 LocalizationModule::~LocalizationModule(){
 
 }
 
-bool LocalizationModule::run_module_by_set_status(ModuleStatus set_status){
+bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     set_module_status_ = set_status;
 
     if(set_module_status_ == MODULE_IDLE){
-        // ROS_INFO("Running module status: %s", print_ModuleStatus(set_module_status_).c_str());
+        // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
     }else if (set_module_status_ == MODULE_MAPPING){
-        start_mapping(set_module_status_);
-        running_module_status_ = set_module_status_;
+        if(start_mapping(set_module_status_)){
+            running_module_status_ = set_module_status_;
+            mapping_status_ = MAPPING_STANDBY;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
     }else if (set_module_status_ == MODULE_SEC_MAPPING){
         // TODO
+        int map_id = 0;/////////////// TODO
+        if(start_second_mapping(set_module_status_, map_id)){
+            running_module_status_ = MODULE_SEC_MAPPING;
+            mapping_status_ = MAPPING_STANDBY;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
     }else if (set_module_status_ == MODULE_LOCALIZATION){
         // TODO
+        int map_id = 0;/////////////// TODO
+        if(start_localization(set_module_status_, map_id)){
+            running_module_status_ = MODULE_LOCALIZATION;
+            localization_status_ = LOCALIZATION_LOCALIZING;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
     }
 
-
-    ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
-
+    // ROS_INFO("init module status: %s", print_ModuleStatus(running_module_status_).c_str());
 
     return true;
 }
 
 void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     /** msg_in
-     *      1000: 开始建图； ////
-     *      6000: 地图编辑 + 建图
-     *      2000: 设置起点 ///
-     *      3000: 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
-     *      4000: 设置终点 ///  1001: 开始建图 with ID=1；
-     *      5000: 重定位，并开始继续建图
-     *      9000: 退出建图 ////
-     * 
-     *      6000: 重定位，并开始定位
-     *      7000: 退出定位
-     *      
-     * to be continued
-     */  
-    //// topic-name: "/mapping_manager_cmd"
-
-
-    /** msg_in
-     *      1000: 开始建图； ////
-     *      2000: 地图编辑 + 建图
-     *      3000: 设置起点 ///
-     *      4000: 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
-     *      5000: 设置终点 ///  1001: 开始建图 with ID=1；
-     *      6000: 退出建图 ////
-     * 
-     *      7000: 重定位，并开始定位
-     *      8000: 退出定位
+     * enum SlamCtrlCmd{
+     *     START_MAPPING           = 1000,  // 开始建图
+     *     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
+     *     MAPPING_POINT_BEGIN     = 3000,  // 设置起点
+     *     MAPPING_ELE_DELETE      = 4000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
+     *     MAPPING_POINT_END       = 5000,  // 设置终点，带子地图ID，5001，ID=1
+     *     EXIT_MAPPING            = 6000,  // 退出建图
+     *     START_LOCALIZATION      = 7000,  // 重定位->定位
+     *     EXIT_LOCALIZATION       = 8000,  // 退出定位
+     *     CMD_MAX
+     * };
      *      
      * to be continued
      */  
@@ -106,47 +109,69 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     switch (curr_cmd){
         case START_MAPPING:{
             set_module_status_ = MODULE_MAPPING;
-            start_mapping(set_module_status_);
-            running_module_status_ = MODULE_MAPPING;
+            if(start_mapping(set_module_status_)){
+                running_module_status_ = MODULE_MAPPING;
+                mapping_status_ = MAPPING_STANDBY;
+            }else{
+                set_module_status_ = running_module_status_;// 设置失败，则恢复 set_module_status_ 状态
+            }
+
             break;
         }
         case START_SEC_MAPPING:{// 重定位，并开始建图，/// TODO/////////////////////////////////////
             int map_id = msg.data % 1000;
             set_module_status_ = MODULE_SEC_MAPPING;
-            start_second_mapping(set_module_status_, map_id);
-            running_module_status_ = MODULE_SEC_MAPPING;
+            if(start_second_mapping(set_module_status_, map_id)){
+                running_module_status_ = MODULE_SEC_MAPPING;
+                mapping_status_ = MAPPING_STANDBY;
+            }else{
+                set_module_status_ = running_module_status_;
+            }
             break;
         }
         case MAPPING_POINT_BEGIN:{
-            mark_start_point();
+            if(mark_start_point())
+                mapping_status_ = MAPPING_CREATING_ELE;
             break;
         }
         case MAPPING_ELE_DELETE:{
-            clear_curr_element();
+            if(clear_curr_element())
+                mapping_status_ = MAPPING_STANDBY;
             break;
         }
         case MAPPING_POINT_END:{
             int ele_id = msg.data % 1000;
-            mark_end_point(ele_id);
+            if(mark_end_point(ele_id))
+                mapping_status_ = MAPPING_STANDBY;
             break;
         }
         case EXIT_MAPPING:{
             set_module_status_ = MODULE_IDLE;
-            stop_mapping();
-            running_module_status_ = MODULE_IDLE;
+            if(stop_mapping()){
+                running_module_status_ = MODULE_IDLE;
+                mapping_status_ = MAPPING_INACTIVE;
+            }else{
+                set_module_status_ = running_module_status_;
+            }
             break;
         }
         case START_LOCALIZATION:{// 开始定位，（先重定位，再定位）
             int map_id = msg.data % 1000;
             set_module_status_ = MODULE_LOCALIZATION;
-            start_localization(set_module_status_, map_id);
-            running_module_status_ = MODULE_LOCALIZATION;
+            if(start_localization(set_module_status_, map_id)){
+                running_module_status_ = MODULE_LOCALIZATION;
+                localization_status_ = LOCALIZATION_LOCALIZING;
+            }else{
+                set_module_status_ = running_module_status_;
+            }
             break;
         }
         case EXIT_LOCALIZATION:{
             set_module_status_ = MODULE_IDLE;
-            stop_localization();
-            running_module_status_ = MODULE_IDLE;
+            if(stop_localization())
+                running_module_status_ = MODULE_IDLE;
+            else
+                set_module_status_ = running_module_status_;
             break;
         }
         default:{
@@ -156,30 +181,35 @@ void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
     }
 }
 
-void LocalizationModule::start_mapping(ModuleStatus set_status){
+bool LocalizationModule::start_mapping(ModuleStatus set_status){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
     if (running_module_status_ == MODULE_IDLE){
         make_slam_obj(slam_param_, set_status);
+        // mapping_status_ = MAPPING_STANDBY;
+        // running_module_status_ = MODULE_MAPPING;
+        return true;
     }else if(running_module_status_ == MODULE_MAPPING || 
              running_module_status_ == MODULE_SEC_MAPPING){
         ROS_INFO("skip, already running mapping now");//////////////////// TODO 要不要重置 start_index_ end_index_ ？？？
+        return false;
     }else if (running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, running localizing now, please stop localizing first");
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
         ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
         ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
 
-    running_module_status_ = MODULE_MAPPING;
 }
 
 
-void LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_id){
+bool LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
@@ -198,36 +228,42 @@ void LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_i
         ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout 可以正常打印中文
         slam_ -> load_map(load_map_dir);
         mapping_status_ = MAPPING_STANDBY;
+        // running_module_status_ = MODULE_SEC_MAPPING;
+        return true;
     }else if(running_module_status_ == MODULE_MAPPING || 
              running_module_status_ == MODULE_SEC_MAPPING){
         ROS_INFO("skip, already running mapping now");
+        return false;
     }else if (running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, running localizing now, please stop localizing first");
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
         ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
         ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
-    running_module_status_ = MODULE_SEC_MAPPING;
 }
 
-void LocalizationModule::mark_start_point(){
+bool LocalizationModule::mark_start_point(){
     if (running_module_status_==MODULE_MAPPING || running_module_status_==MODULE_SEC_MAPPING){
         if(mapping_status_ == MAPPING_STANDBY){
             start_index_ = slam_->get_curr_pose_index();
             end_index_ = -1;
-            mapping_status_ = MAPPING_CREATING_ELE;
             ROS_INFO("start_index: %d", start_index_);
             ROS_INFO("end_index  : %d", end_index_);
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
+            return true;
         }else{
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
             ROS_INFO("skip, please make sure mapping_status_ == MAPPING_STANDBY");
+            return false;
         }
     }else if (running_module_status_==MODULE_IDLE || running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
@@ -235,15 +271,15 @@ void LocalizationModule::mark_start_point(){
         ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
 }
 
 
-void LocalizationModule::mark_end_point(int save_id){
+bool LocalizationModule::mark_end_point(int save_id){
     if (running_module_status_==MODULE_MAPPING || running_module_status_==MODULE_SEC_MAPPING){
         if(mapping_status_ == MAPPING_CREATING_ELE){
             end_index_ = slam_->get_curr_pose_index();
-            mapping_status_ = MAPPING_STANDBY;
             ROS_INFO("start_index: %d", start_index_);
             ROS_INFO("end_index  : %d", end_index_);
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
@@ -257,17 +293,19 @@ void LocalizationModule::mark_end_point(int save_id){
                     const auto resolution = slam_param_.mapping.save_map_resolution;
                     slam_->save_map(pcd_path, resolution, start_index_, end_index_);
                 }
-                return;
             }else{
-                return;
+                ROS_INFO("Set to not saving ele pcd");
             }// 
+            return true;
 
         }else{
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
             ROS_INFO("skip, please make sure mapping_status_ == MAPPING_STANDBY");
+            return false;
         }
     }else if (running_module_status_==MODULE_IDLE || running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
@@ -275,26 +313,29 @@ void LocalizationModule::mark_end_point(int save_id){
         ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
 
 }
 
 
-void LocalizationModule::clear_curr_element(){
+bool LocalizationModule::clear_curr_element(){
     if (running_module_status_==MODULE_MAPPING || running_module_status_==MODULE_SEC_MAPPING){
         if (mapping_status_ == MAPPING_CREATING_ELE){
             start_index_ = -1;
             end_index_ = -1;
-            mapping_status_ = MAPPING_STANDBY;
             ROS_INFO("reset start & end point!");
             ROS_INFO("start_index: %d", start_index_);
             ROS_INFO("end_index  : %d", end_index_);
+            return true;
         }else{
             ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
             ROS_INFO("skip, please make sure mapping_status_ == MAPPING_CREATING_ELE");
+            return false;
         }
     }else if (running_module_status_==MODULE_IDLE || running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
@@ -302,32 +343,44 @@ void LocalizationModule::clear_curr_element(){
         ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
 }
 
 
-void LocalizationModule::stop_mapping(){
+bool LocalizationModule::stop_mapping(){
+    // TODO: 问题：当点云量为0时，程序挂掉
     if (running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
-        ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
         if(mapping_status_ == MAPPING_STANDBY){
+            ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
             ROS_INFO("saving global map");
-            std::string pcd_dir = slam_param_.mapping.save_map_dir + std::string("/map/");
+            std::string pcd_dir = slam_param_.mapping.save_map_dir;
             const auto resolution = slam_param_.mapping.save_map_resolution;
             slam_->save_map(pcd_dir, resolution, 0, 0);
 
             ROS_INFO("start stop mapping");
-            mapping_status_ = MAPPING_INACTIVE;
+            // mapping_status_ = MAPPING_INACTIVE;
             sleep(1);
+            // set_module_status_ = MODULE_IDLE;
             release_slam_obj();
             ROS_INFO("mapping stopped !");
-
+            return true;
         }else if(mapping_status_ == MAPPING_CREATING_ELE){
+            ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
             ROS_INFO("skip, please finish current map-element, or delete it first !");
+            return false;
         }else{
-
+            ROS_INFO("skip, status error!");
+            ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
+            ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+            ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
+            ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
+            ROS_INFO("****************************");
+            return false;
         }
     }else if(running_module_status_==MODULE_IDLE || running_module_status_==MODULE_LOCALIZATION){
         ROS_INFO("skip, can not stop mapping, running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
@@ -335,15 +388,16 @@ void LocalizationModule::stop_mapping(){
         ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
 
-    running_module_status_ = MODULE_IDLE;
+    // running_module_status_ = MODULE_IDLE;
 
-    return;
+    // return;
 }
 
 
-void LocalizationModule::start_localization(ModuleStatus set_status, int map_id){
+bool LocalizationModule::start_localization(ModuleStatus set_status, int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
@@ -361,32 +415,36 @@ void LocalizationModule::start_localization(ModuleStatus set_status, int map_id)
         // 加载地图
         ROS_INFO("load map dir: %s", load_map_dir.c_str());
         slam_ -> load_map(load_map_dir);
-        mapping_status_ = MAPPING_STANDBY;
+        return true;
     }else if (running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, already running mapping now");
+        return false;
     }else if(running_module_status_ == MODULE_MAPPING || 
              running_module_status_ == MODULE_SEC_MAPPING){
         ROS_INFO("skip, running localizing now, please stop localizing first");
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
         ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
         ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
-    running_module_status_ = MODULE_SEC_MAPPING;
-
 }
 
-void LocalizationModule::stop_localization(){
+bool LocalizationModule::stop_localization(){
 
     if (running_module_status_==MODULE_LOCALIZATION){
         sleep(1);
         release_slam_obj();
         ROS_INFO("localization stopped !");
+        // running_module_status_ = MODULE_IDLE;
+        return true;
 
     }else if(running_module_status_==MODULE_IDLE || running_module_status_==MODULE_MAPPING|| running_module_status_==MODULE_SEC_MAPPING){
-        ROS_INFO("skip, can not stop mapping, running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+        ROS_INFO("skip, can not stop localization, running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+        return false;
     }else{
         ROS_INFO("skip, status error!");
         ROS_INFO("set_module_status_: %s", print_ModuleStatus(set_module_status_).c_str());
@@ -394,11 +452,8 @@ void LocalizationModule::stop_localization(){
         ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
         ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
         ROS_INFO("****************************");
+        return false;
     }
-
-    running_module_status_ = MODULE_IDLE;
-
-    return;
 }
 
 
@@ -420,6 +475,11 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
 }
 
 void LocalizationModule::release_slam_obj(){
+    if (set_module_status_ != MODULE_IDLE){
+        ROS_INFO("skip, set module status(== %s) must be MODULE_IDLE before release slam obj", print_ModuleStatus(set_module_status_).c_str());
+        return;
+    }
+    sleep(1);
     ROS_INFO("start stopping lidar_slam");
     lidar_slam::LidarSlam *temp_slam = slam_.release();
     ROS_INFO("release successfully");
@@ -429,18 +489,24 @@ void LocalizationModule::release_slam_obj(){
 
     start_index_ = -1;
     end_index_ = -1;
+    running_module_status_ = MODULE_IDLE;
     mapping_status_ = MAPPING_INACTIVE;
+    localization_status_ = LOCALIZATION_INACTIVE;
     ROS_INFO("lidar_slam stopped !");
 }
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
-    // ROS_INFO("slam_dealt_timer");
 
     // if (!running_slam_){
     if (running_module_status_ == MODULE_IDLE){
-        ROS_INFO("status: idle (not running slam)");
+        ROS_INFO("running module status: IDLE (not running slam)");
         sleep(1);
+        return;
+    }
+    if(set_module_status_ == MODULE_IDLE){
+        ROS_INFO("setting module to IDLE ------------------------");
+        sleep(3);
         return;
     }
 
@@ -449,6 +515,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     //     return;
     // }
 
+    // ROS_INFO("***********************************************");
+    cout<<"-----------------------------------------------"<<endl;
+    // cout<<"***********************************************"<<endl;
+    // ROS_INFO("running module status: %s", print_ModuleStatus(running_module_status_).c_str());
 
     if (control_status_.reset){
         sleep(1);
@@ -823,6 +893,10 @@ bool LocalizationModule::load_lidar_slam_param(){
 
     /// localization params *******************************************
     get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
+
+
+    /// re-localization params *******************************************
+    get_param(ns+ "re_localization/score_thr", slam_param_.re_localization.score_thr, &success);
 
 
     /// ikdtree params *******************************************
