@@ -342,7 +342,11 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
     
     if (lidar_buffer.empty() || imu_buffer.empty())
     {
-        printf("wait lidar data\n");
+        // bool flag1 = lidar_buffer.empty();
+        // bool flag2 = imu_buffer.empty();
+        // cout<<"lidar_buffer.empty(): "<< flag1<<endl;
+        // cout<<"imu_buffer.empty(): "<<flag2 <<endl;
+        printf("wait lidar & imu data\n");
         return false;
     }
     if (reseting == true)
@@ -397,6 +401,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
         imu_buffer.pop_front();
     }
     lidar_buffer.pop_front();
+    cout<<"********************* lidar pop ************"<<endl;
     time_buffer.pop_front();
     lidar_pushed = false;
     return true;
@@ -553,6 +558,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     {
         printf("lidar loop back, clear buffer");
         lidar_buffer.clear();
+        cout<<"************************* lidar_buffer clear *********"<<endl;
     }
     /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
         printf("lidar lose rate");
@@ -587,6 +593,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     }
     std::lock_guard<std::mutex> lk(mtx_buffer);
     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
+    cout<<"********************* lidar_buffer push back *********"<<endl;
     time_buffer.push_back(last_timestamp_lidar);
    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
@@ -775,6 +782,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
         printf("imu lose rate\n");
     }
     imu_buffer.push_back(msg);
+    // cout<<"************************* imu_buffer push back *********"<<endl;
     last_timestamp_imu = timestamp; // update imu time
     localization_wait = true;
     // if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
@@ -844,6 +852,8 @@ bool LidarSlam::run()
     static double aver_time_consu = 0, aver_time_icp = 0,aver_time_incre = 0, aver_time_solve = 0;
     double t0, t1, t2, t3, t4, t5, match_start, solve_start,run_start,run_end;
     run_start = omp_get_wtime();
+    cout<<"lidar buffer size: "<<lidar_buffer.size()<<endl;
+    cout<<"imu   buffer size: "<<imu_buffer.size()<<endl;
     if (sync_packages(Measures))
     {
         // cout<<"sync_packages success"<<endl;
@@ -853,6 +863,7 @@ bool LidarSlam::run()
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
             p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
             flg_first_scan = false;
+            cout<<"***************** flg_first_scan ********"<<endl;
             return false;
         }
         

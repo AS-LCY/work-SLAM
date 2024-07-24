@@ -92,6 +92,7 @@ void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string 
 
 void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
 {
+    // cout<<"********************* pub odometry "<<endl;
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = "odom";
     odomAftMapped.child_frame_id = "lidar";
@@ -116,7 +117,7 @@ void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubO
     q.setY(odomAftMapped.pose.pose.orientation.y);
     q.setZ(odomAftMapped.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
+    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "base_footprint"));
 }
 
 void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)

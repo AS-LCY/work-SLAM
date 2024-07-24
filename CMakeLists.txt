@@ -225,8 +225,8 @@ link_directories(
 set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
-add_library(livox_sdk SHARED IMPORTED)
-set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
+# add_library(livox_sdk SHARED IMPORTED)
+# set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
 
 add_library(Scancontext src/lidar_slam/Scancontext.cpp)
 target_link_libraries(Scancontext ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
@@ -278,8 +278,8 @@ target_link_libraries(lidar_slam_node
   ${OpenCV_LIBS}
   ${cv_bridge_LIBRARIES}
   lidar_slam
-  gtsam
-  fmt::fmt 
+  # gtsam
+  # fmt::fmt 
   yaml-cpp 
   ) 
 
@@ -305,7 +305,7 @@ install(DIRECTORY launch config rviz_cfg
 install(FILES 
   ${FAST_GICP_LIBRARY}
   ${cv_bridge_LIBRARIES}
-  ${OPENCV_LIBRARY} 
+  #  ${OPENCV_LIBRARY} 
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 

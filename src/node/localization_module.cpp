@@ -7,7 +7,7 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
     curr_dir_ = work_path;
     ROS_INFO("Current directory: %s", curr_dir_.c_str());
 
-    // load_params();
+    // // load_params();
     if (!load_lidar_slam_param()){
         ROS_ERROR("Load lidar-slam param failed!");
     }else {
@@ -45,43 +45,6 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
 
 LocalizationModule::~LocalizationModule(){
 
-}
-
-bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
-    set_module_status_ = set_status;
-
-    if(set_module_status_ == MODULE_IDLE){
-        // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
-    }else if (set_module_status_ == MODULE_MAPPING){
-        if(start_mapping(set_module_status_)){
-            running_module_status_ = set_module_status_;
-            mapping_status_ = MAPPING_STANDBY;
-        }else{
-            set_module_status_ = running_module_status_;
-        }
-    }else if (set_module_status_ == MODULE_SEC_MAPPING){
-        // TODO
-        int map_id = 0;/////////////// TODO
-        if(start_second_mapping(set_module_status_, map_id)){
-            running_module_status_ = MODULE_SEC_MAPPING;
-            mapping_status_ = MAPPING_STANDBY;
-        }else{
-            set_module_status_ = running_module_status_;
-        }
-    }else if (set_module_status_ == MODULE_LOCALIZATION){
-        // TODO
-        int map_id = 0;/////////////// TODO
-        if(start_localization(set_module_status_, map_id)){
-            running_module_status_ = MODULE_LOCALIZATION;
-            localization_status_ = LOCALIZATION_LOCALIZING;
-        }else{
-            set_module_status_ = running_module_status_;
-        }
-    }
-
-    // ROS_INFO("init module status: %s", print_ModuleStatus(running_module_status_).c_str());
-
-    return true;
 }
 
 void LocalizationModule::mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in){
@@ -516,7 +479,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // }
 
     // ROS_INFO("***********************************************");
-    cout<<"-----------------------------------------------"<<endl;
+    // cout<<"-----------------------------------------------"<<endl;
     // cout<<"***********************************************"<<endl;
     // ROS_INFO("running module status: %s", print_ModuleStatus(running_module_status_).c_str());
 
@@ -534,7 +497,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     
     // ROS_INFO("trying to get loaded map...");
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
-    if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
+    // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
+    if (show_load_map_==0 && running_module_status_==MODULE_LOCALIZATION && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
         // ROS_INFO("load map");
         sleep(1);
         sensor_msgs::PointCloud2 loadMap;
@@ -554,7 +518,9 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     bool running_slam_flag = slam_->run();
 
     if (running_slam_flag && show_rviz_){
-        if (!localization_mode_ || slam_->isGloalLocalizationSuccess()){
+        // if (!localization_mode_ || slam_->isGloalLocalizationSuccess()){
+        if ((running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING) 
+            || slam_->isGloalLocalizationSuccess()){
             pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
         }
         pub_test_cloud(slam_->getTestCloud(), localization_mode_, pubTestCloud);
@@ -567,11 +533,13 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_transform(slam_->getOdomToMap(),string("map"),string("odom"));
         // pub_kdtree_cloud(slam_->get_kdtree_cloud());		//not used yet
     }
-    if(!localization_mode_){
+    // if(!localization_mode_){
+    if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
     // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
     }else{
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
+        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
     }
     if (show_rviz_){
@@ -677,6 +645,7 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
         return;
     }else{
         slam_ -> livox_pcl_cbk(msg);
+        // ROS_INFO("lidar callback success");
         return;
     }
 
@@ -813,6 +782,9 @@ void LocalizationModule::publish_optimized_path(const std::vector<Eigen::Isometr
     pubOptimizedPath.publish(optimized_path_msg);
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////--------------------------- Init Module -----------------------------////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void LocalizationModule::load_params(){
     nh_.param<bool>("localization_mode", localization_mode_, false);
@@ -823,7 +795,6 @@ void LocalizationModule::load_params(){
     // nh_.param<string>("log_folder", log_folder_, " ");
 
 }
-
 
 
 bool LocalizationModule::load_lidar_slam_param(){
@@ -914,15 +885,14 @@ bool LocalizationModule::load_lidar_slam_param(){
 bool LocalizationModule::create_ROS_IO(){
     // subscriber
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
-    sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
+    sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 10, &LocalizationModule::livox_pcl_cbk, this);
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>("/livox/imu", 200000, &LocalizationModule::imu_cbk, this);
 
     sub_mapping_ctrl_ = nh_.subscribe("/mapping_manager_cmd", 3 ,&LocalizationModule::mapping_ctrl_cbk, this);
     
 
     // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
-    timer_slam_ = nh_.createTimer(ros::Duration(0.1), &LocalizationModule::slam_dealt_timer, this);
-    
+    timer_slam_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
 
     // publish TODO: 还需要区分哪些是建图或定位发布的
     pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 100000);  
@@ -944,6 +914,43 @@ bool LocalizationModule::create_ROS_IO(){
     return true;
 }
 
+
+bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
+    set_module_status_ = set_status;
+
+    if(set_module_status_ == MODULE_IDLE){
+        // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
+    }else if (set_module_status_ == MODULE_MAPPING){
+        if(start_mapping(set_module_status_)){
+            running_module_status_ = set_module_status_;
+            mapping_status_ = MAPPING_STANDBY;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
+    }else if (set_module_status_ == MODULE_SEC_MAPPING){
+        // TODO
+        int map_id = 0;/////////////// TODO
+        if(start_second_mapping(set_module_status_, map_id)){
+            running_module_status_ = MODULE_SEC_MAPPING;
+            mapping_status_ = MAPPING_STANDBY;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
+    }else if (set_module_status_ == MODULE_LOCALIZATION){
+        // TODO
+        int map_id = 0;/////////////// TODO
+        if(start_localization(set_module_status_, map_id)){
+            running_module_status_ = MODULE_LOCALIZATION;
+            localization_status_ = LOCALIZATION_LOCALIZING;
+        }else{
+            set_module_status_ = running_module_status_;
+        }
+    }
+
+    // ROS_INFO("init module status: %s", print_ModuleStatus(running_module_status_).c_str());
+
+    return true;
+}
 
 
 // void LocalizationModule::start_mapping(bool localization_mode){

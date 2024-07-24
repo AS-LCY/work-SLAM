@@ -1,5 +1,5 @@
 common:
-  init_module_status: 0
+  init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
   offline_mode: false

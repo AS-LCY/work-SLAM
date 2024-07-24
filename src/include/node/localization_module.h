@@ -94,19 +94,6 @@ enum LocalizationStatus{
     LOCALIZATION_LOCALIZING = 2
 };
 
-// enum MappingStatus{
-//     MAPPING_INACTIVE = 0,    // 初始状态
-//     MAPPING_STARTED = 1,    // 在建图中，等待设置起点
-//     STARTPOINT_SET = 2,     // 已设置起点，等待设置终点(或闭合)
-//     ENDPOINT_SET  = 3       // 已设置终点（或已闭合），当前元素创建结束
-// };
-
-// enum SlamMode{
-//     INACTIVE = 0,       // 未激活状态
-//     MAPPING = 1,        // 建图模式
-//     LOCALIZATION = 2    // 定位模式
-// };
-
 class LocalizationModule{
 public:
     LocalizationModule(){};
@@ -230,21 +217,17 @@ private:
     lidar_slam::Control_status control_status_;
 
     // 模块 localization module
+    // bool running_slam_ = false;
     ModuleStatus set_module_status_ = MODULE_IDLE;
     ModuleStatus running_module_status_ = MODULE_IDLE;
 
     // 建图 *******************************************
-    // bool running_slam_ = false;
-    // SlamMode slam_mode_ = INACTIVE;
-    MappingStatus mapping_status_ = MAPPING_INACTIVE; // if change to module_status_??
-    LocalizationStatus localization_status_ = LOCALIZATION_INACTIVE;
-
-    // 二次建图
-    // bool second_mapping_ = false;
+    MappingStatus mapping_status_ = MAPPING_INACTIVE;
     int start_index_ = -1;
     int end_index_ = -1;
 
     // 定位 *******************************************
+    LocalizationStatus localization_status_ = LOCALIZATION_INACTIVE;
 
 
     // other thread
