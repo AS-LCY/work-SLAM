@@ -38,11 +38,11 @@ mapping:
   b_acc_cov: 0.0001 # 同上
   b_gyr_cov: 0.0001 # 同上  
   cloud_leaf_size: 0.5
-  key_frame_distance: 1.0
-  key_frame_angle: 0.2
+  key_frame_distance: 1.0   # unit: m     # 大于此距离为关键帧
+  key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧
   loopSearchDistance: 1.5
-  use_ele_pcd_flag: false
-  save_ele_pcd_flag: false
+  use_ele_pcd_flag: false   # 是否使用单区域pcd
+  save_ele_pcd_flag: false  # 是否保存单区域pcd
   save_map_dir: "/home/panmiaomiao/catkin_ws/data/23楼电梯外"
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m

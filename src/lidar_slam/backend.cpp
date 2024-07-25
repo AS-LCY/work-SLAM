@@ -772,12 +772,21 @@ PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double 
 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
-    cout << "****************************************************" << endl;        
+    cout << "****************************************************" << endl;
+    // 检查并创建 yaml 中的地图路径
     if (create_directory_if_not_exists(saveMapDirectory)) {
         std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
     } else {
         std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
     }
+    // 创建关键帧点云保存路径
+    std::string save_key_frame_cloud_dir = saveMapDirectory + "/key_frame_cloud/";
+    if (create_directory_if_not_exists(save_key_frame_cloud_dir)) {
+        std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
+    } else {
+        std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
+    }
+
     std::string pcd_file_path = "";
 
     PointCloudXYZI::Ptr globalMapCloud(new PointCloudXYZI());
@@ -804,14 +813,20 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         }
     }
 
+    std::string key_frame_cloud_path = "";
     //   for (int i = 0; i < (int)KeyPoses.size(); i++) {
     for (int i = start; i <= end; i++) {
+        // 生成地图
         *globalMapCloud   += *transformPointCloud(KeyFrameCloud[i],T_map_odom * KeyPoses[i].pose);
+        // ScanContex 信息组合获取
         ScInfo info;
         info.id = i;
         info.pose = T_map_odom * KeyPoses[i].pose;
         info.polarcontext = scManager.getSc(i);
         infos[i] = info;
+        // 保存关键帧点云
+        key_frame_cloud_path = save_key_frame_cloud_dir  + std::to_string(i);
+        int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud[i]);
     }
     cout << "\n\nSave resolution: " << resolution << endl;
     pcl::VoxelGrid<PointType> downSizeFilter;
@@ -824,7 +839,11 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     cout << "Saving map to pcd files completed" << endl;    
     cout << "Saving loop data" << endl; 
     std::ofstream file(saveMapDirectory + "/data");
+    std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
     if (file.is_open()){
+
+    }
+    if(file_pose.is_open()){
 
     }
     // for (int i = 0; i < (int)KeyPoses.size(); i++) {
@@ -834,7 +853,12 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         file << (infos[i].pose).matrix().format(fmt) << ',';
         file << infos[i].polarcontext.rows() << ',' << infos[i].polarcontext.cols() << ',';
         file << infos[i].polarcontext.format(fmt) << '\n';
+        // key_frame Pose
+        file_pose << infos[i].id << ',';
+        file_pose << (infos[i].pose).matrix().format(fmt) << '\n';
     }
+    file.close();
+    file_pose.close();
     cout << "Saving loop data completed" << endl;
     cout << "****************************************************" << endl;
     return ret;
