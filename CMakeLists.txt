@@ -117,13 +117,41 @@ find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPART
 
 ### setting Eigen3
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
 
 ### setting fmt
 set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
-find_package( fmt REQUIRED )
+find_package(fmt REQUIRED PATHS ${fmt_DIR} NO_DEFAULT_PATH )
+# set(fmt_INCLUDE_DIRS ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/)
 
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(fmt REQUIRED IMPORTED_TARGET fmt)
+if(fmt_FOUND)
+  message(STATUS "Found fmt, fmt_INCLUDE_DIRS: ${fmt_INCLUDE_DIRS}")
+  # 其他使用 fmt_INCLUDE_DIRS 的命令
+else()
+  message(FATAL_ERROR "fmt not found")
+endif()
+
+message("********* fmt_FOUND: ${fmt_FOUND} *********")
+message("********* fmt_INCLUDE_DIR: ${fmt_INCLUDE_DIR} *********")
+message("********* fmt_INCLUDE_DIRS: ${fmt_INCLUDE_DIRS} *********")
+message("********* fmt_LIBRARY: ${fmt_LIBRARY} *********")
+message("********* fmt_LIBRARIES: ${fmt_LIBRARIES} *********")
+message("********* fmt_VERSION: ${fmt_VERSION} *********")
+message("********* fmt_ROOT_DIR: ${fmt_ROOT_DIR} *********")
+message("********* fmt_ROOT: ${fmt_ROOT} *********")
+
+
+# file(GLOB FMT_LIBRARIES
+#     "${fmt_DIR}/lib/libfmt.so*"
+# )
+# # find_package( fmt REQUIRED )
+# set(FMT_INCLUDE_DIRS ${fmt_DIR}../../../include)
+# # find_package(fmt REQUIRED)
+# message("********* FMT_LIBRARIES: ${FMT_LIBRARIES} *********")
+# # find_package(fmt REQUIRED PATHS_ONLY PATHS ${fmt_DIR} NO_DEFAULT_PATH)
 
 ### setting Sophus
 set(Sophus_DIR ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/share/sophus/cmake)
@@ -155,7 +183,7 @@ message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
 
 ### setting gtsam
 set (GTSAM_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAM)
-find_package(GTSAM REQUIRED QUIET)
+find_package(GTSAM PATHS ${GTSAM_DIR} NO_DEFAULT_PATH REQUIRED QUIET)
 message("********* GTSAM_INCLUDE_DIR: ${GTSAM_INCLUDE_DIR} *********")
 message("********* gtsam: ${gtsam} *********")
 
@@ -211,6 +239,7 @@ include_directories(
   # below TODO
   ${YAML_CPP_INCLUDE_DIR}
   ${APR_INCLUDE_DIRS}
+  ${fmt_INCLUDE_DIRS}
   )
 
 
@@ -242,17 +271,19 @@ add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
+  src/lidar_slam/cloud_map.cpp
   # src/lidar_slam/preprocess.cpp
   # src/lidar_slam/IMU_Processing.cpp
 )
 target_link_libraries(lidar_slam 
+  fmt::fmt 
   ${Sophus_LIBRARIES} 
   ${PCL_LIBRARIES} 
   ${Pangolin_LIBRARIES} 
   ${FAST_GICP_LIBRARY}
   ${OpenCV_LIBS}
+  ${fmt_LIBRARIES}
   gtsam  
-  fmt::fmt 
   yaml-cpp 
   ikd_Tree 
   Scancontext

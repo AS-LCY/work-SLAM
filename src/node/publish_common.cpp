@@ -117,7 +117,7 @@ void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubO
     q.setY(odomAftMapped.pose.pose.orientation.y);
     q.setZ(odomAftMapped.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "base_footprint"));
+    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
 }
 
 void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)

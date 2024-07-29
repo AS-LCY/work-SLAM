@@ -736,6 +736,7 @@ PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
     return show_map;
 }
 
+/// 没用上
 PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height)
 {
     std::lock_guard<std::mutex> lk(mtxCurrentMap);
@@ -825,7 +826,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         info.polarcontext = scManager.getSc(i);
         infos[i] = info;
         // 保存关键帧点云
-        key_frame_cloud_path = save_key_frame_cloud_dir  + std::to_string(i);
+        key_frame_cloud_path = save_key_frame_cloud_dir  + std::to_string(i) + ".pcd";
         int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud[i]);
     }
     cout << "\n\nSave resolution: " << resolution << endl;
@@ -855,6 +856,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         file << infos[i].polarcontext.format(fmt) << '\n';
         // key_frame Pose
         file_pose << infos[i].id << ',';
+        file_pose << KeyPoses[i].time << ',';
         file_pose << (infos[i].pose).matrix().format(fmt) << '\n';
     }
     file.close();

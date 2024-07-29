@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <mutex>
 #include <math.h>
+#include <cmath>
 #include <thread>
 #include <fstream>
 #include <filesystem>
@@ -41,23 +42,23 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include <ikd_Tree.h>
 #include "scan_context/Scancontext.h"
+#include "data_struct_define.h"
 namespace lidar_slam {
-struct KeyPose
-{
-    Eigen::Isometry3d pose;
-    int  index;
-    double time;
-    double roll;
-    double pitch;
-    double yaw;
-};
+// struct KeyPose
+// {
+//     Eigen::Isometry3d pose;
+//     int  index;
+//     double time;
+//     double roll;
+//     double pitch;
+//     double yaw;
+// }; // moved to data_struct_define.h
 
 class BackEnd
 {
 public:
     BackEnd(float dist, float angle,float loop_dist);
     ~BackEnd();
-    bool saveFrame(Eigen::Isometry3d transformTobeMapped);
 
     void saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose);
     PointCloudXYZI::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
@@ -66,10 +67,9 @@ public:
     void performLoopClosure(double time);
     // if start_index == end_index == 0; save all;
     bool saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index);
-    bool create_directory_if_not_exists(const std::string &directoryPath);
     bool correctPoses();
     void recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize);
-    PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);
+    PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
     KeyPose getCurrentPose()
     {
         return KeyPoses.back();
@@ -119,6 +119,9 @@ private:
    PointCloudXYZI::Ptr gravityAlignedCLoud;
   // cv::Mat image;
    
+
+    bool saveFrame(Eigen::Isometry3d transformTobeMapped);
+    bool create_directory_if_not_exists(const std::string &directoryPath);
 
     void addOdomFactor(Eigen::Isometry3d transformTobeMapped);
     void addLoopFactor();

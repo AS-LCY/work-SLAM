@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <Eigen/Core>
 #include <filesystem>
+
+#include <pcl/filters/voxel_grid.h>
+
 #include "localization.hpp"
 #include "backend.hpp"
 #include "IMU_Processing.hpp"

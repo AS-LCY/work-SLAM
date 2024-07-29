@@ -1,7 +1,7 @@
 
 
-#include "lidar_slam.hpp"
 #include <pcl/filters/radius_outlier_removal.h>
+#include "lidar_slam/lidar_slam.hpp"
 //#include "log.hpp"
 // void livox_ros::DriverNode::PointCloudDataPollThread()
 // {
@@ -200,6 +200,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline, bool second_mapping){
     cout << "this reset func has already been disabled, please use the new one"<<endl;
     return;
+    {
     // reseting = true;
     
     // sleep(1);
@@ -335,6 +336,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
     // }
     // show_thread.reset(new std::thread(&LidarSlam::showThread, this));  
     // cout << "slam reset finished"<<endl;
+    }
 }
 
 bool LidarSlam::sync_packages(MeasureGroup &meas) 

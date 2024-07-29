@@ -537,8 +537,9 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
     // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
-    }else{
-        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
+        // publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "lidar", pubLidarInMap);
+    }else{//定位
+        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
     }
