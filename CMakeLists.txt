@@ -273,14 +273,14 @@ add_executable(lidar_slam_node
 target_link_libraries(lidar_slam_node 
   ${catkin_LIBRARIES} 
   ${PCL_LIBRARIES} 
-  ${Pangolin_LIBRARIES} 
-  ${FAST_GICP_LIBRARY}
-  ${OpenCV_LIBS}
-  ${cv_bridge_LIBRARIES}
+  # ${Pangolin_LIBRARIES} 
+  # ${FAST_GICP_LIBRARY}
+  # ${OpenCV_LIBS}
+  # ${cv_bridge_LIBRARIES}
   lidar_slam
   # gtsam
   # fmt::fmt 
-  yaml-cpp 
+  # yaml-cpp 
   ) 
 
 
