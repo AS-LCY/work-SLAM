@@ -483,6 +483,27 @@ void LidarSlam::localizationThread()
     }
 }
 
+void LidarSlam::second_mapping_thread_func(){
+//     const int frequency = 1.0; // 频率为1Hz
+//     const std::chrono::milliseconds period(1000 / frequency);
+//     const auto score_thr = config_param_.re_localization.score_thr;
+
+//     while (thread_run&&reseting == false){
+
+//         auto start = std::chrono::steady_clock::now();
+
+
+
+//         auto end = std::chrono::steady_clock::now();
+//         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+//         if (elapsed < period)
+//         {
+//             std::this_thread::sleep_for(period - elapsed);
+//         }
+//     }
+
+
+}
 
 void LidarSlam::relocalizationForMappingThread(){
     const int frequency = 1.0; // 频率为1Hz
@@ -518,7 +539,6 @@ void LidarSlam::relocalizationForMappingThread(){
                 cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
             }
-
 
         }
 

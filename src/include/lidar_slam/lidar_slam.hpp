@@ -342,6 +342,7 @@ class LidarSlam
         bool sync_packages(MeasureGroup &meas);
         void loopClosureThread();
         void localizationThread();
+        void second_mapping_thread_func();
         void relocalizationForMappingThread();
         void showThread();
         void delete_log_file(double keep_time);
