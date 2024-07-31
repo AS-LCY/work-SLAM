@@ -15,9 +15,10 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/icp.h>
 
-#include "common_lib.h"
-#include "data_struct_define.h"
-#include "scan_context/Scancontext.h" 
+// lidar_slam
+#include "lidar_slam/common_lib.h"
+#include "lidar_slam/data_struct_define.h"
+#include "lidar_slam/scan_context/Scancontext.h" 
 
 
 namespace lidar_slam{

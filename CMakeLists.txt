@@ -97,7 +97,7 @@ find_package(Boost 1.54 REQUIRED COMPONENTS
   chrono
 )
 
-find_package(PCL REQUIRED)
+# find_package(PCL REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(PkgConfig)
 
@@ -119,6 +119,12 @@ find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPART
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
 find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
+
+### setting PCL
+set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/share/pcl-1.14)
+find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
+message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
+
 
 ### setting fmt
 set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
@@ -155,8 +161,8 @@ message("********* fmt_ROOT: ${fmt_ROOT} *********")
 
 ### setting Sophus
 set(Sophus_DIR ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/share/sophus/cmake)
-find_package(Sophus REQUIRED)
-set(Sophus_INCLUDE_DIRS ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/include/)
+find_package(Sophus REQUIRED PATHS ${Sophus_DIR} NO_DEFAULT_PATH)
+# set(Sophus_INCLUDE_DIRS ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/include/)
 message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
 # message("********* Sophus_LIBRARIES: ${Sophus_LIBRARIES} *********")
 # Sophus 安装的库为模板类，没有libs
@@ -164,7 +170,7 @@ message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
 
 ### setting Pangolin
 set (Pangolin_DIR ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/cmake/Pangolin)
-find_package(Pangolin REQUIRED)
+find_package(Pangolin REQUIRED PATHS ${Pangolin_DIR} NO_DEFAULT_PATH)
 # set (Pangolin_INCLUDE_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/include)
 set (Pangolin_LIBRARY_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib)
 # file(GLOB Pangolin_LIBRARIES
@@ -176,7 +182,7 @@ message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 
 ### setting OpenCV
 set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/cmake/opencv4)
-find_package(OpenCV REQUIRED QUIET)
+find_package(OpenCV REQUIRED QUIET PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
 set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/)
 message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
 message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
@@ -223,9 +229,9 @@ set(flbot_msgs_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../devel/include)
 
 include_directories(
   src/include
-  src/include/lidar_slam
-  src/include/node
-  src/include/livox_datatype
+  # src/include/lidar_slam
+  # src/include/node
+  # src/include/livox_datatype
   ${flbot_msgs_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   ${FAST_GICP_INCLUDE_DIR}

@@ -1,4 +1,4 @@
-#include "global_localization.hpp"
+#include "lidar_slam/global_localization.hpp"
 
 
 namespace lidar_slam{
@@ -59,7 +59,7 @@ bool GlobalLocalization::load_key_frames(std::string keyframe_dir){
     }
 
     /// read data line by line, split one line by ","
-    loaded_key_point_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    loaded_key_point_.reset(new pcl::PointCloud<PointType>());
     loaded_keyframe_poses_.clear();
     std::string line;
     while (std::getline(pose_file, line)) { 
@@ -88,7 +88,7 @@ bool GlobalLocalization::load_key_frames(std::string keyframe_dir){
             }
         }
         Eigen::Vector3d translation = read_one_line.pose.translation(); 
-        pcl::PointXYZ point;
+        PointType point;
         point.x = translation.x(); // 将x坐标设置为平移向量的x分量
         point.y = translation.y(); // 将y坐标设置为平移向量的y分量
         point.z = translation.z(); // 将z坐标设置为平移向量的z分量

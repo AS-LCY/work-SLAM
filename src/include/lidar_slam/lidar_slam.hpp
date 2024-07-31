@@ -11,20 +11,23 @@
 #include <filesystem>
 
 #include <pcl/filters/voxel_grid.h>
+#include <sophus/se3.hpp>
+#include <yaml-cpp/yaml.h>
 
-#include "localization.hpp"
-#include "backend.hpp"
-#include "IMU_Processing.hpp"
-#include "preprocess.h"
-#include "sophus/se3.hpp"
 #include <fast_gicp/gicp/fast_gicp.hpp>
-#include "Viewer.hpp"
-#include "yaml-cpp/yaml.h"
+
+#include "lidar_slam/common_lib.h"
+#include "lidar_slam/global_localization.hpp"
+#include "lidar_slam/localization.hpp"
+#include "lidar_slam/backend.hpp"
+#include "lidar_slam/IMU_Processing.hpp"
+#include "lidar_slam/preprocess.h"
+#include "lidar_slam/Viewer.hpp"
 // #include "include/livox_ros_driver2.h"
 // #include "driver_node.h"
 // #include "lddc.h"
-#include "livox_ros_datatype_def.h"
-#include "lidar_slam_param_def.h"
+#include "livox_datatype/livox_ros_datatype_def.h"
+#include "node/lidar_slam_param_def.h"
 // #include "lds_lidar.h"
 
 namespace lidar_slam {
@@ -327,6 +330,7 @@ class LidarSlam
         std::unique_ptr<ImuProcess> p_imu= nullptr;
         std::unique_ptr<BackEnd> back_end= nullptr;
         std::unique_ptr<Localization> localization= nullptr;
+        std::unique_ptr<GlobalLocalization> global_localization= nullptr;
 
         PointCloudXYZI::Ptr UndistortCloudInOdom;
         PointCloudXYZI::Ptr undistortCloud;  // lidar 系
@@ -337,6 +341,7 @@ class LidarSlam
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
+        bool second_mapping_need_global_localization_ = false;
 
 
         bool sync_packages(MeasureGroup &meas);

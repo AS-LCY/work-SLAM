@@ -2,9 +2,9 @@
 #define PREPROCESS_H
 
 
-#include "common_lib.h"
+#include "lidar_slam/common_lib.h"
+#include "livox_datatype/livox_ros_datatype_def.h"
 // #include "lddc.h"
-#include "livox_ros_datatype_def.h"
 using namespace std;
 
 #define IS_VALID(a) ((abs(a) > 1e8) ? true : false)

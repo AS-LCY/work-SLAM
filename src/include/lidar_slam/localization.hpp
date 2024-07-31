@@ -8,6 +8,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <Eigen/Core>
+
 #include <pcl/search/impl/search.hpp>
 #include <pcl/range_image/range_image.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -18,10 +19,12 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/crop_box.h>
-#include <ikd_Tree.h>
-#include "scan_context/Scancontext.h"
-#include <fast_gicp/gicp/fast_gicp.hpp>
 #include <pcl/registration/gicp.h>
+
+#include <fast_gicp/gicp/fast_gicp.hpp>
+
+#include "lidar_slam/ikd_Tree.h"
+#include "lidar_slam/scan_context/Scancontext.h"
 namespace lidar_slam {
 class Localization
 {

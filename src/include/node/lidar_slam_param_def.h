@@ -2,7 +2,7 @@
 #define FLBOT_LIDAR_SLAM_PARAM_DEF_H
 
 #include <string>
-#include "common_lib.h"
+#include "lidar_slam/common_lib.h"
 
 namespace lidar_slam{
 

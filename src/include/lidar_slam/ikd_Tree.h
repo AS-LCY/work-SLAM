@@ -8,9 +8,12 @@
 #include <math.h>
 #include <algorithm>
 #include <memory.h>
+
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include "common_lib.h"
+
+#include "lidar_slam/common_lib.h"
+
 #define EPSS 1e-6
 #define Minimal_Unbalanced_Tree_Size 10
 #define Multi_Thread_Rebuild_Point_Num 1500

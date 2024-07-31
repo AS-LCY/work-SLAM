@@ -10,7 +10,6 @@
 #include <filesystem>
 #include <csignal>
 #include <unistd.h>
-#include "common_lib.h"
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -40,9 +39,11 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
-#include <ikd_Tree.h>
-#include "scan_context/Scancontext.h"
-#include "data_struct_define.h"
+// lidar_slam
+#include "lidar_slam/ikd_Tree.h"
+#include "lidar_slam/common_lib.h"
+#include "lidar_slam/scan_context/Scancontext.h"
+#include "lidar_slam/data_struct_define.h"
 namespace lidar_slam {
 // struct KeyPose
 // {

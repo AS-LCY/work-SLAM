@@ -8,8 +8,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include "use-ikfom.hpp"
-#include <ikd_Tree.h>
+#include "lidar_slam/use-ikfom.hpp"
+#include "lidar_slam/ikd_Tree.h"
 
 //该hpp主要包含：广义加减法，前向传播主函数，计算特征点残差及其雅可比，ESKF主函数
 

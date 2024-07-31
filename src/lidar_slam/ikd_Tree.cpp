@@ -1,4 +1,4 @@
-#include "ikd_Tree.h"
+#include "lidar_slam/ikd_Tree.h"
 
 /*
 Description: ikd-Tree: an incremental k-d tree for robotic applications 

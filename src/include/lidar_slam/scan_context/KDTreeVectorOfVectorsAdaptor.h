@@ -28,9 +28,9 @@
 
 #pragma once
 
-#include <scan_context/nanoflann.hpp>
-
 #include <vector>
+#include "lidar_slam/scan_context/nanoflann.hpp"
+
 
 // ===== This example shows how to use nanoflann with these types of containers: =======
 //typedef std::vector<std::vector<double> > my_vector_of_vectors_t;

@@ -489,19 +489,19 @@ void LidarSlam::second_mapping_thread_func(){
 //     const auto score_thr = config_param_.re_localization.score_thr;
 
 //     while (thread_run&&reseting == false){
-
 //         auto start = std::chrono::steady_clock::now();
+//         if(second_mapping_need_global_localization_){
+//             // if
 
+//         }
 
 
 //         auto end = std::chrono::steady_clock::now();
 //         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-//         if (elapsed < period)
-//         {
+//         if (elapsed < period){
 //             std::this_thread::sleep_for(period - elapsed);
 //         }
 //     }
-
 
 }
 

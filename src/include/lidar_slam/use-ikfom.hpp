@@ -9,8 +9,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include "common_lib.h"
 #include <sophus/so3.hpp>
+
+#include "lidar_slam/common_lib.h"
 
 //该hpp主要包含：状态变量x，输入量u的定义，以及正向传播中相关矩阵的函数
 

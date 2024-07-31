@@ -47,13 +47,16 @@
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
 
-#include "lidar_slam.hpp"
-#include <Viewer.hpp>
+#include "lidar_slam/common_lib.h"
+#include "lidar_slam/lidar_slam.hpp"
+#include "lidar_slam/Viewer.hpp"
+#include "livox_datatype/livox_ros_datatype_def.h"
+
+#include "node/publish_common.h"
+#include "node/lidar_slam_param_def.h"
+#include "node/point_type_livox_def.h"
+
 #include "v4l2cam.h"
-#include "publish_common.h"
-#include "point_type_livox_def.h"
-#include "lidar_slam_param_def.h"
-#include "common_lib.h"
 
 namespace localization_module{
 

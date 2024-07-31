@@ -1,6 +1,5 @@
 #include <ros/ros.h>
-#include "./localization_module.h"
-#include "localization_module.h"
+#include "node/localization_module.h"
 
 namespace localization_module {
 LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus init_status){
@@ -958,9 +957,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
 //     // localization_mode_;
 //     // offline_mode_;
 //     // 初始位姿？
-
 //     ROS_INFO("trying to create lidar_slam, localization_mode: %s", localization_mode);
-
 //     std::string workpath = curr_dir_+std::string("/");
 //     if (!running_slam_){// slam 未激活
 //         ROS_INFO("slam not running now");
@@ -1192,7 +1189,6 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
 //     ROS_INFO("trying to create lidar_slam, localization_mode: %u", localization_mode);
 //     std::string workpath = curr_dir_+std::string("/");
 //     std::string pcd_path = curr_dir_+std::string("/map/")+std::to_string(map_id)+std::string("/");
-
 //     if(!running_slam_){
 //         // slam
 //         bool second_mapping=false;

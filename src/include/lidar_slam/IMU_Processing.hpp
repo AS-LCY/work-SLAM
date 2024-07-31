@@ -9,7 +9,6 @@
 #include <csignal>
 
 #include <Eigen/Eigen>
-#include <common_lib.h>
 #include <pcl/common/io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -18,10 +17,11 @@
 #include <pcl/kdtree/kdtree_flann.h>
 
 
-#include "use-ikfom.hpp"
-#include "esekfom.hpp"
+#include "lidar_slam/common_lib.h"
+#include "lidar_slam/use-ikfom.hpp"
+#include "lidar_slam/esekfom.hpp"
 // #include "lddc.h"
-#include "livox_ros_datatype_def.h"
+#include "livox_datatype/livox_ros_datatype_def.h"
 
 /*
 这个hpp主要包含：
