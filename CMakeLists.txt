@@ -117,14 +117,13 @@ find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPART
 
 ### setting Eigen3
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
-find_package(Eigen3 3.4.0 EXACT REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
+find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
 
 ### setting PCL
 set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/share/pcl-1.14)
 find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
 message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
-
 
 ### setting fmt
 set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
@@ -332,9 +331,15 @@ target_link_libraries(lidar_slam_node
 #############
 
 
-file(GLOB OPENCV_LIBRARY "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/lib/libpcl*")
+file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
+file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
+file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
+file(GLOB YAML_CPP_LIBS "${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/lib*")
+file(GLOB fast_gicp_LIBS "${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/lib*")
 
-install(TARGETS lidar_slam_node lidar_slam ikd_Tree Scancontext sensor_data_preproc
+install(TARGETS lidar_slam_node lidar_slam ikd_Tree Scancontext backend sensor_data_preproc
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -344,10 +349,15 @@ install(DIRECTORY launch config rviz_cfg
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 
-install(FILES 
-  ${FAST_GICP_LIBRARY}
+  install(FILES 
   ${cv_bridge_LIBRARIES}
-  #  ${OPENCV_LIBRARY} 
+  ${OPENCV_LIBS} 
+  ${PCL_LIBS} 
+  ${GTSAM_LIBS} 
+  ${fmt_LIBS} 
+  ${Pangolin_LIBS} 
+  ${YAML_CPP_LIBS} 
+  ${fast_gicp_LIBS} 
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
