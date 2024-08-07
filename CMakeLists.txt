@@ -240,7 +240,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${Sophus_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
+  # ${OpenCV_INCLUDE_DIRS}
   ${Pangolin_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
   # below TODO
@@ -253,7 +253,7 @@ include_directories(
 link_directories(
   ${FAST_GICP_LIBRARY_DIR}
   ${LIVOX_SDK2_LIBRARY_DIR}
-  ${OpenCV_LIBRARY_DIRS}
+  # ${OpenCV_LIBRARY_DIRS}
   ${Pangolin_LIBRARY_DIRS}
 )
  
@@ -264,16 +264,16 @@ add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
 # set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
 
 add_library(Scancontext src/lidar_slam/Scancontext.cpp)
-target_link_libraries(Scancontext ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries(Scancontext ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
 
 add_library(backend src/lidar_slam/backend.cpp)
-target_link_libraries(backend gtsam ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries(backend gtsam ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
 
 add_library(sensor_data_preproc 
   src/lidar_slam/preprocess.cpp 
   src/lidar_slam/IMU_Processing.cpp
   )
-target_link_libraries(sensor_data_preproc ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries(sensor_data_preproc ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
 
 # build: slam core
 add_library(lidar_slam SHARED
@@ -331,7 +331,7 @@ target_link_libraries(lidar_slam_node
 #############
 
 
-file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+# file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
 file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/lib/libpcl*")
 file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
 file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
@@ -351,7 +351,7 @@ install(DIRECTORY launch config rviz_cfg
 
   install(FILES 
   ${cv_bridge_LIBRARIES}
-  ${OPENCV_LIBS} 
+  # ${OPENCV_LIBS} 
   ${PCL_LIBS} 
   ${GTSAM_LIBS} 
   ${fmt_LIBS} 

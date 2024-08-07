@@ -41,13 +41,13 @@
 #include <pcl/filters/crop_box.h>
 
 // cv
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 // livox
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
 #include <Viewer.hpp>
-#include "v4l2cam.h"
+// #include "v4l2cam.h"
 #include "lidar_slam.hpp"
 
 

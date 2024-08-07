@@ -717,18 +717,18 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
     
 }
 
-void LidarSlam::image_cbk(const cv::Mat& img,double time)
-{
-  //  printf("image in %f \n",time);
-    for (auto it = poses_buffer.begin(); it != poses_buffer.end(); it++) {
-        if(fabsf(it->first-time)<0.05){
-        //  printf("use pose in %f \n",it->first);
-        back_end->UpdateImage(img,it->second);
-        return;
-        }
+// void LidarSlam::image_cbk(const cv::Mat& img,double time)
+// {
+//   //  printf("image in %f \n",time);
+//     for (auto it = poses_buffer.begin(); it != poses_buffer.end(); it++) {
+//         if(fabsf(it->first-time)<0.05){
+//         //  printf("use pose in %f \n",it->first);
+//         back_end->UpdateImage(img,it->second);
+//         return;
+//         }
 
-    }
-}
+//     }
+// }
 
 void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
 {

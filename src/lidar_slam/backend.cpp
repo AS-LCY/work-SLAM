@@ -490,106 +490,107 @@ void BackEnd::performLoopClosure(double time)
 
     
 }
-void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
-{
-    // std::cout << "111111111"<<std::endl;
-    PointCloudXYZI lidar_cloud_in_map;
-    if (KeyPoses.size() == 0)
-       return;
-    {
-        std::lock_guard<std::mutex> lk(mtxCloud);
-        std::lock_guard<std::mutex> lk2(mtxPose);
-        int size = min((int)KeyPoses.size(),(int)KeyFrameCloud.size());
-        lidar_cloud_in_map = *transformPointCloud(KeyFrameCloud[size-1],KeyPoses[size-1].pose);
 
-    }
-    Eigen::Isometry3d map_to_lidar = lidar_pose.inverse();
-    Eigen::Matrix3d lidar_to_camera_rotate;
-     lidar_to_camera_rotate  << 1,0,0,
-                             0,0.422618,-0.906308,
-                             0,0.906308,0.422618;
-    Eigen::Vector3d lidar_to_camera_trans;
-    lidar_to_camera_trans << 0, -0.07625, -0.0476;
-    Eigen::Isometry3d lidar_to_camera = Eigen::Isometry3d::Identity();
-    lidar_to_camera.matrix().block<3, 3>(0, 0) = lidar_to_camera_rotate;
-    lidar_to_camera.matrix().block<3, 1>(3, 0) = lidar_to_camera_trans;
-    Eigen::Isometry3d map_to_camera = lidar_to_camera * map_to_lidar;
-    // pcl::PointCloud<pcl::PointXYZRGBNormal> rgb_cloud;
+// void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
+// {
+//     // std::cout << "111111111"<<std::endl;
+//     PointCloudXYZI lidar_cloud_in_map;
+//     if (KeyPoses.size() == 0)
+//        return;
+//     {
+//         std::lock_guard<std::mutex> lk(mtxCloud);
+//         std::lock_guard<std::mutex> lk2(mtxPose);
+//         int size = min((int)KeyPoses.size(),(int)KeyFrameCloud.size());
+//         lidar_cloud_in_map = *transformPointCloud(KeyFrameCloud[size-1],KeyPoses[size-1].pose);
 
-    std::vector<cv::Point3f> pts_3d;
-    for (size_t i = 0; i < lidar_cloud_in_map.size(); i += 1) {
-        pcl::PointXYZINormal point_3d = lidar_cloud_in_map.points[i];
-        Eigen::Vector3d point_in_map = Eigen::Vector3d(point_3d.x, point_3d.y, point_3d.z);
-        Eigen::Vector3d point_in_camera = map_to_camera.matrix().block<3, 3>(0, 0) * point_in_map + map_to_camera.matrix().block<3, 1>(3, 0);
+//     }
+//     Eigen::Isometry3d map_to_lidar = lidar_pose.inverse();
+//     Eigen::Matrix3d lidar_to_camera_rotate;
+//      lidar_to_camera_rotate  << 1,0,0,
+//                              0,0.422618,-0.906308,
+//                              0,0.906308,0.422618;
+//     Eigen::Vector3d lidar_to_camera_trans;
+//     lidar_to_camera_trans << 0, -0.07625, -0.0476;
+//     Eigen::Isometry3d lidar_to_camera = Eigen::Isometry3d::Identity();
+//     lidar_to_camera.matrix().block<3, 3>(0, 0) = lidar_to_camera_rotate;
+//     lidar_to_camera.matrix().block<3, 1>(3, 0) = lidar_to_camera_trans;
+//     Eigen::Isometry3d map_to_camera = lidar_to_camera * map_to_lidar;
+//     // pcl::PointCloud<pcl::PointXYZRGBNormal> rgb_cloud;
+
+//     std::vector<cv::Point3f> pts_3d;
+//     for (size_t i = 0; i < lidar_cloud_in_map.size(); i += 1) {
+//         pcl::PointXYZINormal point_3d = lidar_cloud_in_map.points[i];
+//         Eigen::Vector3d point_in_map = Eigen::Vector3d(point_3d.x, point_3d.y, point_3d.z);
+//         Eigen::Vector3d point_in_camera = map_to_camera.matrix().block<3, 3>(0, 0) * point_in_map + map_to_camera.matrix().block<3, 1>(3, 0);
        
-        if (point_in_camera[2] > 0) {
-        pts_3d.emplace_back(cv::Point3f(point_in_map.x(),point_in_map.y(), point_in_map.z()));
-        }
-    }
-    Eigen::Vector3d euler = map_to_camera.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-    Eigen::Matrix<double, 6, 1> extrinsic_params;
-    extrinsic_params[0] = euler[0];
-    extrinsic_params[1] = euler[1];
-    extrinsic_params[2] = euler[2];
-    extrinsic_params[3] = map_to_camera.matrix().coeffRef(0, 3);
-    extrinsic_params[4] = map_to_camera.matrix().coeffRef(1, 3);
-    extrinsic_params[5] = map_to_camera.matrix().coeffRef(2, 3);
-    Eigen::AngleAxisd rotation_vector3;
-    rotation_vector3 =
-        Eigen::AngleAxisd(extrinsic_params[0], Eigen::Vector3d::UnitZ()) *
-        Eigen::AngleAxisd(extrinsic_params[1], Eigen::Vector3d::UnitY()) *
-        Eigen::AngleAxisd(extrinsic_params[2], Eigen::Vector3d::UnitX());
-    cv::Mat camera_matrix =
-        (cv::Mat_<double>(3, 3) << 500, 0.0, 960, 0.0, 500, 600, 0.0, 0.0, 1.0);
-    cv::Mat distortion_coeff =
-        (cv::Mat_<double>(1, 5) << 0, 0, 0, 0, 0);
-    cv::Mat r_vec =
-        (cv::Mat_<double>(3, 1)
-            << rotation_vector3.angle() * rotation_vector3.axis().transpose()[0],
-        rotation_vector3.angle() * rotation_vector3.axis().transpose()[1],
-        rotation_vector3.angle() * rotation_vector3.axis().transpose()[2]);
+//         if (point_in_camera[2] > 0) {
+//         pts_3d.emplace_back(cv::Point3f(point_in_map.x(),point_in_map.y(), point_in_map.z()));
+//         }
+//     }
+//     Eigen::Vector3d euler = map_to_camera.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+//     Eigen::Matrix<double, 6, 1> extrinsic_params;
+//     extrinsic_params[0] = euler[0];
+//     extrinsic_params[1] = euler[1];
+//     extrinsic_params[2] = euler[2];
+//     extrinsic_params[3] = map_to_camera.matrix().coeffRef(0, 3);
+//     extrinsic_params[4] = map_to_camera.matrix().coeffRef(1, 3);
+//     extrinsic_params[5] = map_to_camera.matrix().coeffRef(2, 3);
+//     Eigen::AngleAxisd rotation_vector3;
+//     rotation_vector3 =
+//         Eigen::AngleAxisd(extrinsic_params[0], Eigen::Vector3d::UnitZ()) *
+//         Eigen::AngleAxisd(extrinsic_params[1], Eigen::Vector3d::UnitY()) *
+//         Eigen::AngleAxisd(extrinsic_params[2], Eigen::Vector3d::UnitX());
+//     cv::Mat camera_matrix =
+//         (cv::Mat_<double>(3, 3) << 500, 0.0, 960, 0.0, 500, 600, 0.0, 0.0, 1.0);
+//     cv::Mat distortion_coeff =
+//         (cv::Mat_<double>(1, 5) << 0, 0, 0, 0, 0);
+//     cv::Mat r_vec =
+//         (cv::Mat_<double>(3, 1)
+//             << rotation_vector3.angle() * rotation_vector3.axis().transpose()[0],
+//         rotation_vector3.angle() * rotation_vector3.axis().transpose()[1],
+//         rotation_vector3.angle() * rotation_vector3.axis().transpose()[2]);
 
-    cv::Mat t_vec = (cv::Mat_<double>(3, 1) << extrinsic_params[3],
-                    extrinsic_params[4], extrinsic_params[5]);
-    std::vector<cv::Point2f> pts_2d;
-    cv::projectPoints(pts_3d, r_vec, t_vec, camera_matrix, distortion_coeff,
-                        pts_2d);
-    int image_rows = 1920;
-    int image_cols = 1200;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_cloud;
-    color_cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
-        new pcl::PointCloud<pcl::PointXYZRGB>);
-    for (size_t i = 0; i < pts_2d.size(); i++) {
-        if (pts_2d[i].x >= 0 && pts_2d[i].x < image_cols && pts_2d[i].y >= 0 &&
-            pts_2d[i].y < image_rows) {
-        cv::Scalar color =
-            image.at<cv::Vec3b>((int)pts_2d[i].y, (int)pts_2d[i].x);
-        /* if (color[0] == 0 && color[1] == 0 && color[2] == 0) {
-            continue;
-        }*/
-        /* if (pts_3d[i].x > 100) {
-            continue;
-        }*/
-        pcl::PointXYZRGB p;
-        p.x = pts_3d[i].x;
-        p.y = pts_3d[i].y;
-        p.z = pts_3d[i].z;
-        // p.a = 255;
-        p.b = color[0];
-        p.g = color[1];
-        p.r = color[2];
-        color_cloud->points.push_back(p);
-        }
-    }
-        std::lock_guard<std::mutex> lk(mtxCurrentRGBMap);
-        *show_rgb_map   += *color_cloud;
-        double resolution = 0.1;
-        pcl::VoxelGrid<pcl::PointXYZRGB> downSizeFilter;
-        downSizeFilter.setInputCloud(show_rgb_map);
-        downSizeFilter.setLeafSize(resolution, resolution, resolution);
-        downSizeFilter.filter(*show_rgb_map);
-        // std::cout << "22222222222"<<std::endl;
-}
+//     cv::Mat t_vec = (cv::Mat_<double>(3, 1) << extrinsic_params[3],
+//                     extrinsic_params[4], extrinsic_params[5]);
+//     std::vector<cv::Point2f> pts_2d;
+//     cv::projectPoints(pts_3d, r_vec, t_vec, camera_matrix, distortion_coeff,
+//                         pts_2d);
+//     int image_rows = 1920;
+//     int image_cols = 1200;
+//     pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_cloud;
+//     color_cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(
+//         new pcl::PointCloud<pcl::PointXYZRGB>);
+//     for (size_t i = 0; i < pts_2d.size(); i++) {
+//         if (pts_2d[i].x >= 0 && pts_2d[i].x < image_cols && pts_2d[i].y >= 0 &&
+//             pts_2d[i].y < image_rows) {
+//         cv::Scalar color =
+//             image.at<cv::Vec3b>((int)pts_2d[i].y, (int)pts_2d[i].x);
+//         /* if (color[0] == 0 && color[1] == 0 && color[2] == 0) {
+//             continue;
+//         }*/
+//         /* if (pts_3d[i].x > 100) {
+//             continue;
+//         }*/
+//         pcl::PointXYZRGB p;
+//         p.x = pts_3d[i].x;
+//         p.y = pts_3d[i].y;
+//         p.z = pts_3d[i].z;
+//         // p.a = 255;
+//         p.b = color[0];
+//         p.g = color[1];
+//         p.r = color[2];
+//         color_cloud->points.push_back(p);
+//         }
+//     }
+//         std::lock_guard<std::mutex> lk(mtxCurrentRGBMap);
+//         *show_rgb_map   += *color_cloud;
+//         double resolution = 0.1;
+//         pcl::VoxelGrid<pcl::PointXYZRGB> downSizeFilter;
+//         downSizeFilter.setInputCloud(show_rgb_map);
+//         downSizeFilter.setLeafSize(resolution, resolution, resolution);
+//         downSizeFilter.filter(*show_rgb_map);
+//         // std::cout << "22222222222"<<std::endl;
+// }
 
   /*  void performSCLoopClosure()
     {

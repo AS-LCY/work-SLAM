@@ -41,7 +41,7 @@
 #include <pcl/filters/crop_box.h>
 
 // cv
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 // livox
 // #include <livox_ros_driver2/CustomMsg.h>
@@ -49,7 +49,7 @@
 
 #include "lidar_slam.hpp"
 #include <Viewer.hpp>
-#include "v4l2cam.h"
+// #include "v4l2cam.h"
 #include "publish_common.h"
 #include "point_type_livox_def.h"
 #include "lidar_slam_param_def.h"
