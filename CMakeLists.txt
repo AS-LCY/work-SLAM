@@ -116,7 +116,7 @@ set(LIVOX_SDK2_LIBRARY_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/lib)
 find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
 
 ### setting yaml-cpp
-set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/build/)
+set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/cmake/yaml-cpp/)
 find_package(yaml-cpp REQUIRED PATHS ${yaml_cpp_DIR} NO_DEFAULT_PATH)
 # message("********* yaml-cpp_INCLUDE_DIR: ${yaml-cpp_INCLUDE_DIR} *********")
 message("********* yaml-cpp_FOUND: ${yaml-cpp_FOUND} *********")
