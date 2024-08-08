@@ -181,12 +181,12 @@ set (Pangolin_LIBRARY_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib)
 message("********* Pangolin_INCLUDE_DIRS: ${Pangolin_INCLUDE_DIRS} *********")
 message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 
-### setting OpenCV
-set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/cmake/opencv4)
-find_package(OpenCV REQUIRED QUIET PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
-set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/)
-message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
-message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
+# ### setting OpenCV
+# set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/cmake/opencv4)
+# find_package(OpenCV REQUIRED QUIET PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
+# set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/)
+# message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
+# message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
 
 ### setting gtsam
 set (GTSAM_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAM)
