@@ -98,7 +98,7 @@ find_package(Boost 1.54 REQUIRED COMPONENTS
 )
 
 # find_package(PCL REQUIRED)
-find_package(yaml-cpp REQUIRED)
+# find_package(yaml-cpp REQUIRED)
 find_package(PkgConfig)
 
 ################### set thirdparty #####################
@@ -114,6 +114,13 @@ set(LIVOX_SDK2_INCLUDE_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/include)
 set(LIVOX_SDK2_LIBRARY_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/lib)
 
 find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
+
+### setting yaml-cpp
+set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/build/)
+find_package(yaml-cpp REQUIRED PATHS ${yaml_cpp_DIR} NO_DEFAULT_PATH)
+# message("********* yaml-cpp_INCLUDE_DIR: ${yaml-cpp_INCLUDE_DIR} *********")
+message("********* yaml-cpp_FOUND: ${yaml-cpp_FOUND} *********")
+message("********* yaml-cpp_VERSION: ${yaml-cpp_VERSION} *********")
 
 ### setting Eigen3
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
