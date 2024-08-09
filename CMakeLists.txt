@@ -128,7 +128,12 @@ find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
 
 ### setting PCL
-set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/share/pcl-1.14)
+if(${CPU_TYPE} MATCHES "x86")
+  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+elseif(${CPU_TYPE} MATCHES "arrch64")
+  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+endif()
+
 find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
 message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
 
