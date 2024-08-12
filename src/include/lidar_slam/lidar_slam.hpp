@@ -17,6 +17,7 @@
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
 #include "lidar_slam/common_lib.h"
+#include "lidar_slam/cloud_map.hpp"
 #include "lidar_slam/global_localization.hpp"
 #include "lidar_slam/localization.hpp"
 #include "lidar_slam/backend.hpp"
@@ -96,8 +97,8 @@ class LidarSlam
             show_thread.reset(nullptr);
             // if(sec_mapping_){
             if(working_mode_ == SEC_MAPPING){
-                second_mapping_thread->join();
-                second_mapping_thread.reset(nullptr);
+                global_localization_thread_->join();
+                global_localization_thread_.reset(nullptr);
             }
 
             //  LivoxLidarSdkUninit();// disable start_driver of lidar
@@ -171,7 +172,8 @@ class LidarSlam
                 transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
                 return transform;
             }else if(working_mode_ == SEC_MAPPING){
-                return localization->getOdomToMap();
+                return global_localization_->get_global_odom_to_map();
+                // return localization->getOdomToMap();
             }else{
                 cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
                 return Eigen::Isometry3d::Identity();
@@ -316,7 +318,7 @@ class LidarSlam
         std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree= nullptr;
         std::unique_ptr<std::thread> thread = nullptr;
         std::unique_ptr<std::thread> show_thread = nullptr; 
-        std::unique_ptr<std::thread> second_mapping_thread = nullptr; 
+        std::unique_ptr<std::thread> global_localization_thread_ = nullptr; 
         mutex mtx_buffer;
         mutex mtx_odom_cloud;
         mutex mtx_lidar_cloud;
@@ -330,7 +332,8 @@ class LidarSlam
         std::unique_ptr<ImuProcess> p_imu= nullptr;
         std::unique_ptr<BackEnd> back_end= nullptr;
         std::unique_ptr<Localization> localization= nullptr;
-        std::unique_ptr<GlobalLocalization> global_localization= nullptr;
+        std::unique_ptr<GlobalLocalization> global_localization_= nullptr;
+        std::unique_ptr<CloudMap> cloud_map_manager_= nullptr;
 
         PointCloudXYZI::Ptr UndistortCloudInOdom;
         PointCloudXYZI::Ptr undistortCloud;  // lidar 系
@@ -341,14 +344,15 @@ class LidarSlam
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
-        bool second_mapping_need_global_localization_ = false;
+        // bool second_mapping_need_global_localization_ = false;
 
 
         bool sync_packages(MeasureGroup &meas);
         void loopClosureThread();
+        void sec_mapping_loopClosureThread();
         void localizationThread();
-        void second_mapping_thread_func();
         void relocalizationForMappingThread();
+        void global_localization_for_sec_mapping_thread();
         void showThread();
         void delete_log_file(double keep_time);
 

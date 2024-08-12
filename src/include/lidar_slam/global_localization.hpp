@@ -28,30 +28,39 @@ public:
     GlobalLocalization();
     ~GlobalLocalization();
 
-    //////////////////////////////////// - load map - ////////////////////////////////////
-    /// @brief  从本地加载地图
-    /// @return 总的点云地图，关键帧点云，关键帧pose
-    bool load_map_data(std::string map_dir);
+    // ////////////////////////////////// - load map - ////////////////////////////////////
+    // /// @brief  从本地加载地图
+    // /// @return 总的点云地图，关键帧点云，关键帧pose
+    // bool load_map_data(std::string map_dir);
 
-    PointCloudXYZI::Ptr get_loaded_global_map(){
-        return loaded_global_map_;
-    }
-    std::vector<ScInfo> get_load_sc_info_(){
-        return loaded_sc_info_;
-    }
-    std::vector<PointCloudXYZI::Ptr> get_loaded_keyframe_clouds(){
-        return loaded_keyframe_clouds_;
-    }
-    std::vector<KeyPose> get_loaded_keyframe_poses(){
-        return loaded_keyframe_poses_;
-    }
-    bool get_map_status(){
-        return map_ready_;
-    }
+    // PointCloudXYZI::Ptr get_loaded_global_map(){
+    //     return loaded_global_map_;
+    // }
+    // std::vector<ScInfo> get_load_sc_info_(){
+    //     return loaded_sc_info_;
+    // }
+    // std::vector<PointCloudXYZI::Ptr> get_loaded_keyframe_clouds(){
+    //     return loaded_keyframe_clouds_;
+    // }
+    // std::vector<KeyPose> get_loaded_keyframe_poses(){
+    //     return loaded_keyframe_poses_;
+    // }
+    // bool get_map_status(){
+    //     return map_ready_;
+    // }
 
     //////////////////////////////////// - global-localize - ////////////////////////////////////
 
     bool global_localize(PointCloudXYZI::Ptr cloudIn, Eigen::Isometry3d pose, Matrix3d initial_rotate, double score_thr);
+
+    bool fill_sc_manager(std::vector<ScInfo> input_sc_info);
+    bool get_sc_manager_ready(){
+        return sc_manager_ready_;
+    }
+    bool set_global_map(PointCloudXYZI::Ptr loaded_global_map);
+    bool get_global_map_ready(){
+        return global_map_ready_;
+    }
 
     Eigen::Isometry3d get_global_odom_to_map(){
         return global_odom_to_map_;
@@ -61,14 +70,15 @@ public:
 
 private:
 
-    //////////////////////////////////// - load map - ////////////////////////////////////
-    /// @brief 从本地加载总的点云地图
-    bool load_cloud_map(std::string map_dir);
-    /// @brief 从本地加载关键帧信息（关键帧点云、关键帧pose）
-    bool load_key_frames(std::string keyframe_dir);
+    // //////////////////////////////////// - load map - ////////////////////////////////////
+    // /// @brief 从本地加载总的点云地图
+    // bool load_cloud_map(std::string map_dir);
+    // /// @brief 从本地加载关键帧信息（关键帧点云、关键帧pose）
+    // bool load_key_frames(std::string keyframe_dir);
 
 
-    //////////////////////////////////// - global-localize - /////////////////////////////
+    //////////////////////////////////// - global-localize - /////////////////////////////    
+    
     /// @brief  
     /// @param cloud_in         : param in, 用于生辰当前帧点云的 sc 
     /// @param initial_rotate   : param in, 对点云 cloud_in 作重力校准
@@ -115,6 +125,8 @@ private:
     PointCloudXYZI::Ptr accumulate_map_;
 
     //////////////////////////////////// - global-localize - ////////////////////////////////////
+    bool global_map_ready_ = false;
+    bool sc_manager_ready_ =false;
     PointCloudXYZI::Ptr test_match_cloud_;//debug
 
     // result of global localization

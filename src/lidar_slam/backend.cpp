@@ -405,6 +405,43 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyfra
     *nearKeyframes = *cloud_temp;
 }
 
+
+bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
+    KeyFrameCloud.clear();
+    KeyPoses.clear();
+    KeyPoint.reset(new pcl::PointCloud<PointType>());
+
+    KeyFrameCloud.assign(input_vec_key_clouds.begin(), input_vec_key_clouds.end());
+
+    // 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
+    // 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
+    // T_map_odom： 传入的这个值是重定位结果
+    for(auto & kp : input_vec_key_poses){
+        Eigen::Isometry3d T_map_lidar = kp.pose;
+        Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
+        Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
+
+        KeyPose temp_pose;
+        temp_pose.pose = T_odom_lidar;
+        temp_pose.index = kp.index;
+        temp_pose.time = kp.time;
+        temp_pose.yaw = euler[0];
+        temp_pose.pitch = euler[1];
+        temp_pose.roll = euler[2];
+        KeyPoses.push_back(temp_pose);
+
+        PointType temp_pnt;
+        temp_pnt.x = T_odom_lidar.translation().x();
+        temp_pnt.y = T_odom_lidar.translation().y();
+        temp_pnt.z = T_odom_lidar.translation().z();
+        KeyPoint->points.push_back(temp_pnt);
+
+    }
+
+    loaded_key_clouds_ready_ = true;
+    return true;
+}
+
 void BackEnd::performLoopClosure(double time)
 {
     if (KeyPoint->points.empty() == true)

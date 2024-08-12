@@ -264,7 +264,7 @@ void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optim
     pubLoopConstraintEdge.publish(markerArray);
 }
 
-void show_keyframe(std::vector<ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
+void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
     visualization_msgs::MarkerArray MarkerArray;//定义MarkerArray对象
     int number = loadKeyframe.size();//object_in为输入的目标个数
 	for(int i = 0; i < number; i++)

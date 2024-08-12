@@ -170,6 +170,8 @@ void LidarSlam::reset(SlamWorkMode work_mode){
                                        V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
     // 定位
     localization.reset(new Localization());
+    global_localization_.reset(new GlobalLocalization());
+    cloud_map_manager_.reset(new CloudMap());
 
     
     // 线程相关 ************************************************
@@ -179,7 +181,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         show_thread->join();
         thread_run = true;
         if(work_mode == SEC_MAPPING){
-            second_mapping_thread->join();
+            global_localization_thread_->join();
         }
     }
 
@@ -187,8 +189,10 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     if (work_mode == MAPPING){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
     }else if (work_mode == SEC_MAPPING){
-        thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
-        second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
+        cloud_map_manager_->load_map_data(config_param_.common.map_directory);
+        global_localization_thread_.reset(new std::thread(&LidarSlam::global_localization_for_sec_mapping_thread, this));
+        thread.reset(new std::thread(&LidarSlam::sec_mapping_loopClosureThread, this));
+        // second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
     }else if (work_mode == LOCALIZATION){
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
     }
@@ -410,6 +414,35 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
 }
 
 
+void LidarSlam::sec_mapping_loopClosureThread()
+{
+    const int frequency = 1; // 频率为1Hz
+    const std::chrono::milliseconds period(1000 / frequency);
+    while (thread_run&&reseting == false)
+    {
+        auto start = std::chrono::steady_clock::now();
+        // 对于二次建图，重定位成功之前，不进行回环检测
+        if(globalLocalizationSuccess){
+            if(back_end->get_loaded_key_cloud_status()){// 关键帧已就绪
+                if (loop_closure_wait)
+                    back_end->performLoopClosure(lidar_end_time);  //  回环检测
+            }else{
+                auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudXYZI::Ptr>
+                auto loaded_keyframe_poses  = cloud_map_manager_->get_loaded_keyframe_poses();  // auto : std::vector<KeyPose>
+                auto global_odom_to_map     = global_localization_->get_global_odom_to_map();    // auto : Eigen::Isometry3d
+                back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
+            }
+        }
+        auto end = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        if (elapsed < period)
+        {
+            std::this_thread::sleep_for(period - elapsed);
+        }
+    }
+}
+
+
 void LidarSlam::loopClosureThread()
 {
     const int frequency = 1; // 频率为1Hz
@@ -439,8 +472,8 @@ void LidarSlam::localizationThread()
     while (thread_run&&reseting == false)
     {
         auto start = std::chrono::steady_clock::now();
-        //WorkState state;
-      //  pcl::PointCloud<PointType>::Ptr temp(new pcl::PointCloud<PointType>());//TODO change to xyzi
+        // WorkState state;
+        // pcl::PointCloud<PointType>::Ptr temp(new pcl::PointCloud<PointType>());//TODO change to xyzi
         pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
         {
         std::lock_guard<std::mutex> lk(mtx_odom_cloud);
@@ -483,25 +516,60 @@ void LidarSlam::localizationThread()
     }
 }
 
-void LidarSlam::second_mapping_thread_func(){
-//     const int frequency = 1.0; // 频率为1Hz
-//     const std::chrono::milliseconds period(1000 / frequency);
-//     const auto score_thr = config_param_.re_localization.score_thr;
+void LidarSlam::global_localization_for_sec_mapping_thread(){
+    // const int frequency = 1.0; // 频率为1Hz
+    const int frequency = 2.0; // 频率为2Hz
+    const std::chrono::milliseconds period(1000 / frequency);
+    const auto score_thr = config_param_.re_localization.score_thr;
+    const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
+    const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
+    int global_localize_count = 0;
 
-//     while (thread_run&&reseting == false){
-//         auto start = std::chrono::steady_clock::now();
-//         if(second_mapping_need_global_localization_){
-//             // if
+    while (thread_run&&reseting == false){
+        auto start = std::chrono::steady_clock::now();
+        // if(second_mapping_need_global_localization_){
+        // }
 
-//         }
+        if (!globalLocalizationSuccess){
+            
+            // check 
+            if(!global_localization_->get_global_map_ready()){
+                if(!global_localization_->set_global_map(cloud_map_manager_->get_loaded_cloud_map())){
+                    cout << "globalLocalization failed: map not ready (global-map) ... "<<endl;
+                }
+            }else if(!global_localization_->get_sc_manager_ready()){
+                if(!global_localization_->fill_sc_manager(cloud_map_manager_->get_load_sc_info_())){
+                    cout << "globalLocalization failed: map not ready (sc-manager) ... "<<endl;
+                }
+            }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                cout << "globalLocalization failed: cloud empty ... "<<endl;
+            // check end
+            }else{
+                cout <<"point(in use) count"<<UndistortCloudInOdom->points.size()<<endl;
+                pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+                {
+                    std::lock_guard<std::mutex> lk(mtx_odom_cloud);
+                    pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
+                }
 
+                // cout << "start globalLocalization ... "<<endl;
 
-//         auto end = std::chrono::steady_clock::now();
-//         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-//         if (elapsed < period){
-//             std::this_thread::sleep_for(period - elapsed);
-//         }
-//     }
+                //state.state("lost");
+                mutex mtx_lidar_cloud;
+                globalLocalizationSuccess = global_localization_->global_localize(undistortCloud, T_odom_lidar, p_imu->initial_rotate, score_thr);
+                // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr); 
+                cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
+
+            }
+            global_localize_count++;
+        }
+
+        auto end = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        if (elapsed < period){
+            std::this_thread::sleep_for(period - elapsed);
+        }
+    }
 
 }
 

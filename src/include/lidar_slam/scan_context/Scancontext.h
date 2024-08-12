@@ -24,6 +24,7 @@
 
 
 #include "lidar_slam/common_lib.h"
+#include "lidar_slam/data_struct_define.h"
 #include "lidar_slam/scan_context/nanoflann.hpp"
 #include "lidar_slam/scan_context/KDTreeVectorOfVectorsAdaptor.h"
 #include "lidar_slam/scan_context/tictoc.h"
@@ -52,11 +53,11 @@ float xy2theta( const float & _x, const float & _y );
 Eigen::MatrixXd circshift( Eigen::MatrixXd &_mat, int _num_shift );
 std::vector<float> eig2stdvec( Eigen::MatrixXd _eigmat );
 Eigen::Matrix4f yaw2matrix(const float &y);
-struct ScInfo {
-    int id;
-    Eigen::Isometry3d pose;
-    Eigen::MatrixXd polarcontext;
-};
+// struct ScInfo {
+//     int id;
+//     Eigen::Isometry3d pose;
+//     Eigen::MatrixXd polarcontext;
+// };
 
 class SCManager
 {

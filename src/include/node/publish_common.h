@@ -49,6 +49,7 @@
 #include "v4l2cam.h"
 #include "lidar_slam/Viewer.hpp"
 #include "lidar_slam/lidar_slam.hpp"
+#include "lidar_slam/data_struct_define.h"
 
 
 
@@ -81,7 +82,7 @@ void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher 
 void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge);
 
 
-void show_keyframe(std::vector<ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
+void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
 
 void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
 

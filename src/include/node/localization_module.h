@@ -4,8 +4,10 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <filesystem> // c++17 标准
 // ros
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <cv_bridge/cv_bridge.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <image_transport/image_transport.h>
@@ -28,7 +30,7 @@
 #include <Eigen/Core>
 
 // pcl
-#define PCL_NO_PRECOMPILE
+// #define PCL_NO_PRECOMPILE
 #include <pcl/search/impl/search.hpp>
 #include <pcl/range_image/range_image.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -43,9 +45,10 @@
 // cv
 #include <opencv2/opencv.hpp>
 
-// livox
+// msg
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
+#include "fairland_msgs/LocalizationModuleStatus.h"
 
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
@@ -81,20 +84,26 @@ enum ModuleStatus{
     MODULE_IDLE = 0,
     MODULE_MAPPING =1,
     MODULE_SEC_MAPPING =2,
-    MODULE_LOCALIZATION = 3
+    MODULE_LOCALIZATION = 3,
+    MODULE_STARTING_SLAM = 4,
+    MODULE_STOPPING_SLAM = 5
 };
 
 enum MappingStatus{
-    MAPPING_INACTIVE = 0,
-    MAPPING_RE_LOCALIZING =1,
-    MAPPING_CREATING_ELE = 2,
-    MAPPING_STANDBY =3
+    M_INACTIVE = 0,
+    M_RELOCALIZING =1,
+    M_RELOCALIZE_FAILED =2,
+    M_CREATING_ELE = 3,
+    M_STANDBY =4
 };
 
 enum LocalizationStatus{
-    LOCALIZATION_INACTIVE = 0,
-    LOCALIZATION_RE_LOCALIZING =1,
-    LOCALIZATION_LOCALIZING = 2
+    L_INACTIVE = 0,
+    L_RELOCALIZING =1,
+    L_RELOCALIZE_FAILED = 2,
+    L_NORMAL = 3,
+    L_LOW_ACCURACY = 4,
+    L_FAILED = 5
 };
 
 class LocalizationModule{
@@ -136,8 +145,9 @@ private:
     void release_slam_obj();
 
     // callback 
-    void mapping_ctrl_cbk(const std_msgs::UInt32 &msg_in);
+    void localization_module_ctrl_cbk(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
+    void pub_module_status_timer(const ros::TimerEvent &event);
 
     // void command_cbk(const std_msgs::Int32 &msg_in);
     // void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
@@ -156,6 +166,8 @@ private:
         CASE_STR(MODULE_MAPPING);
         CASE_STR(MODULE_SEC_MAPPING);
         CASE_STR(MODULE_LOCALIZATION);
+        CASE_STR(MODULE_STARTING_SLAM);
+        CASE_STR(MODULE_STOPPING_SLAM);
         default:
             break;
         }
@@ -164,10 +176,11 @@ private:
 
     string print_MappingStatus(MappingStatus e){
         switch (e){
-        CASE_STR(MAPPING_INACTIVE);
-        CASE_STR(MAPPING_RE_LOCALIZING);
-        CASE_STR(MAPPING_CREATING_ELE);
-        CASE_STR(MAPPING_STANDBY);
+        CASE_STR(M_INACTIVE);
+        CASE_STR(M_RELOCALIZING);
+        CASE_STR(M_RELOCALIZE_FAILED);
+        CASE_STR(M_CREATING_ELE);
+        CASE_STR(M_STANDBY);
         default:
             break;
         }
@@ -176,9 +189,11 @@ private:
 
     string print_LocalizationStatus(LocalizationStatus e){
         switch (e){
-        CASE_STR(LOCALIZATION_INACTIVE);
-        CASE_STR(LOCALIZATION_RE_LOCALIZING);
-        CASE_STR(LOCALIZATION_LOCALIZING);
+        CASE_STR(L_INACTIVE);
+        CASE_STR(L_RELOCALIZING);
+        CASE_STR(L_RELOCALIZE_FAILED);
+        CASE_STR(L_NORMAL);
+        CASE_STR(L_LOW_ACCURACY);
         default:
             break;
         }
@@ -193,15 +208,15 @@ private:
         }
     };
 
-public:
-
-private:
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;
+    ros::Timer timer_pub_module_status_;
 
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
     ros::Subscriber sub_imu_;
+
+    ros::Publisher pub_localization_module_status_;
 
 
     // slam node
@@ -225,12 +240,12 @@ private:
     ModuleStatus running_module_status_ = MODULE_IDLE;
 
     // 建图 *******************************************
-    MappingStatus mapping_status_ = MAPPING_INACTIVE;
+    MappingStatus mapping_status_ = M_INACTIVE;
     int start_index_ = -1;
     int end_index_ = -1;
 
     // 定位 *******************************************
-    LocalizationStatus localization_status_ = LOCALIZATION_INACTIVE;
+    LocalizationStatus localization_status_ = L_INACTIVE;
 
 
     // other thread

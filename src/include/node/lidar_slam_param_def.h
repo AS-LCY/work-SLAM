@@ -15,6 +15,10 @@ struct CommonParam{
     bool show_rviz = true;
     double log_keep_time = 0;
     std::string save_log_dir="/home/";
+    int map_relative_to=0;
+    std::string map_directory="/map/";
+    std::string sub_topic_ctrl_cmd;
+    std::string pub_topic_module_status;
 };
 
 struct ExtrinsicParam{
@@ -41,6 +45,7 @@ struct LidarPreprocParam{
 
 struct ReLocalizationParam{
     double score_thr;
+    int time_out_thr;// 以秒为单位
 };
 
 struct MappingParam{
@@ -54,16 +59,16 @@ struct MappingParam{
     double loopSearchDistance;
     bool use_ele_pcd_flag;
     bool save_ele_pcd_flag;
-    std::string save_map_dir;
+    // std::string save_map_dir;
     double save_map_resolution;
 };
 
 struct LocalizationParam{
-    std::string load_map_dir;
+    // std::string load_map_dir;
 };
 
 struct SecondMappingParam{
-    std::string load_map_dir;
+    // std::string load_map_dir;
 };
 
 struct IkdTreeParam{

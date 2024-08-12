@@ -8,6 +8,10 @@ common:
   show_rviz: false
   save_log_dir: "/home/"
   log_keep_time: 500
+  map_relative_to: 1 # --0: 相对路径，相对于catkin pkg; --1: 相对路径，相对于 catkin workspace; - 2: 使用绝对路径;  # disable---3: 相对路径，相对于 ${HOME};
+  map_directory: "/data/0803-floor23"
+  sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
+  pub_topic_module_status: "/flbot/localization_module/module_status"
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
@@ -57,6 +61,7 @@ localization:
 
 re_localization:
   score_thr: 0.15
+  time_out_thr: 10 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:
   cube_len: 400.0

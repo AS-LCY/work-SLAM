@@ -17,6 +17,12 @@ struct KeyPose
 };// defined in backend before
 
 
+struct ScInfo {
+    int id;
+    Eigen::Isometry3d pose;
+    Eigen::MatrixXd polarcontext;
+};// defined in scanContext before
+
 
 } // namespace lidar_slam
 
