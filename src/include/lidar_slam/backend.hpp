@@ -11,8 +11,8 @@
 #include <csignal>
 #include <unistd.h>
 #include <Eigen/Core>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
+// #include <opencv2/opencv.hpp>
+// #include <opencv2/core.hpp>
 // pcl
 #include <pcl/search/impl/search.hpp>
 #include <pcl/range_image/range_image.h>
@@ -75,7 +75,7 @@ public:
     {
         return KeyPoses.back();
     }
-    void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
+    // void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
     std::vector<KeyPose> getKeyframePoses()
     {
         return KeyPoses;

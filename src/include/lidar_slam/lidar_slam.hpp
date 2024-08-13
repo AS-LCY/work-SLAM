@@ -109,7 +109,7 @@ class LidarSlam
         void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
        // void cmd_cbk(WorkState& msg);
         void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in);
-        void image_cbk(const cv::Mat& img,double time);
+        // void image_cbk(const cv::Mat& img,double time);
         void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
             // if (param.localization_mode){

@@ -8,17 +8,17 @@ project(lidar_slam)
 # SET(CMAKE_BUILD_TYPE "Debug")  
 SET(CMAKE_BUILD_TYPE "Release")  
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-ADD_COMPILE_OPTIONS(-std=c++14 )
-ADD_COMPILE_OPTIONS(-std=c++14 )
-set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
+# ADD_COMPILE_OPTIONS(-std=c++14 )
+# ADD_COMPILE_OPTIONS(-std=c++14 )
+# set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
 
 add_compile_options(-fPIC)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -pthread -std=c++0x -std=c++14 -fexceptions")
-set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -std=c++0x -fexceptions")
+# set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
 
 get_filename_component(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
 add_compile_definitions(CURRENT_DIR="${CURRENT_DIR}")
@@ -45,6 +45,7 @@ endif()
 
 
 
+
 ################### check CPU type #####################
 if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64")
   # add_definitions(-DCPU_AARCH64)
@@ -62,7 +63,6 @@ message("********* CPU: ${CPU_TYPE} *********")
 
 ### setting ${THIRDPARTY_DIR}
 set(THIRDPARTY_DIR ${CMAKE_SOURCE_DIR}/flbot_thirdparty)  
-# set(THIRDPARTY_DIR /home/pan/catkin_ws/ws_localization2/src/flbot_thirdparty)  
 message("********* THIRDPARTY_DIR: ${THIRDPARTY_DIR} *********")
 
 
@@ -98,7 +98,7 @@ find_package(Boost 1.54 REQUIRED COMPONENTS
 )
 
 # find_package(PCL REQUIRED)
-find_package(yaml-cpp REQUIRED)
+# find_package(yaml-cpp REQUIRED)
 find_package(PkgConfig)
 
 ################### set thirdparty #####################
@@ -115,16 +115,27 @@ set(LIVOX_SDK2_LIBRARY_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/lib)
 
 find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
 
+### setting yaml-cpp
+set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/cmake/yaml-cpp/)
+find_package(yaml-cpp REQUIRED PATHS ${yaml_cpp_DIR} NO_DEFAULT_PATH)
+# message("********* yaml-cpp_INCLUDE_DIR: ${yaml-cpp_INCLUDE_DIR} *********")
+message("********* yaml-cpp_FOUND: ${yaml-cpp_FOUND} *********")
+message("********* yaml-cpp_VERSION: ${yaml-cpp_VERSION} *********")
+
 ### setting Eigen3
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
 find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
 
 ### setting PCL
-set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/share/pcl-1.14)
+if(${CPU_TYPE} MATCHES "x86")
+  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+elseif(${CPU_TYPE} MATCHES "arrch64")
+  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+endif()
+
 find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
 message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
-
 
 ### setting fmt
 set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
@@ -159,13 +170,23 @@ message("********* fmt_ROOT: ${fmt_ROOT} *********")
 # message("********* FMT_LIBRARIES: ${FMT_LIBRARIES} *********")
 # # find_package(fmt REQUIRED PATHS_ONLY PATHS ${fmt_DIR} NO_DEFAULT_PATH)
 
+# file(GLOB FMT_LIBRARIES
+#     "${fmt_DIR}/lib/libfmt.so*"
+# )
+# # find_package( fmt REQUIRED )
+# set(FMT_INCLUDE_DIRS ${fmt_DIR}../../../include)
+# # find_package(fmt REQUIRED)
+# message("********* FMT_LIBRARIES: ${FMT_LIBRARIES} *********")
+# # find_package(fmt REQUIRED PATHS_ONLY PATHS ${fmt_DIR} NO_DEFAULT_PATH)
+
 ### setting Sophus
 set(Sophus_DIR ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/share/sophus/cmake)
 find_package(Sophus REQUIRED PATHS ${Sophus_DIR} NO_DEFAULT_PATH)
-# set(Sophus_INCLUDE_DIRS ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/include/)
-message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
-# message("********* Sophus_LIBRARIES: ${Sophus_LIBRARIES} *********")
+set(Sophus_INCLUDE_DIRS ${THIRDPARTY_DIR}/Sophus/${CPU_TYPE}/include/)
 # Sophus 安装的库为模板类，没有libs
+message("********* Sophus_FOUND: ${Sophus_FOUND} *********")
+message("********* Sophus_INCLUDE_DIRS: ${Sophus_INCLUDE_DIRS} *********")
+message("********* Sophus_VERSION: ${Sophus_VERSION} *********")
 
 
 ### setting Pangolin
@@ -180,12 +201,12 @@ set (Pangolin_LIBRARY_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib)
 message("********* Pangolin_INCLUDE_DIRS: ${Pangolin_INCLUDE_DIRS} *********")
 message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 
-### setting OpenCV
-set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/cmake/opencv4)
-find_package(OpenCV REQUIRED QUIET PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
-set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/)
-message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
-message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
+# ### setting OpenCV
+# set (OpenCV_DIR ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/cmake/opencv4)
+# find_package(OpenCV REQUIRED QUIET PATHS ${OpenCV_DIR} NO_DEFAULT_PATH)
+# set (OpenCV_LIBRARY_DIRS ${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/)
+# message("********* OpenCV_INCLUDE_DIRS: ${OpenCV_INCLUDE_DIRS} *********")
+# message("********* OpenCV_LIBRARIES: ${OpenCV_LIBRARIES} *********")
 
 ### setting gtsam
 set (GTSAM_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAM)
@@ -239,7 +260,7 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${Sophus_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
+  # ${OpenCV_INCLUDE_DIRS}
   ${Pangolin_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
   # below TODO
@@ -253,7 +274,7 @@ include_directories(
 link_directories(
   ${FAST_GICP_LIBRARY_DIR}
   ${LIVOX_SDK2_LIBRARY_DIR}
-  ${OpenCV_LIBRARY_DIRS}
+  # ${OpenCV_LIBRARY_DIRS}
   ${Pangolin_LIBRARY_DIRS}
 )
  
@@ -264,21 +285,24 @@ add_library(ikd_Tree src/lidar_slam/ikd_Tree.cpp)
 # set_target_properties(livox_sdk PROPERTIES IMPORTED_LOCATION ${LIVOX_SDK2_LIBRARY_DIR}/liblivox_lidar_sdk_shared.so)
 
 add_library(Scancontext src/lidar_slam/Scancontext.cpp)
-target_link_libraries(Scancontext ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries(Scancontext ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
+
+add_library(backend src/lidar_slam/backend.cpp)
+target_link_libraries(backend gtsam ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
 
 add_library(sensor_data_preproc 
   src/lidar_slam/preprocess.cpp 
   src/lidar_slam/IMU_Processing.cpp
   )
-target_link_libraries(sensor_data_preproc ${PCL_LIBRARIES} ${OpenCV_LIBS}) 
+target_link_libraries(sensor_data_preproc ${PCL_LIBRARIES}) # ${OpenCV_LIBS}) 
 
 # build: slam core
 add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
-  src/lidar_slam/backend.cpp
   # src/lidar_slam/cloud_map.cpp
   src/lidar_slam/global_localization.cpp
+  # src/lidar_slam/backend.cpp
   # src/lidar_slam/preprocess.cpp
   # src/lidar_slam/IMU_Processing.cpp
 )
@@ -288,14 +312,17 @@ target_link_libraries(lidar_slam
   ${PCL_LIBRARIES} 
   ${Pangolin_LIBRARIES} 
   ${FAST_GICP_LIBRARY}
-  ${OpenCV_LIBS}
+  # ${OpenCV_LIBS}
   ${fmt_LIBRARIES}
-  gtsam  
+  # gtsam  
+  fmt::fmt 
   yaml-cpp 
   ikd_Tree 
   Scancontext
+  backend
   sensor_data_preproc
 ) 
+
 
 
 # build: ros-node
@@ -328,9 +355,15 @@ target_link_libraries(lidar_slam_node
 #############
 
 
-file(GLOB OPENCV_LIBRARY "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/opencv-4.5.4/lib/libopencv*")
+# file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/lib/libpcl*")
+file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
+file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
+file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
+file(GLOB YAML_CPP_LIBS "${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/lib*")
+file(GLOB fast_gicp_LIBS "${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/lib*")
 
-install(TARGETS lidar_slam_node lidar_slam ikd_Tree Scancontext sensor_data_preproc
+install(TARGETS lidar_slam_node lidar_slam ikd_Tree Scancontext backend sensor_data_preproc
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -340,10 +373,15 @@ install(DIRECTORY launch config rviz_cfg
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 
-install(FILES 
-  ${FAST_GICP_LIBRARY}
+  install(FILES 
   ${cv_bridge_LIBRARIES}
-  #  ${OPENCV_LIBRARY} 
+  # ${OPENCV_LIBS} 
+  ${PCL_LIBS} 
+  ${GTSAM_LIBS} 
+  ${fmt_LIBS} 
+  ${Pangolin_LIBS} 
+  ${YAML_CPP_LIBS} 
+  ${fast_gicp_LIBS} 
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
