@@ -43,7 +43,7 @@
 #include <pcl/filters/crop_box.h>
 
 // cv
-#include <opencv2/opencv.hpp>
+// #include <opencv2/opencv.hpp>
 
 // msg
 // #include <livox_ros_driver2/CustomMsg.h>
