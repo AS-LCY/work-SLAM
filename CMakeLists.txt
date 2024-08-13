@@ -8,9 +8,9 @@ project(lidar_slam)
 # SET(CMAKE_BUILD_TYPE "Debug")  
 SET(CMAKE_BUILD_TYPE "Release")  
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-ADD_COMPILE_OPTIONS(-std=c++14 )
-ADD_COMPILE_OPTIONS(-std=c++14 )
-set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
+# ADD_COMPILE_OPTIONS(-std=c++14 )
+# ADD_COMPILE_OPTIONS(-std=c++14 )
+# set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
 
 add_compile_options(-fPIC)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
@@ -18,8 +18,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -fexceptions")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -std=c++0x -fexceptions")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -fexceptions")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -pthread -std=c++0x -fexceptions")
 # set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -344,7 +344,7 @@ target_link_libraries(lidar_slam_node
 #############
 
 
-# file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
 file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/lib/libpcl*")
 file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
 file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
@@ -372,7 +372,7 @@ install(FILES
   ${Pangolin_LIBS}
   ${YAML_CPP_LIBS}
   ${fast_gicp_LIBS}
-  #  ${OPENCV_LIBRARY} 
+  ${OPENCV_LIBS} 
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 

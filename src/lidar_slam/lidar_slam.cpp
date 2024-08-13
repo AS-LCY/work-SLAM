@@ -24,6 +24,18 @@
 // }
 
 namespace lidar_slam {
+
+string print_SlamWorkMode(SlamWorkMode e){
+    switch (e){
+    CASE_STR(MAPPING);
+    CASE_STR(SEC_MAPPING);
+    CASE_STR(LOCALIZATION);
+    default:
+        break;
+    }
+    return "UNKNOW_SlamWorkMode!";
+}
+
 LidarSlam::LidarSlam(const std::string work_path,bool localization_mode,bool offline,bool second_mapping){
     // if (!offline){
     //     start_driver(work_path);
@@ -58,9 +70,7 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode){
 //   std::string frame_id = "livox_frame";
 //   bool lidar_bag = false;
 //   bool imu_bag   = false;
-
 //   livox_node.future_ = livox_node.exit_signal_.get_future();   
-
 //   /** Lidar data distribute control and lidar data source set */
 //  /* std::function<void(const std::shared_ptr<livox_ros::LidarMsg>&)> func_1 = [&slam](const std::shared_ptr<livox_ros::LidarMsg>& msg) {
 //       slam->livox_pcl_cbk(msg);
@@ -73,17 +83,13 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode){
 //   livox_node.lddc_ptr_ = std::make_unique<livox_ros::Lddc>(xfer_format, multi_topic, data_src, output_type,
 //                         publish_freq, frame_id, lidar_bag, imu_bag,func_1,func_2);
 //   livox_node.lddc_ptr_->SetRosNode(&livox_node);
-
 //   if (data_src == livox_ros::kSourceRawLidar) {
 //   //  DRIVER_INFO(livox_node, "Data Source is raw lidar.");
-
 //     std::string user_config_path = work_path + std::string("/config/MID360_config.json");
 //    // livox_node.getParam("user_config_path", user_config_path);
 //   //  DRIVER_INFO(livox_node, "Config file : %s", user_config_path.c_str());
-
 //     livox_ros::LdsLidar *read_lidar = livox_ros::LdsLidar::GetInstance(publish_freq);
 //     livox_node.lddc_ptr_->RegisterLds(static_cast<livox_ros::Lds *>(read_lidar));
-
 //     if ((read_lidar->InitLdsLidar(user_config_path))) {
 //       printf("Init lds lidar successfully!\n");
 //     } else {
@@ -92,16 +98,17 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode){
 //   } else {
 //    // DRIVER_ERROR(livox_node, "Invalid data src (%d), please check the launch file", data_src);
 //   }
-
 //   livox_node.pointclouddata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::PointCloudDataPollThread, &livox_node);
 //   livox_node.imudata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::ImuDataPollThread, &livox_node);
 // }
 
 void LidarSlam::reset(SlamWorkMode work_mode){
+    // cout << "slam reset 0"<<endl;
     reseting = true;
 
     sleep(1);
 
+    // cout << "slam reset 1"<<endl;
     /// 激光和IMU预处理相关 *******************************************
     time_buffer.clear();               // 记录lidar时间
     lidar_buffer.clear(); //记录特征提取或间隔采样后的lidar（特征）数据
@@ -120,6 +127,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     Measures = MeasureGroup();// TODO
     temp_imu_msg.clear();// TODO
 
+    // cout << "slam reset 2"<<endl;
     /// 点云 reset *******************************************
     UndistortCloudInOdom.reset(new PointCloudXYZI());
     undistortCloud.reset(new PointCloudXYZI());  // lidar 系
@@ -128,6 +136,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     ObstacleCloud.reset(new PointCloudXYZI());
     FilteredObstacleCloud.reset(new PointCloudXYZI());
 
+    // cout << "slam reset 3"<<endl;
     /// mapping 相关 *******************************************
     unoptimized_path.clear();
     optimized_path.clear();
@@ -144,6 +153,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
     back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance));
 
+    // cout << "slam reset 4"<<endl;
     /// sec_mapping & localizaiton ********************************
     globalLocalizationSuccess = false;
 
@@ -174,6 +184,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     cloud_map_manager_.reset(new CloudMap());
 
     
+    // cout << "slam reset 5"<<endl;
     // 线程相关 ************************************************
     if (thread!=nullptr){
         thread_run = false;
@@ -185,6 +196,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         }
     }
 
+    // cout << "slam reset 6"<<endl;
     reseting = false;
     if (work_mode == MAPPING){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));

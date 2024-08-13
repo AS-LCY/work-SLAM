@@ -200,6 +200,23 @@ private:
         return "UNKNOW_LocalizationStatus!";
     }
 
+    string print_SlamCtrlCmd(SlamCtrlCmd e){
+        switch (e){
+        CASE_STR(START_MAPPING);
+        CASE_STR(START_SEC_MAPPING);
+        CASE_STR(MAPPING_POINT_BEGIN);
+        CASE_STR(MAPPING_ELE_DELETE);
+        CASE_STR(MAPPING_POINT_END);
+        CASE_STR(EXIT_MAPPING);
+        CASE_STR(START_LOCALIZATION);
+        CASE_STR(EXIT_LOCALIZATION);
+        CASE_STR(CMD_MAX);
+        default:
+            break;
+        }
+        return "UNKNOW_SlamCtrlCmd!";
+    }
+
     template <class T>
     void get_param(const std::string& param_str, T& param, bool* is_success){
         if(!nh_.getParamCached(param_str,param)){
@@ -236,6 +253,7 @@ private:
 
     // 模块 localization module
     // bool running_slam_ = false;
+    ModuleStatus last_running_module_status_ = MODULE_IDLE;
     ModuleStatus set_module_status_ = MODULE_IDLE;
     ModuleStatus running_module_status_ = MODULE_IDLE;
 

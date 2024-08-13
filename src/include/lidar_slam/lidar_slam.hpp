@@ -77,6 +77,9 @@ enum SlamWorkMode{
     UNKNOWN
 };
 
+
+string print_SlamWorkMode(SlamWorkMode e);
+
 class LidarSlam
 {
     public:
@@ -264,16 +267,16 @@ class LidarSlam
             return FilteredObstacleCloud;
         }
 
-        string print_SlamWorkMode(SlamWorkMode e){
-            switch (e){
-            CASE_STR(MAPPING);
-            CASE_STR(SEC_MAPPING);
-            CASE_STR(LOCALIZATION);
-            default:
-                break;
-            }
-            return "UNKNOW_SlamWorkMode!";
-        }
+        // string print_SlamWorkMode(SlamWorkMode e){
+        //     switch (e){
+        //     CASE_STR(MAPPING);
+        //     CASE_STR(SEC_MAPPING);
+        //     CASE_STR(LOCALIZATION);
+        //     default:
+        //         break;
+        //     }
+        //     return "UNKNOW_SlamWorkMode!";
+        // }
 
     private:
         // LidarParam param;
