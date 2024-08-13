@@ -58,6 +58,7 @@
 #include "node/publish_common.h"
 #include "node/lidar_slam_param_def.h"
 #include "node/point_type_livox_def.h"
+#include "node/module_status_def.h"
 
 #include "v4l2cam.h"
 
@@ -67,6 +68,7 @@ using namespace std;
 using namespace Eigen;
 using namespace pcl;
 using namespace sensor_msgs;
+using namespace lidar_slam;
 
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
@@ -80,31 +82,6 @@ enum SlamCtrlCmd{
     CMD_MAX
 };
 
-enum ModuleStatus{
-    MODULE_IDLE = 0,
-    MODULE_MAPPING =1,
-    MODULE_SEC_MAPPING =2,
-    MODULE_LOCALIZATION = 3,
-    MODULE_STARTING_SLAM = 4,
-    MODULE_STOPPING_SLAM = 5
-};
-
-enum MappingStatus{
-    M_INACTIVE = 0,
-    M_RELOCALIZING =1,
-    M_RELOCALIZE_FAILED =2,
-    M_CREATING_ELE = 3,
-    M_STANDBY =4
-};
-
-enum LocalizationStatus{
-    L_INACTIVE = 0,
-    L_RELOCALIZING =1,
-    L_RELOCALIZE_FAILED = 2,
-    L_NORMAL = 3,
-    L_LOW_ACCURACY = 4,
-    L_FAILED = 5
-};
 
 class LocalizationModule{
 public:
@@ -160,46 +137,6 @@ private:
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
 
-    string print_ModuleStatus(ModuleStatus e){
-        switch (e){
-        CASE_STR(MODULE_IDLE);
-        CASE_STR(MODULE_MAPPING);
-        CASE_STR(MODULE_SEC_MAPPING);
-        CASE_STR(MODULE_LOCALIZATION);
-        CASE_STR(MODULE_STARTING_SLAM);
-        CASE_STR(MODULE_STOPPING_SLAM);
-        default:
-            break;
-        }
-        return "UNKNOW_MappingStatus!";
-    }
-
-    string print_MappingStatus(MappingStatus e){
-        switch (e){
-        CASE_STR(M_INACTIVE);
-        CASE_STR(M_RELOCALIZING);
-        CASE_STR(M_RELOCALIZE_FAILED);
-        CASE_STR(M_CREATING_ELE);
-        CASE_STR(M_STANDBY);
-        default:
-            break;
-        }
-        return "UNKNOW_MappingStatus!";
-    }
-
-    string print_LocalizationStatus(LocalizationStatus e){
-        switch (e){
-        CASE_STR(L_INACTIVE);
-        CASE_STR(L_RELOCALIZING);
-        CASE_STR(L_RELOCALIZE_FAILED);
-        CASE_STR(L_NORMAL);
-        CASE_STR(L_LOW_ACCURACY);
-        default:
-            break;
-        }
-        return "UNKNOW_LocalizationStatus!";
-    }
-
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
         CASE_STR(START_MAPPING);
@@ -216,7 +153,6 @@ private:
         }
         return "UNKNOW_SlamCtrlCmd!";
     }
-
     template <class T>
     void get_param(const std::string& param_str, T& param, bool* is_success){
         if(!nh_.getParamCached(param_str,param)){
@@ -263,7 +199,8 @@ private:
     int end_index_ = -1;
 
     // 定位 *******************************************
-    LocalizationStatus localization_status_ = L_INACTIVE;
+    // enum LocalizationStatus
+    lidar_slam::LocalizationStatus localization_status_ = L_INACTIVE;
 
 
     // other thread
