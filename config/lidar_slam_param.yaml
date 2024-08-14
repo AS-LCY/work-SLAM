@@ -61,7 +61,7 @@ localization:
 
 re_localization:
   score_thr: 0.15
-  time_out_thr: 10 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
+  time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:
   cube_len: 400.0

@@ -138,7 +138,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             running_module_status_ = MODULE_STARTING_SLAM;
             if(start_localization(set_module_status_, map_id)){
                 running_module_status_ = MODULE_LOCALIZATION;
-                localization_status_ = L_RELOCALIZING;
+                // localization_status_ = L_RELOCALIZING;
             }else{
                 set_module_status_ = running_module_status_;
             }
@@ -975,6 +975,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }
 
     // fill status_msg.localization_status
+    localization_status_ = slam_->get_l_status();
     if(localization_status_ == L_INACTIVE){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
     }else if(localization_status_ == L_RELOCALIZING){
@@ -1064,7 +1065,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         int map_id = 0;/////////////// TODO
         if(start_localization(set_module_status_, map_id)){
             running_module_status_ = MODULE_LOCALIZATION;
-            localization_status_ = L_RELOCALIZING;
+            // localization_status_ = L_RELOCALIZING;
         }else{
             set_module_status_ = running_module_status_;
         }
@@ -1141,7 +1142,6 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
 //     }
 // }
 
-
 // void LocalizationModule::make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping){
 //     ROS_INFO("creating lidar_slam ");
 //     slam_ = std::make_unique<lidar_slam::LidarSlam>(work_path, localization_mode, offline_mode, sec_mapping);
@@ -1158,7 +1158,6 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
 //     ROS_INFO("slam_mode: %s", print_SlamMode(slam_mode_).c_str());
 //     ROS_INFO("create lidar_slam successfully");
 // }
-
 
 // void LocalizationModule::mark_start_point(){
 //     // 标记起点的 POSE

@@ -19,14 +19,6 @@ enum ModuleStatus{
     MODULE_STOPPING_SLAM = 5
 };
 
-enum MappingStatus{
-    M_INACTIVE = 0,
-    M_RELOCALIZING =1,
-    M_RELOCALIZE_FAILED =2,
-    M_CREATING_ELE = 3,
-    M_STANDBY =4
-};
-
 
 static string print_ModuleStatus(ModuleStatus e){
     switch (e){
@@ -42,18 +34,6 @@ static string print_ModuleStatus(ModuleStatus e){
     return "UNKNOW_MappingStatus!";
 }
 
-static string print_MappingStatus(MappingStatus e){
-    switch (e){
-    CASE_STR(M_INACTIVE);
-    CASE_STR(M_RELOCALIZING);
-    CASE_STR(M_RELOCALIZE_FAILED);
-    CASE_STR(M_CREATING_ELE);
-    CASE_STR(M_STANDBY);
-    default:
-        break;
-    }
-    return "UNKNOW_MappingStatus!";
-}
 
 } //namespace localization_module
 
@@ -69,6 +49,14 @@ enum LocalizationStatus{
     L_FAILED = 5
 };
 
+enum MappingStatus{
+    M_INACTIVE = 0,
+    M_RELOCALIZING =1,
+    M_RELOCALIZE_FAILED =2,
+    M_CREATING_ELE = 3,
+    M_STANDBY =4
+};
+
 static string print_LocalizationStatus(LocalizationStatus e){
     switch (e){
     CASE_STR(L_INACTIVE);
@@ -81,6 +69,20 @@ static string print_LocalizationStatus(LocalizationStatus e){
     }
     return "UNKNOW_LocalizationStatus!";
 }
+
+static string print_MappingStatus(MappingStatus e){
+    switch (e){
+    CASE_STR(M_INACTIVE);
+    CASE_STR(M_RELOCALIZING);
+    CASE_STR(M_RELOCALIZE_FAILED);
+    CASE_STR(M_CREATING_ELE);
+    CASE_STR(M_STANDBY);
+    default:
+        break;
+    }
+    return "UNKNOW_MappingStatus!";
+}
+
 
 }// namespace lidar_slam
 

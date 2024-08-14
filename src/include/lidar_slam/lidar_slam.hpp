@@ -29,6 +29,7 @@
 // #include "lddc.h"
 #include "livox_datatype/livox_ros_datatype_def.h"
 #include "node/lidar_slam_param_def.h"
+#include "node/module_status_def.h"
 // #include "lds_lidar.h"
 
 namespace lidar_slam {
@@ -267,6 +268,10 @@ class LidarSlam
             return FilteredObstacleCloud;
         }
 
+        LocalizationStatus get_l_status(){
+            return l_status_;
+        }
+
         // string print_SlamWorkMode(SlamWorkMode e){
         //     switch (e){
         //     CASE_STR(MAPPING);
@@ -347,6 +352,8 @@ class LidarSlam
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
+        LocalizationStatus l_status_ = L_INACTIVE;
+        MappingStatus m_status_ = M_INACTIVE;
         // bool second_mapping_need_global_localization_ = false;
 
 
@@ -354,7 +361,7 @@ class LidarSlam
         void loopClosureThread();
         void sec_mapping_loopClosureThread();
         void localizationThread();
-        void relocalizationForMappingThread();
+        // void relocalizationForMappingThread();
         void global_localization_for_sec_mapping_thread();
         void showThread();
         void delete_log_file(double keep_time);

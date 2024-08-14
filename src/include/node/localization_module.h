@@ -200,6 +200,7 @@ private:
 
     // 定位 *******************************************
     // enum LocalizationStatus
+    // localization_status_: 在localization_module.cpp(&.h)中只作初始化为 L_INACTIVE 的操作; 实际的全部状态来源:lidar_slam.cpp(&.h).
     lidar_slam::LocalizationStatus localization_status_ = L_INACTIVE;
 
 
