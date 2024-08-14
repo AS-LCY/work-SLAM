@@ -863,6 +863,8 @@ bool LocalizationModule::load_lidar_slam_param(){
 
     /// localization params *******************************************
     get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
+    get_param(ns+ "localization/fgicp_score_thr", slam_param_.localization.fgicp_score_thr, &success);
+    
 
 
     /// re-localization params *******************************************

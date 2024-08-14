@@ -435,6 +435,7 @@ void LidarSlam::localizationThread()
     const int frequency = 1.0; // 频率为1Hz
     const std::chrono::milliseconds period(1000 / frequency);
     const auto score_thr = config_param_.re_localization.score_thr;
+    const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
 
     while (thread_run&&reseting == false)
     {
@@ -468,7 +469,7 @@ void LidarSlam::localizationThread()
         }
         else{
             cout << "localizing ... "<<endl;
-            localization->localize(temp);
+            localization->localize(temp, fgicp_score_thr);
 
             //state.state("normal");
         }

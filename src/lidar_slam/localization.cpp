@@ -21,6 +21,7 @@ Localization::Localization(){
 Localization::~Localization(){
 
 }
+
 bool Localization::loadMap(std::string path){
     map_ready_ = false;
     CloudGlobalMap.reset(new PointCloudXYZI());
@@ -153,19 +154,17 @@ bool Localization::loadMap(std::string path){
     return true;
 }
 
-
-
-void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud)
+void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr)
 {
-  //  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
-  //  pcl::copyPointCloud(*(odomCloud), *cloudIn);
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
+    // pcl::copyPointCloud(*(odomCloud), *cloudIn);
 
     if (!map_ready_) return;
     gicp->setInputSource(odomCloud);
     gicp->setInputTarget(CloudGlobalMapIn);
     pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
     gicp->align(*unused_result, correctionOdomToMap.matrix().cast<float>());                    
-    if (gicp->hasConverged() == false || gicp->getFitnessScore() > 0.1){// TODO check param
+    if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
         std::cout << "gicp fail "<<std::endl;
     }
     else{
