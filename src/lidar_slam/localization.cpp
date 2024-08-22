@@ -21,6 +21,7 @@ Localization::Localization(){
 Localization::~Localization(){
 
 }
+
 bool Localization::loadMap(std::string path){
     map_ready_ = false;
     CloudGlobalMap.reset(new PointCloudXYZI());
@@ -153,27 +154,28 @@ bool Localization::loadMap(std::string path){
     return true;
 }
 
-
-
-void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud)
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr)
 {
-  //  pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
-  //  pcl::copyPointCloud(*(odomCloud), *cloudIn);
+    // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
+    // pcl::copyPointCloud(*(odomCloud), *cloudIn);
 
-    if (!map_ready_) return;
+    if (!map_ready_) return false;
     gicp->setInputSource(odomCloud);
     gicp->setInputTarget(CloudGlobalMapIn);
     pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
     gicp->align(*unused_result, correctionOdomToMap.matrix().cast<float>());                    
-    if (gicp->hasConverged() == false || gicp->getFitnessScore() > 0.1){// TODO check param
+    if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
         std::cout << "gicp fail "<<std::endl;
+        return false;
     }
     else{
         std::cout << "gicp success with score "<< gicp->getFitnessScore() << std::endl;       
         correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
-    //    float x, y, z, roll, pitch, yaw;
-     //   pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
-      //  std::cout << "gicp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
+
+        return true;
+        // float x, y, z, roll, pitch, yaw;
+        // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
+        // std::cout << "gicp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
     }
 }
 
@@ -297,8 +299,8 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // std::cout << "scancontext search success, score {} " <<match_idx<<" "<< min_dist<<std::endl;
     } else {
         // std::cout << "-------------------------------------------"<<std::endl;
-        return false;
         std::cout << "scancontext search fail, score {} "<<match_idx<<" "<< min_dist<<std::endl;
+        return false;
     }
 
 

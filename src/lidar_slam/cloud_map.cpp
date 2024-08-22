@@ -36,6 +36,7 @@ bool CloudMap::load_map_data(std::string map_dir){
     }
 
     map_data_ready_ = true;
+    cout<<"load map_data success, map_data_ready_ = true"<<endl;
     return true;
 }
 
@@ -43,7 +44,8 @@ bool CloudMap::load_map_data(std::string map_dir){
 bool CloudMap::load_key_frames(std::string keyframe_dir){
     /// load key frame poses **************************************************************************
     std::string keyframe_pose_path = keyframe_dir + "/key_frame_pose.txt";
-    std::cout << "tring to load key_frame_pose from : " << keyframe_pose_path<<std::endl;
+    // std::cout << "loading key_frame_pose from : " << keyframe_pose_path<<std::endl;
+    std::cout << "loading key_frame_pose from : " << keyframe_pose_path<<" -- ";
 
     /// open pose_file
     std::ifstream pose_file(keyframe_pose_path);
@@ -102,6 +104,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         loaded_keyframe_poses_.push_back(read_one_line);// 数据保存 ---------------------------------------
     }
     pose_file.close();
+    std::cout << "success -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size() <<std::endl;
     /// load key frame poses end *************************************************************************
 
     /// load key frame cloud start ***********************************************************************
@@ -110,15 +113,15 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
     for(int i=0; i< key_poses_size; i++){
         int pose_index = loaded_keyframe_poses_[i].index;
         std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) +  ".pcd";
-        std::cout << "tring to load key_frame_cloud from : " << key_cloud_path<<std::endl;
+        std::cout << "loading key_frame_cloud from : " << key_cloud_path<<" -- ";
 
         PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
         if (std::filesystem::exists(key_cloud_path)){
             pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
             loaded_keyframe_clouds_.push_back((temp_cloud));
-            std::cout <<"key cloud loaded --- points count: "<<temp_cloud->points.size() << std::endl;
+            std::cout <<"success -- points count: "<<temp_cloud->points.size() << std::endl;
         }else {
-            std::cerr << "key cloud file does not exist." << std::endl;
+            std::cerr << "failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist." << std::endl;
             return false;
         }
     }
@@ -130,12 +133,13 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     /// load cloud_map.pcd ***************************************************************************
     loaded_global_map_.reset(new PointCloudXYZI());
     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
-    std::cout << "tring to load map from : " << cloud_map_file_path<<std::endl;
+    // std::cout << "loading map from : " << cloud_map_file_path<<std::endl;
+    std::cout << "loading map from : " << cloud_map_file_path<<" -- ";
     if (std::filesystem::exists(cloud_map_file_path)){
         pcl::io::loadPCDFile(cloud_map_file_path, *loaded_global_map_);
-        std::cout <<"map loaded --- points count: "<<loaded_global_map_->points.size() << std::endl;
+        std::cout <<"success -- points count: "<<loaded_global_map_->points.size() << std::endl;
     }else {
-        std::cerr << "map file does not exist." << std::endl;
+        std::cerr << "failed -- map file does not exist." << std::endl;
         return false;
     }
     /// TODO: show map point ---------------------------------
@@ -145,7 +149,8 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     loaded_sc_info_.clear();
 
     /// open file
-    std::cout << "tring to load sc-data from : " << sc_data_file_path<<std::endl;
+    // std::cout << "tring to load sc-data from : " << sc_data_file_path<<std::endl;
+    std::cout << "loading sc-data from : " << sc_data_file_path<<" -- ";
     std::ifstream file(sc_data_file_path);
     try {
         if (!file) {
@@ -203,7 +208,7 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     if (loaded_sc_info_.size() == 0)
         return false;
     // sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);
-    std::cout << "get_load_data : " << loaded_sc_info_.size() << std::endl;
+    std::cout << "success -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
 
 
     /// load data(pose & ScanContex) end *****************************************************************

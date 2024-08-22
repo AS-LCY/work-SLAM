@@ -92,16 +92,18 @@ class LidarSlam
         void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
-            // cout<<"destruct"<<endl;
+            cout<<"destruct"<<endl;
             // cout <<"work mode: "<<print_SlamWorkMode(working_mode_)<<endl;
             thread_run = false;
             thread->join();
+            // cout<<"destruct thread"<<endl;
             thread.reset(nullptr);
             show_thread->join();
+            // cout<<"destruct show_thread"<<endl;
             show_thread.reset(nullptr);
-            // if(sec_mapping_){
             if(working_mode_ == SEC_MAPPING){
                 global_localization_thread_->join();
+                // cout<<"destruct global_localization_thread_"<<endl;
                 global_localization_thread_.reset(nullptr);
             }
 
@@ -130,7 +132,14 @@ class LidarSlam
         bool load_map(string directory){
             globalLocalizationSuccess = false;
             sleep(1);
-            localization->loadMap(directory);
+            if(working_mode_ == LOCALIZATION){
+                localization->loadMap(directory);
+            }else if(working_mode_ == SEC_MAPPING){
+                cloud_map_manager_->load_map_data(directory);
+            }else{
+                cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
+                return false;
+            }
             return true;
         }
 

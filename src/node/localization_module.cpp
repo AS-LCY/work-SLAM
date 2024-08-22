@@ -93,6 +93,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             if(start_second_mapping(set_module_status_, map_id)){
                 running_module_status_ = set_module_status_;
                 mapping_status_ = M_STANDBY;
+                cout<<"debug: running_module_status_ set"<<endl;
             }else{
                 running_module_status_ = last_running_module_status_;
                 // set_module_status_ = last_running_module_status_;
@@ -141,6 +142,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
                 // localization_status_ = L_RELOCALIZING;
             }else{
                 set_module_status_ = running_module_status_;
+                running_module_status_ = last_running_module_status_;
             }
             last_running_module_status_ = MODULE_IDLE;
             break;
@@ -154,6 +156,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             }
             else{
                 set_module_status_ = running_module_status_;
+                running_module_status_ = last_running_module_status_;
             }
 
             last_running_module_status_ = MODULE_IDLE;
@@ -343,7 +346,9 @@ bool LocalizationModule::stop_mapping(){
             ROS_INFO("saving global map");
             std::string pcd_dir = slam_param_.common.map_directory;
             const auto resolution = slam_param_.mapping.save_map_resolution;
-            slam_->save_map(pcd_dir, resolution, 0, 0);
+            if(!slam_->save_map(pcd_dir, resolution, 0, 0)){
+                ROS_INFO("skip saving map data");
+            }
 
             ROS_INFO("start stop mapping");
             // mapping_status_ = M_INACTIVE;
@@ -464,6 +469,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     }
     ROS_INFO("set slam work mode: %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
+    ROS_INFO("create lidar_slam successfully !");
     return true;
 }
 
@@ -474,11 +480,22 @@ void LocalizationModule::release_slam_obj(){
     }
     sleep(1);
     ROS_INFO("start stopping lidar_slam");
+
+    // std::unique_ptr<lidar_slam::LidarSlam> temp_slam;
+    // temp_slam = std::move(slam_);
+    // ROS_INFO("move successfully");
+
+    // slam_.reset();
+
+
     lidar_slam::LidarSlam *temp_slam = slam_.release();
+    cout<<"temp_slam: "<<temp_slam<<endl;
     ROS_INFO("release successfully");
     delete temp_slam;
-    temp_slam = nullptr;
+    cout<<"temp_slam: "<<temp_slam<<endl;
     ROS_INFO("delete successfully");
+    temp_slam = nullptr;
+    ROS_INFO("set nullptr successfully");
 
     start_index_ = -1;
     end_index_ = -1;
@@ -495,15 +512,15 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (running_module_status_ == MODULE_IDLE || 
         running_module_status_ == MODULE_STARTING_SLAM || 
         running_module_status_ == MODULE_STOPPING_SLAM){
-        ROS_INFO("running module status: IDLE (not running slam)");
-        sleep(1);
+        ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        sleep(2);
         return;
     }
-    if(set_module_status_ == MODULE_IDLE){
-        ROS_INFO("setting module to IDLE ------------------------");
-        sleep(3);
-        return;
-    }
+    // if(set_module_status_ == MODULE_IDLE){
+    //     ROS_INFO("setting module to IDLE ------------------------");
+    //     sleep(2);
+    //     return;
+    // }
 
 
     // if(second_mapping_ && !slam_->isGloalLocalizationSuccess()){
@@ -570,7 +587,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
     // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
-    }else{
+    }else if(running_module_status_ == MODULE_LOCALIZATION){
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
@@ -676,7 +693,9 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     //     slam_ -> livox_pcl_cbk(msg);
     // }
 
-    if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
+    if (running_module_status_ == MODULE_IDLE || 
+        running_module_status_ == MODULE_STARTING_SLAM || 
+        running_module_status_ == MODULE_STOPPING_SLAM){
         return;
     }else{
         slam_ -> livox_pcl_cbk(msg);
@@ -704,7 +723,10 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
     //     slam_ -> imu_cbk(msg);
     // }
 
-    if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
+    if (running_module_status_ == MODULE_IDLE || 
+        running_module_status_ == MODULE_STARTING_SLAM || 
+        running_module_status_ == MODULE_STOPPING_SLAM){
+        return;
         return;
     }else{
         slam_ -> imu_cbk(msg);
@@ -918,6 +940,8 @@ bool LocalizationModule::load_lidar_slam_param(){
 
     /// localization params *******************************************
     // get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
+    get_param(ns+ "localization/fgicp_score_thr", slam_param_.localization.fgicp_score_thr, &success);
+    
 
 
     /// re-localization params *******************************************
@@ -945,12 +969,14 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     status_msg.header.frame_id = "base_link";
 
     // fill status_msg.module_status
+    // ROS_INFO("set module_status");
     if(running_module_status_ == MODULE_IDLE){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::IDLE;
     }else if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::MAPPING;
     }else if(running_module_status_ == MODULE_LOCALIZATION){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::LOCALIZATION;
+        localization_status_ = slam_->get_l_status();
     }else if(running_module_status_ == MODULE_STARTING_SLAM){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STARTING;
     }else if(running_module_status_ == MODULE_STOPPING_SLAM){
@@ -960,6 +986,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }
 
     // fill status_msg.mapping_status
+    // ROS_INFO("set mapping_status");
     if(mapping_status_ == M_INACTIVE){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
     }else if(mapping_status_ == M_RELOCALIZING){
@@ -975,7 +1002,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }
 
     // fill status_msg.localization_status
-    localization_status_ = slam_->get_l_status();
+    // ROS_INFO("set localization_status");
     if(localization_status_ == L_INACTIVE){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
     }else if(localization_status_ == L_RELOCALIZING){

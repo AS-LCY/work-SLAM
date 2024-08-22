@@ -491,6 +491,7 @@ void LidarSlam::localizationThread()
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
     int global_localize_count = 0;
+    const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
 
     while (thread_run&&reseting == false)
     {
@@ -534,7 +535,11 @@ void LidarSlam::localizationThread()
             }
             else{
                 cout << "localizing ... "<<endl;
-                localization->localize(temp);
+                if (localization->localize(temp, fgicp_score_thr)){
+                    l_status_ = L_NORMAL;
+                }else{
+                    l_status_ = L_FAILED;
+                }
 
                 //state.state("normal");
             }
@@ -570,17 +575,33 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
 
         }else {
             if (!globalLocalizationSuccess){
+                if(!cloud_map_manager_->get_map_data_status()){
+                    // cout << "load map data not ready "<<endl;
+                    auto end = std::chrono::steady_clock::now();
+                    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                    if (elapsed < period){
+                        std::this_thread::sleep_for(period - elapsed);
+                    }
+                    continue;
+                }
             
                 // check 
                 if(!global_localization_->get_global_map_ready()){
                     if(!global_localization_->set_global_map(cloud_map_manager_->get_loaded_cloud_map())){
                         cout << "globalLocalization failed: map not ready (global-map) ... "<<endl;
+                    }else{
+                        cout << "set_global_map ready "<<endl;
                     }
-                }else if(!global_localization_->get_sc_manager_ready()){
+                }
+                if(!global_localization_->get_sc_manager_ready()){
                     if(!global_localization_->fill_sc_manager(cloud_map_manager_->get_load_sc_info_())){
                         cout << "globalLocalization failed: map not ready (sc-manager) ... "<<endl;
+                    }else{
+                        cout << "fill_sc_manager ready "<<endl;
                     }
-                }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                }
+                
+                if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
                     cout << "globalLocalization failed: cloud empty ... "<<endl;
                 // check end
                 }else{
@@ -599,6 +620,9 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr); 
                     cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
                     cout << "global_localize_times_count: " << global_localize_count<<endl;
+                    if(globalLocalizationSuccess){
+                        m_status_ = M_STANDBY;
+                    }
 
                 }
                 global_localize_count++;
@@ -607,7 +631,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     m_status_ = M_RELOCALIZE_FAILED;
                     
                 }
-        }
+            }
         }
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -992,9 +1016,9 @@ bool LidarSlam::run()
     run_start = omp_get_wtime();
     // cout<<"lidar buffer size: "<<lidar_buffer.size()<<endl;
     // cout<<"imu   buffer size: "<<imu_buffer.size()<<endl;
-    if (sync_packages(Measures))
+     if (sync_packages(Measures))
     {
-        // cout<<"sync_packages success"<<endl;
+        cout<<"run slam: sync_packages success"<<endl;
         // 第一帧lidar数据
         if (flg_first_scan)
         {
@@ -1141,7 +1165,7 @@ bool LidarSlam::run()
                                                 config_param_.ikdtree.kdTreeReconstructPointLeafSize);
             }
             loop_closure_wait = false;
-        }else{
+        }else if (working_mode_==LOCALIZATION){
                 {
                     std::lock_guard<std::mutex> lk(mtx_path);
                     unoptimized_path.emplace_back(getWheelInMap());//TODO max size

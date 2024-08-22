@@ -271,23 +271,33 @@ bool GlobalLocalization::set_global_map(PointCloudXYZI::Ptr input_global_map){
 /// @result : sc_manager_
 /// @return : if fill success
 bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info){
+    sc_manager_.reset(new SCManager());//// important
+    // std::cout <<"debug: start fill_sc_manager!"<<std::endl;
     if(input_sc_info.empty() || input_sc_info.size()==0){
         std::cout <<" loaded sc info empty!"<<std::endl;
         return false;
     }
 
+    // std::cout <<"debug: set loaded_sc_info_!"<<std::endl;
+    loaded_sc_info_ = input_sc_info;
+    std::cout <<"global-localization: loaded_sc_info_ size = "<<loaded_sc_info_.size()<<std::endl;
+
+    // std::cout <<"debug: set polarcontext_invkeys_mat!"<<std::endl;
     KeyMat polarcontext_invkeys_mat;
     std::vector<Eigen::MatrixXd> polarcontexts;
+    int i=0;
     for(ScInfo& scinfo : input_sc_info ){
+        // cout<<"debug: "<< i++ <<endl;
         Eigen::MatrixXd sc = scinfo.polarcontext;
         Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext( sc );
         polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));
         polarcontexts.push_back(sc);
     }
+    // std::cout <<"debug: set polarcontext_invkeys_mat end!"<<std::endl;
     sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);// save in sc_manager_
-    std::cout << "get_load_data : " << loaded_sc_info_.size() << std::endl;
 
     sc_manager_ready_ = true;
+    std::cout <<"fill_sc_manager success, sc_manager_ready_ = true"<<std::endl;
     return true;
 }
 

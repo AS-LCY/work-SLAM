@@ -5,8 +5,8 @@ project(lidar_slam)
 # add_compile_options(-std=c++11)
 
 
-# SET(CMAKE_BUILD_TYPE "Debug")  
-SET(CMAKE_BUILD_TYPE "Release")  
+SET(CMAKE_BUILD_TYPE "Debug")  
+# SET(CMAKE_BUILD_TYPE "Release")  
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # ADD_COMPILE_OPTIONS(-std=c++14 )
 # ADD_COMPILE_OPTIONS(-std=c++14 )
@@ -14,11 +14,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_compile_options(-fPIC)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
-# set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -std=c++0x -fexceptions")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -O3 -pthread -std=c++0x -fexceptions")
 # set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
 
 get_filename_component(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
@@ -98,8 +98,8 @@ find_package(Boost 1.54 REQUIRED COMPONENTS
   chrono
 )
 
-# find_package(PCL REQUIRED)
-# find_package(yaml-cpp REQUIRED)
+find_package(PCL REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(PkgConfig)
 
 ################### set thirdparty #####################
@@ -116,27 +116,29 @@ set(LIVOX_SDK2_LIBRARY_DIR ${THIRDPARTY_DIR}/Livox-SDK2/${CPU_TYPE}/lib)
 
 find_library(LIVOX_LIDAR_SDK_LIBRARY  liblivox_lidar_sdk_static.a    ${THIRDPARTY_DIR}/Livox-SDK2/x86/lib)
 
-### setting yaml-cpp
-set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/cmake/yaml-cpp/)
-find_package(yaml-cpp REQUIRED PATHS ${yaml_cpp_DIR} NO_DEFAULT_PATH)
-# message("********* yaml-cpp_INCLUDE_DIR: ${yaml-cpp_INCLUDE_DIR} *********")
-message("********* yaml-cpp_FOUND: ${yaml-cpp_FOUND} *********")
-message("********* yaml-cpp_VERSION: ${yaml-cpp_VERSION} *********")
+# ### setting yaml-cpp
+# set(yaml_cpp_DIR ${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/cmake/yaml-cpp/)
+# find_package(yaml-cpp REQUIRED PATHS ${yaml_cpp_DIR} NO_DEFAULT_PATH)
+# # message("********* yaml-cpp_INCLUDE_DIR: ${yaml-cpp_INCLUDE_DIR} *********")
+# message("********* yaml-cpp_FOUND: ${yaml-cpp_FOUND} *********")
+# message("********* yaml-cpp_VERSION: ${yaml-cpp_VERSION} *********")
 
 ### setting Eigen3
 set(Eigen3_DIR ${THIRDPARTY_DIR}/eigen3/${CPU_TYPE}/share/eigen3/cmake)
 find_package(Eigen3 REQUIRED PATHS ${Eigen3_DIR} NO_DEFAULT_PATH)
+message("********* Eigen3_FOUND: ${Eigen3_FOUND} *********")
+message("********* Eigen3_VERSION: ${Eigen3_VERSION} *********")
 message("********* Eigen3_INCLUDE_DIR: ${EIGEN3_INCLUDE_DIR} *********")
 
-### setting PCL
-if(${CPU_TYPE} MATCHES "x86")
-  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
-elseif(${CPU_TYPE} MATCHES "arrch64")
-  set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
-endif()
+# ### setting PCL
+# if(${CPU_TYPE} MATCHES "x86")
+#   set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+# elseif(${CPU_TYPE} MATCHES "arrch64")
+#   set(PCL_DIR ${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/share/pcl-1.14)
+# endif()
 
-find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
-message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
+# find_package(PCL REQUIRED PATHS ${PCL_DIR} NO_DEFAULT_PATH)
+# message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
 
 ### setting fmt
 set(fmt_DIR ${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/cmake/fmt)
@@ -198,6 +200,8 @@ set (Pangolin_LIBRARY_DIRS ${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib)
 # file(GLOB Pangolin_LIBRARIES
 #     "${Pangolin_LIBRARY_DIRS}/lib*"
 # )
+message("********* Pangolin_FOUND: ${Pangolin_FOUND} *********")
+message("********* Pangolin_VERSION: ${Pangolin_VERSION} *********")
 
 message("********* Pangolin_INCLUDE_DIRS: ${Pangolin_INCLUDE_DIRS} *********")
 message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
@@ -212,11 +216,13 @@ message("********* Pangolin_LIBRARIES: ${Pangolin_LIBRARIES} *********")
 ### setting gtsam
 set (GTSAM_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAM)
 find_package(GTSAM PATHS ${GTSAM_DIR} NO_DEFAULT_PATH REQUIRED QUIET)
+message("********* GTSAM_FOUND: ${GTSAM_FOUND} *********")
+message("********* GTSAM_VERSION: ${GTSAM_VERSION} *********")
 message("********* GTSAM_INCLUDE_DIR: ${GTSAM_INCLUDE_DIR} *********")
 message("********* gtsam: ${gtsam} *********")
 
-set (GTSAMCMakeTools_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAMCMakeTools)
-find_package(GTSAMCMakeTools)
+# set (GTSAMCMakeTools_DIR ${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/cmake/GTSAMCMakeTools)
+# find_package(GTSAMCMakeTools)
 
 message("********* PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
 message("********* find_package end *********")
@@ -356,7 +362,7 @@ target_link_libraries(lidar_slam_node
 
 
 # file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
-file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/lib/libpcl*")
+# file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.14.1/lib/libpcl*")
 file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
 file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
 file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
@@ -376,7 +382,7 @@ install(DIRECTORY launch config rviz_cfg
   install(FILES 
   ${cv_bridge_LIBRARIES}
   # ${OPENCV_LIBS} 
-  ${PCL_LIBS} 
+  # ${PCL_LIBS} 
   ${GTSAM_LIBS} 
   ${fmt_LIBS} 
   ${Pangolin_LIBS} 

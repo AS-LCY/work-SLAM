@@ -9,6 +9,7 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 1 # --0: 相对路径，相对于catkin pkg; --1: 相对路径，相对于 catkin workspace; - 2: 使用绝对路径;  # disable---3: 相对路径，相对于 ${HOME};
+  # map_directory: "/data/0803-floor23"
   map_directory: "/data/0803-floor23"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -47,7 +48,6 @@ mapping:
   loopSearchDistance: 1.5
   use_ele_pcd_flag: false   # 是否使用单区域pcd
   save_ele_pcd_flag: false  # 是否保存单区域pcd
-  save_map_dir: "/home/panmiaomiao/catkin_ws/data/23楼电梯外"
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
 
@@ -55,12 +55,11 @@ sec_mapping:
   load_map_dir: " " # 可以填空字符，但不能不赋值
     
 localization:
-  load_map_dir: "/home/panmiaomiao/catkin_ws/data/23楼电梯外" 
-  # load_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" 
+  fgicp_score_thr: 0.1
   # load_map_dir: "/home/panmiaomiao/catkin_ws/data/天河草场/2/map" # 可以填空字符，但不能不赋值
 
 re_localization:
-  score_thr: 0.15
+  score_thr: 0.05
   time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:

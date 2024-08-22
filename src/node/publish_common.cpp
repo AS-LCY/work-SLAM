@@ -117,7 +117,7 @@ void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubO
     q.setY(odomAftMapped.pose.pose.orientation.y);
     q.setZ(odomAftMapped.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
+    // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
 }
 
 void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
@@ -145,7 +145,7 @@ void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
     q.setY(odomAftMapped.pose.pose.orientation.y);
     q.setZ(odomAftMapped.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "lidar", "wheel"));
+    // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "lidar", "wheel"));
 }
 
 void publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
@@ -171,7 +171,7 @@ void publish_transform(const Eigen::Isometry3d& correction,string parent, string
     q.setY(transformToPub.pose.pose.orientation.y);
     q.setZ(transformToPub.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), parent, child));
+    // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), parent, child));
 }
 
 void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud)
@@ -198,7 +198,7 @@ void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher 
     q.setY(transformToPub.pose.pose.orientation.y);
     q.setZ(transformToPub.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), "map", "lidar"));
+    // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), "map", "lidar"));
 }
 
 void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)

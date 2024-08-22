@@ -812,6 +812,10 @@ PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
     cout << "****************************************************" << endl;
+    if (KeyPoses.empty() || KeyPoses.size()==0){
+        cout<<"key frame empty"<<endl;
+        return false;
+    }
     // 检查并创建 yaml 中的地图路径
     if (create_directory_if_not_exists(saveMapDirectory)) {
         std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
@@ -894,8 +898,9 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         file << infos[i].polarcontext.format(fmt) << '\n';
         // key_frame Pose
         file_pose << infos[i].id << ',';
-        file_pose << KeyPoses[i].time << ',';
-        file_pose << (infos[i].pose).matrix().format(fmt) << '\n';
+        file_pose << std::setprecision(15) <<KeyPoses[i].time << ',';
+        // file_pose <<KeyPoses[i].time << ',';
+        file_pose << std::setprecision(6)  << (infos[i].pose).matrix().format(fmt) << '\n';
     }
     file.close();
     file_pose.close();

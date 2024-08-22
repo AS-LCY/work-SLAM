@@ -65,6 +65,7 @@ struct MappingParam{
 
 struct LocalizationParam{
     // std::string load_map_dir;
+    double fgicp_score_thr = 0.1;
 };
 
 struct SecondMappingParam{
