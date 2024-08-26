@@ -1,7 +1,7 @@
 #ifndef VIEWER_H
 #define VIEWER_H
 // pangolin库
-#include <pangolin/pangolin.h>
+// #include <pangolin/pangolin.h>
 
 // Eigen库
 #include <Eigen/Core>
@@ -16,6 +16,7 @@
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/backend.hpp"
 namespace lidar_slam { 
+#if 0
 /*std::string matrixToString(const pangolin::OpenGlMatrix& matrix) {
     std::stringstream ss;
     for (int i = 0; i < 4; ++i) {
@@ -312,6 +313,7 @@ class Viewer{
         Control_status status;
 
 }; 
+#endif
 }
 #endif
 

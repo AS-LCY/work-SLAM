@@ -12,7 +12,6 @@ int main(int argc,char **argv){
         curr_path = CURRENT_DIR;
     #else
         std::cout<<"CURRENT_DIR is not defined"<<std::endl;
-        exit(0);
     #endif
 
     int init_module_status = 0;
@@ -23,6 +22,7 @@ int main(int argc,char **argv){
 
     localization_module::LocalizationModule localization_module(curr_path, init_status);
     
+    ROS_INFO("\033[1;32m----> localization_module start! \033[0m");
 
     ros::MultiThreadedSpinner spinner(10);
     spinner.spin();

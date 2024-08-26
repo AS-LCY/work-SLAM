@@ -998,7 +998,9 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
     if (pcd_file.size() < 10)
         return;
     if (pcd_file.back() - pcd_file.front() > keep_time){
-        std::filesystem::remove(config_param_.common.save_log_dir + std::to_string(pcd_file.front()) + ".pcd");
+        // std::filesystem::remove(config_param_.common.save_log_dir + std::to_string(pcd_file.front()) + ".pcd");
+        std::string file = config_param_.common.save_log_dir + std::to_string(pcd_file.front()) + ".pcd";
+        std::remove(file.c_str());
         pcd_file.pop_front();
     }
     imu_file_shift = true;

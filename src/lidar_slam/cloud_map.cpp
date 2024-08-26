@@ -116,7 +116,8 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         std::cout << "loading key_frame_cloud from : " << key_cloud_path<<" -- ";
 
         PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
-        if (std::filesystem::exists(key_cloud_path)){
+        // if (std::filesystem::exists(key_cloud_path)){
+        if (0 == access(key_cloud_path.c_str(), 0)){
             pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
             loaded_keyframe_clouds_.push_back((temp_cloud));
             std::cout <<"success -- points count: "<<temp_cloud->points.size() << std::endl;
@@ -135,7 +136,8 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
     // std::cout << "loading map from : " << cloud_map_file_path<<std::endl;
     std::cout << "loading map from : " << cloud_map_file_path<<" -- ";
-    if (std::filesystem::exists(cloud_map_file_path)){
+    // if (std::filesystem::exists(cloud_map_file_path)){
+    if (0 == access(cloud_map_file_path.c_str(), 0)){
         pcl::io::loadPCDFile(cloud_map_file_path, *loaded_global_map_);
         std::cout <<"success -- points count: "<<loaded_global_map_->points.size() << std::endl;
     }else {

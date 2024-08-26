@@ -1,5 +1,4 @@
 
-#include <filesystem>
 #include "lidar_slam/localization.hpp"
 namespace lidar_slam {
 Localization::Localization(){
@@ -30,14 +29,18 @@ bool Localization::loadMap(std::string path){
     PointCloudXYZI::Ptr TempMap(new PointCloudXYZI());
 
     std::string cloud_map_file_path = path+std::string("cloud_map.pcd");
-    if (std::filesystem::exists(cloud_map_file_path)){
+    // if (std::filesystem::exists(cloud_map_file_path)){
+    std::ifstream cloud_file(cloud_map_file_path);
+    if (cloud_file.good()){
         pcl::io::loadPCDFile(cloud_map_file_path, *TempMap); 
         *CloudGlobalMap = *TempMap;
         std::cout << "load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() << std::endl;
     }
     // // no ComplementMap.pcd
     std::string ComplementMap_file_path = path+std::string("ComplementMap.pcd");
-    if (std::filesystem::exists(ComplementMap_file_path)){
+    // if (std::filesystem::exists(ComplementMap_file_path)){
+    std::ifstream map_file(ComplementMap_file_path);
+    if (map_file.good()){
         TempMap->points.clear();
         pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap); 
         *CloudGlobalMap += *TempMap;

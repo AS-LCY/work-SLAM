@@ -17,7 +17,8 @@ struct LvxPointXYZITLO
   float intensity;  // 4
   std::uint8_t tag = 0;// 1
   std::uint8_t line = 0;// 1
-  std::uint32_t  offset_time;// 4  
+  double  timestamp;// 8  
+  // std::uint32_t  offset_time;// 4  
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
 POINT_CLOUD_REGISTER_POINT_STRUCT(LvxPointXYZITLO, 
@@ -25,7 +26,8 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(LvxPointXYZITLO,
   (float, intensity, intensity)  
   (std::uint8_t, tag, tag) 
   (std::uint8_t, line, line)  
-  (std::uint32_t, offset_time, offset_time)
+  // (std::uint32_t, offset_time, offset_time)
+  (double, timestamp, timestamp)
   )
 
 /// about offset_time

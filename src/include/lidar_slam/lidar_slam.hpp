@@ -8,7 +8,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <Eigen/Core>
-#include <filesystem>
+// #include <filesystem> // c++17
 
 #include <pcl/filters/voxel_grid.h>
 #include <sophus/se3.hpp>
@@ -23,7 +23,7 @@
 #include "lidar_slam/backend.hpp"
 #include "lidar_slam/IMU_Processing.hpp"
 #include "lidar_slam/preprocess.h"
-#include "lidar_slam/Viewer.hpp"
+// #include "lidar_slam/Viewer.hpp"
 // #include "include/livox_ros_driver2.h"
 // #include "driver_node.h"
 // #include "lddc.h"

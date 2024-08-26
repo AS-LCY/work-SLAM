@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
-#include <filesystem> // c++17 标准
+// #include <filesystem> // c++17 标准
 // ros
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -52,7 +52,7 @@
 
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
-#include "lidar_slam/Viewer.hpp"
+// #include "lidar_slam/Viewer.hpp"
 #include "livox_datatype/livox_ros_datatype_def.h"
 
 #include "node/publish_common.h"
@@ -60,7 +60,7 @@
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
 
-#include "v4l2cam.h"
+// #include "v4l2cam.h"
 
 namespace localization_module{
 
@@ -185,7 +185,7 @@ private:
     string log_folder_;
 
     // show thread
-    lidar_slam::Control_status control_status_;
+    // lidar_slam::Control_status control_status_;
 
     // 模块 localization module
     // bool running_slam_ = false;

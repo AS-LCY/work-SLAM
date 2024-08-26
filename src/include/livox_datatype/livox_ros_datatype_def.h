@@ -34,7 +34,8 @@ using ImuMsg = sensor_msgs::Imu;
 
 using PointCloud = pcl::PointCloud<pcl::PointXYZI>*/
 struct LidarPoint{
-    u_int32_t offset_time;//      # offset time relative to the base time
+    // u_int32_t offset_time;//      # offset time relative to the base time
+    double offset_time;//      # offset time relative to the base time
     float x;//               # X axis, unit:m
     float y;//               # Y axis, unit:m
     float z;//               # Z axis, unit:m

@@ -909,8 +909,22 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     return ret;
 }
 
-bool BackEnd::create_directory_if_not_exists(const std::string& directoryPath){
-    std::filesystem::path path(directoryPath);
+bool BackEnd::create_directory_if_not_exists(const std::string& directory_path){
+    if (0 != access(directory_path.c_str(), 0)){
+        int status = mkdir(directory_path.c_str(),0777);
+        if (status == 0)        {
+            return true; // 创建目录成功
+        }else{
+            std::cerr << "Error creating directory: " << directory_path << std::endl;
+            return false; // 创建目录失败
+        }
+    }else{
+        //folder exist
+        return true;
+    }
+
+#if 0
+    std::filesystem::path path(directory_path);
 
     if (!std::filesystem::exists(path)){
         try {
@@ -923,6 +937,7 @@ bool BackEnd::create_directory_if_not_exists(const std::string& directoryPath){
     } else {
         return true; // 目录已存在
     }
+#endif
 }
 
 
