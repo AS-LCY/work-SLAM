@@ -59,7 +59,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
+  # cv_bridge
   geometry_msgs
   image_transport
   nav_msgs
@@ -93,11 +93,13 @@ find_package(FMT REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTSAM REQUIRED)
-# find_package(Eigen3 REQUIRED)
+
+# message("======= PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
+# message("======= PCL_LIBRARIES: ${PCL_LIBRARIES} *********")
 
 catkin_package(
   CATKIN_DEPENDS 
-  cv_bridge 
+  # cv_bridge 
   geometry_msgs 
   image_transport 
   nav_msgs 
@@ -205,12 +207,11 @@ target_link_libraries(lidar_slam
 add_executable(lidar_slam_node
   src/slam_main.cpp
   src/node/localization_module.cpp
+  src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  src/node/slam_ctrl_callback.cpp 
+  src/node/load_param.cpp 
 )
 
-message("======= PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
-message("======= PCL_LIBRARIES: ${PCL_LIBRARIES} *********")
 # add_dependencies(lidar_slam_node )
 
 target_link_libraries(lidar_slam_node 

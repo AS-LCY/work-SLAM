@@ -10,6 +10,8 @@
 #include <Eigen/Core>
 // #include <filesystem> // c++17
 
+// #include <ros/ros.h> // debug, use to print time
+
 #include <pcl/filters/voxel_grid.h>
 #include <sophus/se3.hpp>
 #include <yaml-cpp/yaml.h>
@@ -92,24 +94,24 @@ class LidarSlam
         void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
-            cout<<"destruct"<<endl;
+            // cout<<"debug: destruct"<<endl;
             // cout <<"work mode: "<<print_SlamWorkMode(working_mode_)<<endl;
             thread_run = false;
             thread->join();
-            // cout<<"destruct thread"<<endl;
+            // cout<<"debug: destruct thread"<<endl;
             thread.reset(nullptr);
             show_thread->join();
-            // cout<<"destruct show_thread"<<endl;
+            // cout<<"debug: destruct show_thread"<<endl;
             show_thread.reset(nullptr);
             if(working_mode_ == SEC_MAPPING){
                 global_localization_thread_->join();
-                // cout<<"destruct global_localization_thread_"<<endl;
+                // cout<<"debug: destruct global_localization_thread_"<<endl;
                 global_localization_thread_.reset(nullptr);
             }
 
             //  LivoxLidarSdkUninit();// disable start_driver of lidar
 
-            // cout<<"destruct end"<<endl;
+            // cout<<"debug: destruct end"<<endl;
          };
         bool run();
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
@@ -281,6 +283,12 @@ class LidarSlam
             return l_status_;
         }
 
+        void reset_globalLocalizationSuccess(bool global_success_flag){
+            globalLocalizationSuccess = global_success_flag;
+            global_localize_count_ = 0;
+            l_status_ = L_RELOCALIZING;
+        }
+
         // string print_SlamWorkMode(SlamWorkMode e){
         //     switch (e){
         //     CASE_STR(MAPPING);
@@ -364,6 +372,8 @@ class LidarSlam
         LocalizationStatus l_status_ = L_INACTIVE;
         MappingStatus m_status_ = M_INACTIVE;
         // bool second_mapping_need_global_localization_ = false;
+
+        int global_localize_count_=0;
 
 
         bool sync_packages(MeasureGroup &meas);

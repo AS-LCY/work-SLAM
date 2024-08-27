@@ -8,9 +8,10 @@ common:
   show_rviz: false
   save_log_dir: "/home/"
   log_keep_time: 500
-  map_relative_to: 1 # --0: 相对路径，相对于catkin pkg; --1: 相对路径，相对于 catkin workspace; - 2: 使用绝对路径;  # disable---3: 相对路径，相对于 ${HOME};
+  map_relative_to: 1 # -- 2: 使用绝对路径; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
+  map_directory: "/data/livox/0826-new-driver/map"
   # map_directory: "/data/0803-floor23"
-  map_directory: "/data/0803-floor23"
+  # map_directory: "/data/livox/0826-new-driver/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
 

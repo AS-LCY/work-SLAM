@@ -1,9 +1,9 @@
-#include "node/publish_common.h"
+#include "node/localization_module.h"
 
 
 namespace localization_module{
 
-void pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud)
+void LocalizationModule::pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -12,7 +12,7 @@ void pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud)
 	pubOdomCloud.publish(laserCloudmsg);
 }
 
-void pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud)
+void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -21,7 +21,7 @@ void pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud)
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
-void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
+void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -30,7 +30,7 @@ void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCl
 	pubObstacleCloud.publish(laserCloudmsg);
 }
 
-void pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
+void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -39,7 +39,7 @@ void pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubF
 	pubFilteredObstacleCloud.publish(laserCloudmsg);
 }
 
-void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
+void LocalizationModule::pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -51,7 +51,7 @@ void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publ
 	pubTestCloud.publish(laserCloudmsg);
 }
 
-void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
+void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -61,7 +61,7 @@ void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
 }
 
 
-void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
@@ -90,7 +90,7 @@ void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string 
     br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, frameid, child_frameid));
 }
 
-void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
 {
     // cout<<"********************* pub odometry "<<endl;
 	nav_msgs::Odometry odomAftMapped;
@@ -120,7 +120,7 @@ void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubO
     // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
 }
 
-void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
+void LocalizationModule::publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = "lidar";
@@ -148,7 +148,7 @@ void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
     // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "lidar", "wheel"));
 }
 
-void publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
+void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
 {
     Eigen::Vector3d pos = correction.translation();
     Eigen::Quaterniond quaternion = Eigen::Quaterniond(correction.matrix().block<3, 3>(0, 0));
@@ -174,7 +174,7 @@ void publish_transform(const Eigen::Isometry3d& correction,string parent, string
     // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), parent, child));
 }
 
-void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud)
+void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud)
 {
   //  std::cout << lidar_in_map.translation().transpose()<<std::endl;
     Eigen::Vector3d pos = lidar_in_map.translation();
@@ -201,7 +201,7 @@ void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher 
     // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), "map", "lidar"));
 }
 
-void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
+void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
 {
     ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
     string odometryFrame = "odom";
@@ -264,7 +264,7 @@ void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optim
     pubLoopConstraintEdge.publish(markerArray);
 }
 
-void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
+void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
     visualization_msgs::MarkerArray MarkerArray;//定义MarkerArray对象
     int number = loadKeyframe.size();//object_in为输入的目标个数
 	for(int i = 0; i < number; i++)
@@ -299,7 +299,7 @@ void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher 
     pubKeyframePose.publish(MarkerArray);
 }
 
-void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud){
+void LocalizationModule::pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud){
   sensor_msgs::PointCloud2 pub_cloud;
   pcl::toROSMsg(*rgb_cloud, pub_cloud);
   pub_cloud.header.frame_id = "odom";

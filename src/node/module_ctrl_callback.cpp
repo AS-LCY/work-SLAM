@@ -14,6 +14,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
      *     EXIT_MAPPING            = 6000,  // 退出建图
      *     START_LOCALIZATION      = 7000,  // 重定位->定位
      *     EXIT_LOCALIZATION       = 8000,  // 退出定位
+     *     START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位
      *     CMD_MAX
      * };
      *      
@@ -24,7 +25,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
     auto msg = msg_in;
     int ctrl_type = msg.data/1000 * 1000;
     auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
-    ROS_INFO("Received Ctrl Cmd: %s", print_SlamCtrlCmd(curr_cmd).c_str());
+    ROS_INFO("\033[1;32mReceived Ctrl Cmd: %s \033[0m", print_SlamCtrlCmd(curr_cmd).c_str());
 
     switch (curr_cmd){
         case START_MAPPING:{// 初次建图，或重置后建图
@@ -117,6 +118,13 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             }
 
             last_running_module_status_ = MODULE_IDLE;
+            break;
+        }
+        case START_RELOCALIZATION:{// 重新进行重定位
+            if(start_relocalization()){
+                
+            }
+
             break;
         }
         default:{
@@ -304,7 +312,7 @@ bool LocalizationModule::stop_mapping(){
             std::string pcd_dir = slam_param_.common.map_directory;
             const auto resolution = slam_param_.mapping.save_map_resolution;
             if(!slam_->save_map(pcd_dir, resolution, 0, 0)){
-                ROS_INFO("skip saving map data");
+                ROS_ERROR("save map data failed!");
             }
 
             ROS_INFO("start stop mapping");
@@ -411,6 +419,27 @@ bool LocalizationModule::stop_localization(){
 }
 
 
+bool LocalizationModule::start_relocalization(){
+    if(running_module_status_ == MODULE_LOCALIZATION){
+        bool glo_success_flag = false;
+        slam_->reset_globalLocalizationSuccess(glo_success_flag);
+        ROS_INFO("globalLocalizationSuccess reset");
+        return true;
+    }else if(running_module_status_==MODULE_IDLE || 
+             running_module_status_==MODULE_MAPPING){
+        ROS_INFO("skip, can not stop localization, running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+        return false;
+    }else{
+        ROS_INFO("skip, status error!");
+        ROS_INFO("running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
+        ROS_INFO("mapping_status_: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_INFO("localization_status_: %s", print_LocalizationStatus(localization_status_).c_str());
+        ROS_INFO("****************************");
+        return false;
+    }
+    
+}
+
 bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status){
     ROS_INFO("creating lidar_slam ");
     lidar_slam::SlamWorkMode set_slam_mode = lidar_slam::SlamWorkMode::UNKNOWN;
@@ -426,7 +455,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     }
     ROS_INFO("set slam work mode: %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
-    ROS_INFO("create lidar_slam successfully !");
+    ROS_INFO("\033[1;32mCreate lidar_slam successfully !\033[0m");
     return true;
 }
 
@@ -446,19 +475,19 @@ void LocalizationModule::release_slam_obj(){
 
 
     lidar_slam::LidarSlam *temp_slam = slam_.release();
-    cout<<"temp_slam: "<<temp_slam<<endl;
-    ROS_INFO("release successfully");
+    // cout<<"debug: temp_slam: "<<temp_slam<<endl;
+    // ROS_INFO("debug: release successfully");
     delete temp_slam;
     cout<<"temp_slam: "<<temp_slam<<endl;
-    ROS_INFO("delete successfully");
+    // ROS_INFO("debug: delete successfully");
     temp_slam = nullptr;
-    ROS_INFO("set nullptr successfully");
+    // ROS_INFO("debug: set nullptr successfully");
 
     start_index_ = -1;
     end_index_ = -1;
     running_module_status_ = MODULE_IDLE;
     mapping_status_ = M_INACTIVE;
     localization_status_ = L_INACTIVE;
-    ROS_INFO("lidar_slam stopped !");
+    ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
 }
 }// namespace localization_module

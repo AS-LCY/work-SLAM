@@ -8,7 +8,7 @@
 // ros
 #include <ros/ros.h>
 #include <ros/package.h>
-#include <cv_bridge/cv_bridge.h>
+// #include <cv_bridge/cv_bridge.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <image_transport/image_transport.h>
 
@@ -55,7 +55,6 @@
 // #include "lidar_slam/Viewer.hpp"
 #include "livox_datatype/livox_ros_datatype_def.h"
 
-#include "node/publish_common.h"
 #include "node/lidar_slam_param_def.h"
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
@@ -79,6 +78,7 @@ enum SlamCtrlCmd{
     EXIT_MAPPING            = 6000,  // 退出建图
     START_LOCALIZATION      = 7000,  // 重定位->定位
     EXIT_LOCALIZATION       = 8000,  // 退出定位
+    START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位
     CMD_MAX
 };
 
@@ -113,6 +113,8 @@ private:
     // void start_localization(bool module_mode, int map_id);
     bool stop_localization();
 
+    bool start_relocalization();
+
 
     bool init_module_by_set_status(ModuleStatus set_status);
     // void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
@@ -128,7 +130,7 @@ private:
 
     // void command_cbk(const std_msgs::Int32 &msg_in);
     // void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
-    void livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
+    // void livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
 
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
 
@@ -136,6 +138,23 @@ private:
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
+    
+    // publish common
+    void pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud);
+    void pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud);
+    void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud);
+    void pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
+    void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
+    void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud);
+    void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped);
+    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher publisher);
+    void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
+    void publish_transform(const Eigen::Isometry3d& correction,string parent, string child);
+    void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud);
+    void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge);
+    void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
+    void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
+
 
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
@@ -147,19 +166,25 @@ private:
         CASE_STR(EXIT_MAPPING);
         CASE_STR(START_LOCALIZATION);
         CASE_STR(EXIT_LOCALIZATION);
+        CASE_STR(START_RELOCALIZATION);
         CASE_STR(CMD_MAX);
         default:
             break;
         }
         return "UNKNOW_SlamCtrlCmd!";
     }
+    
     template <class T>
     void get_param(const std::string& param_str, T& param, bool* is_success){
         if(!nh_.getParamCached(param_str,param)){
-            ROS_WARN("load param %s failed", param_str.c_str());
+            ROS_WARN("load param failed : %s ", param_str.c_str());
             *is_success = false;
+        }else{
+            ROS_INFO("load param success: %s", param_str.c_str());
         }
     };
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;

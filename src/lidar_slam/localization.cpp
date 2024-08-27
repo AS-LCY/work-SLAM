@@ -154,6 +154,7 @@ bool Localization::loadMap(std::string path){
     scManager->buildRingKeyKDTree(polarcontext_invkeys_mat_, polarcontexts_);
     std::cout << "get_load_data : " << LoadData.size() << std::endl;
     map_ready_ = true;
+    cout<<"\033[1;32mLoad map success!\033[0m"<<endl;
     return true;
 }
 
@@ -249,7 +250,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
         euler[0] += -best_match.second;
-        std::cout << "rotate yaw"<<-best_match.second<<std::endl;
+        std::cout << "rotate yaw: "<<-best_match.second<<std::endl;
         // Eigen::Matrix3d rotate = (Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitZ()) *
         //                         Eigen::AngleAxisd(current_pitch, Eigen::Vector3d::UnitY()) *
         //                         Eigen::AngleAxisd(current_roll, Eigen::Vector3d::UnitX())).toRotationMatrix();// TODO use current pr?

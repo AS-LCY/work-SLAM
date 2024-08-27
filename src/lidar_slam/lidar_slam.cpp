@@ -157,6 +157,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 4"<<endl;
     /// sec_mapping & localizaiton ********************************
     globalLocalizationSuccess = false;
+    global_localize_count_ = 0;
 
     /// important objs *******************************************
     // ikdtree
@@ -490,7 +491,7 @@ void LidarSlam::localizationThread()
     const auto score_thr = config_param_.re_localization.score_thr;
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
-    int global_localize_count = 0;
+    // int global_localize_count_ = 0;
     const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
 
     while (thread_run&&reseting == false)
@@ -516,7 +517,7 @@ void LidarSlam::localizationThread()
                     cout << "globalLocalization failed: cloud empty ... "<<endl;
                 // check end
                 }else{
-                    cout <<"point(in use) count"<<UndistortCloudInOdom->points.size()<<endl;
+                    cout <<"point(in use) count: "<<UndistortCloudInOdom->points.size()<<endl;
 
                     cout << "start globalLocalization ... "<<endl;
 
@@ -526,10 +527,15 @@ void LidarSlam::localizationThread()
                     cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
 
                 }
-                global_localize_count++;
-                if (global_localize_count > global_localize_times){
+                global_localize_count_++;
+                if (!globalLocalizationSuccess && global_localize_count_ > global_localize_times){
                     cout << "global Localization failed: time out"<<endl;
                     l_status_ = L_RELOCALIZE_FAILED;
+                }
+                if(globalLocalizationSuccess){
+                    cout << "\033[1;32mglobal Localization Success\033[0m"<<endl;
+                    global_localize_count_ = 0;
+                    // ROS_INFO("\033[1;32mglobal Localization Success\033[0m");
                 }
                 
             }
@@ -605,7 +611,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     cout << "globalLocalization failed: cloud empty ... "<<endl;
                 // check end
                 }else{
-                    cout <<"point(in use) count"<<UndistortCloudInOdom->points.size()<<endl;
+                    cout <<"point(in use) count: "<<UndistortCloudInOdom->points.size()<<endl;
                     pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
                     {
                         std::lock_guard<std::mutex> lk(mtx_odom_cloud);
@@ -1020,7 +1026,7 @@ bool LidarSlam::run()
     // cout<<"imu   buffer size: "<<imu_buffer.size()<<endl;
      if (sync_packages(Measures))
     {
-        cout<<"run slam: sync_packages success"<<endl;
+        // cout<<"debug: run slam: sync_packages success"<<endl;
         // 第一帧lidar数据
         if (flg_first_scan)
         {
