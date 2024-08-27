@@ -990,7 +990,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
                 }
         }
     }
-    poses_buffer.push_back(std::pair(timestamp,getLidarInOdom()));
+    // poses_buffer.push_back(std::pair(timestamp,getLidarInOdom()));
+    poses_buffer.push_back(std::make_pair(timestamp,getLidarInOdom()));
     if (poses_buffer.size() > 200)
         poses_buffer.pop_front();
     localization_wait = false;
