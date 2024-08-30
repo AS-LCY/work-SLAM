@@ -55,7 +55,7 @@
 // #include "lidar_slam/Viewer.hpp"
 #include "livox_datatype/livox_ros_datatype_def.h"
 
-#include "node/lidar_slam_param_def.h"
+#include "node/module_param_def.h"
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
 
@@ -86,7 +86,8 @@ enum SlamCtrlCmd{
 class LocalizationModule{
 public:
     LocalizationModule(){};
-    LocalizationModule(const std::string work_path, ModuleStatus init_status);
+    // LocalizationModule(const std::string work_path, ModuleStatus init_status);
+    LocalizationModule(ModuleStatus init_status);
     ~LocalizationModule();
 
 

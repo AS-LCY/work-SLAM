@@ -1,5 +1,5 @@
 common:
-  init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
+  init_module_status: 3 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
   offline_mode: false
@@ -8,8 +8,9 @@ common:
   show_rviz: false
   save_log_dir: "/home/"
   log_keep_time: 500
-  map_relative_to: 1 # -- 2: 使用绝对路径; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/data/livox/0826-new-driver/map"
+  map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
+  map_directory: "/home/pmm/catkin_ws/data/livox/0826-new-driver/map"
+  # map_directory: "/data/livox/0826-new-driver/map"
   # map_directory: "/data/0803-floor23"
   # map_directory: "/data/livox/0826-new-driver/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
@@ -17,10 +18,11 @@ common:
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
-  extrinsic_T: [ 0, -0.02329, 0.04412 ]
-  extrinsic_R: [ 1, 0, 0,
-                  0, 1, 0,
-                  0, 0, 1]
+  extrinsic_T: [ 0, -0.02329, 0.04412 ] 
+  extrinsic_R: [ 0,  0,  0]  # unit(degree), yaw, pitch, roll  
+                  
+  # extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
+  extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,

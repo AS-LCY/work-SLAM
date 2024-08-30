@@ -36,7 +36,7 @@ bool CloudMap::load_map_data(std::string map_dir){
     }
 
     map_data_ready_ = true;
-    cout<<"load map_data success, map_data_ready_ = true"<<endl;
+    cout<<"\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true"<<endl;
     return true;
 }
 
@@ -45,7 +45,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
     /// load key frame poses **************************************************************************
     std::string keyframe_pose_path = keyframe_dir + "/key_frame_pose.txt";
     // std::cout << "loading key_frame_pose from : " << keyframe_pose_path<<std::endl;
-    std::cout << "loading key_frame_pose from : " << keyframe_pose_path<<" -- ";
+    std::cout << "\033[1;32mloading key_frame_pose \033[0mfrom : " << keyframe_pose_path<<" -- ";
 
     /// open pose_file
     std::ifstream pose_file(keyframe_pose_path);
@@ -104,16 +104,17 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         loaded_keyframe_poses_.push_back(read_one_line);// 数据保存 ---------------------------------------
     }
     pose_file.close();
-    std::cout << "success -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size() <<std::endl;
+    std::cout << "\033[1;32msuccess\033[0m -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size() <<std::endl;
     /// load key frame poses end *************************************************************************
 
     /// load key frame cloud start ***********************************************************************
     loaded_keyframe_clouds_.clear();
     int key_poses_size = loaded_keyframe_poses_.size();
+    std::cout << "\033[1;32mloading key_frame_cloud\033[0m from dir: " << keyframe_dir <<endl;;
     for(int i=0; i< key_poses_size; i++){
         int pose_index = loaded_keyframe_poses_[i].index;
         std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) +  ".pcd";
-        std::cout << "loading key_frame_cloud from : " << key_cloud_path<<" -- ";
+        std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- ";
 
         PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
         // if (std::filesystem::exists(key_cloud_path)){
@@ -135,13 +136,13 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     loaded_global_map_.reset(new PointCloudXYZI());
     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
     // std::cout << "loading map from : " << cloud_map_file_path<<std::endl;
-    std::cout << "loading map from : " << cloud_map_file_path<<" -- ";
+    std::cout << "\033[1;32mloading cloud map\033[0m from : " << cloud_map_file_path<<" -- ";
     // if (std::filesystem::exists(cloud_map_file_path)){
     if (0 == access(cloud_map_file_path.c_str(), 0)){
         pcl::io::loadPCDFile(cloud_map_file_path, *loaded_global_map_);
-        std::cout <<"success -- points count: "<<loaded_global_map_->points.size() << std::endl;
+        std::cout <<"\033[1;32msuccess \033[0m-- points count: "<<loaded_global_map_->points.size() << std::endl;
     }else {
-        std::cerr << "failed -- map file does not exist." << std::endl;
+        std::cerr << "\033[1;32mfailed \033[0m-- map file does not exist." << std::endl;
         return false;
     }
     /// TODO: show map point ---------------------------------
@@ -152,7 +153,7 @@ bool CloudMap::load_cloud_map(std::string map_dir){
 
     /// open file
     // std::cout << "tring to load sc-data from : " << sc_data_file_path<<std::endl;
-    std::cout << "loading sc-data from : " << sc_data_file_path<<" -- ";
+    std::cout << "\033[1;32mloading sc-data\033[0m from : " << sc_data_file_path<<" -- ";
     std::ifstream file(sc_data_file_path);
     try {
         if (!file) {
@@ -210,7 +211,7 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     if (loaded_sc_info_.size() == 0)
         return false;
     // sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);
-    std::cout << "success -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
+    std::cout << "\033[1;32msuccess\033[0m -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
 
 
     /// load data(pose & ScanContex) end *****************************************************************

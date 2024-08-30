@@ -53,8 +53,8 @@ bool Localization::loadMap(std::string path){
     if (CloudGlobalMap->points.size() < 100000.0)
         downSizeFilter.setLeafSize(0.5, 0.5, 0.5); // for global map visualization
     else{
-            min_voxel_size = min(0.3 * CloudGlobalMap->points.size()/100000.0,2.0);
-            downSizeFilter.setLeafSize(min_voxel_size,min_voxel_size,min_voxel_size); // for global map visualization
+        min_voxel_size = min(0.3 * CloudGlobalMap->points.size()/100000.0,2.0);
+        downSizeFilter.setLeafSize(min_voxel_size,min_voxel_size,min_voxel_size); // for global map visualization
     }
     downSizeFilter.setInputCloud(CloudGlobalMapIn);
     downSizeFilter.filter(*GlobalMapShow); 
@@ -205,14 +205,8 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
     Eigen::Isometry3d Transform = Eigen::Isometry3d::Identity();
     Transform.matrix().block<3, 3>(0, 0) = initial_rotate;
     *gravityAlignedCLoud = *transformPointCloud(cloudIn, Transform);
+    //***************** gravityAlignedCLoud 用来生成当前点云的 sc-info
 
-    // ICP param-set
-    pcl::IterativeClosestPoint<PointType, PointType> icp;
-    icp.setMaxCorrespondenceDistance(100);
-    icp.setMaximumIterations(100);
-    icp.setTransformationEpsilon(1e-6);
-    icp.setEuclideanFitnessEpsilon(1e-6);
-    icp.setRANSACIterations(0);  
     std::vector<std::pair<double, double>> search_trans = {
         {0, 0}, {-4, 0}, {4, 0}, {0, -4}, {0, 4}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4},
                 {-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}
@@ -243,6 +237,15 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
     }
     int match_idx = best_match.first;
     
+
+    // ICP param-set
+    pcl::IterativeClosestPoint<PointType, PointType> icp;
+    icp.setMaxCorrespondenceDistance(100);
+    icp.setMaximumIterations(100);
+    icp.setTransformationEpsilon(1e-6);
+    icp.setEuclideanFitnessEpsilon(1e-6);
+    icp.setRANSACIterations(0);
+
     if (match_idx != -1) {
         std::cout << "use index "<< match_idx<<std::endl;
         Eigen::Matrix4d init_guess = LoadData[match_idx].pose.matrix();
@@ -290,6 +293,11 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         }   
         Eigen::Isometry3d lidar_in_map;
         lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
+                
+        
+        // 初始值的确定和当前的位置无关，但是获取最后的odom-2-map与当前的lidar-in-odom 有关
+        // ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
+        // 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
         correctionOdomToMap = lidar_in_map*pose.inverse();
         // euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
         // std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];

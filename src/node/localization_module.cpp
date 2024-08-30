@@ -2,15 +2,14 @@
 #include "node/localization_module.h"
 
 namespace localization_module {
-LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus init_status){
-    curr_dir_ = work_path;
-    ROS_INFO("Current directory: %s", curr_dir_.c_str());
+LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleStatus init_status){
+    // curr_dir_ = work_path;
 
     // // load_params();
     if (!load_lidar_slam_param()){
         ROS_ERROR("Load lidar-slam param failed!");
     }else {
-        ROS_INFO("Load lidar-slam param successfully!");
+        ROS_INFO("\033[1;32mLoad lidar-slam param successfully!\033[0m");
     }
 
     if(!create_ROS_IO()){
@@ -32,10 +31,11 @@ LocalizationModule::LocalizationModule(const std::string work_path, ModuleStatus
     }
     //***********************************************************************
 
+    ROS_INFO("***************************************************");
     if(!init_module_by_set_status(init_status)){
         ROS_INFO("Try to init module with status: %s, but failed",print_ModuleStatus(init_status).c_str());
     }else{
-        ROS_INFO("Localization Module Start with status: %s", print_ModuleStatus(running_module_status_).c_str());
+        ROS_INFO("Localization Module Start with status:\033[1;32m %s\033[0m", print_ModuleStatus(running_module_status_).c_str());
     }
 
 
@@ -160,6 +160,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
     // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
+        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
     }else if(running_module_status_ == MODULE_LOCALIZATION){
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
@@ -352,10 +353,19 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
     // if(control_status_.reset||offline_mode_)
     //    return;
 
+    // transfer IMU : IMU-frame to baselink-frame
+    Eigen::Vector3d ang_before(msg_in->angular_velocity.x, msg_in->angular_velocity.y, msg_in->angular_velocity.z);
+    Eigen::Vector3d acc_before(msg_in->linear_acceleration.x, msg_in->linear_acceleration.y, msg_in->linear_acceleration.z);
+    Eigen::Vector3d ang_after = slam_param_.extrinsic.R_baselink_IMU * ang_before;
+    Eigen::Vector3d acc_after = slam_param_.extrinsic.R_baselink_IMU * acc_before;
+
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg);
 	msg->time_stamp = msg_in->header.stamp.toSec();
-	msg->angular_velocity << msg_in->angular_velocity.x,msg_in->angular_velocity.y,msg_in->angular_velocity.z;
-	msg->linear_acceleration << msg_in->linear_acceleration.x,msg_in->linear_acceleration.y,msg_in->linear_acceleration.z;	
+
+	// msg->angular_velocity << msg_in->angular_velocity.x,msg_in->angular_velocity.y,msg_in->angular_velocity.z;
+	// msg->linear_acceleration << msg_in->linear_acceleration.x,msg_in->linear_acceleration.y,msg_in->linear_acceleration.z;	
+	msg->angular_velocity << ang_after[0],ang_after[1],ang_after[2];	
+	msg->linear_acceleration << acc_after[0],acc_after[1],acc_after[2];	
 
     // if (running_slam_){
     //     slam_ -> imu_cbk(msg);
@@ -503,6 +513,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
             mapping_status_ = M_STANDBY;
         }else{
             set_module_status_ = running_module_status_;
+            release_slam_obj();
+            ROS_WARN("slam obj destroyed!");
         }
     }else if (set_module_status_ == MODULE_LOCALIZATION){
         // TODO

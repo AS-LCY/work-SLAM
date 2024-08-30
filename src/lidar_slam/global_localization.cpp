@@ -246,14 +246,160 @@ bool GlobalLocalization::global_localize(PointCloudXYZI::Ptr cloud_in,
     Eigen::Isometry3d test_transform(init_guess);/// debug
     test_match_cloud_ = transformPointCloud(cloud_in, test_transform);/// debug
 
-    /// exec icp（result: global_odom_to_map）******************************************************
-    if(!registration_icp(cloud_in, pose, init_guess, score_thr)){
+    /// exec icp ******************************************************
+    // result of global localization: global_odom_to_map_
+    if(!registration_icp(cloud_in, pose, init_guess, score_thr, global_odom_to_map_)){
         return false;
     }else{
         return true;
     }
 }
 
+/// @brief  
+/// @param cloud_in         : param in 
+/// @param initial_rotate   : param in 
+/// @param best_match       : result out 
+/// @param best_trans       : result out 
+/// @return : if search success
+bool GlobalLocalization::scancontex_search(PointCloudXYZI::Ptr cloud_in, Matrix3d initial_rotate, 
+                                            std::pair<int, float>& best_match, std::pair<double, double>& best_trans){
+
+    // transform (gravity_align) curr cloud
+    PointCloudXYZI::Ptr gravity_aligned_cLoud(new PointCloudXYZI());
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.matrix().block<3, 3>(0, 0) = initial_rotate;
+    *gravity_aligned_cLoud = *transformPointCloud(cloud_in, transform);
+
+    // set search_trans 
+    /// TODO: parameterize search_trans ?
+    std::vector<std::pair<double, double>> search_trans = {
+        {0, 0}, {-4, 0}, {4, 0}, {0, -4}, {0, 4}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4},
+                {-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}
+    };
+
+    double min_dist = std::numeric_limits<double>::max();
+    // std::pair<int, float> best_match{-1, 0.0};
+    // std::pair<double, double> best_trans;
+    for (auto &t : search_trans) {
+        Eigen::MatrixXd sc = sc_manager_->makeScancontext(*(gravity_aligned_cLoud), t.first, t.second);// get sc of curr cloud
+        std::vector<float> ringkey = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
+        Eigen::MatrixXd sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
+        
+        double sc_dist = 1.0;// 当前匹配的距离(这个仅仅是初始化)，不是阈值
+        auto match = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
+        if (match.first != -1){
+          std::cout <<"trans: "<< t.first << " " <<t.second;
+          std::cout <<"; score: "<<sc_dist<<std::endl;
+        }
+        if (sc_dist < min_dist) {
+            min_dist = sc_dist;
+            best_match = match;
+            best_trans = t;
+        }
+    }
+
+    // check scancontext search
+    int match_idx = best_match.first;
+
+    if(match_idx == -1){
+        std::cout << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist<<std::endl;
+        return false;
+    }else{
+        return true;// match_idx != -1, (scancontext search success)
+    }
+
+}
+
+/// @brief 
+/// @param initial_rotate   : param in 
+/// @param best_match       : param in 
+/// @param best_trans       : param in 
+/// @return Eigen::Matrix4d : init_transform (used in icp)
+Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, std::pair<int, float> best_match, std::pair<double, double> best_trans){
+    int match_idx = best_match.first;
+
+    Eigen::Matrix4d init_guess = loaded_sc_info_[match_idx].pose.matrix();// use loaded data
+    Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
+
+    // 初始值: 确定 yaw 角, 用搜索到的 sc-info
+    euler[0] += -best_match.second;
+    std::cout << "rotate yaw: "<<-best_match.second<<std::endl;
+    
+    // 初始值: 确定 pitch, roll, 用重力校正时的 initial_rotate, 
+    Eigen::Vector3d current_euler = R2ypr(initial_rotate);//R2ypr(pose.matrix().block<3, 3>(0, 0));
+    double current_pitch = current_euler[1];
+    double current_roll = current_euler[2];
+
+    Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0],current_pitch,current_roll));                        
+    init_guess.block<3, 3>(0, 0) = rotate;
+    // std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        
+    euler = R2ypr(init_guess.block<3, 3>(0, 0));
+    // std::cout << "original yaw"<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
+
+    // ICP Settings zx gicp ?
+    Eigen::Vector2d offset_in_lidar{-best_trans.first,-best_trans.second};
+    Eigen::Rotation2D<double> rotation(euler[0]);
+    Eigen::Vector2d offset_in_map = rotation * offset_in_lidar; 
+    // std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl; 
+    // std::cout << "map offset " << offset_in_map.transpose() <<std::endl; 
+    init_guess.coeffRef(0, 3)= init_guess.coeffRef(0, 3)+ offset_in_map[0];
+    init_guess.coeffRef(1, 3)= init_guess.coeffRef(1, 3)+ offset_in_map[1];
+    // init_guess.coeffRef(2, 3) = 0;
+    // std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
+    // std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        //use the outcome of ndt as the initial guess for ICP
+
+
+    return init_guess;
+}
+
+/// @brief  
+/// @param cloud_in     : param in 
+/// @param pose         : param in 
+/// @param init_guess   : param in 
+/// @param res_global_odom_to_map    : param out  Eigen::Isometry3d result
+bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr, Eigen::Isometry3d& res_global_odom_to_map){
+    // set: icp-common
+    pcl::IterativeClosestPoint<PointType, PointType> icp;
+    icp.setMaxCorrespondenceDistance(100);
+    icp.setMaximumIterations(100);
+    icp.setTransformationEpsilon(1e-6);
+    icp.setEuclideanFitnessEpsilon(1e-6);
+    icp.setRANSACIterations(0);
+    // set: icp-cloud
+    icp.setInputSource(cloud_in);
+    icp.setInputTarget(loaded_global_map_);
+
+    // exec icp
+    PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
+    icp.align(*unused_result, init_guess.cast<float>());
+    // 未收敛，或者匹配不够好
+    if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr){//TODO add number in getFitnessScore
+        std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
+        return false;
+    }else{
+        std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
+    }   
+    Eigen::Isometry3d first_lidar_in_map;// first_lidar in_map: == odom
+    first_lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
+
+    // 初始值的确定和当前的位置无关，但是获取最后的odom-2-map与当前的lidar-in-odom 有关
+    // ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
+    // 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
+    res_global_odom_to_map = first_lidar_in_map * pose.inverse();
+    // euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+    // std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
+    // std::cout << "x "<<first_lidar_in_map.translation().x()<<" y "<<first_lidar_in_map.translation().y()<< " z "<<first_lidar_in_map.translation().z()<<std::endl;
+
+    // float x, y, z, roll, pitch, yaw;
+    // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
+    // std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
+    // std::cout << "-------------------------------------------"<<std::endl;
+
+    return true;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////
 
 bool GlobalLocalization::set_global_map(PointCloudXYZI::Ptr input_global_map){
     if(input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size()==0){
@@ -301,146 +447,6 @@ bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info){
     return true;
 }
 
-/// @brief  
-/// @param cloud_in         : param in 
-/// @param initial_rotate   : param in 
-/// @param best_match       : result out 
-/// @param best_trans       : result out 
-/// @return : if search success
-bool GlobalLocalization::scancontex_search(PointCloudXYZI::Ptr cloud_in, Matrix3d initial_rotate, 
-                                            std::pair<int, float>& best_match, std::pair<double, double>& best_trans){
-
-    // transform (gravity_align) curr cloud
-    PointCloudXYZI::Ptr gravity_aligned_cLoud(new PointCloudXYZI());
-    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-    transform.matrix().block<3, 3>(0, 0) = initial_rotate;
-    *gravity_aligned_cLoud = *transformPointCloud(cloud_in, transform);
-
-    // set search_trans 
-    /// TODO: parameterize search_trans ?
-    std::vector<std::pair<double, double>> search_trans = {
-        {0, 0}, {-4, 0}, {4, 0}, {0, -4}, {0, 4}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4},
-                {-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}
-    };
-
-    double min_dist = std::numeric_limits<double>::max();
-    // std::pair<int, float> best_match{-1, 0.0};
-    // std::pair<double, double> best_trans;
-    for (auto &t : search_trans) {
-        Eigen::MatrixXd sc = sc_manager_->makeScancontext(*(gravity_aligned_cLoud), t.first, t.second);// get sc of curr cloud
-        std::vector<float> ringkey = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
-        Eigen::MatrixXd sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
-        /// TODO: parameterize sc_dist
-        double sc_dist = 1.0;
-        auto match = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
-        if (match.first != -1){
-          std::cout <<"trans: "<< t.first << " " <<t.second;
-          std::cout <<"; score: "<<sc_dist<<std::endl;
-        }
-        if (sc_dist < min_dist) {
-            min_dist = sc_dist;
-            best_match = match;
-            best_trans = t;
-        }
-    }
-
-    // check scancontext search
-    int match_idx = best_match.first;
-
-    if(match_idx == -1){
-        std::cout << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist<<std::endl;
-        return false;
-    }else{
-        return true;// match_idx != -1, (scancontext search success)
-    }
-
-}
-
-/// @brief 
-/// @param initial_rotate   : param in 
-/// @param best_match       : param in 
-/// @param best_trans       : param in 
-/// @return Eigen::Matrix4d : init_transform (used in icp)
-Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, std::pair<int, float> best_match, std::pair<double, double> best_trans){
-    int match_idx = best_match.first;
-
-    Eigen::Matrix4d init_guess = loaded_sc_info_[match_idx].pose.matrix();// use loaded data
-    Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
-    // Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-
-    euler[0] += -best_match.second;
-    std::cout << "rotate yaw"<<-best_match.second<<std::endl;
-
-    Eigen::Vector3d current_euler = R2ypr(initial_rotate);//R2ypr(pose.matrix().block<3, 3>(0, 0));
-    //  Eigen::Vector3d current_euler = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-    double current_pitch = current_euler[1];
-    double current_roll = current_euler[2];
-
-    Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0],current_pitch,current_roll));                        
-    init_guess.block<3, 3>(0, 0) = rotate;
-    // std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        
-    euler = R2ypr(init_guess.block<3, 3>(0, 0));
-    // std::cout << "original yaw"<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
-    // euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-
-    // ICP Settings zx gicp ?
-    Eigen::Vector2d offset_in_lidar{-best_trans.first,-best_trans.second};
-    Eigen::Rotation2D<double> rotation(euler[0]);
-    Eigen::Vector2d offset_in_map = rotation * offset_in_lidar; 
-    // std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl; 
-    // std::cout << "map offset " << offset_in_map.transpose() <<std::endl; 
-    init_guess.coeffRef(0, 3)= init_guess.coeffRef(0, 3)+ offset_in_map[0];
-    init_guess.coeffRef(1, 3)= init_guess.coeffRef(1, 3)+ offset_in_map[1];
-    // init_guess.coeffRef(2, 3) = 0;
-    // std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
-    // std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        //use the outcome of ndt as the initial guess for ICP
-
-
-    return init_guess;
-}
-
-/// @brief  
-/// @param cloud_in     : param in 
-/// @param pose         : param in 
-/// @param init_guess   : param in 
-/// @return : (stored in private:) Eigen::Isometry3d global_odom_to_map_
-bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr){
-    // set: icp-common
-    pcl::IterativeClosestPoint<PointType, PointType> icp;
-    icp.setMaxCorrespondenceDistance(100);
-    icp.setMaximumIterations(100);
-    icp.setTransformationEpsilon(1e-6);
-    icp.setEuclideanFitnessEpsilon(1e-6);
-    icp.setRANSACIterations(0);
-    // set: icp-cloud
-    icp.setInputSource(cloud_in);
-    icp.setInputTarget(loaded_global_map_);
-
-    // exec icp
-    PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
-    icp.align(*unused_result, init_guess.cast<float>());
-    // 未收敛，或者匹配不够好
-    if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr){//TODO add number in getFitnessScore
-        std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
-        return false;
-    }else{
-        std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
-    }   
-    Eigen::Isometry3d first_lidar_in_map;// first_lidar in_map: == odom
-    first_lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
-    global_odom_to_map_ = first_lidar_in_map * pose.inverse();
-    // euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-    // std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
-    // std::cout << "x "<<first_lidar_in_map.translation().x()<<" y "<<first_lidar_in_map.translation().y()<< " z "<<first_lidar_in_map.translation().z()<<std::endl;
-
-    // float x, y, z, roll, pitch, yaw;
-    // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
-    // std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
-    // std::cout << "-------------------------------------------"<<std::endl;
-
-    return true;
-
-}
 
 
 }// namespace lidar_slam

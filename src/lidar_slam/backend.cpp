@@ -47,6 +47,7 @@ bool BackEnd::saveFrame(Eigen::Isometry3d transformTobeMapped)
 
 void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped)
 {
+    // cout<<"debug: KeyPoint size: "<<KeyPoint->points.size()<<endl;
     if (KeyPoint->points.empty())
     {
         // 第一帧初始化先验因子
@@ -95,19 +96,25 @@ void BackEnd::addLoopFactor()
 
 bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,PointCloudXYZI::Ptr lidar_cloud,double time)
 {
+    // cout<<"debug: saveFrame: "<<endl;
 
     // 计算当前帧与前一帧位姿变换，如果变化太小，不设为关键帧，反之设为关键帧
     if (saveFrame(transformTobeMapped) == false)
         return false;
+
+    // cout<<"debug: addOdomFactor: "<<endl;
     // 激光里程计因子(from fast-lio),  输入的是frame_relative pose  帧间位姿(body 系下)
     addOdomFactor(transformTobeMapped);
     //// GPS因子 (UTM -> WGS84)
     // addGPSFactor();
     //// 闭环因子 (rs-loop-detect)  基于欧氏距离的检测
+
+    // cout<<"debug: addLoopFactor: "<<endl;
     addLoopFactor();
     // 执行优化
     isam->update(gtSAMgraph, initialEstimate);
     isam->update();
+    // cout<<"debug: aLoopIsClosed: "<<endl;
     if (aLoopIsClosed) // 有回环因子，多update几次
     {
         isam->update();
@@ -117,13 +124,16 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
         isam->update();
     }
     // update之后要清空一下保存的因子图，注：历史数据不会清掉，ISAM保存起来了
+    // cout<<"debug: gtSAMgraph resize: "<<endl;
     gtSAMgraph.resize(0);
     initialEstimate.clear();
 
     PointType thisPose3D;
     KeyPose thisPose6D;
     gtsam::Pose3 latestEstimate;
+
     // 优化结果
+    // cout<<"debug: calculateBestEstimate: "<<endl;
     isamCurrentEstimate = isam->calculateBestEstimate();// TODO 没有优化的话，取到的是什么值
     // 当前帧位姿结果
     latestEstimate = isamCurrentEstimate.at<gtsam::Pose3>(isamCurrentEstimate.size() - 1);
@@ -407,7 +417,7 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyfra
 
 
 bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
-    KeyFrameCloud.clear();
+    
     KeyPoses.clear();
     KeyPoint.reset(new pcl::PointCloud<PointType>());
 
@@ -416,10 +426,15 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
     // 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
     // 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
     // T_map_odom： 传入的这个值是重定位结果
+    cout<<"loaded_key_poses size: "<<input_vec_key_poses.size()<<endl;
+    int i=0;
     for(auto & kp : input_vec_key_poses){
+        cout<<"***************** load old key frame --- "<< i++ << endl;
         Eigen::Isometry3d T_map_lidar = kp.pose;
         Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
         Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
+
+        addOdomFactor(T_odom_lidar);
 
         KeyPose temp_pose;
         temp_pose.pose = T_odom_lidar;
@@ -435,8 +450,12 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
         temp_pnt.y = T_odom_lidar.translation().y();
         temp_pnt.z = T_odom_lidar.translation().z();
         KeyPoint->points.push_back(temp_pnt);
-
+        
     }
+
+    isam->update(gtSAMgraph, initialEstimate);
+    gtSAMgraph.resize(0);
+    initialEstimate.clear();
 
     loaded_key_clouds_ready_ = true;
     return true;
@@ -929,7 +948,8 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
 }
 
 bool BackEnd::create_directory_if_not_exists(const std::string& directory_path){
-    if (0 != access(directory_path.c_str(), 0)){
+#if 1
+if (0 != access(directory_path.c_str(), 0)){
         int status = mkdir(directory_path.c_str(),0777);
         if (status == 0)        {
             return true; // 创建目录成功
@@ -941,6 +961,7 @@ bool BackEnd::create_directory_if_not_exists(const std::string& directory_path){
         //folder exist
         return true;
     }
+#endif
 
 #if 0
     std::filesystem::path path(directory_path);

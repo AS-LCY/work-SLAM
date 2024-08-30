@@ -100,8 +100,8 @@ private:
     /// @param pose         : param in 
     /// @param init_guess   : param in 
     /// @param score_thr    : param in 
-    /// @return : (stored in private:) Eigen::Isometry3d global_odom_to_map_
-    bool registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr);
+    /// @param res_global_odom_to_map    : param out  Eigen::Isometry3d result
+    bool registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr, Eigen::Isometry3d& res_global_odom_to_map);
 
 
 public:

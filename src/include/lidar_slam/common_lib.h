@@ -292,6 +292,11 @@ static PointCloudXYZI::Ptr transformPointCloud(PointCloudXYZI::Ptr cloudIn, cons
 }
 
 
+// temp test, already parameterized
+// static double roll  = -0.4/180 * PI_M;
+// static double pitch = 13.5/180 * PI_M;
+// static double yaw   = 0;
+// static Matrix3d R_IMU_temp= ypr2R(Eigen::Vector3d{yaw, pitch, roll});
 
 
 #endif

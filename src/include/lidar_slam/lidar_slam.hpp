@@ -30,7 +30,7 @@
 // #include "driver_node.h"
 // #include "lddc.h"
 #include "livox_datatype/livox_ros_datatype_def.h"
-#include "node/lidar_slam_param_def.h"
+#include "node/module_param_def.h"
 #include "node/module_status_def.h"
 // #include "lds_lidar.h"
 
@@ -137,7 +137,8 @@ class LidarSlam
             if(working_mode_ == LOCALIZATION){
                 localization->loadMap(directory);
             }else if(working_mode_ == SEC_MAPPING){
-                cloud_map_manager_->load_map_data(directory);
+                if(!cloud_map_manager_->load_map_data(directory))
+                return false;
             }else{
                 cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
                 return false;

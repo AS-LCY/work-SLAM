@@ -53,16 +53,30 @@ bool LocalizationModule::load_lidar_slam_param(){
     std::vector<double> extrinsic_T; // 1 * 3
     std::vector<double> extrinsic_R; // 3 * 3
     std::vector<double> Lidar_In_Wheel; // 4* 4
+    std::vector<double> extrinsic_euler_IMU_in_baselink; // 1 * 3
     get_param(ns+ "extrinsic/extrinsic_est_en", slam_param_.extrinsic.extrinsic_est_en, &success);
     get_param(ns+ "extrinsic/extrinsic_T", extrinsic_T, &success);//temp
     get_param(ns+ "extrinsic/extrinsic_R", extrinsic_R, &success);//temp
     get_param(ns+ "extrinsic/Lidar_In_Wheel", Lidar_In_Wheel, &success);//temp
+    get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_baselink", extrinsic_euler_IMU_in_baselink, &success);//temp
    
     // extrinT & extrinR
     slam_param_.extrinsic.extrinT<< extrinsic_T[0],extrinsic_T[1],extrinsic_T[2];
-    slam_param_.extrinsic.extrinR<< extrinsic_R[0],extrinsic_R[1],extrinsic_R[2],
-                                    extrinsic_R[3],extrinsic_R[4],extrinsic_R[5],
-                                    extrinsic_R[6],extrinsic_R[7],extrinsic_R[8];
+    double yaw   = extrinsic_T[0]/180 * M_PI;
+    double pitch = extrinsic_T[1]/180 * M_PI;
+    double roll  = extrinsic_T[2]/180 * M_PI;
+    slam_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{yaw, pitch, roll});
+
+    // slam_param_.extrinsic.extrinR<< extrinsic_R[0],extrinsic_R[1],extrinsic_R[2],
+    //                                 extrinsic_R[3],extrinsic_R[4],extrinsic_R[5],
+    //                                 extrinsic_R[6],extrinsic_R[7],extrinsic_R[8];
+
+    // IMU in base_link
+    double yaw1   = extrinsic_euler_IMU_in_baselink[0]/180 * M_PI;
+    double pitch1 = extrinsic_euler_IMU_in_baselink[1]/180 * M_PI;
+    double roll1  = extrinsic_euler_IMU_in_baselink[2]/180 * M_PI;
+    slam_param_.extrinsic.R_baselink_IMU = ypr2R(Eigen::Vector3d{yaw1, pitch1, roll1});
+                                    
     // T_wheel_lidar & T_lidar_wheel
     Eigen::Matrix4d T_wheel_lidar;
     T_wheel_lidar<< Lidar_In_Wheel[0], Lidar_In_Wheel[1], Lidar_In_Wheel[2], Lidar_In_Wheel[3],

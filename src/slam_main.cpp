@@ -20,7 +20,7 @@ int main(int argc,char **argv){
     localization_module::ModuleStatus init_status = static_cast<localization_module::ModuleStatus>(init_module_status);
     
 
-    localization_module::LocalizationModule localization_module(curr_path, init_status);
+    localization_module::LocalizationModule localization_module(/*curr_path,*/ init_status);
     
     ROS_INFO("\033[1;32m----> localization_module start! \033[0m");
 

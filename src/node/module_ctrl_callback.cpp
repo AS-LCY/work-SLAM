@@ -54,6 +54,9 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
                 cout<<"debug: running_module_status_ set"<<endl;
             }else{
                 running_module_status_ = last_running_module_status_;
+                ROS_ERROR("Start Sec-mapping failed!");
+                release_slam_obj();
+                ROS_WARN("slam obj destroyed!");
                 // set_module_status_ = last_running_module_status_;
             }
             set_module_status_ = MODULE_IDLE;// 复位为空
@@ -169,6 +172,7 @@ bool LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_i
 
     const auto use_ele_pcd_flag = slam_param_.mapping.use_ele_pcd_flag;
     std::string load_map_dir;
+    // use_ele_pcd_flag: set to false; true: not support for now
     if (use_ele_pcd_flag){
         load_map_dir = slam_param_.common.map_directory +std::string("/")+std::to_string(map_id)+std::string("/");
     }else{
@@ -179,9 +183,12 @@ bool LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_i
     if (last_running_module_status_ == MODULE_IDLE){
         make_slam_obj(slam_param_, set_status);
         // 加载地图
-        ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout 可以正常打印中文
-        slam_ -> load_map(load_map_dir);
-        mapping_status_ = M_STANDBY;
+        // ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout 可以正常打印中文
+        if(!slam_ -> load_map(load_map_dir)){
+            ROS_ERROR("load map failed!");
+            return false;
+        }
+        // mapping_status_ = M_STANDBY;
         // running_module_status_ = MODULE_SEC_MAPPING;
         return true;
     }else if(last_running_module_status_ == MODULE_MAPPING || 
@@ -308,11 +315,13 @@ bool LocalizationModule::stop_mapping(){
     if (last_running_module_status_ == MODULE_MAPPING || last_running_module_status_ == MODULE_SEC_MAPPING){
         if(mapping_status_ == M_STANDBY){
             ROS_INFO("mapping_status: %s", print_MappingStatus(mapping_status_).c_str());
-            ROS_INFO("saving global map");
+            ROS_INFO("\033[1;32mstart saving map data\033[0m");
             std::string pcd_dir = slam_param_.common.map_directory;
             const auto resolution = slam_param_.mapping.save_map_resolution;
             if(!slam_->save_map(pcd_dir, resolution, 0, 0)){
                 ROS_ERROR("save map data failed!");
+            }else{
+                ROS_INFO("\033[1;32msave map data success!\033[0m");
             }
 
             ROS_INFO("start stop mapping");
@@ -371,8 +380,13 @@ bool LocalizationModule::start_localization(ModuleStatus set_status, int map_id)
     if (last_running_module_status_ == MODULE_IDLE){
         make_slam_obj(slam_param_, set_status);
         // 加载地图
-        ROS_INFO("load map dir: %s", load_map_dir.c_str());
-        slam_ -> load_map(load_map_dir);
+        // ROS_INFO("load map dir: %s", load_map_dir.c_str());
+        // slam_ -> load_map(load_map_dir);
+        if(!slam_ -> load_map(load_map_dir)){
+            ROS_ERROR("load map failed!");
+            return false;
+        }
+        show_load_map_=0;
         return true;
     }else if (last_running_module_status_ == MODULE_LOCALIZATION){
         ROS_INFO("skip, already running mapping now");
@@ -441,7 +455,7 @@ bool LocalizationModule::start_relocalization(){
 }
 
 bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status){
-    ROS_INFO("creating lidar_slam ");
+    // ROS_INFO("debug: making obj: lidar_slam ");
     lidar_slam::SlamWorkMode set_slam_mode = lidar_slam::SlamWorkMode::UNKNOWN;
     if(set_status == MODULE_MAPPING){
         set_slam_mode = lidar_slam::SlamWorkMode::MAPPING;
@@ -453,9 +467,9 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
         ROS_ERROR("ModuleStatus: %s, status error!", print_ModuleStatus(set_status).c_str());
         return false;
     }
-    ROS_INFO("set slam work mode: %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
+    ROS_INFO("Making obj(lidar_slam) --- with: set slam work mode: %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
-    ROS_INFO("\033[1;32mCreate lidar_slam successfully !\033[0m");
+    ROS_INFO("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
     return true;
 }
 
