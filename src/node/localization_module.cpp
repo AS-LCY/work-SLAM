@@ -300,7 +300,9 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     // if(control_status_.reset||offline_mode_)
     //    return;
 
-    const double dis_thr = slam_param_.lidar_preproc.point_filter_distance;
+    const double thr_x = slam_param_.lidar_preproc.point_filter_distance[0];
+    const double thr_y = slam_param_.lidar_preproc.point_filter_distance[1];
+    const double thr_z = slam_param_.lidar_preproc.point_filter_distance[2];
 	
     int cloud_num = ros_msg->height * ros_msg->width;
     
@@ -349,12 +351,13 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
             livox_point.reflectivity = curpt->intensity;
             livox_point.tag = curpt->tag;
             livox_point.line = curpt->line;
-            if(abs(livox_point.x) > dis_thr || abs(livox_point.y) > dis_thr || livox_point.z>10){
+            if(abs(livox_point.x) > thr_x || abs(livox_point.y) > thr_y || livox_point.z > thr_z){
                continue;
             }
             // livox_point.offset_time = curpt->offset_time;
             // 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒
-            livox_point.offset_time = (curpt->timestamp / double(1000000000.0) - msg->time_stamp);
+            // livox_point.offset_time = (curpt->timestamp / double(1000000000.0) - msg->time_stamp);
+            livox_point.offset_time = (curpt->timestamp  * 1e-9 - msg->time_stamp);
             msg->points.push_back(livox_point);
         }
     }

@@ -34,7 +34,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "common/receive_lidar_freq", slam_param_.common.receive_lidar_freq, &success);
     get_param(ns+ "common/slam_lose_rate_time_thr", slam_param_.common.slam_lose_rate_time_thr, &success);
     get_param(ns+ "common/cpu_id", slam_param_.common.cpu_id, &success);
-    ROS_INFO("\033[1;32mset cpu_id size: %u\033[0m", slam_param_.common.cpu_id.size());
+    ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", slam_param_.common.cpu_id.size());
     // process map_dir
     // std::cout << "C++ Standard: " << __cplusplus << std::endl;
     std::string parent_dir;
@@ -140,7 +140,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "ikdtree/kdTreeReconstructPointLeafSize", slam_param_.ikdtree.kdTreeReconstructPointLeafSize, &success);
     get_param(ns+ "ikdtree/map_leaf_size", slam_param_.ikdtree.map_leaf_size, &success);
 
-    ROS_INFO("\033[1;32mset cpu_id size: %u\033[0m", slam_param_.common.cpu_id.size());
+    ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", slam_param_.common.cpu_id.size());
     return success;
 }
 

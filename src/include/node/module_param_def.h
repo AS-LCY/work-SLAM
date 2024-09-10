@@ -38,7 +38,7 @@ struct LidarPreprocParam{
     double blind_distance;
     bool flag_keep_only_last_lidar=false;
     int point_filter_num;
-    double point_filter_distance;
+    std::vector<double> point_filter_distance;
     bool feature_enabled;
     double obstacle_max_range;
     double obstacle_max_height;
