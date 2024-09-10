@@ -8,6 +8,8 @@
 #include <csignal>
 #include <unistd.h>
 #include <Eigen/Core>
+// #define _GNU_SOURCE
+#include <pthread.h>
 // #include <filesystem> // c++17
 
 // #include <ros/ros.h> // debug, use to print time
@@ -375,6 +377,8 @@ class LidarSlam
         // bool second_mapping_need_global_localization_ = false;
 
         int global_localize_count_=0;
+
+        // cpu_set_t mask;
 
 
         bool sync_packages(MeasureGroup &meas);

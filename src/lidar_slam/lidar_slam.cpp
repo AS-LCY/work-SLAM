@@ -51,10 +51,13 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
     // if (!offline){
     //     start_driver(work_path);
     // }
+    cout << "debug: LidarSlam 1"<<endl;
     config_param_ = yaml_param;
 
+    cout << "debug: LidarSlam 2"<<endl;
     LidarSlam::reset(start_mode);
 
+    cout << "debug: LidarSlam 3"<<endl;
      
 }
 
@@ -109,7 +112,10 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     sleep(1);
 
-    // cout << "slam reset 1"<<endl;
+    // CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
+    // CPU_SET(0, &mask); // 将线程绑定到 cpu_id 核心
+
+    // cout << "debug: slam reset 1"<<endl;
     /// 激光和IMU预处理相关 *******************************************
     time_buffer.clear();               // 记录lidar时间
     lidar_buffer.clear(); //记录特征提取或间隔采样后的lidar（特征）数据
@@ -304,6 +310,8 @@ void LidarSlam::sec_mapping_loopClosureThread()
     const std::chrono::milliseconds period(1000 / frequency);
     while (thread_run&&reseting == false)
     {
+        std::thread::id thisId = std::this_thread::get_id();
+        // std::cout << "debug: loopClosureThread   Thread ID: " << thisId << std::endl;
         auto start = std::chrono::steady_clock::now();
         // 对于二次建图，重定位成功之前，不进行回环检测
         if(!globalLocalizationSuccess){
@@ -355,7 +363,8 @@ void LidarSlam::loopClosureThread()
 void LidarSlam::localizationThread()
 {
     // const int frequency = 1.0; // 频率为1Hz
-    const int frequency = 2.0; // 频率为2Hz
+    // const int frequency = 2.0; // 频率为2Hz
+    const int frequency = config_param_.localization.fgicp_freq; // 频率为2Hz
     const std::chrono::milliseconds period(1000 / frequency);
     const auto score_thr = config_param_.re_localization.score_thr;
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
@@ -441,6 +450,8 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
     int global_localize_count = 0;
 
     while (thread_run&&reseting == false){
+        std::thread::id thisId = std::this_thread::get_id();
+        // std::cout << "debug: global_localization Thread ID: " << thisId << std::endl;
         auto start = std::chrono::steady_clock::now();
         // if(second_mapping_need_global_localization_){
         // }
@@ -629,6 +640,10 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
 
     }
     std::lock_guard<std::mutex> lk(mtx_buffer);
+    // if (lidar_buffer.size()>0){
+    //     lidar_buffer.clear();
+    //     time_buffer.clear();
+    // }
     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
     // cout<<"********************* lidar_buffer push back *********"<<endl;
     time_buffer.push_back(last_timestamp_lidar);
@@ -697,6 +712,7 @@ void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
 
 void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
 {
+    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     if (reseting)
         return;
     
@@ -748,6 +764,10 @@ void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double ti
     // sor.filter(*FilteredObstacleCloud);
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
+    if (flag_keep_only_last_lidar){
+        lidar_buffer.clear();
+        time_buffer.clear();
+    }
     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
     time_buffer.push_back(last_timestamp_lidar);
    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
@@ -887,10 +907,17 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
 
 bool LidarSlam::run()
 {
+    // pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
+    // if (pthread_setaffinity_np(this_thread, sizeof(mask), &mask) < 0) {
+    //     perror("pthread_setaffinity_np");
+    //     exit(EXIT_FAILURE);
+    // }
+    std::thread::id thisId = std::this_thread::get_id();
+    // std::cout << "debug: lidar slam main     Thread ID: " << thisId << std::endl;
     /// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
     static int frame_num = 0;
     static double aver_time_consu = 0, aver_time_icp = 0,aver_time_incre = 0, aver_time_solve = 0;
-    double t0, t1, t2, t3, t4, t5, match_start, solve_start,run_start,run_end;
+    double t0, t1, t2, t3, t4, t5, match_start, solve_start,run_start,run_end, t0_backend, t1_backend, t0_transform, t1_transform;
     run_start = omp_get_wtime();
     // cout<<"lidar buffer size: "<<lidar_buffer.size()<<endl;
     // cout<<"imu   buffer size: "<<imu_buffer.size()<<endl;
@@ -1005,6 +1032,8 @@ bool LidarSlam::run()
         localization_base.imu_state = state_point;
         localization_base.base_time = lidar_end_time;
         localization_base.update_time = lidar_end_time;
+
+        t0_backend = omp_get_wtime();
         // if (!param.localization_mode){
         if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
 
@@ -1065,6 +1094,8 @@ bool LidarSlam::run()
                     unoptimized_path.pop_front();
             }             
         }
+
+        t1_backend = omp_get_wtime();
         // std::cout<<"test "<< R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
         // if (!param.localization_mode){
         if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
@@ -1072,12 +1103,15 @@ bool LidarSlam::run()
         }
 
 
+        t0_transform = omp_get_wtime();
         {
             std::lock_guard<std::mutex> lk(mtx_odom_cloud);
             UndistortCloudInOdom->resize(undistortCloud->points.size());
             UndistortCloudInOdom = transformPointCloud(undistortCloud, T_odom_lidar); 
         }
+        t1_transform = omp_get_wtime();
         t3 = omp_get_wtime();
+        // std::cout << "debug: UndistortCloud      Thread ID: " << thisId << std::endl;
 
         /*** add the feature points to map kdtree ***/
         FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud, T_odom_lidar);
@@ -1096,9 +1130,24 @@ bool LidarSlam::run()
             //   , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end, aver_time_icp, t5 - t4, aver_time_consu);
         }
         run_end =  omp_get_wtime();
-        if (run_end - run_start > 0.1)
-            printf("lidar slam lose rate");
+        // printf("p_imu->Process, cloud deskew    , time cost: %f ms\n", (t1-t0)*1000);
+        // printf("ikdtree->lasermap_fov_segment   , time cost: %f ms\n", (t2-t1)*1000);
+        // printf("lidar slam main process step1   , time cost: %f ms\n", (t0_backend-t2)*1000);
+        // printf("lidar slam main update  time    , time cost: %f ms\n", (t_update_end-t_update_start)*1000);
+        // printf("lidar slam main process         , time cost: %f ms\n", (t3-t2)*1000);
+        // printf("main: lidar slam backend        , time cost: %f ms\n", (t1_backend-t0_backend)*1000);
+        // printf("main: transform undistortCloud  , time cost: %f ms\n", (t1_transform-t0_transform)*1000);
+        // printf("transform FilteredUndistortCloud, time cost: %f ms\n", (t4-t3)*1000);
+        // printf("ikdtree->map_incremental        , time cost: %f ms\n", (t5-t4)*1000);
+        // printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);
+
+        // if (run_end - run_start > 0.1)
+        if (run_end - run_start > config_param_.common.slam_lose_rate_time_thr)
+            printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m --- lose rate \n", (run_end - run_start)*1000);
+        else
+            printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);
         
+        printf("---------------------------------------------------------\n");
         return true;
     }
     else{

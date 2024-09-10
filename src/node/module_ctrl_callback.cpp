@@ -51,7 +51,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             if(start_second_mapping(set_module_status_, map_id)){
                 running_module_status_ = set_module_status_;
                 mapping_status_ = M_STANDBY;
-                cout<<"debug: running_module_status_ set"<<endl;
+                // cout<<"debug: running_module_status_ set"<<endl;
             }else{
                 running_module_status_ = last_running_module_status_;
                 ROS_ERROR("Start Sec-mapping failed!");
@@ -467,7 +467,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
         ROS_ERROR("ModuleStatus: %s, status error!", print_ModuleStatus(set_status).c_str());
         return false;
     }
-    ROS_INFO("Making obj(lidar_slam) --- with: set slam work mode: %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
+    ROS_INFO("Making obj(lidar_slam) --- with: set_slam_mode = %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
     ROS_INFO("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
     return true;

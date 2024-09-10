@@ -1,5 +1,5 @@
 common:
-  init_module_status: 3 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
+  init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
   offline_mode: false
@@ -9,20 +9,24 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/pmm/catkin_ws/data/livox/0826-new-driver/map"
+  map_directory: "/home/forlinx/ws_slam_test/data/map"
   # map_directory: "/data/livox/0826-new-driver/map"
   # map_directory: "/data/0803-floor23"
   # map_directory: "/data/livox/0826-new-driver/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
+  receive_lidar_freq: 10 # unit: hz
+  slam_lose_rate_time_thr: 0.1 # unit: second
+  # cpu_id: [0, 1, 2]
+  cpu_id: [4, 5]
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
   extrinsic_T: [ 0, -0.02329, 0.04412 ] 
   extrinsic_R: [ 0,  0,  0]  # unit(degree), yaw, pitch, roll  
                   
-  # extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
-  extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
+  extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
+  # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,
@@ -32,7 +36,9 @@ extrinsic:
 lidar_preproc:
   line_count: 4
   blind_distance: 0.2
+  flag_keep_only_last_lidar: true
   point_filter_num: 3
+  point_filter_distance: 50 # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   feature_enabled: false 
   obstacle_max_range:  2.5
   obstacle_max_height: 0.5
@@ -58,12 +64,13 @@ sec_mapping:
   load_map_dir: " " # 可以填空字符，但不能不赋值
     
 localization:
+  fgicp_freq: 1 # hz
   fgicp_score_thr: 0.1
   # load_map_dir: "/home/panmiaomiao/catkin_ws/data/天河草场/2/map" # 可以填空字符，但不能不赋值
 
 re_localization:
   score_thr: 0.05
-  time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
+  time_out_thr: 120 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:
   cube_len: 400.0

@@ -135,6 +135,7 @@ private:
 
     bool saveFrame(Eigen::Isometry3d transformTobeMapped);
     bool create_directory_if_not_exists(const std::string &directoryPath);
+    bool mkdir_p(const std::string &dir_path, mode_t mode);
 
     void addOdomFactor(Eigen::Isometry3d transformTobeMapped);
     void addLoopFactor();

@@ -234,6 +234,9 @@ private:
     std::thread show_thread_;
     int show_load_map_ = 0;
 
+
+    cpu_set_t mask;
+
     // 应该是目前没在用
     // ros::ServiceServer srvSaveMap; // 应该是目前没在用
     // std::vector<Eigen::Isometry3d> keyPoses;

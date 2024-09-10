@@ -19,6 +19,9 @@ struct CommonParam{
     std::string map_directory="/map/";
     std::string sub_topic_ctrl_cmd;
     std::string pub_topic_module_status;
+    int receive_lidar_freq = 10;
+    double slam_lose_rate_time_thr = 0.1;
+    std::vector<int> cpu_id;
 };
 
 struct ExtrinsicParam{
@@ -33,7 +36,9 @@ struct ExtrinsicParam{
 struct LidarPreprocParam{
     int line_count;
     double blind_distance;
+    bool flag_keep_only_last_lidar=false;
     int point_filter_num;
+    double point_filter_distance;
     bool feature_enabled;
     double obstacle_max_range;
     double obstacle_max_height;
@@ -67,6 +72,7 @@ struct MappingParam{
 struct LocalizationParam{
     // std::string load_map_dir;
     double fgicp_score_thr = 0.1;
+    int fgicp_freq = 1;
 };
 
 struct SecondMappingParam{

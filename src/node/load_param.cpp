@@ -31,7 +31,10 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "common/map_directory", slam_param_.common.map_directory, &success);
     get_param(ns+ "common/sub_topic_ctrl_cmd", slam_param_.common.sub_topic_ctrl_cmd, &success);
     get_param(ns+ "common/pub_topic_module_status", slam_param_.common.pub_topic_module_status, &success);
-
+    get_param(ns+ "common/receive_lidar_freq", slam_param_.common.receive_lidar_freq, &success);
+    get_param(ns+ "common/slam_lose_rate_time_thr", slam_param_.common.slam_lose_rate_time_thr, &success);
+    get_param(ns+ "common/cpu_id", slam_param_.common.cpu_id, &success);
+    ROS_INFO("\033[1;32mset cpu_id size: %u\033[0m", slam_param_.common.cpu_id.size());
     // process map_dir
     // std::cout << "C++ Standard: " << __cplusplus << std::endl;
     std::string parent_dir;
@@ -89,7 +92,9 @@ bool LocalizationModule::load_lidar_slam_param(){
     /// lidar_preproc params *******************************************
     get_param(ns+ "lidar_preproc/line_count", slam_param_.lidar_preproc.line_count, &success);
     get_param(ns+ "lidar_preproc/blind_distance", slam_param_.lidar_preproc.blind_distance, &success);
+    get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", slam_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
     get_param(ns+ "lidar_preproc/point_filter_num", slam_param_.lidar_preproc.point_filter_num, &success);
+    get_param(ns+ "lidar_preproc/point_filter_distance", slam_param_.lidar_preproc.point_filter_distance, &success);
     get_param(ns+ "lidar_preproc/feature_enabled", slam_param_.lidar_preproc.feature_enabled, &success);
     get_param(ns+ "lidar_preproc/obstacle_max_range", slam_param_.lidar_preproc.obstacle_max_range, &success);
     get_param(ns+ "lidar_preproc/obstacle_max_height", slam_param_.lidar_preproc.obstacle_max_height, &success);
@@ -118,6 +123,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     /// localization params *******************************************
     // get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
     get_param(ns+ "localization/fgicp_score_thr", slam_param_.localization.fgicp_score_thr, &success);
+    get_param(ns+ "localization/fgicp_freq", slam_param_.localization.fgicp_freq, &success);
     
 
 
@@ -134,6 +140,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "ikdtree/kdTreeReconstructPointLeafSize", slam_param_.ikdtree.kdTreeReconstructPointLeafSize, &success);
     get_param(ns+ "ikdtree/map_leaf_size", slam_param_.ikdtree.map_leaf_size, &success);
 
+    ROS_INFO("\033[1;32mset cpu_id size: %u\033[0m", slam_param_.common.cpu_id.size());
     return success;
 }
 

@@ -12,6 +12,14 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
         ROS_INFO("\033[1;32mLoad lidar-slam param successfully!\033[0m");
     }
 
+    //************************** CPU 绑定 *******************************
+    CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
+    for(int i=0; i<slam_param_.common.cpu_id.size();i++){
+        CPU_SET(slam_param_.common.cpu_id[i], &mask); // 将线程绑定到 cpu_id 核心
+        ROS_INFO("\033[1;32mset cpu: %d\033[0m", slam_param_.common.cpu_id[i]);
+    }
+    //************************** CPU 绑定 end *******************************
+
     if(!create_ROS_IO()){
         ROS_ERROR("Create ROS-IO failed!");
     }else {
@@ -91,6 +99,17 @@ bool LocalizationModule::create_ROS_IO(){
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
+    std::thread::id thisId = std::this_thread::get_id();
+    // std::cout << "debug: slam_dealt_timer    Thread ID: " << thisId << std::endl;
+
+    if(slam_param_.common.cpu_id.size()>0){
+        pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
+        if (pthread_setaffinity_np(this_thread, sizeof(mask), &mask) < 0) {
+            perror("pthread_setaffinity_np");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
 
     // if (!running_slam_){
     if (running_module_status_ == MODULE_IDLE || 
@@ -138,6 +157,9 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         return;
     } 
     /********************************- run slam -********************************/    
+
+    thisId = std::this_thread::get_id();
+    // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
     bool running_slam_flag = slam_->run();
 
     if (running_slam_flag && show_rviz_){
@@ -266,12 +288,19 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
     // ROS_INFO("livox lidar callback~");
     // if (!running_slam_){
-    if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
-        return;
-    }
+    // if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
+    //     return;
+    // }
+    // if (running_module_status_ == MODULE_IDLE || 
+    //     running_module_status_ == MODULE_STARTING_SLAM || 
+    //     running_module_status_ == MODULE_STOPPING_SLAM){
+    //     return;
+    // }
 
     // if(control_status_.reset||offline_mode_)
     //    return;
+
+    const double dis_thr = slam_param_.lidar_preproc.point_filter_distance;
 	
     int cloud_num = ros_msg->height * ros_msg->width;
     
@@ -312,6 +341,7 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
             for (const pcl::detail::FieldMapping& mapping : field_map){
                 memcpy (curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
             }
+
             livox_ros::LidarPoint livox_point;
             livox_point.x = curpt->x;
             livox_point.y = curpt->y;
@@ -319,6 +349,9 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
             livox_point.reflectivity = curpt->intensity;
             livox_point.tag = curpt->tag;
             livox_point.line = curpt->line;
+            if(abs(livox_point.x) > dis_thr || abs(livox_point.y) > dis_thr || livox_point.z>10){
+               continue;
+            }
             // livox_point.offset_time = curpt->offset_time;
             // 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒
             livox_point.offset_time = (curpt->timestamp / double(1000000000.0) - msg->time_stamp);
@@ -326,7 +359,8 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
         }
     }
 
-    msg->point_num = cloud_num;
+    // msg->point_num = cloud_num;
+    msg->point_num = msg->points.size();
 
     // if (running_slam_){
     //     slam_ -> livox_pcl_cbk(msg);
@@ -347,9 +381,15 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
     // ROS_INFO("livox imu callback~");
     // if (!running_slam_){
-    if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
-        return;
-    }
+    // if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
+    //     return;
+    // }
+    // if (running_module_status_ == MODULE_IDLE || 
+    //     running_module_status_ == MODULE_STARTING_SLAM || 
+    //     running_module_status_ == MODULE_STOPPING_SLAM){
+    //     return;
+    // }
+
     // if(control_status_.reset||offline_mode_)
     //    return;
 

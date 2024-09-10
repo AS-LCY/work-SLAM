@@ -136,7 +136,8 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
             pl_obstacle->points.push_back(point);
         }
                 
-        if (valid_num % point_filter_num == 0)
+        // if (valid_num % point_filter_num == 0) //&& abs(msg->points[i].x)<20 && abs(msg->points[i].y)<20 && msg->points[i].z<10)
+        if (valid_num % point_filter_num == 0 && abs(msg->points[i].x)<20 && abs(msg->points[i].y)<20 && msg->points[i].z<10)
         {
           pl_full[i].x = msg->points[i].x;
           pl_full[i].y = msg->points[i].y;
