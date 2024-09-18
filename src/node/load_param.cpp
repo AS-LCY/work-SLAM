@@ -33,6 +33,8 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "common/pub_topic_module_status", slam_param_.common.pub_topic_module_status, &success);
     get_param(ns+ "common/receive_lidar_freq", slam_param_.common.receive_lidar_freq, &success);
     get_param(ns+ "common/slam_lose_rate_time_thr", slam_param_.common.slam_lose_rate_time_thr, &success);
+    get_param(ns+ "common/lidar_no_point_count_thr", slam_param_.common.lidar_no_point_count_thr, &success);
+    get_param(ns+ "common/feats_down_size", slam_param_.common.feats_down_size, &success);
     get_param(ns+ "common/cpu_id", slam_param_.common.cpu_id, &success);
     ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", slam_param_.common.cpu_id.size());
     // process map_dir
@@ -65,9 +67,9 @@ bool LocalizationModule::load_lidar_slam_param(){
    
     // extrinT & extrinR
     slam_param_.extrinsic.extrinT<< extrinsic_T[0],extrinsic_T[1],extrinsic_T[2];
-    double yaw   = extrinsic_T[0]/180 * M_PI;
-    double pitch = extrinsic_T[1]/180 * M_PI;
-    double roll  = extrinsic_T[2]/180 * M_PI;
+    double yaw   = extrinsic_R[0]/180 * M_PI;
+    double pitch = extrinsic_R[1]/180 * M_PI;
+    double roll  = extrinsic_R[2]/180 * M_PI;
     slam_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{yaw, pitch, roll});
 
     // slam_param_.extrinsic.extrinR<< extrinsic_R[0],extrinsic_R[1],extrinsic_R[2],
@@ -78,8 +80,9 @@ bool LocalizationModule::load_lidar_slam_param(){
     double yaw1   = extrinsic_euler_IMU_in_baselink[0]/180 * M_PI;
     double pitch1 = extrinsic_euler_IMU_in_baselink[1]/180 * M_PI;
     double roll1  = extrinsic_euler_IMU_in_baselink[2]/180 * M_PI;
-    slam_param_.extrinsic.R_baselink_IMU = ypr2R(Eigen::Vector3d{yaw1, pitch1, roll1});
-                                    
+    // slam_param_.extrinsic.R_baselink_IMU = ypr2R(Eigen::Vector3d{yaw1, pitch1, roll1});
+    slam_param_.extrinsic.R_baselink_IMU = rpy2R(Eigen::Vector3d{roll1,pitch1, yaw1});
+
     // T_wheel_lidar & T_lidar_wheel
     Eigen::Matrix4d T_wheel_lidar;
     T_wheel_lidar<< Lidar_In_Wheel[0], Lidar_In_Wheel[1], Lidar_In_Wheel[2], Lidar_In_Wheel[3],
@@ -90,13 +93,21 @@ bool LocalizationModule::load_lidar_slam_param(){
     slam_param_.extrinsic.T_lidar_wheel = slam_param_.extrinsic.T_wheel_lidar.inverse();
 
     /// lidar_preproc params *******************************************
+    get_param(ns+ "lidar_preproc/lidar_type", slam_param_.lidar_preproc.lidar_type, &success);
     get_param(ns+ "lidar_preproc/line_count", slam_param_.lidar_preproc.line_count, &success);
     get_param(ns+ "lidar_preproc/blind_distance", slam_param_.lidar_preproc.blind_distance, &success);
     get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", slam_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
     get_param(ns+ "lidar_preproc/point_filter_num", slam_param_.lidar_preproc.point_filter_num, &success);
     get_param(ns+ "lidar_preproc/point_filter_distance", slam_param_.lidar_preproc.point_filter_distance, &success);
     get_param(ns+ "lidar_preproc/feature_enabled", slam_param_.lidar_preproc.feature_enabled, &success);
+    // get_param(ns+ "lidar_preproc/simple_voxel_enabled", slam_param_.lidar_preproc.simple_voxel_enabled, &success);
+    get_param(ns+ "lidar_preproc/extract_cloud_method", slam_param_.lidar_preproc.extract_cloud_method, &success);
+    get_param(ns+ "lidar_preproc/leafsize", slam_param_.lidar_preproc.leafsize, &success);
+    get_param(ns+ "lidar_preproc/leafsize_vec", slam_param_.lidar_preproc.leafsize_vec, &success);
+    get_param(ns+ "lidar_preproc/voxel_region_xyz", slam_param_.lidar_preproc.voxel_region_xyz, &success);
+    get_param(ns+ "lidar_preproc/boundary_z", slam_param_.lidar_preproc.boundary_z, &success);
     get_param(ns+ "lidar_preproc/obstacle_max_range", slam_param_.lidar_preproc.obstacle_max_range, &success);
+    // 
     get_param(ns+ "lidar_preproc/obstacle_max_height", slam_param_.lidar_preproc.obstacle_max_height, &success);
     get_param(ns+ "lidar_preproc/obstacle_min_height", slam_param_.lidar_preproc.obstacle_min_height, &success);
     get_param(ns+ "lidar_preproc/obstacle_filter_size", slam_param_.lidar_preproc.obstacle_filter_size, &success);
@@ -124,6 +135,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     // get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
     get_param(ns+ "localization/fgicp_score_thr", slam_param_.localization.fgicp_score_thr, &success);
     get_param(ns+ "localization/fgicp_freq", slam_param_.localization.fgicp_freq, &success);
+    get_param(ns+ "localization/vel_thr", slam_param_.localization.vel_thr, &success);
     
 
 

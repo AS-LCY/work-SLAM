@@ -982,19 +982,31 @@ if (0 != access(directory_path.c_str(), 0)){
 }
 
 
+
 bool BackEnd::mkdir_p(const std::string& path, mode_t mode) {
+    // 替换路径中的 "//" 为 "/" 
+    std::string path_temp = path;
+    std::string to_replace = "//";
+    std::string replacement = "/";
+    std::size_t pos = 0;
+
+    while ((pos = path_temp.find(to_replace, pos)) != std::string::npos) {
+        path_temp.replace(pos, to_replace.length(), replacement);
+        pos += replacement.length(); // 更新位置，继续查找
+    }
+
     char tmp[256];
     char *p = NULL;
     size_t len;
 
     // Copy string so we can modify it.
-    snprintf(tmp, sizeof(tmp), "%s", path.c_str());
+    snprintf(tmp, sizeof(tmp), "%s", path_temp.c_str());
     len = strlen(tmp);
 
-    // Remove trailing slashes.
-    // 删除末尾的'/'
-    while (len > 1 && tmp[len - 1] == '/')
-        tmp[--len] = 0;
+    // // Remove trailing slashes.
+    // // 删除末尾的'/'
+    // while (len > 1 && tmp[len - 1] == '/')
+    //     tmp[--len] = 0;
 
     // Iterate over the path, creating directories as needed.
     // 根据找到的'/'，创建目录
@@ -1008,12 +1020,12 @@ bool BackEnd::mkdir_p(const std::string& path, mode_t mode) {
         }
     }
 
-    // Create the final directory.
-    // 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
-    // TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
-    if (mkdir(tmp, mode) && errno != EEXIST) {
-        return false;
-    }
+    // // Create the final directory.
+    // // 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
+    // // TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
+    // if (mkdir(tmp, mode) && errno != EEXIST) {
+    //     return false;
+    // }
 
     return true;
 }

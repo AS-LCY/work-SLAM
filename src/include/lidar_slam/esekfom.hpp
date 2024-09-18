@@ -242,6 +242,8 @@ namespace esekfom
 			{
 				dyn_share.valid = true;
 				// 计算雅克比，也就是点面残差的导数 H(代码里是h_x)
+
+				double t_update_0 = omp_get_wtime();
 				h_share_model(dyn_share, feats_down_body, ikdtree, Nearest_Points, extrinsic_est);
 
 				if (!dyn_share.valid)
@@ -249,19 +251,27 @@ namespace esekfom
 					continue;
 				}
 				vectorized_state dx;
+				double t_update_1 = omp_get_wtime();//jacob cal
+				
 				dx_new = boxminus(x_, x_propagated); //公式(18)中的 x^k - x^
+				double t_update_2 = omp_get_wtime();//x^k - x^
 
 				//由于H矩阵是稀疏的，只有前12列有非零元素，后12列是零 因此这里采用分块矩阵的形式计算 减少计算量
 				auto H = dyn_share.h_x;												// m X 12 的矩阵
 				Eigen::Matrix<double, 24, 24> HTH = Matrix<double, 24, 24>::Zero(); //矩阵 H^T * H
+				double t_update_3 = omp_get_wtime();//H^T * H
+
 				HTH.block<12, 12>(0, 0) = H.transpose() * H;
 
 				auto K_front = (HTH / R + P_.inverse()).inverse();
 				Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> K;
 				K = K_front.block<24, 12>(0, 0) * H.transpose() / R; //卡尔曼增益  这里R视为常数
+				double t_update_4 = omp_get_wtime();//计算卡尔曼增益
 
 				Eigen::Matrix<double, 24, 24> KH = Matrix<double, 24, 24>::Zero(); //矩阵 K * H
 				KH.block<24, 12>(0, 0) = K * H;
+				double t_update_5 = omp_get_wtime();//计算矩阵 K * H
+
 				Matrix<double, 24, 1> dx_ = K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
 				// std::cout << "dx_: " << dx_.transpose() << std::endl;
 				x_ = boxplus(x_, dx_); //公式(18)
@@ -276,6 +286,7 @@ namespace esekfom
 					}
 				}
 
+				double t_update_6 = omp_get_wtime();//计算矩阵 K * H
 				if (dyn_share.converge)
 					t++;
 
@@ -283,6 +294,16 @@ namespace esekfom
 				{
 					dyn_share.converge = true;
 				}
+				double t_update_7 = omp_get_wtime();//计算矩阵 K * H
+				// printf("iter: %d-----------------------------------------\n", i);
+				// printf("------ 计算雅克比矩阵, time cost    : %f ms\n", (t_update_1-t_update_0)*1000);
+				// printf("------ 计算矩阵 x^k - x^, time cost: %f ms\n", (t_update_2-t_update_1)*1000);
+				// printf("------ 计算矩阵 H^T * H, time cost : %f ms\n", (t_update_3-t_update_2)*1000);
+				// printf("------ 计算卡尔曼增益, time cost    : %f ms\n", (t_update_4-t_update_3)*1000);
+				// printf("------ 计算 K * H, time cost       : %f ms\n", (t_update_5-t_update_4)*1000);
+				// printf("------ boxplus, time cost         : %f ms\n", (t_update_6-t_update_5)*1000);
+				// printf("------ end  , time cost           : %f ms\n", (t_update_7-t_update_6)*1000);
+				// printf("iter: %d-----------------------------------------\n", i);
 
 				if (t > 1 || i == maximum_iter - 1)
 				{

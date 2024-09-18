@@ -17,7 +17,8 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
 	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "lidar";
+	// laserCloudmsg.header.frame_id = "lidar";
+	laserCloudmsg.header.frame_id = "base_footprint";
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
@@ -60,6 +61,18 @@ void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publi
 	pubKdtreeCloud.publish(laserCloudmsg);
 }
 
+
+// void LocalizationModule::updatePath(const nav_msgs::Odometry odomAftMapped)
+// {
+//     geometry_msgs::PoseStamped pose_stamped;
+//     pose_stamped.header = odomAftMapped.header;
+//     pose_stamped.pose.position.x = odomAftMapped.pose.pose.position.x;
+//     pose_stamped.pose.position.y = odomAftMapped.pose.pose.position.y;
+//     pose_stamped.pose.position.z = odomAftMapped.pose.pose.position.z;
+//     pose_stamped.pose.orientation = odomAftMapped.pose.pose.orientation;
+
+//     globalPath.poses.push_back(pose_stamped);
+// }
 
 void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
 {

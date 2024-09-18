@@ -3,6 +3,7 @@
 
 
 #include "lidar_slam/common_lib.h"
+#include "lidar_slam/slam_param_def.h"
 #include "livox_datatype/livox_ros_datatype_def.h"
 // #include "lddc.h"
 using namespace std;
@@ -158,7 +159,9 @@ class Preprocess
   
   void process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr &pcl_out);
  // void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  // void set(bool feat_en, bool voxel_en, int lid_type, double bld, int pfilt_num,int line,double obstacle);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num,int line,double obstacle);
+  void set(lidar_slam::LidarPreprocParam param_in);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
@@ -177,6 +180,13 @@ class Preprocess
   void avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg);
  // void oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
  // void velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+
+
+  void extract_cloud_by_feature(const std::shared_ptr<livox_ros::LidarMsg> msg);
+  void extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg);
+  void extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg);
+  void extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg);
+
   void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
   //void pub_func(PointCloudXYZI &pl, const ros::Time &ct);
   int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
@@ -192,5 +202,10 @@ class Preprocess
   double edgea, edgeb;
   double smallp_intersect, smallp_ratio;
   double vx, vy, vz;
+
+  /////
+  double leafsize = 0.2;
+  std::vector<double> downsample_region_xyz_;
+  lidar_slam::LidarPreprocParam param_;
 };
 #endif

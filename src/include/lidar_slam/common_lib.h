@@ -1,6 +1,7 @@
 #ifndef COMMON_LIB_H
 #define COMMON_LIB_H
 
+#include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
 #include <Eigen/Eigen>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -259,6 +260,25 @@ static Eigen::Matrix3d ypr2R(const Eigen::Vector3d &ypr)
 
     return Rz * Ry * Rx;
 }
+
+
+
+static Eigen::Matrix3d rpy2R(const Eigen::Vector3d &rpy){
+
+    // 初始化欧拉角(Z-Y-X，即RPY, 先绕x轴roll,再绕y轴pitch,最后绕z轴yaw)
+    // Eigen::Vector3d eu_ang(roll, pitch, yaw);
+    Eigen::Vector3d eu_ang(rpy(0), rpy(1), rpy(2));
+    Eigen::AngleAxisd rol_vect(Eigen::AngleAxisd(eu_ang(0),Eigen::Vector3d::UnitX()));
+    Eigen::AngleAxisd pit_vect(Eigen::AngleAxisd(eu_ang(1),Eigen::Vector3d::UnitY()));
+    Eigen::AngleAxisd yaw_vect(Eigen::AngleAxisd(eu_ang(2),Eigen::Vector3d::UnitZ()));
+
+    Eigen::Matrix3d rot_matrix3d = Eigen::Matrix3d::Identity();
+    rot_matrix3d = yaw_vect * pit_vect * rol_vect;
+
+    return rot_matrix3d;
+}
+
+
 
 static Eigen::Matrix3d g2R(const Eigen::Vector3d &g)
 {

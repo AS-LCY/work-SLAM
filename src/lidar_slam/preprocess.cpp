@@ -32,9 +32,11 @@ Preprocess::Preprocess()
 
 Preprocess::~Preprocess() {}
 
+// void Preprocess::set(bool feat_en,bool voxel_en, int lid_type, double bld, int pfilt_num,int line,double obstacle)
 void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num,int line,double obstacle)
 {
   feature_enabled = feat_en;
+  // simple_voxel_enabled_ = voxel_en;
   lidar_type = lid_type;
   blind = bld;
   point_filter_num = pfilt_num;
@@ -42,52 +44,376 @@ void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num,int l
   obstacle_range = obstacle;
 }
 
+void Preprocess::set(lidar_slam::LidarPreprocParam param_in){
+    feature_enabled = param_in.feature_enabled;
+    // simple_voxel_enabled_ = param_in.simple_voxel_enabled;
+    lidar_type = param_in.lidar_type;
+    blind = param_in.blind_distance;
+    point_filter_num = param_in.point_filter_num;
+    N_SCANS = param_in.line_count;
+    obstacle_range = param_in.obstacle_max_range;
+
+    param_ = param_in;
+}
+
+
 void Preprocess::process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr &pcl_out)
 {
-  avia_handler(msg);
-  *pcl_out = pl_surf;
+    avia_handler(msg);
+    *pcl_out = pl_surf;
+    printf("extract lidar count: %ld\n", pcl_out->points.size());
 }
 
 
 void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
 {
-  pl_surf.clear();
-  pl_corn.clear();
-  pl_full.clear();
-  pl_obstacle->clear();
-  double t1 = omp_get_wtime();
-  int plsize = msg->point_num;
- //  cout<<"plsie: "<<plsize<<endl;
+    const int extract_cloud_method = param_.extract_cloud_method;
+    pl_surf.clear();
+    pl_corn.clear();
+    pl_full.clear();
+    pl_obstacle->clear();
+    double t1 = omp_get_wtime();
+    int plsize = msg->point_num;
+    //  cout<<"plsie: "<<plsize<<endl;
 
-  pl_corn.reserve(plsize);
-  pl_surf.reserve(plsize);
-  pl_full.resize(plsize);
+    pl_corn.reserve(plsize);
+    pl_surf.reserve(plsize);
+    pl_full.resize(plsize);
 
-  for (int i = 0; i < N_SCANS; i++)
-  {
-    pl_buff[i].clear();
-    pl_buff[i].reserve(plsize);
-  }
-  uint valid_num = 0;
-
-  if (feature_enabled)
-  {
-    for (uint i = 1; i < plsize; i++)
+    for (int i = 0; i < N_SCANS; i++)
     {
-      if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00))
-      {
-        pl_full[i].x = msg->points[i].x;
-        pl_full[i].y = msg->points[i].y;
-        pl_full[i].z = msg->points[i].z;
-        pl_full[i].intensity = msg->points[i].reflectivity;
-        pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each laser points
+        pl_buff[i].clear();
+        pl_buff[i].reserve(plsize);
+    }
+    // uint valid_num = 0;
 
-        bool is_new = false;
-        if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
+    if (extract_cloud_method == 0){
+        extract_cloud_by_interval_sampling(msg);
+    }else if(extract_cloud_method == 1){
+        extract_cloud_by_simple_voxel(msg);
+    }else if(extract_cloud_method == 2){
+        extract_cloud_by_interval_and_voxel(msg);
+    }else if(extract_cloud_method == 3){
+        extract_cloud_by_feature(msg);
+    } else{
+        printf("extract_cloud_method set error!\n");
+        exit(1);
+    }
+    // printf("test %d %d \n",pl_full.size(),pl_obstacle.size());
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    const double leafsize = param_.leafsize;
+    const double extent_xmin = param_.voxel_region_xyz[0];
+    const double extent_xmax = param_.voxel_region_xyz[1];
+    const double extent_ymin = param_.voxel_region_xyz[2];
+    const double extent_ymax = param_.voxel_region_xyz[3];
+    const double extent_zmin = param_.voxel_region_xyz[4];
+    const double extent_zmax = param_.voxel_region_xyz[5];
+    const double blind_square = param_.blind_distance * param_.blind_distance;
+    const double obstacle_square = obstacle_range * obstacle_range;
+
+    int plsize = msg->point_num;
+    uint valid_num = 0;
+
+    double extent_leafsize_inv = 1.0/leafsize;
+
+    int Xcnt_region = (extent_xmax - extent_xmin)*extent_leafsize_inv  +1; 
+    int Ycnt_region = (extent_ymax - extent_ymin)*extent_leafsize_inv  +1; 
+    int Zcnt_region = (extent_zmax - extent_zmin)*extent_leafsize_inv  +1; 
+    int vect_size = Xcnt_region * Ycnt_region * Zcnt_region;
+
+    unsigned char *flag_if_fill=(unsigned char*)calloc(vect_size,sizeof(unsigned char));
+    int Xindex=0, Yindex=0, Zindex=0;
+
+
+    for (uint i = 1; i < plsize; i++)
+    {//zd delete (msg->points[i].line < N_SCANS)
+        if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) 
+            && ((msg->points[i].tag & 0x03) == 0x01 || (msg->points[i].tag & 0x03) == 0x00))
         {
-          pl_buff[msg->points[i].line].push_back(pl_full[i]);
+            valid_num++;
+            double range = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
+            if (range < obstacle_square && range>blind_square){
+                PointType point;
+                point.x = msg->points[i].x;
+                point.y = msg->points[i].y;
+                point.z = msg->points[i].z;            
+                pl_obstacle->points.push_back(point);
+            }
+                
+            if (valid_num % point_filter_num == 0)
+            {
+                pl_full[i].x = msg->points[i].x;
+                pl_full[i].y = msg->points[i].y;
+                pl_full[i].z = msg->points[i].z;
+                pl_full[i].intensity = msg->points[i].reflectivity;
+                // pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each laser points, curvature unit: ms
+                pl_full[i].curvature = msg->points[i].offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
+                // std::cout << "pl_full[i].curvature: " << pl_full[i].curvature << std::endl;
+
+
+                Xindex = int((pl_full[i].x - extent_xmin) *extent_leafsize_inv);
+                Yindex = int((pl_full[i].y - extent_ymin) *extent_leafsize_inv);
+                Zindex = int((pl_full[i].z - extent_zmin) *extent_leafsize_inv);
+                size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
+                if(range > (blind_square) && !flag_if_fill[index]){
+                    pl_surf.push_back(pl_full[i]);
+                    flag_if_fill[index] = 1;
+                }
+
+                // // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
+                // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 0.15) || (abs(pl_full[i].y - pl_full[i - 1].y) > 0.15) || (abs(pl_full[i].z - pl_full[i - 1].z) > 0.15))
+                // {
+                //     if (range > (blind_square)){
+                //         pl_surf.push_back(pl_full[i]);
+                //     }
+                // }//if
+            }//if
+        }//if
+    }//for
+
+    free(flag_if_fill);
+
+}
+
+
+void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    const std::vector<double> leafsize = param_.leafsize_vec;
+    const double extent_xmin = param_.voxel_region_xyz[0];
+    const double extent_xmax = param_.voxel_region_xyz[1];
+    const double extent_ymin = param_.voxel_region_xyz[2];
+    const double extent_ymax = param_.voxel_region_xyz[3];
+    const double extent_zmin = param_.voxel_region_xyz[4];
+    const double extent_zmax = param_.voxel_region_xyz[5];
+    const double blind_square = param_.blind_distance * param_.blind_distance;
+    const double boundary_z = param_.boundary_z;
+
+    std::vector<double> region_zmin_vec, region_zmax_vec;
+    region_zmin_vec.push_back(extent_zmin);
+    region_zmin_vec.push_back(boundary_z);
+    region_zmax_vec.push_back(boundary_z);
+    region_zmax_vec.push_back(extent_zmax);
+
+    // double leafsize_inv = 1.0/leafsize;
+
+    int plsize = msg->point_num;
+
+    int devision_cnt = 2 ;
+    std::vector<vector<size_t>> divided_clouds_index_vector(devision_cnt, std::vector<size_t>());
+
+    for (size_t i=0; i<plsize; i++){
+        auto* cur_pt = &msg->points[i];
+        if (!((cur_pt->tag & 0x30) == 0x10 || (cur_pt->tag & 0x30) == 0x00)){
+            continue;
         }
-      }
+
+        if (cur_pt->x > extent_xmin || cur_pt->x < extent_xmax || 
+            cur_pt->y > extent_ymin || cur_pt->y < extent_ymax ||
+            cur_pt->z > extent_zmin || cur_pt->z < extent_zmax ){
+            double range = cur_pt->x * cur_pt->x + cur_pt->y * cur_pt->y + cur_pt->z * cur_pt->z;
+
+            for (int j=0; j<devision_cnt; j++){
+                float region_zmin = region_zmin_vec[j];
+                float region_zmax = region_zmax_vec[j];
+                if (cur_pt->z >= region_zmin && cur_pt->z < region_zmax){
+                    divided_clouds_index_vector.at(j).push_back(i);
+                    break;
+                }
+            }/// in the downsample-region, divide cloud and downsample
+        }
+    }
+
+
+    const double region_xmin = extent_xmin;
+    const double region_xmax = extent_xmax;
+    const double region_ymin = extent_ymin;
+    const double region_ymax = extent_ymax;
+    double region_zmin = 0.0; // initialize 
+    double region_zmax = 0.0;
+
+
+    for (int i=0; i<devision_cnt; i++){
+        std::vector<size_t> cur_region_idx = divided_clouds_index_vector.at(i);
+        size_t cur_cloud_sz = cur_region_idx.size();
+
+        region_zmin = region_zmin_vec[i];
+        region_zmax = region_zmax_vec[i];
+
+        // double region_leafsize = leafsize/(i+1);
+        double region_leafsize_inv = 1.0/leafsize[i];
+
+        int Xcnt_region = (region_xmax - region_xmin)*region_leafsize_inv  +1; 
+        int Ycnt_region = (region_ymax - region_ymin)*region_leafsize_inv  +1; 
+        int Zcnt_region = (region_zmax - region_zmin)*region_leafsize_inv  +1; 
+        int vect_size = Xcnt_region * Ycnt_region * Zcnt_region;
+
+        unsigned char *flag_if_fill=(unsigned char*)calloc(vect_size,sizeof(unsigned char));
+
+
+        int Xindex=0, Yindex=0, Zindex=0;
+
+        for (size_t j = 0; j < cur_cloud_sz; j++) 
+        {
+            auto* cur_pt = &msg->points[cur_region_idx[j]];
+            Xindex = int((cur_pt->x - region_xmin) *region_leafsize_inv);
+            Yindex = int((cur_pt->y - region_ymin) *region_leafsize_inv);
+            Zindex = int((cur_pt->z - region_zmin) *region_leafsize_inv);
+            size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
+
+            if (!flag_if_fill[index])
+            {
+                pl_full[cur_region_idx[j]].x = cur_pt->x;
+                pl_full[cur_region_idx[j]].y = cur_pt->y;
+                pl_full[cur_region_idx[j]].z = cur_pt->z;
+                pl_full[cur_region_idx[j]].intensity = cur_pt->reflectivity;
+                pl_full[cur_region_idx[j]].curvature = cur_pt->offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
+
+                double range = cur_pt->x * cur_pt->x + cur_pt->y * cur_pt->y + cur_pt->z * cur_pt->z;
+                if (range > (blind_square)){
+                    pl_surf.push_back(pl_full[cur_region_idx[j]]); 
+                    flag_if_fill[index] = 1;   
+                }
+            }
+        }        
+        // delete[]flag_if_fill;//释放
+	    // flag_if_fill=NULL;
+        free(flag_if_fill);
+    }
+
+
+}
+
+
+
+
+
+
+// void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg){
+//     const double leafsize1 = param_.leafsize[0];
+//     const double leafsize2 = param_.leafsize[1];
+//     const double extent_xmin = param_.voxel_region_xyz[0];
+//     const double extent_xmax = param_.voxel_region_xyz[1];
+//     const double extent_ymin = param_.voxel_region_xyz[2];
+//     const double extent_ymax = param_.voxel_region_xyz[3];
+//     const double extent_zmin = param_.voxel_region_xyz[4];
+//     const double extent_zmax = param_.voxel_region_xyz[5];
+//     const double blind_square = param_.blind_distance * param_.blind_distance;
+
+//     double leafsize_inv = 1.0/leafsize;
+
+//     int Xcnt_region = (extent_xmax - extent_xmin)*leafsize_inv  +1; 
+//     int Ycnt_region = (extent_ymax - extent_ymin)*leafsize_inv  +1; 
+//     int Zcnt_region = (extent_zmax - extent_zmin)*leafsize_inv  +1; 
+//     int vect_size = Xcnt_region * Ycnt_region * Zcnt_region;
+//     unsigned char *flag_if_fill=(unsigned char*)calloc(vect_size,sizeof(unsigned char));
+
+//     int plsize = msg->point_num;
+//     int Xindex=0, Yindex=0, Zindex=0;
+
+//     for (size_t i = 0; i < plsize; i++) 
+//     {
+//         auto* cur_pt = &msg->points[i];
+//         if (((cur_pt->tag & 0x30) == 0x10 || (cur_pt->tag & 0x30) == 0x00)){
+//             double range = cur_pt->x * cur_pt->x + cur_pt->y * cur_pt->y + cur_pt->z * cur_pt->z;
+//             Xindex = int((cur_pt->x - extent_xmin) *leafsize_inv);
+//             Yindex = int((cur_pt->y - extent_ymin) *leafsize_inv);
+//             Zindex = int((cur_pt->z - extent_zmin) *leafsize_inv);
+//             size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
+
+//             if (!flag_if_fill[index])
+//             {
+//                 pl_full[i].x = msg->points[i].x;
+//                 pl_full[i].y = msg->points[i].y;
+//                 pl_full[i].z = msg->points[i].z;
+//                 pl_full[i].intensity = msg->points[i].reflectivity;
+//                 pl_full[i].curvature = msg->points[i].offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
+
+//                 if (range > (blind_square)){
+//                     pl_surf.push_back(pl_full[i]); 
+//                     flag_if_fill[index] = 1;   
+//                 }
+//             }
+//         }
+//     }        
+//     // delete[]flag_if_fill;//释放
+//     // flag_if_fill=NULL;
+//     free(flag_if_fill);
+
+// }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// 间隔采样
+void Preprocess::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    int plsize = msg->point_num;
+    uint valid_num = 0;
+    double blind_square = blind * blind;
+    double obstacle_square = obstacle_range * obstacle_range;
+    for (uint i = 1; i < plsize; i++)
+    {//zd delete (msg->points[i].line < N_SCANS)
+        if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) 
+            && ((msg->points[i].tag & 0x03) == 0x01 || (msg->points[i].tag & 0x03) == 0x00))
+        {
+            valid_num++;
+            double range = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
+            if (range < obstacle_square && range>blind_square){
+                PointType point;
+                point.x = msg->points[i].x;
+                point.y = msg->points[i].y;
+                point.z = msg->points[i].z;            
+                pl_obstacle->points.push_back(point);
+            }
+                
+            if (valid_num % point_filter_num == 0)
+            {
+                pl_full[i].x = msg->points[i].x;
+                pl_full[i].y = msg->points[i].y;
+                pl_full[i].z = msg->points[i].z;
+                pl_full[i].intensity = msg->points[i].reflectivity;
+                // pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each laser points, curvature unit: ms
+                pl_full[i].curvature = msg->points[i].offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
+                // std::cout << "pl_full[i].curvature: " << pl_full[i].curvature << std::endl;
+                // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
+                if ((abs(pl_full[i].x - pl_full[i - 1].x) > 0.15) || (abs(pl_full[i].y - pl_full[i - 1].y) > 0.15) || (abs(pl_full[i].z - pl_full[i - 1].z) > 0.15))
+                {
+                    if (range > (blind_square)){
+                        pl_surf.push_back(pl_full[i]);    
+                    }
+                }//if
+            }//if
+        }//if
+    }//for
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// 特征点计算
+// extract_cloud_by_feature()
+// give_feature()
+// plane_judge()
+// edge_jump_judge()
+void Preprocess::extract_cloud_by_feature(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    int plsize = msg->point_num;
+    for (uint i = 1; i < plsize; i++){
+        if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00)){
+            pl_full[i].x = msg->points[i].x;
+            pl_full[i].y = msg->points[i].y;
+            pl_full[i].z = msg->points[i].z;
+            pl_full[i].intensity = msg->points[i].reflectivity;
+            // pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each laser points
+            pl_full[i].curvature = msg->points[i].offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
+
+            bool is_new = false;
+            if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
+            {
+                pl_buff[msg->points[i].line].push_back(pl_full[i]);
+            }
+        }
     }
     static int count = 0;
     static double time = 0.0;
@@ -95,70 +421,29 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
     double t0 = omp_get_wtime();
     for (int j = 0; j < N_SCANS; j++)
     {
-      if (pl_buff[j].size() <= 5)
-        continue;
-      pcl::PointCloud<PointType> &pl = pl_buff[j];
-      plsize = pl.size();
-      vector<orgtype> &types = typess[j];
-      types.clear();
-      types.resize(plsize);
-      plsize--;
-      for (uint i = 0; i < plsize; i++)
-      {
-        types[i].range = sqrt(pl[i].x * pl[i].x + pl[i].y * pl[i].y);
-        vx = pl[i].x - pl[i + 1].x;
-        vy = pl[i].y - pl[i + 1].y;
-        vz = pl[i].z - pl[i + 1].z;
-        types[i].dista = sqrt(vx * vx + vy * vy + vz * vz);
-      }
-      types[plsize].range = sqrt(pl[plsize].x * pl[plsize].x + pl[plsize].y * pl[plsize].y);
-      give_feature(pl, types);
-      // pl_surf += pl;
+        if (pl_buff[j].size() <= 5)
+            continue;
+        pcl::PointCloud<PointType> &pl = pl_buff[j];
+        plsize = pl.size();
+        vector<orgtype> &types = typess[j];
+        types.clear();
+        types.resize(plsize);
+        plsize--;
+        for (uint i = 0; i < plsize; i++)
+        {
+            types[i].range = sqrt(pl[i].x * pl[i].x + pl[i].y * pl[i].y);
+            vx = pl[i].x - pl[i + 1].x;
+            vy = pl[i].y - pl[i + 1].y;
+            vz = pl[i].z - pl[i + 1].z;
+            types[i].dista = sqrt(vx * vx + vy * vy + vz * vz);
+        }
+        types[plsize].range = sqrt(pl[plsize].x * pl[plsize].x + pl[plsize].y * pl[plsize].y);
+        give_feature(pl, types);
+        // pl_surf += pl;
     }
     time += omp_get_wtime() - t0;
     printf("Feature extraction time: %lf \n", time / count);
-  }
-  else
-  {
-    double blind_square = blind * blind;
-    double obstacle_square = obstacle_range * obstacle_range;
-    for (uint i = 1; i < plsize; i++)
-    {//zd delete (msg->points[i].line < N_SCANS)
-      if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00))
-      {
-        valid_num++;
-        double range = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
-        if (range < obstacle_square && range>blind_square){
-            PointType point;
-            point.x = msg->points[i].x;
-            point.y = msg->points[i].y;
-            point.z = msg->points[i].z;            
-            pl_obstacle->points.push_back(point);
-        }
-                
-        if (valid_num % point_filter_num == 0)
-        {
-          pl_full[i].x = msg->points[i].x;
-          pl_full[i].y = msg->points[i].y;
-          pl_full[i].z = msg->points[i].z;
-          pl_full[i].intensity = msg->points[i].reflectivity;
-          // pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each laser points, curvature unit: ms
-          pl_full[i].curvature = msg->points[i].offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
-          // std::cout << "pl_full[i].curvature: " << pl_full[i].curvature << std::endl;
-          if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
-          {
-            if (range > (blind_square)){
-                pl_surf.push_back(pl_full[i]);    
-            }
-          }
-        }
-      }
-    }
-  }
- // printf("test %d %d \n",pl_full.size(),pl_obstacle.size());
 }
-
-
 
 void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &types)
 {
@@ -636,4 +921,10 @@ bool Preprocess::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &type
 
   return true;
 }
+
+// 特征点计算 end
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// 
 

@@ -59,6 +59,9 @@
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
 
+// 另一个节点中定义
+#include "fros_hardware_node/chassic_data.h"
+
 // #include "v4l2cam.h"
 
 namespace localization_module{
@@ -136,6 +139,7 @@ private:
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
 
     void livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
+    void chassis_cbk(const fros_hardware_node::chassic_data::ConstPtr &msg_in);
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
@@ -194,6 +198,7 @@ private:
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
     ros::Subscriber sub_imu_;
+    ros::Subscriber sub_chassis_;
 
     ros::Publisher pub_localization_module_status_;
 

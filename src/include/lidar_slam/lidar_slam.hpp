@@ -377,6 +377,7 @@ class LidarSlam
         // bool second_mapping_need_global_localization_ = false;
 
         int global_localize_count_=0;
+        int lidar_no_point_count_ = 0;
 
         // cpu_set_t mask;
 

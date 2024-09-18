@@ -1,8 +1,9 @@
-#ifndef FLBOT_LIDAR_SLAM_PARAM_DEF_H
-#define FLBOT_LIDAR_SLAM_PARAM_DEF_H
+#ifndef FLBOT_LOCALIZATION_MODULE_PARAM_DEF_H
+#define FLBOT_LOCALIZATION_MODULE_PARAM_DEF_H
 
 #include <string>
 #include "lidar_slam/common_lib.h"
+#include "lidar_slam/slam_param_def.h"
 
 namespace lidar_slam{
 
@@ -21,72 +22,11 @@ struct CommonParam{
     std::string pub_topic_module_status;
     int receive_lidar_freq = 10;
     double slam_lose_rate_time_thr = 0.1;
+    int lidar_no_point_count_thr = 10;
+    int feats_down_size = 10;
     std::vector<int> cpu_id;
 };
 
-struct ExtrinsicParam{
-    bool extrinsic_est_en;
-    V3D extrinT; 
-    M3D extrinR;
-    Eigen::Isometry3d  T_wheel_lidar = Eigen::Isometry3d::Identity();
-    Eigen::Isometry3d  T_lidar_wheel = Eigen::Isometry3d::Identity();
-    Eigen::Matrix3d R_baselink_IMU = Eigen::Matrix3d::Identity();
-};
-
-struct LidarPreprocParam{
-    int line_count;
-    double blind_distance;
-    bool flag_keep_only_last_lidar=false;
-    int point_filter_num;
-    std::vector<double> point_filter_distance;
-    bool feature_enabled;
-    double obstacle_max_range;
-    double obstacle_max_height;
-    double obstacle_min_height; // above wheel center
-    double obstacle_filter_size;
-    double grid_size;
-
-};
-
-
-struct ReLocalizationParam{
-    double score_thr;
-    int time_out_thr;// 以秒为单位
-};
-
-struct MappingParam{
-    double acc_cov;
-    double gyr_cov;
-    double b_acc_cov;
-    double b_gyr_cov;
-    double cloud_leaf_size;
-    double key_frame_distance;
-    double key_frame_angle;
-    double loopSearchDistance;
-    bool use_ele_pcd_flag;
-    bool save_ele_pcd_flag;
-    // std::string save_map_dir;
-    double save_map_resolution;
-};
-
-struct LocalizationParam{
-    // std::string load_map_dir;
-    double fgicp_score_thr = 0.1;
-    int fgicp_freq = 1;
-};
-
-struct SecondMappingParam{
-    // std::string load_map_dir;
-};
-
-struct IkdTreeParam{
-    double cube_len;
-    double det_range;
-    double kdTreeReconstructRadius;
-    double kdTreeReconstructKeyFrameLeafSize;
-    double kdTreeReconstructPointLeafSize;
-    double map_leaf_size;
-};
 
 
 struct LidarSlamParam{

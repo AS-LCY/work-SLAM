@@ -54,7 +54,8 @@ enum MappingStatus{
     M_RELOCALIZING =1,
     M_RELOCALIZE_FAILED =2,
     M_CREATING_ELE = 3,
-    M_STANDBY =4
+    M_STANDBY =4,
+    M_FAILED = 5
 };
 
 static string print_LocalizationStatus(LocalizationStatus e){
@@ -77,6 +78,7 @@ static string print_MappingStatus(MappingStatus e){
     CASE_STR(M_RELOCALIZE_FAILED);
     CASE_STR(M_CREATING_ELE);
     CASE_STR(M_STANDBY);
+    CASE_STR(M_FAILED);
     default:
         break;
     }

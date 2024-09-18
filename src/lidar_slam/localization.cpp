@@ -158,7 +158,7 @@ bool Localization::loadMap(std::string path){
     return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr)
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double vel_thr)
 {
     // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
     // pcl::copyPointCloud(*(odomCloud), *cloudIn);
@@ -173,8 +173,38 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         return false;
     }
     else{
-        std::cout << "gicp success with score "<< gicp->getFitnessScore() << std::endl;       
-        correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
+        std::cout << "\033[1;32mgicp success with score "<< gicp->getFitnessScore() <<" \033[0m"<< std::endl;         
+        // correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
+        Eigen::Isometry3d temp_correct  =  Eigen::Isometry3d::Identity();
+        temp_correct.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
+
+
+        double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+        pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+        double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+        pcl::getTranslationAndEulerAngles(temp_correct, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+
+        
+        double curr_time = omp_get_wtime();
+
+        if (lastUpdateTime < 1){
+            correctionOdomToMap = temp_correct;
+            lastUpdateTime = curr_time;
+        }else{
+            double delta_xy = std::sqrt((curr_x - last_x)*(curr_x - last_x) + (curr_y - last_y)*(curr_y - last_y));
+            // double delta_y = std::abs(curr_y - last_y);
+            double delta_yaw = curr_yaw - last_yaw;
+            double delta_time = curr_time - lastUpdateTime;
+
+            double vel = delta_xy / delta_time;
+            // double vel_y = delta_y / delta_time;
+            if (vel < vel_thr){
+                correctionOdomToMap = temp_correct;
+                lastUpdateTime = curr_time;
+            }
+
+        }
+
 
         return true;
         // float x, y, z, roll, pitch, yaw;
@@ -299,6 +329,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
         // 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
         correctionOdomToMap = lidar_in_map*pose.inverse();
+        lastUpdateTime = omp_get_wtime();
         // euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
         // std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
         // std::cout << "x "<<lidar_in_map.translation().x()<<" y "<<lidar_in_map.translation().y()<< " z "<<lidar_in_map.translation().z()<<std::endl;
