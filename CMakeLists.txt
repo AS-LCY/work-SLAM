@@ -126,10 +126,11 @@ set(flbot_msgs_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../devel/include)
 ###########
 
 include_directories(
+  src/
   src/include
-  src/include/lidar_slam
-  src/include/node
-  src/include/livox_datatype
+  # src/include/lidar_slam
+  # src/include/node
+  # src/include/livox_datatype
   ${flbot_msgs_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
   # ${FAST_GICP_INCLUDE_DIR}
