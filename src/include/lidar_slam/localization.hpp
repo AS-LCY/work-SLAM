@@ -25,6 +25,9 @@
 
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
+
+#include "node/log_info_manager.hpp"
+
 namespace lidar_slam {
 class Localization
 {
@@ -32,13 +35,16 @@ public:
    Localization();
    ~Localization();
    bool loadMap(std::string path);
-   bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double vel_thr);
+   bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom_dy_thr);
    bool globalLocalization(PointCloudXYZI::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score);
    Eigen::Isometry3d getOdomToMap(){
       //  Eigen::Isometry3d isometry3d; 
       //  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap.matrix().block<3, 3>(0, 0).cast<double>();
        // isometry3d.matrix().block<3, 1>(0, 3) = correctionOdomToMap.matrix().block<3, 1>(0, 3).cast<double>();
         return correctionOdomToMap;
+   }
+   Eigen::Isometry3d getLastOdomToMap(){
+        return lastCorrectionOdomToMap;
    }
    std::vector<ScInfo> getLoadKeyFrame(){
       return LoadData;
@@ -70,7 +76,11 @@ private:
    pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
    bool map_ready_;
    Eigen::Isometry3d correctionOdomToMap = Eigen::Isometry3d::Identity();
+   Eigen::Isometry3d lastCorrectionOdomToMap = Eigen::Isometry3d::Identity();
+   
    double lastUpdateTime = 0.0f;
+   double curr_time_ = 0.0f;
+   localization_module::LocalizationModuleLogInfoManager * log_info_manager_;
 
 
 };

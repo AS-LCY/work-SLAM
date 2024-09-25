@@ -74,12 +74,13 @@ void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publi
 //     globalPath.poses.push_back(pose_stamped);
 // }
 
-void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
     odomAftMapped.child_frame_id = child_frameid;
     odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+    // odomAftMapped.header.stamp = ros::Time().fromSec(lidar_time_);
 	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
     odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
     odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
@@ -89,18 +90,63 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d l
     odomAftMapped.pose.pose.orientation.z = quaternion.z();
     odomAftMapped.pose.pose.orientation.w = quaternion.w();
     pubOdomAftMapped.publish(odomAftMapped);
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    tf::Quaternion q;
-    transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
-                                    odomAftMapped.pose.pose.position.y,
-                                    odomAftMapped.pose.pose.position.z));
-    q.setW(odomAftMapped.pose.pose.orientation.w);
-    q.setX(odomAftMapped.pose.pose.orientation.x);
-    q.setY(odomAftMapped.pose.pose.orientation.y);
-    q.setZ(odomAftMapped.pose.pose.orientation.z);
-    transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, frameid, child_frameid));
+
+
+    if(!position_initialized_){
+        lidar_time_ = slam_->get_lidar_time();
+        double lidar_x_new = lidar_in_map.translation().x();
+        double lidar_y_new = lidar_in_map.translation().y();
+
+        // int k = 0.5;
+        // int k = 0.7;
+        // lidar_x_ = lidar_x_ * k + lidar_x_new * (1.0-k);
+        // lidar_y_ = lidar_y_ * k + lidar_y_new * (1.0-k);
+
+        lidar_x_ = lidar_x_new;
+        lidar_y_ = lidar_y_new;
+
+        lidar_a_ = R2ypr(lidar_in_map.rotation()).x();
+        lidar_a_ = angle_norm(lidar_a_);
+        if(abs(lidar_x_) > 0.01){
+            position_initialized_ = true;
+
+        }
+    }
+
+    // ****************************************************************************
+    // // position filter
+    // filter_odometry_ = odomAftMapped; // 用于滤波
+    // if(running_module_status_ == MODULE_LOCALIZATION && localization_status_ == L_NORMAL){
+        
+    //     /// filter with chassis
+    //     set_var_for_position_filter(lidar_in_map);
+    //     if(!position_initialized_){
+    //         position_init();
+    //     }else{
+    //         position_filter();
+    //         filter_odometry_.pose.pose.position.x = filter_x_;
+    //         filter_odometry_.pose.pose.position.y = filter_y_;
+    //         pub_filter_odometry_.publish(filter_odometry_);
+    //     }
+
+    // }
+    // ****************************************************************************
+
+    // // auto odom_for_tf = odomAftMapped;
+    // auto odom_for_tf = filter_odometry_;
+
+    // static tf::TransformBroadcaster br;
+    // tf::Transform transform;
+    // tf::Quaternion q;
+    // transform.setOrigin(tf::Vector3(odom_for_tf.pose.pose.position.x,
+    //                                 odom_for_tf.pose.pose.position.y,
+    //                                 odom_for_tf.pose.pose.position.z));
+    // q.setW(odom_for_tf.pose.pose.orientation.w);
+    // q.setX(odom_for_tf.pose.pose.orientation.x);
+    // q.setY(odom_for_tf.pose.pose.orientation.y);
+    // q.setZ(odom_for_tf.pose.pose.orientation.z);
+    // transform.setRotation(q);
+    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, child_frameid));
 }
 
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)

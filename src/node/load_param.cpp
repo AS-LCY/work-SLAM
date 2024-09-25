@@ -135,7 +135,15 @@ bool LocalizationModule::load_lidar_slam_param(){
     // get_param(ns+ "localization/load_map_dir", slam_param_.localization.load_map_dir, &success);
     get_param(ns+ "localization/fgicp_score_thr", slam_param_.localization.fgicp_score_thr, &success);
     get_param(ns+ "localization/fgicp_freq", slam_param_.localization.fgicp_freq, &success);
-    get_param(ns+ "localization/vel_thr", slam_param_.localization.vel_thr, &success);
+    get_param(ns+ "localization/filter_method", slam_param_.localization.filter_method, &success);
+    get_param(ns+ "localization/fst_order_k", slam_param_.localization.fst_order_k, &success);
+    get_param(ns+ "localization/odom_dy_thr", slam_param_.localization.odom_dy_thr, &success);
+    get_param(ns+ "localization/lidar_ratio", slam_param_.localization.lidar_ratio, &success);
+    get_param(ns+ "localization/baselink_dy_thr", slam_param_.localization.baselink_dy_thr, &success);
+    get_param(ns+ "localization/baselink_dx_thr", slam_param_.localization.baselink_dx_thr, &success);
+    get_param(ns+ "localization/baselink_dyaw_thr", slam_param_.localization.baselink_dyaw_thr, &success);
+    get_param(ns+ "localization/window_size", slam_param_.localization.window_size, &success);
+    get_param(ns+ "localization/filter_freq", slam_param_.localization.filter_freq, &success);
     
 
 

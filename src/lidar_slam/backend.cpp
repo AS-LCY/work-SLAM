@@ -951,8 +951,8 @@ bool BackEnd::create_directory_if_not_exists(const std::string& directory_path){
 #if 1
 if (0 != access(directory_path.c_str(), 0)){
         // int status = mkdir(directory_path.c_str(),0777);
-        int status = mkdir_p(directory_path.c_str(),0777);
-        if (status == 0)        {
+        bool status = mkdir_p(directory_path.c_str(),0777);
+        if (status){
             return true; // 创建目录成功
         }else{
             std::cerr << "Error creating directory: " << directory_path << std::endl;
@@ -1003,10 +1003,10 @@ bool BackEnd::mkdir_p(const std::string& path, mode_t mode) {
     snprintf(tmp, sizeof(tmp), "%s", path_temp.c_str());
     len = strlen(tmp);
 
-    // // Remove trailing slashes.
-    // // 删除末尾的'/'
-    // while (len > 1 && tmp[len - 1] == '/')
-    //     tmp[--len] = 0;
+    // Remove trailing slashes.
+    // 删除末尾的'/'
+    while (len > 1 && tmp[len - 1] == '/')
+        tmp[--len] = 0;
 
     // Iterate over the path, creating directories as needed.
     // 根据找到的'/'，创建目录
@@ -1020,12 +1020,12 @@ bool BackEnd::mkdir_p(const std::string& path, mode_t mode) {
         }
     }
 
-    // // Create the final directory.
-    // // 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
-    // // TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
-    // if (mkdir(tmp, mode) && errno != EEXIST) {
-    //     return false;
-    // }
+    // Create the final directory.
+    // 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
+    // TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
+    if (mkdir(tmp, mode) && errno != EEXIST) {
+        return false;
+    }
 
     return true;
 }

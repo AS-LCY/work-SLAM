@@ -49,6 +49,9 @@
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
 #include "fairland_msgs/LocalizationModuleStatus.h"
+#include "fairland_msgs/LocalizationModuleLogInfo.h"
+
+
 
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
@@ -58,6 +61,7 @@
 #include "node/module_param_def.h"
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
+#include "node/log_info_manager.hpp"
 
 // 另一个节点中定义
 #include "fros_hardware_node/chassic_data.h"
@@ -160,6 +164,13 @@ private:
     void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
     void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
 
+    // position filter
+    void lidar_position_filter_fst_order(const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
+    void lidar_position_filter_window(Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
+    void position_filter_thread();
+    void position_init();
+    void position_filter();
+    void detect_slipping();
 
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
@@ -193,7 +204,7 @@ private:
 
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;
-    ros::Timer timer_pub_module_status_;
+    ros::Timer timer_module_status_;
 
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
@@ -201,6 +212,8 @@ private:
     ros::Subscriber sub_chassis_;
 
     ros::Publisher pub_localization_module_status_;
+    ros::Publisher pub_filter_odometry_;
+    ros::Publisher pub_log_;
 
 
     // slam node
@@ -268,6 +281,45 @@ private:
     /// params load from yaml
     lidar_slam::LidarSlamParam slam_param_;
 
+    /// odometry filter ****************************
+    std::unique_ptr<std::thread> position_filter_thread_ = nullptr;
+    // std::thread position_filter_thread_;
+    // std::vector<Eigen::Vector3d> pose_vec;
+    std::vector<Eigen::Isometry3d> pose_vec;
+    // std::deque<Eigen::Vector3d> pose_vec;
+    int window_size = 5;
+    
+    bool position_initialized_ = false;
+    ros::Time last_chassis_time_;
+    double last_chassis_x_ = 0.0;
+    double last_chassis_y_ = 0.0;
+    double last_chassis_a_ = 0.0;
+    double chassis_x_ = 0.0;
+    double chassis_y_ = 0.0;
+    double chassis_a_ = 0.0;
+    double last_lidar_dx_ = 0.0f;
+    double last_lidar_dy_ = 0.0f;
+    double last_lidar_dz_ = 0.0f;
+    double last_lidar_x_ = 0.0f;
+    double last_lidar_y_ = 0.0f; 
+    double last_lidar_a_ = 0.0f;
+    double lidar_x_ = 0.0f;      // 雷达给出位置（一阶滤波）
+    double lidar_y_ = 0.0f; 
+    double lidar_a_ = 0.0f;       // 雷达给出角度 
+    double lidar_time_;
+
+    double k_pos_;
+    double chassis_linear_velocity_;
+    double chassis_angular_velocity_;
+
+    int slip_flag_ = 0;
+    double filter_x_;
+    double filter_y_;
+    double filter_a_;
+    int filter_cout_ = 0;
+    
+    nav_msgs::Odometry filter_odometry_;
+    LocalizationModuleLogInfoManager * log_info_manager_;
     
 };
 

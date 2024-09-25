@@ -373,7 +373,9 @@ void LidarSlam::localizationThread()
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
     // int global_localize_count_ = 0;
     const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
-    const auto vel_thr = config_param_.localization.vel_thr;
+    const auto odom_dy_thr = config_param_.localization.odom_dy_thr;
+
+    int gicp_fail_count = 0;
 
     while (thread_run&&reseting == false)
     {
@@ -422,10 +424,17 @@ void LidarSlam::localizationThread()
             }
             else{
                 cout << "localizing ... "<<endl;
-                if (localization->localize(temp, fgicp_score_thr, vel_thr)){
+                if (localization->localize(temp, fgicp_score_thr, odom_dy_thr)){
                     l_status_ = L_NORMAL;
+                    gicp_fail_count = 0;
                 }else{
-                    l_status_ = L_FAILED;
+                    gicp_fail_count ++;
+                    std::cout<< "fast gicp fail count: "<<gicp_fail_count<<endl;
+                    if (gicp_fail_count > 5){// 连续多帧 fast-gicp 失败，则认为定位失败
+                        l_status_ = L_FAILED;
+                    }else if (gicp_fail_count > 2){// 连续多帧 fast-gicp 失败，则认为定位失败
+                        l_status_ = L_LOW_ACCURACY;
+                    }
                 }
 
                 //state.state("normal");
@@ -1173,6 +1182,7 @@ bool LidarSlam::run()
         
         printf("---------------------------------------------------------\n");
         lidar_no_point_count_ = 0;
+
         return true;
     }
     else{

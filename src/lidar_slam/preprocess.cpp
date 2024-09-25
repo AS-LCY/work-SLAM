@@ -107,6 +107,7 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    // std::cout<<"extract cloud by method: interval and voxel"<<std::endl;
     const double leafsize = param_.leafsize;
     const double extent_xmin = param_.voxel_region_xyz[0];
     const double extent_xmax = param_.voxel_region_xyz[1];
@@ -116,6 +117,7 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
     const double extent_zmax = param_.voxel_region_xyz[5];
     const double blind_square = param_.blind_distance * param_.blind_distance;
     const double obstacle_square = obstacle_range * obstacle_range;
+    std::cout<<"leafsize: "<<leafsize<<endl;
 
     int plsize = msg->point_num;
     uint valid_num = 0;
@@ -131,14 +133,15 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
     int Xindex=0, Yindex=0, Zindex=0;
 
 
+    // std::cout<<"interval and voxel - 1"<<std::endl;
     for (uint i = 1; i < plsize; i++)
     {//zd delete (msg->points[i].line < N_SCANS)
         if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) 
             && ((msg->points[i].tag & 0x03) == 0x01 || (msg->points[i].tag & 0x03) == 0x00))
         {
             valid_num++;
-            double range = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
-            if (range < obstacle_square && range>blind_square){
+            double range_square = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
+            if (range_square < obstacle_square && range_square>blind_square){
                 PointType point;
                 point.x = msg->points[i].x;
                 point.y = msg->points[i].y;
@@ -161,28 +164,37 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
                 Yindex = int((pl_full[i].y - extent_ymin) *extent_leafsize_inv);
                 Zindex = int((pl_full[i].z - extent_zmin) *extent_leafsize_inv);
                 size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
-                if(range > (blind_square) && !flag_if_fill[index]){
-                    pl_surf.push_back(pl_full[i]);
-                    flag_if_fill[index] = 1;
+
+                if(range_square > blind_square){
+                    if(index>=0 && index<vect_size){
+                        if(!flag_if_fill[index]){
+                            pl_surf.push_back(pl_full[i]);
+                            flag_if_fill[index] = 1;
+                        }
+                    }else{
+                        pl_surf.push_back(pl_full[i]);
+                    }
                 }
 
                 // // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
                 // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 0.15) || (abs(pl_full[i].y - pl_full[i - 1].y) > 0.15) || (abs(pl_full[i].z - pl_full[i - 1].z) > 0.15))
                 // {
-                //     if (range > (blind_square)){
+                //     if (range_square > (blind_square)){
                 //         pl_surf.push_back(pl_full[i]);
                 //     }
                 // }//if
             }//if
         }//if
     }//for
-
+    
+    // std::cout<<"interval and voxel - 2"<<std::endl;
     free(flag_if_fill);
 
 }
 
 
 void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    // std::cout<<"extract cloud by method: simple voxel"<<std::endl;
     const std::vector<double> leafsize = param_.leafsize_vec;
     const double extent_xmin = param_.voxel_region_xyz[0];
     const double extent_xmax = param_.voxel_region_xyz[1];
@@ -349,6 +361,7 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // 间隔采样
 void Preprocess::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    // std::cout<<"extract cloud by method:  interval sampling"<<std::endl;
     int plsize = msg->point_num;
     uint valid_num = 0;
     double blind_square = blind * blind;
@@ -398,6 +411,7 @@ void Preprocess::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_
 // plane_judge()
 // edge_jump_judge()
 void Preprocess::extract_cloud_by_feature(const std::shared_ptr<livox_ros::LidarMsg> msg){
+    // std::cout<<"extract cloud by method: feature"<<std::endl;
     int plsize = msg->point_num;
     for (uint i = 1; i < plsize; i++){
         if ((msg->points[i].line < N_SCANS) && ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00)){

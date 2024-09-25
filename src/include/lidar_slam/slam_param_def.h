@@ -63,7 +63,16 @@ struct LocalizationParam{
     // std::string load_map_dir;
     double fgicp_score_thr = 0.1;
     int fgicp_freq = 1;
-    double vel_thr = 0.8;
+    int filter_method = 0;
+    float fst_order_k = 0.7;
+    double odom_dy_thr = 0.025;
+    double lidar_ratio = 0.5;
+    double baselink_dy_thr = 0.1;
+    double baselink_dx_thr = 0.1;
+    double baselink_dyaw_thr = 1;
+    int window_size = 5;
+    int filter_freq = 200;
+
 };
 
 struct SecondMappingParam{

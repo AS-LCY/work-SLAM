@@ -34,6 +34,7 @@
 #include "livox_datatype/livox_ros_datatype_def.h"
 #include "node/module_param_def.h"
 #include "node/module_status_def.h"
+#include "node/log_info_manager.hpp"
 // #include "lds_lidar.h"
 
 namespace lidar_slam {
@@ -207,6 +208,16 @@ class LidarSlam
             //     return transform;
             // }
         }
+        
+        Eigen::Isometry3d getLastOdomToMap(){
+            if (working_mode_ == LOCALIZATION){
+               return localization->getLastOdomToMap();
+            }else{
+                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                return Eigen::Isometry3d::Identity();
+            }
+        }
+
         Eigen::Isometry3d getLidarInOdom(){
             std::lock_guard<std::mutex> lk(mtx_pose);
             // if(!param.localization_mode){
@@ -290,6 +301,10 @@ class LidarSlam
             globalLocalizationSuccess = global_success_flag;
             global_localize_count_ = 0;
             l_status_ = L_RELOCALIZING;
+        }
+
+        double get_lidar_time(){
+            return lidar_end_time;
         }
 
         // string print_SlamWorkMode(SlamWorkMode e){

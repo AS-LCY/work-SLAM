@@ -312,6 +312,16 @@ static PointCloudXYZI::Ptr transformPointCloud(PointCloudXYZI::Ptr cloudIn, cons
 }
 
 
+static float angle_norm(float a){
+    if (a < -PI_M){
+        return a + PI_M*2;
+    }
+    else if(a > PI_M){
+        return a - PI_M*2;
+    }
+    return a;
+}
+
 // temp test, already parameterized
 // static double roll  = -0.4/180 * PI_M;
 // static double pitch = 13.5/180 * PI_M;
