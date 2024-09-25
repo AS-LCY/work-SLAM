@@ -878,8 +878,8 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
     // chassis_angular_velocity_ = cur_chassis_msg.ac_angular_velocity;
     // std::cout << "cal  linear  velocity: "<< chassis_linear_velocity_ <<endl;
     // std::cout << "read linear  velocity: "<< cur_chassis_msg.ac_linear_velocity <<endl;
-    std::cout << "cal  angular velocity: "<< chassis_angular_velocity_ <<endl;
-    std::cout << "read angular velocity: "<< cur_chassis_msg.ac_angular_velocity <<endl;
+    // std::cout << "cal  angular velocity: "<< chassis_angular_velocity_ <<endl;
+    // std::cout << "read angular velocity: "<< cur_chassis_msg.ac_angular_velocity <<endl;
 
     // 获取时间差
     ros::Time current_time = cur_chassis_msg.header.stamp;
