@@ -65,7 +65,8 @@ struct LocalizationParam{
     int fgicp_freq = 1;
     int filter_method = 0;
     float fst_order_k = 0.7;
-    double odom_dy_thr = 0.025;
+    double odom2map_delta_thr = 0.025;
+    double odom2map_delta_set = 0.01;
     double lidar_ratio = 0.5;
     double baselink_dy_thr = 0.1;
     double baselink_dx_thr = 0.1;

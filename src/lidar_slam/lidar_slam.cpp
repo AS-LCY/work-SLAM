@@ -373,7 +373,8 @@ void LidarSlam::localizationThread()
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
     // int global_localize_count_ = 0;
     const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
-    const auto odom_dy_thr = config_param_.localization.odom_dy_thr;
+    const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
+    const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
 
     int gicp_fail_count = 0;
 
@@ -424,7 +425,7 @@ void LidarSlam::localizationThread()
             }
             else{
                 cout << "localizing ... "<<endl;
-                if (localization->localize(temp, fgicp_score_thr, odom_dy_thr)){
+                if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set)){
                     l_status_ = L_NORMAL;
                     gicp_fail_count = 0;
                 }else{

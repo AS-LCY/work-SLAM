@@ -138,7 +138,8 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "localization/fgicp_freq", slam_param_.localization.fgicp_freq, &success);
     get_param(ns+ "localization/filter_method", slam_param_.localization.filter_method, &success);
     get_param(ns+ "localization/fst_order_k", slam_param_.localization.fst_order_k, &success);
-    get_param(ns+ "localization/odom_dy_thr", slam_param_.localization.odom_dy_thr, &success);
+    get_param(ns+ "localization/odom2map_delta_thr", slam_param_.localization.odom2map_delta_thr, &success);
+    get_param(ns+ "localization/odom2map_delta_set", slam_param_.localization.odom2map_delta_set, &success);
     get_param(ns+ "localization/lidar_ratio", slam_param_.localization.lidar_ratio, &success);
     get_param(ns+ "localization/baselink_dy_thr", slam_param_.localization.baselink_dy_thr, &success);
     get_param(ns+ "localization/baselink_dx_thr", slam_param_.localization.baselink_dx_thr, &success);

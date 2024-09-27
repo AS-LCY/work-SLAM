@@ -159,7 +159,7 @@ bool Localization::loadMap(std::string path){
     return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom_dy_thr)
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set)
 {
     // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
     // pcl::copyPointCloud(*(odomCloud), *cloudIn);
@@ -191,11 +191,13 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
         
 
-        if(abs(curr_x - last_x) > odom_dy_thr){
-            correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs(curr_x - last_x);
+        if(abs(curr_x - last_x) > odom2map_delta_thr){
+            // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs(curr_x - last_x);
+            correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs(curr_x - last_x);
         }
-        if(abs(curr_y - last_y) > odom_dy_thr){
-            correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs(curr_y - last_y);
+        if(abs(curr_y - last_y) > odom2map_delta_thr){
+            // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs(curr_y - last_y);
+            correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs(curr_y - last_y);
         }
 
         // update log_info (log_info_manager_)
@@ -245,7 +247,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         //     double k_cur = 0.9;
 
         //     std::cout<<"odom_delta_y: \033[0m"<<delta_y<<std::endl;
-        //     if (abs(delta_y) > odom_dy_thr){
+        //     if (abs(delta_y) > odom2map_delta_thr){
         //         // std::cout<<"\033[1;32mdelta_y: \033[0m"<<delta_y<<std::endl;
         //         // delta_xy = delta_xy * cos(theta);
         //         // // double final_dx = delta_xy * cos(curr_yaw);

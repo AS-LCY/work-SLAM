@@ -43,6 +43,20 @@ extrinsic:
                     0,  0,  1,  0.1,
                     0,  0,  0,  1]
 
+localization:
+  fgicp_freq: 1 # hz
+  fgicp_score_thr: 0.1
+  filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
+  fst_order_k: 0.7
+  odom2map_delta_thr: 0.05 # double: m
+  odom2map_delta_set: 0.01 # double: m
+  lidar_ratio: 0.3
+  baselink_dy_thr: 0.02
+  baselink_dx_thr: 0.05
+  baselink_dyaw_thr: 0.5 # unit: degree
+  window_size: 8
+  filter_freq: 200
+
 lidar_preproc:
   lidar_type: 1
   line_count: 4
@@ -80,19 +94,6 @@ mapping:
 sec_mapping:
   load_map_dir: " " # 可以填空字符，但不能不赋值
     
-localization:
-  fgicp_freq: 1 # hz
-  fgicp_score_thr: 0.1
-  filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
-  fst_order_k: 0.7
-  odom_dy_thr: 0.08 # double: m
-  lidar_ratio: 0.3
-  baselink_dy_thr: 0.02
-  baselink_dx_thr: 0.05
-  baselink_dyaw_thr: 0.5 # unit: degree
-  window_size: 8
-  filter_freq: 200
-  # load_map_dir: "/home/panmiaomiao/catkin_ws/data/天河草场/2/map" # 可以填空字符，但不能不赋值
 
 re_localization:
   score_thr: 0.05

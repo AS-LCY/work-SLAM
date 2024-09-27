@@ -937,7 +937,7 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
     static int receive_count=0;
 
     if(receive_count % 4 == 0){
-        std::cout << "read chassis linear velocity: "<< cur_chassis_msg.ac_linear_velocity * 180/PI_M <<" deg" <<endl;
+        std::cout << "read chassis linear velocity: "<< cur_chassis_msg.ac_linear_velocity <<" deg" <<endl;
         receive_count = 0;
     }
 
