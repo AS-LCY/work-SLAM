@@ -793,40 +793,39 @@ PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
     return show_map;
 }
 
-/// 没用上
-PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height)
-{
-    std::lock_guard<std::mutex> lk(mtxCurrentMap);
-   // PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
-    if (KeyPoses.size() == 0)
-       return show_map;
-    pcl::PassThrough<PointType> pass;
-	//pass.setInputCloud(cloud);              //设置输入点云
-	pass.setFilterFieldName("z");           //设置过滤时所需要点云类型的Z字段
-	pass.setFilterLimits(min_height, max_height);         //设置在过滤字段的范围
-	pass.setFilterLimitsNegative(false);    //设置保留(false)范围内还是过滤掉(true)范围内（对范围取反）
-	//pass.filter(*cloud_filtered);           //执行滤波，保存过滤结果在cloud_filtered
-
-    {
-        std::lock_guard<std::mutex> lk(mtxCloud);
-        std::lock_guard<std::mutex> lk2(mtxPose);
-        int size = min((int)KeyPoses.size(),(int)KeyFrameCloud.size());
+// /// 没用上
+// PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height)
+// {
+//     std::lock_guard<std::mutex> lk(mtxCurrentMap);
+//    // PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
+//     if (KeyPoses.size() == 0)
+//        return show_map;
+//     pcl::PassThrough<PointType> pass;
+// 	//pass.setInputCloud(cloud);              //设置输入点云
+// 	pass.setFilterFieldName("z");           //设置过滤时所需要点云类型的Z字段
+// 	pass.setFilterLimits(min_height, max_height);         //设置在过滤字段的范围
+// 	pass.setFilterLimitsNegative(false);    //设置保留(false)范围内还是过滤掉(true)范围内（对范围取反）
+// 	//pass.filter(*cloud_filtered);           //执行滤波，保存过滤结果在cloud_filtered
+//     {
+//         std::lock_guard<std::mutex> lk(mtxCloud);
+//         std::lock_guard<std::mutex> lk2(mtxPose);
+//         int size = min((int)KeyPoses.size(),(int)KeyFrameCloud.size());
         
-        for (int i = show_index; i < size; i++) {
-            PointCloudXYZI::Ptr cloud_filtered;
-            pass.setInputCloud(KeyFrameCloud[i]); 
-            pass.filter(*cloud_filtered);
-            *show_map   += *transformPointCloud(cloud_filtered,T_map_odom *KeyPoses[i].pose);
-        }
-    }
-    show_index = (int)KeyPoses.size() - 1;
-    double resolution = 0.1;
-    pcl::VoxelGrid<PointType> downSizeFilter;
-    downSizeFilter.setInputCloud(show_map);
-    downSizeFilter.setLeafSize(resolution, resolution, resolution);
-    downSizeFilter.filter(*show_map);
-    return show_map;
-}
+//         for (int i = show_index; i < size; i++) {
+//             PointCloudXYZI::Ptr cloud_filtered;
+//             pass.setInputCloud(KeyFrameCloud[i]); 
+//             pass.filter(*cloud_filtered);
+//             *show_map   += *transformPointCloud(cloud_filtered,T_map_odom *KeyPoses[i].pose);
+//         }
+//     }
+//     show_index = (int)KeyPoses.size() - 1;
+//     double resolution = 0.1;
+//     pcl::VoxelGrid<PointType> downSizeFilter;
+//     downSizeFilter.setInputCloud(show_map);
+//     downSizeFilter.setLeafSize(resolution, resolution, resolution);
+//     downSizeFilter.filter(*show_map);
+//     return show_map;
+// }
 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {

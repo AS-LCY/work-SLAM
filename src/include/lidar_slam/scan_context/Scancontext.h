@@ -7,9 +7,9 @@
 #include <cmath>
 #include <vector>
 #include <algorithm> 
+#include <iostream>
 #include <cstdlib>
 #include <memory>
-#include <iostream>
 
 #include <Eigen/Dense>
 

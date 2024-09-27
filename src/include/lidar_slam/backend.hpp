@@ -3,7 +3,7 @@
 #pragma once
 #include <omp.h>
 #include <mutex>
-#include <math.h>
+// #include <math.h> // ikd_Tree.h 中已包含
 #include <cmath>
 #include <thread>
 #include <fstream>
@@ -23,10 +23,11 @@
 #include <pcl/registration/ndt.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/filter.h>
-#include <pcl/filters/crop_box.h>
-#include <pcl/filters/passthrough.h>
+// #include <pcl/filters/crop_box.h> //没用上
+// #include <pcl/filters/passthrough.h> // getObstacleMap 中使用，此函数未使用上
 #include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/impl/voxel_grid.hpp>
+// #include <pcl/filters/impl/voxel_grid.hpp>
+
 // gstam
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -72,7 +73,7 @@ public:
     bool saveMap(std::string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index);
     bool correctPoses();
     void recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize);
-    PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
+    // PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
     KeyPose getCurrentPose()
     {
         return KeyPoses.back();

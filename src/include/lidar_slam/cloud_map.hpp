@@ -8,8 +8,8 @@
 
 // pcl
 #define PCL_NO_PRECOMPILE
-#include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
+// #include <pcl/common/common.h>
+// #include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/io/pcd_io.h>
 

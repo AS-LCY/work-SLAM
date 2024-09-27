@@ -1,7 +1,5 @@
 #include "lidar_slam/scan_context/Scancontext.h"
 
-#include <iostream>
-#include <algorithm>
 
 // namespace SC2
 // {

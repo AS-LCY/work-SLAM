@@ -61,6 +61,7 @@
 #include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
+#include "node/param_manager.hpp"
 
 // 另一个节点中定义
 #include "fros_hardware_node/chassic_data.h"
@@ -189,15 +190,15 @@ private:
         return "UNKNOW_SlamCtrlCmd!";
     }
     
-    template <class T>
-    void get_param(const std::string& param_str, T& param, bool* is_success){
-        if(!nh_.getParamCached(param_str,param)){
-            ROS_WARN("load param failed : %s ", param_str.c_str());
-            *is_success = false;
-        }else{
-            ROS_INFO("load param success: %s", param_str.c_str());
-        }
-    };
+    // template <class T>
+    // void get_param(const std::string& param_str, T& param, bool* is_success){
+    //     if(!nh_.getParamCached(param_str,param)){
+    //         ROS_WARN("load param failed : %s ", param_str.c_str());
+    //         *is_success = false;
+    //     }else{
+    //         ROS_INFO("load param success: %s", param_str.c_str());
+    //     }
+    // };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
 

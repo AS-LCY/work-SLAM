@@ -1109,4 +1109,22 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     return true;
 }
 
+//---------------------------------------------------------------------------------------------------------
+//------------------------------------------- load params -------------------------------------------------
+
+bool LocalizationModule::load_lidar_slam_param(){
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
+    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+
+    if (loaded_param == NULL) {
+        ROS_ERROR("loaded_param is NULL");
+        return false;
+    }else{
+        slam_param_ = *loaded_param;
+        return true;
+    }
+
+
+}
+
 }// namespace localization_module

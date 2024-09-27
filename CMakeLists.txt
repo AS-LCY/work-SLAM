@@ -210,7 +210,7 @@ add_executable(lidar_slam_node
   src/node/localization_module.cpp
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  src/node/load_param.cpp 
+  # src/node/load_param.cpp 
 )
 
 # add_dependencies(lidar_slam_node )

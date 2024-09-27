@@ -1,12 +1,13 @@
 #ifndef ESEKFOM_EKF_HPP
 #define ESEKFOM_EKF_HPP
 
-#include <vector>
-#include <cstdlib>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
+// 以下 use-ikfom.hpp 中均已包含
+// #include <vector>
+// #include <cstdlib>
+// #include <Eigen/Core>
+// #include <Eigen/Geometry>
+// #include <Eigen/Dense>
+// #include <Eigen/Sparse>
 
 #include "lidar_slam/use-ikfom.hpp"
 #include "lidar_slam/ikd_Tree.h"

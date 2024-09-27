@@ -2,24 +2,24 @@
 #define LOCALIZATION_H
 #include <omp.h>
 #include <mutex>
-#include <math.h>
+// #include <math.h> // ikd_Tree.h 中已包含
 #include <thread>
 #include <fstream>
 #include <csignal>
-#include <unistd.h>
+// #include <unistd.h> // ikd_Tree.h 中已包含
 #include <Eigen/Core>
 
-#include <pcl/search/impl/search.hpp>
-#include <pcl/range_image/range_image.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
-#include <pcl/registration/icp.h>
-#include <pcl/registration/ndt.h>
 #include <pcl/io/pcd_io.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/crop_box.h>
-#include <pcl/registration/gicp.h>
+#include <pcl/registration/icp.h>
+// #include <pcl/kdtree/kdtree_flann.h>
+// #include <pcl/common/common.h>
+// #include <pcl/common/transforms.h>
+// #include <pcl/registration/ndt.h>
+// #include <pcl/registration/gicp.h>
+// #include <pcl/filters/filter.h>
+// #include <pcl/filters/crop_box.h>
+// #include <pcl/search/impl/search.hpp>
+// #include <pcl/range_image/range_image.h> // 深度图像相关（将从图像采集器到场景中各点的距离值作为像素值的图像）
 
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
