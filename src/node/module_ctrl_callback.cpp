@@ -474,6 +474,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
 }
 
 void LocalizationModule::release_slam_obj(){
+    releasing_slam_flag_ = true;
     if (set_module_status_ != MODULE_IDLE){
         ROS_INFO("skip, set module status(== %s) must be MODULE_IDLE before release slam obj", print_ModuleStatus(set_module_status_).c_str());
         return;
@@ -490,12 +491,12 @@ void LocalizationModule::release_slam_obj(){
 
     lidar_slam::LidarSlam *temp_slam = slam_.release();
     // cout<<"debug: temp_slam: "<<temp_slam<<endl;
-    // ROS_INFO("debug: release successfully");
+    ROS_INFO("debug: release successfully");
     delete temp_slam;
     cout<<"temp_slam: "<<temp_slam<<endl;
-    // ROS_INFO("debug: delete successfully");
+    ROS_INFO("debug: delete successfully");
     temp_slam = nullptr;
-    // ROS_INFO("debug: set nullptr successfully");
+    ROS_INFO("debug: set nullptr successfully");
 
     start_index_ = -1;
     end_index_ = -1;
@@ -503,5 +504,6 @@ void LocalizationModule::release_slam_obj(){
     mapping_status_ = M_INACTIVE;
     localization_status_ = L_INACTIVE;
     ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
+    releasing_slam_flag_ = false;
 }
-}// namespace localization_module
+}// namespace localization_module 

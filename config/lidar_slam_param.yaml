@@ -1,5 +1,5 @@
 common:
-  init_module_status: 3 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
+  init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
   offline_mode: false
@@ -10,6 +10,7 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   map_directory: "/home/forlinx/ws_flbot/maps/3dmap/"
+  # map_directory: "/home/pmm/data/test/3dmap/"
   # map_directory: "/home/pmm/data/livox/0924/maps-0924/maps-plaza/3dmap"  
   # map_directory: "/home/forlinx/ws_slam_f2/data/map"
   # map_directory: "/home/pmm/data/livox/0919-ou/map"
@@ -20,6 +21,7 @@ common:
   # map_directory: "/data/livox/0826-new-driver/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
+  pub_topic_module_loginfo: "/flbot/localization_module/log_info"
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10

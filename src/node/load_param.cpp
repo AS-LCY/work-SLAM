@@ -31,6 +31,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     get_param(ns+ "common/map_directory", slam_param_.common.map_directory, &success);
     get_param(ns+ "common/sub_topic_ctrl_cmd", slam_param_.common.sub_topic_ctrl_cmd, &success);
     get_param(ns+ "common/pub_topic_module_status", slam_param_.common.pub_topic_module_status, &success);
+    get_param(ns+ "common/pub_topic_module_loginfo", slam_param_.common.pub_topic_module_loginfo, &success);
     get_param(ns+ "common/receive_lidar_freq", slam_param_.common.receive_lidar_freq, &success);
     get_param(ns+ "common/slam_lose_rate_time_thr", slam_param_.common.slam_lose_rate_time_thr, &success);
     get_param(ns+ "common/lidar_no_point_count_thr", slam_param_.common.lidar_no_point_count_thr, &success);

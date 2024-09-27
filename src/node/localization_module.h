@@ -8,9 +8,8 @@
 // ros
 #include <ros/ros.h>
 #include <ros/package.h>
-// #include <cv_bridge/cv_bridge.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <image_transport/image_transport.h>
+// #include <image_transport/image_transport.h>
 
 // ros-msg
 #include <std_msgs/Int32.h>
@@ -29,18 +28,18 @@
 // Eigen
 #include <Eigen/Core>
 
-// pcl
-// #define PCL_NO_PRECOMPILE
-#include <pcl/search/impl/search.hpp>
-#include <pcl/range_image/range_image.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
-#include <pcl/registration/icp.h>
-#include <pcl/registration/ndt.h>
-#include <pcl/io/pcd_io.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/crop_box.h>
+// // pcl
+// // #define PCL_NO_PRECOMPILE
+// #include <pcl/search/impl/search.hpp>
+// #include <pcl/range_image/range_image.h>
+// #include <pcl/kdtree/kdtree_flann.h>
+// #include <pcl/common/common.h>
+// #include <pcl/common/transforms.h>
+// #include <pcl/registration/icp.h>
+// #include <pcl/registration/ndt.h>
+// #include <pcl/io/pcd_io.h>
+// #include <pcl/filters/filter.h>
+// #include <pcl/filters/crop_box.h>
 
 // cv
 // #include <opencv2/opencv.hpp>
@@ -165,10 +164,10 @@ private:
     void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
 
     // position filter
-    void lidar_position_filter_fst_order(const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
-    void lidar_position_filter_window(Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
+    void lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
+    void lidar_position_filter_window(Eigen::Isometry3d last_pose, Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
     void position_filter_thread();
-    void position_init();
+    bool position_init(Eigen::Isometry3d init_pose);
     void position_filter();
     void detect_slipping();
 
@@ -218,6 +217,7 @@ private:
 
     // slam node
     std::unique_ptr<lidar_slam::LidarSlam> slam_;
+    bool releasing_slam_flag_ = false;
 
     // 通用
     string curr_dir_; // localization_module CMake dir
@@ -312,13 +312,13 @@ private:
     double chassis_linear_velocity_;
     double chassis_angular_velocity_;
 
-    int slip_flag_ = 0;
+    int slip_count_ = 0;
     double filter_x_;
     double filter_y_;
     double filter_a_;
     int filter_cout_ = 0;
     
-    nav_msgs::Odometry filter_odometry_;
+    // nav_msgs::Odometry filter_odometry_;
     LocalizationModuleLogInfoManager * log_info_manager_;
     
 };

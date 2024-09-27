@@ -92,46 +92,6 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     pubOdomAftMapped.publish(odomAftMapped);
 
 
-    if(!position_initialized_){
-        lidar_time_ = slam_->get_lidar_time();
-        double lidar_x_new = lidar_in_map.translation().x();
-        double lidar_y_new = lidar_in_map.translation().y();
-
-        // int k = 0.5;
-        // int k = 0.7;
-        // lidar_x_ = lidar_x_ * k + lidar_x_new * (1.0-k);
-        // lidar_y_ = lidar_y_ * k + lidar_y_new * (1.0-k);
-
-        lidar_x_ = lidar_x_new;
-        lidar_y_ = lidar_y_new;
-
-        lidar_a_ = R2ypr(lidar_in_map.rotation()).x();
-        lidar_a_ = angle_norm(lidar_a_);
-        if(abs(lidar_x_) > 0.01){
-            position_initialized_ = true;
-
-        }
-    }
-
-    // ****************************************************************************
-    // // position filter
-    // filter_odometry_ = odomAftMapped; // 用于滤波
-    // if(running_module_status_ == MODULE_LOCALIZATION && localization_status_ == L_NORMAL){
-        
-    //     /// filter with chassis
-    //     set_var_for_position_filter(lidar_in_map);
-    //     if(!position_initialized_){
-    //         position_init();
-    //     }else{
-    //         position_filter();
-    //         filter_odometry_.pose.pose.position.x = filter_x_;
-    //         filter_odometry_.pose.pose.position.y = filter_y_;
-    //         pub_filter_odometry_.publish(filter_odometry_);
-    //     }
-
-    // }
-    // ****************************************************************************
-
     // // auto odom_for_tf = odomAftMapped;
     // auto odom_for_tf = filter_odometry_;
 

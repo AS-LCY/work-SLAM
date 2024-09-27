@@ -20,6 +20,7 @@ struct CommonParam{
     std::string map_directory="/map/";
     std::string sub_topic_ctrl_cmd;
     std::string pub_topic_module_status;
+    std::string pub_topic_module_loginfo;
     int receive_lidar_freq = 10;
     double slam_lose_rate_time_thr = 0.1;
     int lidar_no_point_count_thr = 10;
