@@ -117,15 +117,14 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
     // Eigen::Isometry3d pose_filtered;
     cur_pose = lidar_in_map;
     pose_filtered = cur_pose;
+    double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+    double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
 
     if(pose_vec.size() > 0 ){
         // Eigen::Isometry3d last_pose = pose_vec[pose_vec.size()-1];
         last_pose = pose_vec[pose_vec.size()-1];
 
-        double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
         pcl::getTranslationAndEulerAngles(last_pose, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 的 位姿
-
-        double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
         pcl::getTranslationAndEulerAngles(cur_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
 
         double dy = curr_y - last_y; // map 坐标系下 y 方向位移
@@ -138,27 +137,10 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        // log_msg.header.stamp = ros::Time().fromSec(slam_->get_lidar_time());
-        // log_msg.delta_yaw = delta_yaw * 180 / PI_M;
-        // log_msg.delta_xy = delta_xy;
-        // log_msg.curr_yaw = curr_yaw * 180 / PI_M;
-
-        // std::cout<<"temp_yaw: "<<angle_norm(theta - curr_yaw) * 180 / PI_M<<std::endl;
-        // std::cout<<"curr_yaw: "<<curr_yaw * 180 / PI_M<<std::endl;
-        // std::cout<<"delta_xy: "<<delta_xy<<std::endl;
-
-        // std::cout<<"delta_yaw: \033[0m"<<delta_yaw * 180 / PI_M<<std::endl;
-        // std::cout<<"theta: \033[0m"<<theta * 180 / PI_M<<std::endl;
-        // std::cout<<"baselink_dy: "<<baselink_dy<<std::endl;
-
         log_info_manager_->log_info.base_frame_dy = baselink_dy; 
         log_info_manager_->log_info.base_frame_dx = baselink_dx; 
 
         if (abs(baselink_dy) > slam_param_.localization.baselink_dy_thr && abs(delta_yaw * 180 / PI_M)<slam_param_.localization.baselink_dyaw_thr){
-            // std::cout<<"\033[1;32mdelta_y: \033[0m"<<baselink_dy<<std::endl;
-            // std::cout<<"\033[1;32mdelta_yaw: \033[0m"<<delta_yaw * 180 / PI_M<<std::endl;
-            // std::cout<<"\033[1;32mtheta: \033[0m"<<theta * 180 / PI_M<<std::endl;
-            
             // delta_xy = delta_xy * cos(theta);
             // double final_dx = delta_xy * cos(curr_yaw);
             // double final_dy = delta_xy * sin(curr_yaw);
@@ -174,15 +156,17 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
             // pose_filtered.translation().y() = last_pose.translation().y() + last_lidar_dy_;
             // pose_filtered.translation().z() = last_pose.translation().z() + last_lidar_dz_;
         }
-        // if((abs(baselink_dx) > slam_param_.localization.baselink_dx_thr)){ // 0.05
-        //     double kk =1;
-        //     cur_pose = slam_->getLastOdomToMap() * slam_->getLidarInOdom();
-        //     pose_filtered = cur_pose;
-        //     // pose_filtered.translation().x() = last_pose.translation().x() * kk + pose_filtered.translation().x() * (1-kk);
-        //     // pose_filtered.translation().y() = last_pose.translation().y() * kk + cur_pose.translation().y() * (1-kk);
-        //     // pose_filtered.translation().z() = last_pose.translation().z() * kk + cur_pose.translation().z() * (1-kk);
+        if((abs(baselink_dx) > slam_param_.localization.baselink_dx_thr)){ // 0.05
+            double kk =0.8;
+            // cur_pose = slam_->getLastOdomToMap() * slam_->getLidarInOdom();
+            // pose_filtered = cur_pose;
+            pose_filtered.translation().x() = last_pose.translation().x() * kk + pose_filtered.translation().x() * (1-kk);
+            pose_filtered.translation().y() = last_pose.translation().y() * kk + cur_pose.translation().y() * (1-kk);
+            pose_filtered.translation().z() = last_pose.translation().z() * kk + cur_pose.translation().z() * (1-kk);
 
-        // }
+        }
+
+
     }
 
     pose_vec.push_back(pose_filtered);
@@ -211,7 +195,28 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         pose_filtered.translation().z() = sum_z / w_sum;
 
         pose_vec[pose_vec.size() -1] = pose_filtered;
+
+        pcl::getTranslationAndEulerAngles(pose_filtered, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
+
+        double dy = curr_y - last_y; // map 坐标系下 y 方向位移
+        double dx = curr_x - last_x; // map 坐标系下 x 方向位移
+
+        double delta_xy = std::sqrt(dx*dx + dy*dy);
+        double delta_yaw = angle_norm(curr_yaw - last_yaw);
+
+        double theta = angle_norm(atan2(dy, dx) - curr_yaw);
+        double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
+        double baselink_dx = delta_xy * cos(theta);// 
+
+        log_info_manager_->log_info.map_frame_dx = dx; 
+        log_info_manager_->log_info.map_frame_dy = dy; 
+        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
+
     }
+
+
 
     last_lidar_dx_ = last_pose.translation().x() -  pose_filtered.translation().x();
     last_lidar_dy_ = last_pose.translation().y() -  pose_filtered.translation().y();
@@ -243,20 +248,23 @@ void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_
     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
     pcl::getTranslationAndEulerAngles(curr_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
 
-    double dy = curr_y - last_y; // map 坐标系下 y 方向位移
     double dx = curr_x - last_x; // map 坐标系下 x 方向位移
+    double dy = curr_y - last_y; // map 坐标系下 y 方向位移
 
     double delta_xy = std::sqrt(dx*dx + dy*dy);
-    // double delta_yaw = angle_norm(curr_yaw - last_yaw);
+    double delta_yaw = angle_norm(curr_yaw - last_yaw);
 
     double theta = angle_norm(atan2(dy, dx) - curr_yaw);
     double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
     double baselink_dx = delta_xy * cos(theta);// 
+    double baselink_dyaw = rad2deg(delta_yaw);// 
 
-    log_info_manager_->log_info.base_frame_dy = baselink_dy; 
     log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-    log_info_manager_->log_info.map_frame_dy = dy; 
+    log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+    log_info_manager_->log_info.base_frame_dyaw = baselink_dyaw; 
+
     log_info_manager_->log_info.map_frame_dx = dx; 
+    log_info_manager_->log_info.map_frame_dy = dy; 
 
 }
 
@@ -452,7 +460,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
     // if(!localization_mode_){
     if(running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING){
-    // pub_rgb_map(slam->getCurrentRGBMap());
+        // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
     }else if(running_module_status_ == MODULE_LOCALIZATION){
@@ -465,81 +473,6 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
     }
 }
-
-// void LocalizationModule::position_filter_thread(){
-//     position_init();
-//     int pub_frequency = 20;
-//     int rate = slam_param_.localization.filter_freq / pub_frequency;
-//     const int filter_frequency = slam_param_.localization.filter_freq;
-//     // const std::chrono::milliseconds period(1000 / filter_frequency);
-//     // auto last_pub_time = std::chrono::steady_clock::now();// init
-//     ros::Rate filter_rate = ros::Rate(filter_frequency);
-//     while (ros::ok()) {
-//         auto start = std::chrono::steady_clock::now();
-//         // if(running_module_status_ == MODULE_LOCALIZATION && localization_status_ == L_NORMAL){
-//             // double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-//             // pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-//             // double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-//             // pcl::getTranslationAndEulerAngles(temp_correct, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-//             // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
-//             // log_info_manager_->log_info.lidar2odom_dx = curr_x - last_x;
-//             // log_info_manager_->log_info.lidar2odom_dy = curr_y - last_y;
-//             // log_info_manager_->log_info.lidar2odom_dz = curr_z - last_z;
-//             // log_info_manager_->log_info.lidar2odom_droll  = 180 / PI_M * (curr_roll  - last_roll);
-//             // log_info_manager_->log_info.lidar2odom_dpitch = 180 / PI_M * (curr_pitch - last_pitch);
-//             // log_info_manager_->log_info.lidar2odom_dyaw   = 180 / PI_M * (curr_yaw   - last_yaw);
-//             Eigen::Isometry3d lidar_in_map = slam_->getLidarInMap();
-//             filter_odometry_.header.frame_id = "map";
-//             filter_odometry_.child_frame_id = "base_footprint";
-//             filter_odometry_.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
-//             // filter_odometry_.header.stamp = ros::Time().fromSec(lidar_time_);
-//             filter_odometry_.pose.pose.position.x = lidar_in_map.translation().x();
-//             filter_odometry_.pose.pose.position.y = lidar_in_map.translation().y();
-//             filter_odometry_.pose.pose.position.z = lidar_in_map.translation().z();
-//             Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
-//             filter_odometry_.pose.pose.orientation.x = quaternion.x();
-//             filter_odometry_.pose.pose.orientation.y = quaternion.y();
-//             filter_odometry_.pose.pose.orientation.z = quaternion.z();
-//             filter_odometry_.pose.pose.orientation.w = quaternion.w();
-//             Eigen::Isometry3d pose_filtered = Eigen::Isometry3d::Identity();
-//             pose_filtered = lidar_in_map;
-//             if(slam_param_.localization.filter_method == 0){
-//                 lidar_position_filter_fst_order(lidar_in_map, pose_filtered);
-//             }else if(slam_param_.localization.filter_method == 1){
-//                 lidar_position_filter_window(lidar_in_map, pose_filtered);
-//             }
-//             lidar_x_ = pose_filtered.translation().x();
-//             lidar_y_ = pose_filtered.translation().y();
-//             lidar_a_ = R2ypr(pose_filtered.rotation()).x();
-//             lidar_a_ = angle_norm(lidar_a_);
-//             /// filter with chassis            
-//             position_filter();
-//             filter_odometry_.pose.pose.position.x = filter_x_;
-//             filter_odometry_.pose.pose.position.y = filter_y_;
-//             filter_cout_ ++;
-//             if(filter_cout_ % rate == 0 ){
-//                 filter_cout_ = 0;
-//                 pub_filter_odometry_.publish(filter_odometry_);
-//                 // auto odom_for_tf = odomAftMapped;
-//                 auto odom_for_tf = filter_odometry_;
-//                 static tf::TransformBroadcaster br;
-//                 tf::Transform transform;
-//                 tf::Quaternion q;
-//                 transform.setOrigin(tf::Vector3(odom_for_tf.pose.pose.position.x,
-//                                                 odom_for_tf.pose.pose.position.y,
-//                                                 odom_for_tf.pose.pose.position.z));
-//                 q.setW(odom_for_tf.pose.pose.orientation.w);
-//                 q.setX(odom_for_tf.pose.pose.orientation.x);
-//                 q.setY(odom_for_tf.pose.pose.orientation.y);
-//                 q.setZ(odom_for_tf.pose.pose.orientation.z);
-//                 transform.setRotation(q);
-//                 br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, "map", "base_footprint"));
-//             }
-//             pub_log_.publish(log_info_manager_->log_info);
-//             filter_rate.sleep();
-//         }
-//         // auto end = std::chrono::steady_clock::now();
-// }
 
 void LocalizationModule::position_filter_thread(){
     const int pub_frequency = 20;
@@ -798,7 +731,12 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 
     double t0 = omp_get_wtime();
     std::cout<<"t0: "<<t0<<endl;
-    printf("lidar time delay: %lf ms\n", (t0 - ros_msg->header.stamp.toSec())*1000);
+
+    auto now = std::chrono::system_clock::now();
+    auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
+    double now_sec = now_as_ns * 1e-9;
+
+    printf("lidar time delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
     const double thr_x = slam_param_.lidar_preproc.point_filter_distance[0];
     const double thr_y = slam_param_.lidar_preproc.point_filter_distance[1];
     const double thr_z = slam_param_.lidar_preproc.point_filter_distance[2];

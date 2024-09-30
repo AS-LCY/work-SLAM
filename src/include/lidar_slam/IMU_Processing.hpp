@@ -93,8 +93,8 @@ class ImuProcess
   Eigen::Matrix<double, 12, 12> Q;    //噪声协方差矩阵  对应论文式(8)中的Q
   void Process(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudXYZI::Ptr &pcl_un_);
 
-  V3D cov_acc;             //加速度协方差
-  V3D cov_gyr;             //角速度协方差
+  V3D cov_acc;             //加速度测量协方差
+  V3D cov_gyr;             //角速度测量协方差
   V3D cov_acc_scale;       //外部传入的 初始加速度协方差
   V3D cov_gyr_scale;       //外部传入的 初始角速度协方差
   V3D cov_bias_gyr;        //角速度bias的协方差

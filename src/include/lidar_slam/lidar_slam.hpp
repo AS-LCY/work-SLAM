@@ -328,7 +328,7 @@ class LidarSlam
         // atomic<double> lidar_end_time = 0;
         atomic<double> lidar_end_time;
         double lidar_mean_scantime = 0.0;
-        double first_lidar_time = 0.0;
+        double first_lidar_time = 0.0; // 第一帧点云的时间
         int scan_num = 0;
         bool flg_first_scan = true;
         double last_timestamp_lidar = 0;
@@ -355,7 +355,7 @@ class LidarSlam
         bool globalLocalizationSuccess = false;
         bool localization_wait = false;
         bool loop_closure_wait = false;
-        Localization_base localization_base;
+        Localization_base localization_base;// 每次点云处理后更新，并作为current_pose 积分结果的base
         Localization_base current_pose;
 
         std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree= nullptr;
@@ -393,6 +393,7 @@ class LidarSlam
 
         int global_localize_count_=0;
         int lidar_no_point_count_ = 0;
+        localization_module::LocalizationModuleLogInfoManager * log_info_manager_;
 
         // cpu_set_t mask;
 
