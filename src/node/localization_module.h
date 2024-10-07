@@ -122,7 +122,7 @@ private:
     // void start_localization(bool module_mode, int map_id);
     bool stop_localization();
 
-    bool start_relocalization();
+    bool start_relocalization(int map_id);
 
 
     bool init_module_by_set_status(ModuleStatus set_status);

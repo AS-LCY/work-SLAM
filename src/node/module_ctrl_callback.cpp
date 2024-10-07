@@ -124,8 +124,11 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             break;
         }
         case START_RELOCALIZATION:{// 重新进行重定位
-            if(start_relocalization()){
-                
+            int map_id = msg.data % 1000;
+            if(start_relocalization(map_id)){
+                ROS_INFO("restart localization successfully!");
+            }else{
+                ROS_ERROR("start_relocalization failed!");
             }
 
             break;
@@ -409,7 +412,8 @@ bool LocalizationModule::start_localization(ModuleStatus set_status, int map_id)
 bool LocalizationModule::stop_localization(){
 
     if (last_running_module_status_==MODULE_LOCALIZATION){
-        sleep(1);
+        // sleep(1); // 暂停一秒
+        usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
         release_slam_obj();
         ROS_INFO("localization stopped !");
         // running_module_status_ = MODULE_IDLE;
@@ -433,12 +437,26 @@ bool LocalizationModule::stop_localization(){
 }
 
 
-bool LocalizationModule::start_relocalization(){
+bool LocalizationModule::start_relocalization(int map_id){
     if(running_module_status_ == MODULE_LOCALIZATION){
-        bool glo_success_flag = false;
-        slam_->reset_globalLocalizationSuccess(glo_success_flag);
-        ROS_INFO("globalLocalizationSuccess reset");
+        // bool glo_success_flag = false;
+        // slam_->reset_globalLocalizationSuccess(glo_success_flag);
+        // ROS_INFO("globalLocalizationSuccess reset");
+        // return true;        
+        last_running_module_status_ = running_module_status_;
+        set_module_status_ = MODULE_IDLE;
+        running_module_status_ = MODULE_STOPPING_SLAM;
+        stop_localization();
+
+        last_running_module_status_ = running_module_status_;
+        set_module_status_ = MODULE_LOCALIZATION;
+        running_module_status_ = MODULE_STARTING_SLAM;
+        start_localization(set_module_status_, map_id);
+        running_module_status_ = MODULE_LOCALIZATION;
+        last_running_module_status_ = MODULE_IDLE;
+
         return true;
+
     }else if(running_module_status_==MODULE_IDLE || 
              running_module_status_==MODULE_MAPPING){
         ROS_INFO("skip, can not stop localization, running_module_status_: %s", print_ModuleStatus(running_module_status_).c_str());
@@ -479,7 +497,8 @@ void LocalizationModule::release_slam_obj(){
         ROS_INFO("skip, set module status(== %s) must be MODULE_IDLE before release slam obj", print_ModuleStatus(set_module_status_).c_str());
         return;
     }
-    sleep(1);
+    // sleep(1); // 暂停一秒
+    usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
     ROS_INFO("start stopping lidar_slam");
 
     // std::unique_ptr<lidar_slam::LidarSlam> temp_slam;

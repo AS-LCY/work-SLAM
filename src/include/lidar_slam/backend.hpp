@@ -20,7 +20,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
 #include <pcl/registration/icp.h>
-#include <pcl/registration/ndt.h>
+// #include <pcl/registration/ndt.h> // 没用上
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/filter.h>
 // #include <pcl/filters/crop_box.h> //没用上

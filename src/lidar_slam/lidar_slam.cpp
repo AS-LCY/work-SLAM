@@ -429,6 +429,7 @@ void LidarSlam::localizationThread()
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set)){
                     l_status_ = L_NORMAL;
                     gicp_fail_count = 0;
+                    // break;
                 }else{
                     gicp_fail_count ++;
                     std::cout<< "fast gicp fail count: "<<gicp_fail_count<<endl;

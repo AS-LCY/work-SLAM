@@ -10,16 +10,13 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   map_directory: "/home/forlinx/ws_flbot/maps/3dmap/"
+  # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
   # map_directory: "/home/pmm/data/test/3dmap/"
   # map_directory: "/home/pmm/data/livox/0927/maps_0927_2_problem/3dmap/"
-  # map_directory: "/home/pmm/data/livox/0924/maps-0924/maps-plaza/3dmap"  
-  # map_directory: "/home/forlinx/ws_slam_f2/data/map"
+  # map_directory: "/home/pmm/data/livox/0924/maps-0924/maps-plaza/3dmap"
   # map_directory: "/home/pmm/data/livox/0919-ou/map"
   # map_directory: "/home/pmm/data/livox/0923-23f/map"
   # map_directory: "/home/pmm/data/livox/0913-ou/map"
-  # map_directory: "/data/livox/0831-fail/map"
-  # map_directory: "/data/0803-floor23"
-  # map_directory: "/data/livox/0826-new-driver/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
   pub_topic_module_loginfo: "/flbot/localization_module/log_info"
