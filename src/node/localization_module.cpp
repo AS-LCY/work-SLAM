@@ -505,11 +505,15 @@ void LocalizationModule::position_filter_thread(){
 
         // init 
         if (!position_initialized_){
-            bool localization_flag = (running_module_status_ == MODULE_LOCALIZATION ? 1 : 0);
+            bool localize_flag = (running_module_status_ == MODULE_LOCALIZATION ? 1 : 0);
             bool mapping_flag = ((running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_MAPPING) ? 1 : 0);
+            bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
+            bool m_status_ok = ((log_info_manager_->m_status == M_STANDBY || log_info_manager_->m_status == M_CREATING_ELE) ? 1 : 0);
+            // if ((localization_flag && localization_status_ == L_NORMAL) || 
+            //     (mapping_flag && mapping_status_ == M_STANDBY)){
 
-            if ((localization_flag && localization_status_ == L_NORMAL) || 
-                (mapping_flag && mapping_status_ == M_STANDBY)){
+            if ((localize_flag && l_status_ok) || 
+                (mapping_flag && m_status_ok)){
                 auto curr_pose = slam_->getLidarInMap(); 
                 if(position_init(curr_pose)){
                     position_initialized_ = true;
@@ -630,6 +634,8 @@ void LocalizationModule::position_filter_thread(){
 void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     // make msg *************************************************************************
     // fill header
+    log_info_manager_->module_status = running_module_status_;
+
     fairland_msgs::LocalizationModuleStatus status_msg;
     status_msg.header.stamp = ros::Time().now();
     status_msg.header.frame_id = "base_link";
@@ -642,7 +648,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::MAPPING;
     }else if(running_module_status_ == MODULE_LOCALIZATION){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::LOCALIZATION;
-        localization_status_ = slam_->get_l_status();
+        // localization_status_ = slam_->get_l_status();
     }else if(running_module_status_ == MODULE_STARTING_SLAM){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STARTING;
     }else if(running_module_status_ == MODULE_STOPPING_SLAM){
@@ -650,39 +656,40 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }else{
         ROS_ERROR("error running module status: %s", print_ModuleStatus(running_module_status_).c_str());
     }
+    
 
     // fill status_msg.mapping_status
     // ROS_INFO("set mapping_status");
-    if(mapping_status_ == M_INACTIVE){
+    if(log_info_manager_->m_status == M_INACTIVE){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
-    }else if(mapping_status_ == M_RELOCALIZING){
+    }else if(log_info_manager_->m_status == M_RELOCALIZING){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZING;
-    }else if(mapping_status_ == M_RELOCALIZE_FAILED){
+    }else if(log_info_manager_->m_status == M_RELOCALIZE_FAILED){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZE_FAILED;
-    }else if(mapping_status_ == M_CREATING_ELE){
+    }else if(log_info_manager_->m_status == M_CREATING_ELE){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_CREATING_ELE;
-    }else if(mapping_status_ == M_STANDBY){
+    }else if(log_info_manager_->m_status == M_STANDBY){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_STANDBY;
     }else{
-        ROS_ERROR("error mapping status: %s", print_MappingStatus(mapping_status_).c_str());
+        ROS_ERROR("error mapping status: %s", print_MappingStatus(log_info_manager_->m_status).c_str());
     }
 
     // fill status_msg.localization_status
     // ROS_INFO("set localization_status");
-    if(localization_status_ == L_INACTIVE){
+    if(log_info_manager_->l_status == L_INACTIVE){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
-    }else if(localization_status_ == L_RELOCALIZING){
+    }else if(log_info_manager_->l_status == L_RELOCALIZING){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZING;
-    }else if(localization_status_ == L_RELOCALIZE_FAILED){
+    }else if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZE_FAILED;
-    }else if(localization_status_ == L_NORMAL){
+    }else if(log_info_manager_->l_status == L_NORMAL){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_NORMAL;
-    }else if(localization_status_ == L_LOW_ACCURACY){
+    }else if(log_info_manager_->l_status == L_LOW_ACCURACY){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_LOW_ACCURACY;
-    }else if(localization_status_ == L_FAILED){
+    }else if(log_info_manager_->l_status == L_FAILED){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
     }else{
-        ROS_ERROR("error localization status: %s", print_LocalizationStatus(localization_status_).c_str());
+        ROS_ERROR("error localization status: %s", print_LocalizationStatus(log_info_manager_->l_status).c_str());
     }
 
     pub_localization_module_status_.publish(status_msg);
@@ -1016,7 +1023,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     }else if (set_module_status_ == MODULE_MAPPING){
         if(start_mapping(set_module_status_)){
             running_module_status_ = set_module_status_;
-            mapping_status_ = M_STANDBY;
+            // mapping_status_ = M_STANDBY;
+            log_info_manager_->m_status = M_STANDBY;
         }else{
             set_module_status_ = running_module_status_;
         }
@@ -1025,7 +1033,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         int map_id = 0;/////////////// TODO
         if(start_second_mapping(set_module_status_, map_id)){
             running_module_status_ = MODULE_SEC_MAPPING;
-            mapping_status_ = M_STANDBY;
+            // mapping_status_ = M_STANDBY;
+            log_info_manager_->m_status = M_STANDBY;
         }else{
             set_module_status_ = running_module_status_;
             release_slam_obj();
@@ -1036,7 +1045,6 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         int map_id = 0;/////////////// TODO
         if(start_localization(set_module_status_, map_id)){
             running_module_status_ = MODULE_LOCALIZATION;
-            // localization_status_ = L_RELOCALIZING;
         }else{
             set_module_status_ = running_module_status_;
         }

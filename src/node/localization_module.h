@@ -76,6 +76,7 @@ using namespace Eigen;
 using namespace pcl;
 using namespace sensor_msgs;
 using namespace lidar_slam;
+// using namespace fairland_msgs::LocalizationModuleStatus;
 
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
@@ -240,14 +241,14 @@ private:
     ModuleStatus running_module_status_ = MODULE_IDLE;
 
     // 建图 *******************************************
-    MappingStatus mapping_status_ = M_INACTIVE;
+    // MappingStatus mapping_status_ = M_INACTIVE;
     int start_index_ = -1;
     int end_index_ = -1;
 
     // 定位 *******************************************
     // enum LocalizationStatus
     // localization_status_: 在localization_module.cpp(&.h)中只作初始化为 L_INACTIVE 的操作; 实际的全部状态来源:lidar_slam.cpp(&.h).
-    lidar_slam::LocalizationStatus localization_status_ = L_INACTIVE;
+    // lidar_slam::LocalizationStatus localization_status_ = L_INACTIVE;
 
 
     // other thread

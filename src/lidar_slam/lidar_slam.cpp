@@ -108,7 +108,8 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
 void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 0"<<endl;
     reseting = true;
-    l_status_ = L_INACTIVE;
+    // l_status_ = L_INACTIVE;
+    log_info_manager_->l_status = L_INACTIVE;
 
     sleep(1);
 
@@ -194,6 +195,8 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     cloud_map_manager_.reset(new CloudMap());
 
     log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
+    log_info_manager_->reset_log_info();
+    log_info_manager_->reset_module_status();
     
     // cout << "slam reset 5"<<endl;
     // 线程相关 ************************************************
@@ -211,19 +214,25 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     reseting = false;
     if (work_mode == MAPPING){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
-        m_status_ = M_INACTIVE;
-        l_status_ = L_INACTIVE;
+        // m_status_ = M_INACTIVE;
+        // l_status_ = L_INACTIVE;
+        log_info_manager_->m_status = M_INACTIVE;
+        log_info_manager_->l_status = L_INACTIVE;
     }else if (work_mode == SEC_MAPPING){
         // cloud_map_manager_->load_map_data(config_param_.common.map_directory);
         global_localization_thread_.reset(new std::thread(&LidarSlam::global_localization_for_sec_mapping_thread, this));
         thread.reset(new std::thread(&LidarSlam::sec_mapping_loopClosureThread, this));
-        m_status_ = M_INACTIVE;
-        l_status_ = L_INACTIVE;
+        // m_status_ = M_INACTIVE;
+        // l_status_ = L_INACTIVE;
+        log_info_manager_->m_status = M_INACTIVE;
+        log_info_manager_->l_status = L_INACTIVE;
         // second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
     }else if (work_mode == LOCALIZATION){
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
-        m_status_ = M_INACTIVE;
-        l_status_ = L_INACTIVE;
+        // m_status_ = M_INACTIVE;
+        // l_status_ = L_INACTIVE;
+        log_info_manager_->m_status = M_INACTIVE;
+        log_info_manager_->l_status = L_INACTIVE;
     }
     // show_thread.reset(new std::thread(&LidarSlam::showThread, this)); 
     working_mode_ = work_mode;
@@ -352,7 +361,7 @@ void LidarSlam::loopClosureThread()
         auto start = std::chrono::steady_clock::now();
         if (loop_closure_wait)
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
-      //  performSCLoopClosure();
+        // performSCLoopClosure();
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -389,12 +398,16 @@ void LidarSlam::localizationThread()
         std::lock_guard<std::mutex> lk(mtx_odom_cloud);
         pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
         }
-        if(l_status_ == L_RELOCALIZE_FAILED){
+        // if(l_status_ == L_RELOCALIZE_FAILED){
+        if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
+            
             cout << "global Localization failed: time out "<<endl;
 
         }else{
             if (!globalLocalizationSuccess){
-                l_status_ = L_RELOCALIZING;
+                // l_status_ = L_RELOCALIZING;
+                log_info_manager_->l_status = L_RELOCALIZING;
+
                 // check 
                 if(!getLoadMap()){
                     cout << "globalLocalization failed: map not ready ... "<<endl;
@@ -415,7 +428,9 @@ void LidarSlam::localizationThread()
                 }
                 if (!globalLocalizationSuccess && global_localize_count_ > global_localize_times){
                     cout << "global Localization failed: time out"<<endl;
-                    l_status_ = L_RELOCALIZE_FAILED;
+                    // l_status_ = L_RELOCALIZE_FAILED;
+                    log_info_manager_->l_status = L_RELOCALIZE_FAILED;
+
                 }
                 if(globalLocalizationSuccess){
                     cout << "\033[1;32mglobal Localization Success\033[0m"<<endl;
@@ -427,20 +442,24 @@ void LidarSlam::localizationThread()
             else{
                 cout << "localizing ... "<<endl;
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set)){
-                    l_status_ = L_NORMAL;
+                    // l_status_ = L_NORMAL;
+                    log_info_manager_->l_status = L_NORMAL;
+
                     gicp_fail_count = 0;
                     // break;
                 }else{
                     gicp_fail_count ++;
                     std::cout<< "fast gicp fail count: "<<gicp_fail_count<<endl;
                     if (gicp_fail_count > 5){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        l_status_ = L_FAILED;
+                        // l_status_ = L_FAILED;
+                        log_info_manager_->l_status = L_FAILED;
                     }else if (gicp_fail_count > 2){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        l_status_ = L_LOW_ACCURACY;
+                        // l_status_ = L_LOW_ACCURACY;
+                        log_info_manager_->l_status = L_LOW_ACCURACY;
                     }
                 }
                 log_info_manager_->log_info.gicp_fail_count=gicp_fail_count;
-                log_info_manager_->log_info.l_status = l_status_;
+                log_info_manager_->log_info.l_status = log_info_manager_->l_status;
 
                 //state.state("normal");
             }
@@ -472,8 +491,10 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
         auto start = std::chrono::steady_clock::now();
         // if(second_mapping_need_global_localization_){
         // }
+        log_info_manager_->m_status = M_INACTIVE;
 
-        if(m_status_ == M_RELOCALIZE_FAILED){
+        // if(m_status_ == M_RELOCALIZE_FAILED){
+        if(log_info_manager_->m_status = M_RELOCALIZE_FAILED){
             cout << "global Localization failed: time out "<<endl;
 
         }else {
@@ -524,14 +545,16 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
                     cout << "global_localize_times_count: " << global_localize_count<<endl;
                     if(globalLocalizationSuccess){
-                        m_status_ = M_STANDBY;
+                        // m_status_ = M_STANDBY;
+                        log_info_manager_->m_status = M_STANDBY;
                     }
                     global_localize_count++;
 
                 }
                 if (global_localize_count > global_localize_times){
                     cout << "global Localization failed: time out"<<endl;
-                    m_status_ = M_RELOCALIZE_FAILED;
+                    // m_status_ = M_RELOCALIZE_FAILED;
+                    log_info_manager_->m_status = M_RELOCALIZE_FAILED;
                     
                 }
             }
@@ -933,10 +956,12 @@ bool LidarSlam::run()
             if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
                 if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
                     // lidar_no_point_count_++;
-                    m_status_ = M_FAILED;
+                    // m_status_ = M_FAILED;
+                    log_info_manager_->m_status = M_FAILED;
                 }else if(working_mode_==LOCALIZATION){
                     // lidar_no_point_count_++;
-                    l_status_ = L_FAILED;
+                    // l_status_ = L_FAILED;
+                    log_info_manager_->l_status = L_FAILED;
                 }
             }
             std::cout << "No point, skip this scan!\n"<< std::endl;
@@ -991,10 +1016,12 @@ bool LidarSlam::run()
             if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
                 if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
                     // lidar_no_point_count_++;
-                    m_status_ = M_FAILED;
+                    // m_status_ = M_FAILED;
+                    log_info_manager_->m_status = M_FAILED;
                 }else if(working_mode_==LOCALIZATION){
                     // lidar_no_point_count_++;
-                    l_status_ = L_FAILED;
+                    // l_status_ = L_FAILED;
+                    log_info_manager_->l_status = L_FAILED;
                 }
             }
             std::cout <<"No point after filter, skip this scan!"<<std::endl;

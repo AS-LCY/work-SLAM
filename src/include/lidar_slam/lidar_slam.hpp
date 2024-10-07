@@ -293,15 +293,16 @@ class LidarSlam
             return FilteredObstacleCloud;
         }
 
-        LocalizationStatus get_l_status(){
-            return l_status_;
-        }
+        // LocalizationStatus get_l_status(){
+        //     return l_status_;
+        // }
 
-        void reset_globalLocalizationSuccess(bool global_success_flag){
-            globalLocalizationSuccess = global_success_flag;
-            global_localize_count_ = 0;
-            l_status_ = L_RELOCALIZING;
-        }
+        // void reset_globalLocalizationSuccess(bool global_success_flag){
+        //     globalLocalizationSuccess = global_success_flag;
+        //     global_localize_count_ = 0;
+        //     // l_status_ = L_RELOCALIZING;
+        //     log_info_manager_->l_status = L_RELOCALIZING;
+        // }
 
         double get_lidar_time(){
             return lidar_end_time;
@@ -387,8 +388,8 @@ class LidarSlam
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
-        LocalizationStatus l_status_ = L_INACTIVE;
-        MappingStatus m_status_ = M_INACTIVE;
+        // LocalizationStatus l_status_ = L_INACTIVE;
+        // MappingStatus m_status_ = M_INACTIVE;
         // bool second_mapping_need_global_localization_ = false;
 
         int global_localize_count_=0;
