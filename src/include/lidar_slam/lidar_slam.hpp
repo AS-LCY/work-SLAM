@@ -103,9 +103,9 @@ class LidarSlam
             thread->join();
             // cout<<"debug: destruct thread"<<endl;
             thread.reset(nullptr);
-            show_thread->join();
-            // cout<<"debug: destruct show_thread"<<endl;
-            show_thread.reset(nullptr);
+            // show_thread->join();
+            // // cout<<"debug: destruct show_thread"<<endl;
+            // show_thread.reset(nullptr);
             if(working_mode_ == SEC_MAPPING){
                 global_localization_thread_->join();
                 // cout<<"debug: destruct global_localization_thread_"<<endl;
@@ -360,7 +360,7 @@ class LidarSlam
 
         std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree= nullptr;
         std::unique_ptr<std::thread> thread = nullptr;
-        std::unique_ptr<std::thread> show_thread = nullptr; 
+        // std::unique_ptr<std::thread> show_thread = nullptr; 
         std::unique_ptr<std::thread> global_localization_thread_ = nullptr; 
         mutex mtx_buffer;
         mutex mtx_odom_cloud;

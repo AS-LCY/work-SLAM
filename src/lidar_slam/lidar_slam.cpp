@@ -200,7 +200,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     if (thread!=nullptr){
         thread_run = false;
         thread->join();
-        show_thread->join();
+        // show_thread->join();
         thread_run = true;
         if(work_mode == SEC_MAPPING){
             global_localization_thread_->join();
@@ -225,7 +225,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         m_status_ = M_INACTIVE;
         l_status_ = L_INACTIVE;
     }
-    show_thread.reset(new std::thread(&LidarSlam::showThread, this)); 
+    // show_thread.reset(new std::thread(&LidarSlam::showThread, this)); 
     working_mode_ = work_mode;
     cout << "slam reset successfully"<<endl;
 }
@@ -547,6 +547,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
 
 void LidarSlam::showThread()
 {
+    // return;
     const int frequency = 1.0; // 频率为1Hz
     const std::chrono::milliseconds period(1000 / frequency);
     while (thread_run&&reseting == false)

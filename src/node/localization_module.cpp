@@ -29,11 +29,11 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
         ROS_INFO("Create ROS-IO successfully!");
     }
 
-    //************************** TODO: 待确认 *******************************
-    if (show_rviz_){// this param load from lasunch file
-        show_thread_ = std::thread(&LocalizationModule::show_thread, this);
-        ROS_INFO("Show_thread started");
-    }
+    // //************************** TODO: 待确认 *******************************
+    // if (show_rviz_){// this param load from lasunch file
+    //     show_thread_ = std::thread(&LocalizationModule::show_thread, this);
+    //     ROS_INFO("Show_thread started");
+    // }
 
     // TODO
     std::thread load_data_thread;
@@ -78,7 +78,7 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
     // auto pose = slam_->getLidarInMap(); 
     auto pose = init_pose;
 
-    if (abs(pose.translation().x())>0.01){
+    if (abs(pose.translation().x())>0.00001){
         lidar_x_ = pose.translation().x();
         lidar_y_ = pose.translation().y();
         lidar_a_ = angle_norm(R2ypr(pose.rotation()).x());
@@ -514,7 +514,7 @@ void LocalizationModule::position_filter_thread(){
                 if(position_init(curr_pose)){
                     position_initialized_ = true;
                 }
-                last_pose = curr_pose; // init
+                last_pose = curr_pose; // init last_pose
             }
 
             auto end = std::chrono::steady_clock::now();
@@ -897,62 +897,62 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
 
 
 
-void LocalizationModule::show_thread()
-{
-#if 0
-    std::cout<<"start show thread "<<endl;
-    const int frequency = 5.0; // 频率为1Hz
-    const std::chrono::milliseconds period(1000 / frequency);
-    lidar_slam::Viewer test_view(localization_mode_);
-    while (ros::ok())
-    {
-        auto start = std::chrono::steady_clock::now();
-        if (!control_status_.reset){
-            test_view.Start();
-            control_status_ = test_view.getControl();
-            if (!localization_mode_){
-                std::vector<Eigen::Isometry3d> optimized_poses = slam_->get_optimized_path();
-                test_view.DrawTrajectory(optimized_poses,Eigen::Vector3f(0,1,0));
-                test_view.DrawTrajectory(slam_->get_unoptimized_path(),Eigen::Vector3f(1,0,0));
-                map<int, int> loopIndex = slam_->getloopIndex();
-                for (auto it = loopIndex.begin(); it != loopIndex.end(); ++it) {
-                     test_view.DrawLine(optimized_poses[it->first],optimized_poses[it->second],Eigen::Vector3f(0,0,0));
-                }
+// void LocalizationModule::show_thread()
+// {
+// #if 0
+//     std::cout<<"start show thread "<<endl;
+//     const int frequency = 5.0; // 频率为1Hz
+//     const std::chrono::milliseconds period(1000 / frequency);
+//     lidar_slam::Viewer test_view(localization_mode_);
+//     while (ros::ok())
+//     {
+//         auto start = std::chrono::steady_clock::now();
+//         if (!control_status_.reset){
+//             test_view.Start();
+//             control_status_ = test_view.getControl();
+//             if (!localization_mode_){
+//                 std::vector<Eigen::Isometry3d> optimized_poses = slam_->get_optimized_path();
+//                 test_view.DrawTrajectory(optimized_poses,Eigen::Vector3f(0,1,0));
+//                 test_view.DrawTrajectory(slam_->get_unoptimized_path(),Eigen::Vector3f(1,0,0));
+//                 map<int, int> loopIndex = slam_->getloopIndex();
+//                 for (auto it = loopIndex.begin(); it != loopIndex.end(); ++it) {
+//                      test_view.DrawLine(optimized_poses[it->first],optimized_poses[it->second],Eigen::Vector3f(0,0,0));
+//                 }
                 
-                if (control_status_.showMap)
-                    test_view.DrawCloud(slam_->getCurrentMap(),Eigen::Vector3f(0,0,1),1);
-                if (control_status_.showLidar)
-                   test_view.DrawCloud(slam_->get_odom_cloud(),slam_->getOdomToMap(),Eigen::Vector3f(1,0,0),2);
-                if (control_status_.showObstacle)
-                    test_view.DrawCloud(slam_->getFilteredObstacleCloud(),slam_->getWheelInMap(),Eigen::Vector3f(0,1,0),2.0);
-                test_view.DrawPose(slam_->getWheelInMap());
-            }
-            else{
-                if (control_status_.showMap)
-                   test_view.DrawCloud(slam_->getLoadMapPoints(),Eigen::Vector3f(0,0,1),1.0);
-                if (control_status_.showLidar)
-                   test_view.DrawCloud(slam_->get_lidar_cloud(),slam_->getLidarInMap(),Eigen::Vector3f(1,0,0),2.0);
-                if (control_status_.showObstacle)
-                    test_view.DrawCloud(slam_->getFilteredObstacleCloud(),slam_->getWheelInMap(),Eigen::Vector3f(0,1,0),2.0);
-                if (slam_->isGloalLocalizationSuccess())
-                    test_view.DrawPose(slam_->getWheelInMap());
-                test_view.DrawTrajectory(slam_->get_unoptimized_path(),Eigen::Vector3f(1,0,0));
-            }
+//                 if (control_status_.showMap)
+//                     test_view.DrawCloud(slam_->getCurrentMap(),Eigen::Vector3f(0,0,1),1);
+//                 if (control_status_.showLidar)
+//                    test_view.DrawCloud(slam_->get_odom_cloud(),slam_->getOdomToMap(),Eigen::Vector3f(1,0,0),2);
+//                 if (control_status_.showObstacle)
+//                     test_view.DrawCloud(slam_->getFilteredObstacleCloud(),slam_->getWheelInMap(),Eigen::Vector3f(0,1,0),2.0);
+//                 test_view.DrawPose(slam_->getWheelInMap());
+//             }
+//             else{
+//                 if (control_status_.showMap)
+//                    test_view.DrawCloud(slam_->getLoadMapPoints(),Eigen::Vector3f(0,0,1),1.0);
+//                 if (control_status_.showLidar)
+//                    test_view.DrawCloud(slam_->get_lidar_cloud(),slam_->getLidarInMap(),Eigen::Vector3f(1,0,0),2.0);
+//                 if (control_status_.showObstacle)
+//                     test_view.DrawCloud(slam_->getFilteredObstacleCloud(),slam_->getWheelInMap(),Eigen::Vector3f(0,1,0),2.0);
+//                 if (slam_->isGloalLocalizationSuccess())
+//                     test_view.DrawPose(slam_->getWheelInMap());
+//                 test_view.DrawTrajectory(slam_->get_unoptimized_path(),Eigen::Vector3f(1,0,0));
+//             }
 
-            if (control_status_.saveMap && !localization_mode_)
-                slam_ -> save_map(curr_dir_+std::string("/map/"),0.1, 0, 0);
-            test_view.Finish();  
-        }
-        auto end = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+//             if (control_status_.saveMap && !localization_mode_)
+//                 slam_ -> save_map(curr_dir_+std::string("/map/"),0.1, 0, 0);
+//             test_view.Finish();  
+//         }
+//         auto end = std::chrono::steady_clock::now();
+//         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-        if (elapsed < period)
-        {
-            std::this_thread::sleep_for(period - elapsed);
-        }
-    }
-#endif
-}
+//         if (elapsed < period)
+//         {
+//             std::this_thread::sleep_for(period - elapsed);
+//         }
+//     }
+// #endif
+// }
 
 
 // 这里其实还包含了 update path
