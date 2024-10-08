@@ -58,6 +58,8 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
 }
 
 LocalizationModule::~LocalizationModule(){
+    position_filter_thread_->join();
+    position_filter_thread_.reset(nullptr);
 
 }
 
@@ -377,7 +379,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
     std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_dealt_timer    Thread ID: " << thisId << std::endl;
-
+    
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
         if (pthread_setaffinity_np(this_thread, sizeof(mask), &mask) < 0) {

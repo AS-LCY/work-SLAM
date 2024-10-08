@@ -109,6 +109,9 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 0"<<endl;
     reseting = true;
     // l_status_ = L_INACTIVE;
+    log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
+    log_info_manager_->reset_log_info();
+    log_info_manager_->reset_module_status();
     log_info_manager_->l_status = L_INACTIVE;
 
     sleep(1);
@@ -194,11 +197,8 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     global_localization_.reset(new GlobalLocalization());
     cloud_map_manager_.reset(new CloudMap());
 
-    log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
-    log_info_manager_->reset_log_info();
-    log_info_manager_->reset_module_status();
     
-    // cout << "slam reset 5"<<endl;
+    cout << "slam reset 5"<<endl;
     // 线程相关 ************************************************
     if (thread!=nullptr){
         thread_run = false;
