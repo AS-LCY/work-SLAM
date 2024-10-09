@@ -87,7 +87,7 @@ mapping:
   key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧
   loopSearchDistance: 1.5
   loopSearchTimeDiff: 5  # unit: sec, 原本30s, 
-  loopSearchSkipKey: 5  # 跳过的关键帧
+  loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
   use_ele_pcd_flag: false   # 是否使用单区域pcd
   save_ele_pcd_flag: false  # 是否保存单区域pcd
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值

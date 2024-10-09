@@ -53,6 +53,8 @@ struct MappingParam{
     double key_frame_distance;
     double key_frame_angle;
     double loopSearchDistance;
+    double loopSearchTimeDiff;
+    double loopSearchSkipKey;
     bool use_ele_pcd_flag;
     bool save_ele_pcd_flag;
     // std::string save_map_dir;

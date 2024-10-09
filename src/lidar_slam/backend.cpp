@@ -1,6 +1,6 @@
 #include "lidar_slam/backend.hpp"
 namespace lidar_slam {
-BackEnd::BackEnd(float dist, float angle,float loop_dist){
+BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, float loop_skip_key){
    KeyPoint.reset(new pcl::PointCloud<PointType>());
    CopyKeyPoint.reset(new pcl::PointCloud<PointType>());
    show_map.reset(new pcl::PointCloud<PointType>());
@@ -14,6 +14,8 @@ BackEnd::BackEnd(float dist, float angle,float loop_dist){
    keyframeDistThreshold = dist;
    keyframeAngleThreshold = angle; 
    loopKeyframeSearchRadius = loop_dist;
+   loopKeyframeSearchTimeDiff = loop_time;
+   loopKeyframeSearchSkipKey = loop_skip_key;
    parameters.relinearizeThreshold = 0.01;
    parameters.relinearizeSkip = 1;
    isam = new gtsam::ISAM2(parameters);
@@ -343,7 +345,8 @@ bool BackEnd::detectLoopClosureDistance(int *latestID, int *closestID, double ti
     for (int i = 0; i < (int)pointSearchIndLoop.size(); ++i)
     {
         int id = pointSearchIndLoop[i];
-        if (abs(KeyPoses[id].time - time) > 30.0)
+        // if (abs(KeyPoses[id].time - time) > 30.0)
+        if (abs(KeyPoses[id].time - time) > loopKeyframeSearchTimeDiff)
         {
             loopKeyPre = id;
             break;

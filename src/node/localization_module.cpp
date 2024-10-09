@@ -4,6 +4,23 @@
 #define L_WHEEL     0.385f
 
 namespace localization_module {
+
+nav_msgs::Odometry isometry3d_to_odom(const Eigen::Isometry3d isometry_in, std::string frame_in, std::string child_frame_in){
+    nav_msgs::Odometry res_odometry;
+    res_odometry.header.frame_id = frame_in;
+    res_odometry.child_frame_id = child_frame_in;
+    res_odometry.pose.pose.position.x = isometry_in.translation().x();
+    res_odometry.pose.pose.position.y = isometry_in.translation().y();
+    res_odometry.pose.pose.position.z = isometry_in.translation().z();
+    Eigen::Quaterniond quaternion = Eigen::Quaterniond(isometry_in.rotation());
+    res_odometry.pose.pose.orientation.x = quaternion.x();
+    res_odometry.pose.pose.orientation.y = quaternion.y();
+    res_odometry.pose.pose.orientation.z = quaternion.z();
+    res_odometry.pose.pose.orientation.w = quaternion.w();
+
+    return res_odometry;
+}
+
 LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleStatus init_status){
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
     // curr_dir_ = work_path;
@@ -350,6 +367,7 @@ bool LocalizationModule::create_ROS_IO(){
 
     // both 建图 & 定位
 	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100);
+	pub_heartbeat_ = nh_.advertise<std_msgs::Header>("/flbot/localization_module/heartbeat", 2);
 
     // only 建图 
 
@@ -439,6 +457,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         return;
     } 
     /********************************- run slam -********************************/    
+    std_msgs::Header msg_hb;
+    msg_hb.stamp = ros::Time().now();
+    msg_hb.frame_id = "lio heart beat";
+    pub_heartbeat_.publish(msg_hb);
 
     thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
@@ -487,6 +509,7 @@ void LocalizationModule::position_filter_thread(){
     auto last_pub_time = std::chrono::steady_clock::now();// init
 
     static Eigen::Isometry3d last_pose = Eigen::Isometry3d::Identity();
+    static Eigen::Isometry3d last_lidar_in_odom = Eigen::Isometry3d::Identity();
 
     while (true) {
         auto start = std::chrono::steady_clock::now();
@@ -521,6 +544,7 @@ void LocalizationModule::position_filter_thread(){
                     position_initialized_ = true;
                 }
                 last_pose = curr_pose; // init last_pose
+                last_lidar_in_odom = slam_->getLidarInOdom();
             }
 
             auto end = std::chrono::steady_clock::now();
@@ -535,36 +559,37 @@ void LocalizationModule::position_filter_thread(){
         Eigen::Isometry3d lidar_in_map = slam_->getLidarInMap();
         // init filter_odometry
 
-        nav_msgs::Odometry filter_odometry;
-        filter_odometry.header.frame_id = "map";
-        filter_odometry.child_frame_id = "base_footprint";
-        filter_odometry.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
-        filter_odometry.pose.pose.position.x = lidar_in_map.translation().x();
-        filter_odometry.pose.pose.position.y = lidar_in_map.translation().y();
-        filter_odometry.pose.pose.position.z = lidar_in_map.translation().z();
-        Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
-        filter_odometry.pose.pose.orientation.x = quaternion.x();
-        filter_odometry.pose.pose.orientation.y = quaternion.y();
-        filter_odometry.pose.pose.orientation.z = quaternion.z();
-        filter_odometry.pose.pose.orientation.w = quaternion.w();
+        Eigen::Isometry3d curr_lidar_in_odom = slam_->getLidarInOdom();
+
+        nav_msgs::Odometry filter_odometry = isometry3d_to_odom(lidar_in_map, "map", "base_footprint");        
+        nav_msgs::Odometry lidar2odom_temp = isometry3d_to_odom(curr_lidar_in_odom, "odom", "lidar");
+        nav_msgs::Odometry odom2map_temp = isometry3d_to_odom(slam_->getOdomToMap(), "map", "odom");
+
+        filter_odometry.header.stamp = ros::Time().now();
+        lidar2odom_temp.header.stamp = ros::Time().now();
+        odom2map_temp.header.stamp = ros::Time().now();
+
+        log_info_manager_->log_info.lidar2map = filter_odometry;
+        log_info_manager_->log_info.lidar2odom = lidar2odom_temp;
+        log_info_manager_->log_info.odom2map = odom2map_temp;
 
         // init pose_filtered
         Eigen::Isometry3d pose_filtered = Eigen::Isometry3d::Identity();
         pose_filtered = lidar_in_map;
 
         // // fill log ****************************************************
-        // double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-        // pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-        // double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-        // pcl::getTranslationAndEulerAngles(temp_correct, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+        double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+        pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+        double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+        pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 
         // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
-        // log_info_manager_->log_info.lidar2odom_dx = curr_x - last_x;
-        // log_info_manager_->log_info.lidar2odom_dy = curr_y - last_y;
-        // log_info_manager_->log_info.lidar2odom_dz = curr_z - last_z;
-        // log_info_manager_->log_info.lidar2odom_droll  = 180 / PI_M * (curr_roll  - last_roll);
-        // log_info_manager_->log_info.lidar2odom_dpitch = 180 / PI_M * (curr_pitch - last_pitch);
-        // log_info_manager_->log_info.lidar2odom_dyaw   = 180 / PI_M * (curr_yaw   - last_yaw);
+        log_info_manager_->log_info.lidar2odom_dx = curr_x - last_x;
+        log_info_manager_->log_info.lidar2odom_dy = curr_y - last_y;
+        log_info_manager_->log_info.lidar2odom_dz = curr_z - last_z;
+        log_info_manager_->log_info.lidar2odom_droll  = 180 / PI_M * (curr_roll  - last_roll);
+        log_info_manager_->log_info.lidar2odom_dpitch = 180 / PI_M * (curr_pitch - last_pitch);
+        log_info_manager_->log_info.lidar2odom_dyaw   = 180 / PI_M * (curr_yaw   - last_yaw);
 
         // // fill log end ****************************************************
 

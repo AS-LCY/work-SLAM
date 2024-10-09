@@ -216,6 +216,7 @@ private:
     ros::Publisher pub_localization_module_status_;
     ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
+    ros::Publisher pub_heartbeat_;
 
 
     // slam node

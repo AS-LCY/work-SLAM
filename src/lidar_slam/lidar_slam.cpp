@@ -162,7 +162,10 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     auto key_frame_distance = config_param_.mapping.key_frame_distance;
     auto key_frame_angle = config_param_.mapping.key_frame_angle;
     auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
-    back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance));
+    auto loopSearchTimeDiff = config_param_.mapping.loopSearchTimeDiff;
+    auto loopSearchSkipKey = config_param_.mapping.loopSearchSkipKey;
+    // back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance));
+    back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance, loopSearchTimeDiff, loopSearchSkipKey));
 
     // cout << "slam reset 4"<<endl;
     /// sec_mapping & localizaiton ********************************
