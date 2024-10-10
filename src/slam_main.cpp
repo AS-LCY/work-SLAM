@@ -24,8 +24,9 @@ int main(int argc,char **argv){
     
     ROS_INFO("\033[1;32m----> localization_module start! \033[0m");
 
-    ros::MultiThreadedSpinner spinner(10);
-    spinner.spin();
+    // ros::MultiThreadedSpinner spinner(10);
+    // spinner.spin();
+    ros::spin();
     return 0;
 }
 
