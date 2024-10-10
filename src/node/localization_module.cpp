@@ -139,9 +139,9 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
 
-    if(pose_vec.size() > 0 ){
-        // Eigen::Isometry3d last_pose = pose_vec[pose_vec.size()-1];
-        last_pose = pose_vec[pose_vec.size()-1];
+    if(pose_vec_.size() > 0 ){
+        // Eigen::Isometry3d last_pose = pose_vec_[pose_vec_.size()-1];
+        last_pose = pose_vec_[pose_vec_.size()-1];
 
         pcl::getTranslationAndEulerAngles(last_pose, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 的 位姿
         pcl::getTranslationAndEulerAngles(cur_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
@@ -188,20 +188,20 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
 
     }
 
-    pose_vec.push_back(pose_filtered);
-    if (pose_vec.size() > window_size){
-        // std::cout<<"pose_vec size: "<<pose_vec.size()<<endl;
-        pose_vec.erase(pose_vec.begin());
-        // pose_vec.pop_front();
-        // std::cout<<"pose_vec size: "<<pose_vec.size()<<endl;
+    pose_vec_.push_back(pose_filtered);
+    if (pose_vec_.size() > window_size){
+        // std::cout<<"pose_vec_ size: "<<pose_vec_.size()<<endl;
+        pose_vec_.erase(pose_vec_.begin());
+        // pose_vec_.pop_front();
+        // std::cout<<"pose_vec_ size: "<<pose_vec_.size()<<endl;
 
         float w_sum = 0;
         float sum_x = 0;
         float sum_y = 0;
         float sum_z = 0;
 
-        for (int i=0; i<pose_vec.size(); i++){
-            auto p = pose_vec[i];
+        for (int i=0; i<pose_vec_.size(); i++){
+            auto p = pose_vec_[i];
             double w = i+1;
             // double w = 1;
             sum_x += (p.translation().x() * w);
@@ -213,7 +213,7 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         pose_filtered.translation().y() = sum_y / w_sum;
         pose_filtered.translation().z() = sum_z / w_sum;
 
-        pose_vec[pose_vec.size() -1] = pose_filtered;
+        pose_vec_[pose_vec_.size() -1] = pose_filtered;
 
         pcl::getTranslationAndEulerAngles(pose_filtered, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
 
@@ -241,7 +241,7 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
     last_lidar_dy_ = last_pose.translation().y() -  pose_filtered.translation().y();
     last_lidar_dz_ = last_pose.translation().z() -  pose_filtered.translation().z();
 
-    pub_log_.publish(log_msg);
+    // pub_log_.publish(log_msg);
 }
 
 void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, Eigen::Isometry3d curr_pose, Eigen::Isometry3d & pose_filtered){
@@ -357,8 +357,8 @@ bool LocalizationModule::create_ROS_IO(){
     // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
     // timer_slam_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::slam_dealt_timer, this);
     timer_slam_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
+    timer_pose_filter_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
     timer_module_status_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::pub_module_status_timer, this);
-
     
     // publish ************************************************************************
     pub_localization_module_status_ = nh_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
@@ -392,6 +392,7 @@ bool LocalizationModule::create_ROS_IO(){
 
     return true;
 }
+
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
@@ -498,6 +499,73 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
 }
 
+void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
+    const int pub_frequency = 20;
+    const std::chrono::milliseconds pub_period(1000 / pub_frequency);
+
+    static auto last_pub_time = std::chrono::steady_clock::now();// init
+    
+
+    if (running_module_status_ == MODULE_IDLE ){
+        ROS_INFO("position_filter: wait for module start(reset pose filter!)");
+        reset_pose_filter();
+        position_initialized_ = false;
+        sleep(2);
+        return;
+    }
+
+    if (!slam_ || releasing_slam_flag_){ // slam_ 对象为空, 或正在释放对象
+        ROS_INFO("position_filter: slam not ready (reset pose filter!)");
+        reset_pose_filter();
+        sleep(1);
+        return;
+    }
+
+    if (running_module_status_ = MODULE_STARTING_SLAM || 
+        running_module_status_ = MODULE_STOPPING_SLAM){
+        ROS_INFO("starting/stopping slam now, reset pose filter!");
+        reset_pose_filter();
+        sleep(1);
+        return;
+    }
+
+    if (running_module_status_ == MODULE_MAPPING || 
+        running_module_status_ == MODULE_SEC_MAPPING){
+
+    }else
+
+
+}
+
+void LocalizationModule::reset_pose_filter(){
+    position_initialized_ = false;
+
+    lidar_x_ = 0.0;
+    lidar_y_ = 0.0;
+    lidar_a_ = 0.0;
+
+    last_lidar_x_ = 0.0;
+    last_lidar_y_ = 0.0;
+    last_lidar_a_ = 0.0;
+
+    chassis_x_ = 0.0;
+    chassis_y_ = 0.0;
+    chassis_a_ = 0.0;
+    last_chassis_x_ = 0.0;
+    last_chassis_y_ = 0.0;
+    last_chassis_a_ = 0.0;
+
+    filter_x_ = 0.0;
+    filter_y_ = 0.0;
+    filter_a_ = 0.0;
+
+    pose_vec_.clear();
+
+
+}
+
+
+
 void LocalizationModule::position_filter_thread(){
     const int pub_frequency = 20;
     const int filter_frequency = slam_param_.localization.filter_freq;
@@ -531,7 +599,7 @@ void LocalizationModule::position_filter_thread(){
         // init 
         if (!position_initialized_){
             bool localize_flag = (running_module_status_ == MODULE_LOCALIZATION ? 1 : 0);
-            bool mapping_flag = ((running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_MAPPING) ? 1 : 0);
+            bool mapping_flag = ((running_module_status_ == MODULE_MAPPING || running_module_status_ == MODULE_SEC_MAPPING) ? 1 : 0);
             bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
             bool m_status_ok = ((log_info_manager_->m_status == M_STANDBY || log_info_manager_->m_status == M_CREATING_ELE) ? 1 : 0);
             // if ((localization_flag && localization_status_ == L_NORMAL) || 

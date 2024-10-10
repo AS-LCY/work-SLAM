@@ -136,6 +136,7 @@ private:
     // callback 
     void localization_module_ctrl_cbk(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
+    void pose_filter_timer(const ros::TimerEvent &event);
     void pub_module_status_timer(const ros::TimerEvent &event);
 
     // void command_cbk(const std_msgs::Int32 &msg_in);
@@ -173,6 +174,7 @@ private:
     bool position_init(Eigen::Isometry3d init_pose);
     void position_filter();
     void detect_slipping();
+    void reset_pose_filter();
 
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
@@ -288,9 +290,9 @@ private:
     /// odometry filter ****************************
     std::unique_ptr<std::thread> position_filter_thread_ = nullptr;
     // std::thread position_filter_thread_;
-    // std::vector<Eigen::Vector3d> pose_vec;
-    std::vector<Eigen::Isometry3d> pose_vec;
-    // std::deque<Eigen::Vector3d> pose_vec;
+    // std::vector<Eigen::Vector3d> pose_vec_;
+    std::vector<Eigen::Isometry3d> pose_vec_;
+    // std::deque<Eigen::Vector3d> pose_vec_;
     int window_size = 5;
     
     bool position_initialized_ = false;
