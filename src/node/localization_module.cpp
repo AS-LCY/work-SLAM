@@ -21,6 +21,22 @@ nav_msgs::Odometry isometry3d_to_odom(const Eigen::Isometry3d isometry_in, std::
     return res_odometry;
 }
 
+tf::Transform odom_to_transform(const nav_msgs::Odometry odom_in){
+    tf::Transform res_transform;
+    
+    tf::Quaternion q;
+    res_transform.setOrigin(tf::Vector3(odom_in.pose.pose.position.x,
+                                        odom_in.pose.pose.position.y,
+                                        odom_in.pose.pose.position.z));
+    q.setW(odom_in.pose.pose.orientation.w);
+    q.setX(odom_in.pose.pose.orientation.x);
+    q.setY(odom_in.pose.pose.orientation.y);
+    q.setZ(odom_in.pose.pose.orientation.z);
+    res_transform.setRotation(q);    
+
+    return res_transform;
+}
+
 LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleStatus init_status){
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
     // curr_dir_ = work_path;
@@ -504,11 +520,14 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 // 以下为 pose filter timer 
 
 void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
+    // param set
     const int pub_frequency = 20;
     const std::chrono::milliseconds pub_period(1000 / pub_frequency);
 
-    static auto last_pub_time = std::chrono::steady_clock::now();// init
+    static auto last_pub_time = std::chrono::steady_clock::now();// init, used when localizing
     
+
+    auto start = std::chrono::steady_clock::now();
 
     if (running_module_status_ == MODULE_IDLE ){
         ROS_INFO("position_filter: wait for module start(reset pose filter!)");
@@ -533,10 +552,48 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         return;
     }
 
+
+    Eigen::Isometry3d lidar_in_map_to_pub = Eigen::Isometry3d::Identity();
+
     if (running_module_status_ == MODULE_MAPPING || 
         running_module_status_ == MODULE_SEC_MAPPING){
+        Eigen::Isometry3d lidar_in_map_to_pub = slam_->getLidarInMap();
+        odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_footprint");  
+        odometry_to_pub.header.stamp = ros::Time().now(); 
+        pub_filter_odometry_.publish(odometry_to_pub);
 
-    }else{
+        static tf::TransformBroadcaster br;
+        tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
+        br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_footprint"));
+
+        auto mapping_end = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(mapping_end - start);
+        if (elapsed < pub_period) {
+            std::this_thread::sleep_for(pub_period - elapsed);
+        }
+        return;
+    }else if (running_module_status_ == MODULE_LOCALIZATION){
+        // 
+        if (!position_initialized_){
+            bool localize_flag = (running_module_status_ == MODULE_LOCALIZATION ? 1 : 0);
+            bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
+
+            if (localize_flag && l_status_ok){
+                auto curr_pose = slam_->getLidarInMap(); 
+                if(position_init(curr_pose)){
+                    position_initialized_ = true;
+                }
+                // last_pose = curr_pose; // init last_pose
+                // last_lidar_in_odom = slam_->getLidarInOdom();
+            }
+
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            if (elapsed < filter_period) {
+                std::this_thread::sleep_for(filter_period - elapsed);
+            }
+            return;
+        }
 
     }
 
