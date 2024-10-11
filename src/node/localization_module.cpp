@@ -499,6 +499,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+// 以下为 pose filter timer 
+
 void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     const int pub_frequency = 20;
     const std::chrono::milliseconds pub_period(1000 / pub_frequency);
@@ -509,15 +513,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     if (running_module_status_ == MODULE_IDLE ){
         ROS_INFO("position_filter: wait for module start(reset pose filter!)");
         reset_pose_filter();
-        position_initialized_ = false;
+        // position_initialized_ = false;
         sleep(2);
-        return;
-    }
-
-    if (!slam_ || releasing_slam_flag_){ // slam_ 对象为空, 或正在释放对象
-        ROS_INFO("position_filter: slam not ready (reset pose filter!)");
-        reset_pose_filter();
-        sleep(1);
         return;
     }
 
@@ -529,10 +526,19 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         return;
     }
 
+    if (!slam_ || releasing_slam_flag_){ // slam_ 对象为空, 或正在释放对象
+        ROS_INFO("position_filter: slam not ready (reset pose filter!)");
+        reset_pose_filter();
+        sleep(1);
+        return;
+    }
+
     if (running_module_status_ == MODULE_MAPPING || 
         running_module_status_ == MODULE_SEC_MAPPING){
 
-    }else
+    }else{
+
+    }
 
 
 }
@@ -564,6 +570,8 @@ void LocalizationModule::reset_pose_filter(){
 
 }
 
+// 以上为 pose filter timer 
+//////////////////////////////////////////////////////////////////////////////////////
 
 
 void LocalizationModule::position_filter_thread(){
