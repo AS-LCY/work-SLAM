@@ -83,7 +83,7 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
         ROS_INFO("Localization Module Start with status:\033[1;32m %s\033[0m", print_ModuleStatus(running_module_status_).c_str());
     }
 
-    position_filter_thread_.reset(new  std::thread(&LocalizationModule::position_filter_thread, this));
+    // position_filter_thread_.reset(new  std::thread(&LocalizationModule::position_filter_thread, this));
     
     // position_filter_thread_.join();
 
@@ -91,8 +91,8 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
 }
 
 LocalizationModule::~LocalizationModule(){
-    position_filter_thread_->join();
-    position_filter_thread_.reset(nullptr);
+    // position_filter_thread_->join();
+    // position_filter_thread_.reset(nullptr);
 
 }
 
@@ -143,15 +143,15 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
     }
 }
 
-void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_temp,Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered){
+void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_temp,Eigen::Isometry3d cur_pose_orig, Eigen::Isometry3d & pose_filtered){
     fairland_msgs::LocalizationModuleLogInfo log_msg;
     window_size = slam_param_.localization.window_size;
     // Eigen::Vector3d pos_sum;
     Eigen::Isometry3d last_pose = Eigen::Isometry3d::Identity();
-    Eigen::Isometry3d cur_pose;
+    Eigen::Isometry3d curr_pose;
     // Eigen::Isometry3d pose_filtered;
-    cur_pose = lidar_in_map;
-    pose_filtered = cur_pose;
+    curr_pose = cur_pose_orig;
+    pose_filtered = curr_pose;
     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
 
@@ -160,7 +160,7 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         last_pose = pose_vec_[pose_vec_.size()-1];
 
         pcl::getTranslationAndEulerAngles(last_pose, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 的 位姿
-        pcl::getTranslationAndEulerAngles(cur_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
+        pcl::getTranslationAndEulerAngles(curr_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
 
         double dy = curr_y - last_y; // map 坐标系下 y 方向位移
         double dx = curr_x - last_x; // map 坐标系下 x 方向位移
@@ -183,9 +183,9 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
             // pose_filtered.translation().y() = last_pose.translation().y() + final_dy;
 
             double kk =0.8;
-            pose_filtered.translation().x() = last_pose.translation().x() * kk + cur_pose.translation().x() * (1-kk);
-            pose_filtered.translation().y() = last_pose.translation().y() * kk + cur_pose.translation().y() * (1-kk);
-            pose_filtered.translation().z() = last_pose.translation().z() * kk + cur_pose.translation().z() * (1-kk);
+            pose_filtered.translation().x() = last_pose.translation().x() * kk + curr_pose.translation().x() * (1-kk);
+            pose_filtered.translation().y() = last_pose.translation().y() * kk + curr_pose.translation().y() * (1-kk);
+            pose_filtered.translation().z() = last_pose.translation().z() * kk + curr_pose.translation().z() * (1-kk);
 
             // pose_filtered.translation().x() = last_pose.translation().x() + last_lidar_dx_;
             // pose_filtered.translation().y() = last_pose.translation().y() + last_lidar_dy_;
@@ -193,11 +193,11 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         }
         if((abs(baselink_dx) > slam_param_.localization.baselink_dx_thr)){ // 0.05
             double kk =0.8;
-            // cur_pose = slam_->getLastOdomToMap() * slam_->getLidarInOdom();
-            // pose_filtered = cur_pose;
+            // curr_pose = slam_->getLastOdomToMap() * slam_->getLidarInOdom();
+            // pose_filtered = curr_pose;
             pose_filtered.translation().x() = last_pose.translation().x() * kk + pose_filtered.translation().x() * (1-kk);
-            pose_filtered.translation().y() = last_pose.translation().y() * kk + cur_pose.translation().y() * (1-kk);
-            pose_filtered.translation().z() = last_pose.translation().z() * kk + cur_pose.translation().z() * (1-kk);
+            pose_filtered.translation().y() = last_pose.translation().y() * kk + curr_pose.translation().y() * (1-kk);
+            pose_filtered.translation().z() = last_pose.translation().z() * kk + curr_pose.translation().z() * (1-kk);
 
         }
 
@@ -264,17 +264,16 @@ void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_
 
     // set var for position filter
     lidar_time_ = slam_->get_lidar_time();
-    double lidar_x_new = curr_pose.translation().x();
-    double lidar_y_new = curr_pose.translation().y();
+    double curr_lidar_x_orig = curr_pose.translation().x();
+    double curr_lidar_y_orig = curr_pose.translation().y();
 
     // // int k = 0.5;
     int k = slam_param_.localization.fst_order_k;
-    lidar_x_ = last_lidar_x_ * k + lidar_x_new * (1.0-k);
-    lidar_y_ = last_lidar_y_ * k + lidar_y_new * (1.0-k);
-    lidar_a_ = angle_norm(R2ypr(pose_filtered.rotation()).x());
+    pose_filtered.translation().x() = last_lidar_x_ * k + curr_lidar_x_orig * (1.0-k);
+    pose_filtered.translation().y() = last_lidar_y_ * k + curr_lidar_y_orig * (1.0-k);
 
-    pose_filtered.translation().x() = lidar_x_;
-    pose_filtered.translation().y() = lidar_y_;
+    // pose_filtered.translation().x() = lidar_x_;
+    // pose_filtered.translation().y() = lidar_y_;
 
     // fill log **************************************************************
     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
@@ -361,18 +360,17 @@ void LocalizationModule::detect_slipping(){
 }
 
 bool LocalizationModule::create_ROS_IO(){
+
+    ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] main thread");
     // subscriber ********************************************************************
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
     sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 10, &LocalizationModule::livox_pcl_cbk, this);
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>("/livox/imu", 200000, &LocalizationModule::imu_cbk, this);
     sub_chassis_ = nh_.subscribe<fros_hardware_node::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
 
-    sub_mapping_ctrl_ = nh_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
     
     // timer dealt ********************************************************************
-    // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
-    // timer_slam_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::slam_dealt_timer, this);
-    timer_slam_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
+
     timer_pose_filter_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
     timer_module_status_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::pub_module_status_timer, this);
     
@@ -387,6 +385,18 @@ bool LocalizationModule::create_ROS_IO(){
 
     // only 建图 
 
+
+    //需要单独声明一个ros::NodeHandle nh2_
+    //为这个ros::Nodehandle指定单独的Callback队列 slam_queue_
+    // ros::CallbackQueue slam_queue_;
+    nh2_.setCallbackQueue(&slam_queue_);
+    // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
+    // timer_slam_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::slam_dealt_timer, this);
+    timer_slam_ = nh2_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
+
+
+    nh3_.setCallbackQueue(&slam_ctrl_queue_);
+    sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
 
     // only 定位
 
@@ -406,6 +416,28 @@ bool LocalizationModule::create_ROS_IO(){
     pubRgbCloud= nh_.advertise<sensor_msgs::PointCloud2>("rgb_cloud", 1);
     // image_pub = nh_.advertise<sensor_msgs::Image>("fisheye_image", 1);
 
+
+    // ---------------------------------------------------
+
+    //启动两个线程处理全局Callback队列 
+    ros::AsyncSpinner spinner(3);
+    spinner.start();
+
+    //启动一个线程处理AirQuality单独的队列
+    ros::AsyncSpinner spinner_2(1, &slam_queue_);
+    spinner_2.start();
+
+
+    //启动一个线程处理AirQuality单独的队列
+    ros::AsyncSpinner spinner_3(1, &slam_ctrl_queue_);
+    spinner_3.start();
+    ros::waitForShutdown(); 
+
+    // ros::spin();
+    
+
+
+
     return true;
 }
 
@@ -414,6 +446,14 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
     std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_dealt_timer    Thread ID: " << thisId << std::endl;
+
+    static int print_cnt = 0;
+    if (print_cnt % 20 ==0){
+        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------slam timer thread"<<endl;
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------slam timer thread");
+        print_cnt = 0;
+    }
+    print_cnt++;
     
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
@@ -428,7 +468,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (running_module_status_ == MODULE_IDLE || 
         running_module_status_ == MODULE_STARTING_SLAM || 
         running_module_status_ == MODULE_STOPPING_SLAM){
-        ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        // ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
         sleep(2);
         return;
     }
@@ -524,21 +564,27 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     const int pub_frequency = 20;
     const std::chrono::milliseconds pub_period(1000 / pub_frequency);
 
-    static auto last_pub_time = std::chrono::steady_clock::now();// init, used when localizing
     
+    static int print_cnt = 0;
+    if (print_cnt % 100 ==0){
+        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------pose filter timer"<<endl;
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------pose filter timer");
+        print_cnt = 0;
+    }
+    print_cnt++;
 
     auto start = std::chrono::steady_clock::now();
 
     if (running_module_status_ == MODULE_IDLE ){
-        ROS_INFO("position_filter: wait for module start(reset pose filter!)");
+        // ROS_INFO("position_filter: wait for module start(reseting pose filter!)");
         reset_pose_filter();
         // position_initialized_ = false;
         sleep(2);
         return;
     }
 
-    if (running_module_status_ = MODULE_STARTING_SLAM || 
-        running_module_status_ = MODULE_STOPPING_SLAM){
+    if (running_module_status_ == MODULE_STARTING_SLAM || 
+        running_module_status_ == MODULE_STOPPING_SLAM){
         ROS_INFO("starting/stopping slam now, reset pose filter!");
         reset_pose_filter();
         sleep(1);
@@ -552,28 +598,39 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         return;
     }
 
-
-    Eigen::Isometry3d lidar_in_map_to_pub = Eigen::Isometry3d::Identity();
-
     if (running_module_status_ == MODULE_MAPPING || 
         running_module_status_ == MODULE_SEC_MAPPING){
-        Eigen::Isometry3d lidar_in_map_to_pub = slam_->getLidarInMap();
-        odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_footprint");  
-        odometry_to_pub.header.stamp = ros::Time().now(); 
-        pub_filter_odometry_.publish(odometry_to_pub);
 
-        static tf::TransformBroadcaster br;
-        tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
-        br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_footprint"));
+        static auto last_pub_time_m = std::chrono::steady_clock::now();// init
 
-        auto mapping_end = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(mapping_end - start);
-        if (elapsed < pub_period) {
-            std::this_thread::sleep_for(pub_period - elapsed);
+        auto check_time_m = std::chrono::steady_clock::now();                
+        auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_m - last_pub_time_m);
+
+        if (pub_elapsed > pub_period){
+
+            Eigen::Isometry3d lidar_in_map_to_pub = slam_->getLidarInMap();
+            nav_msgs::Odometry odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_footprint");  
+            odometry_to_pub.header.stamp = ros::Time().now(); 
+            pub_filter_odometry_.publish(odometry_to_pub);
+
+            static tf::TransformBroadcaster br;
+            tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
+            br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_footprint"));
+
+            // update
+            last_pub_time_m = check_time_m;
         }
+
         return;
     }else if (running_module_status_ == MODULE_LOCALIZATION){
-        // 
+        // 定位模式
+        static auto last_pub_time_l = std::chrono::steady_clock::now();// init
+
+        static Eigen::Isometry3d last_pose_filtered = Eigen::Isometry3d::Identity();
+        // static Eigen::Isometry3d last_lidar_in_odom = Eigen::Isometry3d::Identity();
+
+        /////////////////////////////////////////////////////////////////////////////////////
+        // position init
         if (!position_initialized_){
             bool localize_flag = (running_module_status_ == MODULE_LOCALIZATION ? 1 : 0);
             bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
@@ -583,21 +640,121 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
                 if(position_init(curr_pose)){
                     position_initialized_ = true;
                 }
-                // last_pose = curr_pose; // init last_pose
+                last_pose_filtered = curr_pose; // init last_pose_filtered
                 // last_lidar_in_odom = slam_->getLidarInOdom();
             }
 
-            auto end = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            if (elapsed < filter_period) {
-                std::this_thread::sleep_for(filter_period - elapsed);
-            }
             return;
         }
 
+        /////////////////////////////////////////////////////////////////////////////////////
+        // 初始化后下一帧开始正常处理-定位模式下的滤波
+
+        // static nav_msgs::Odometry last_filter_odometry;
+        // nav_msgs::Odometry curr_filter_odometry;
+
+        // TODO: 加锁 mutex
+        Eigen::Isometry3d curr_pose_orig = slam_->getLidarInMap();
+        Eigen::Isometry3d curr_pose_filtered = curr_pose_orig;
+
+
+        if(slam_param_.localization.filter_method == 0){
+            // lidar_position_filter_fst_order(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
+        }else if(slam_param_.localization.filter_method == 1){
+            lidar_position_filter_window(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
+        }
+
+        lidar_x_ = curr_pose_filtered.translation().x();
+        lidar_y_ = curr_pose_filtered.translation().y();
+        lidar_a_ = angle_norm(R2ypr(curr_pose_filtered.rotation()).x());
+
+        /// filter : chassis & lidar 
+        // chassis 数据实时更新: curr_chassis 在chassis_cbk 中，last_chassis 在下面这个函数中
+        // lidar   数据实时更新: curr_lidar   在 前面三行 中，    last_lidar 在下面这个函数中
+        position_filter_chassis_lidar(filter_x_, filter_y_, filter_a_);// 引用传入, 输出为更新后的值
+        // update curr_pose_filtered with filter result
+        curr_pose_filtered.translation().x() = filter_x_;
+        curr_pose_filtered.translation().y() = filter_y_;
+
+
+  
+        /////////////////////////////////////////////////////////////////////////////////////
+        // publish odom and tf
+        auto check_time_now_l = std::chrono::steady_clock::now();                
+        auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_now_l - last_pub_time_l);
+
+        if (pub_elapsed > pub_period){
+            // pub odom 
+            Eigen::Isometry3d lidar_in_map_to_pub = curr_pose_filtered;// 结果数据赋值
+            nav_msgs::Odometry odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_footprint");  
+            odometry_to_pub.header.stamp = ros::Time().now(); 
+            pub_filter_odometry_.publish(odometry_to_pub);
+            
+            // send tf
+            static tf::TransformBroadcaster br;
+            tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
+            br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_footprint"));
+
+            // pub log info
+            fill_log(last_pose_filtered, curr_pose_filtered);
+            pub_log_.publish(log_info_manager_->log_info);
+
+            // update
+            last_pub_time_l = check_time_now_l;
+
+        }// pub odom
+
+        // update last_pose 
+        last_pose_filtered = curr_pose_filtered;
+
+        return;
+
     }
 
+}
 
+void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a){
+
+    float ka = 0.5;  // 角度滤波系数 事实上不用
+    detect_slipping();
+    
+    // 轮子记录的位置增量
+    // (     chassis_x_) & (     chassis_y_) & (     chassis_a_)的实时更新在 chassis_cbk 中
+    // (last_chassis_x_) & (last_chassis_y_) & (last_chassis_a_)的实时更新在 本函数的下方
+    float chassis_dx = chassis_x_ - last_chassis_x_; 
+    float chassis_dy = chassis_y_ - last_chassis_y_;
+    float chassis_da = angle_norm(chassis_a_ - last_chassis_a_);
+
+    // filter
+    // k_pos_ 的确定在 detect_slipping() 中, 传入的参数设定, 如果检测到 slipping, k_pos_ 设为0, 仅相信 lidar 定位值
+    filtered_x = (filtered_x + chassis_dx)*k_pos_ + lidar_x_*(1.0-k_pos_);
+    filtered_y = (filtered_y + chassis_dy)*k_pos_ + lidar_y_*(1.0-k_pos_);
+    filtered_a = angle_norm((filtered_a + chassis_da)*ka + lidar_a_*(1.0-ka)); // 这个就很鬼畜 // 这个值没有用上
+
+    // update
+    last_chassis_x_ = chassis_x_;
+    last_chassis_y_ = chassis_y_;
+    last_chassis_a_ = chassis_a_;
+    last_lidar_x_ = lidar_x_;
+    last_lidar_y_ = lidar_y_;
+    last_lidar_a_ = lidar_a_;
+
+}
+
+void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom){
+
+    double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+    pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+    double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+    pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+
+    // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
+    log_info_manager_->log_info.lidar2odom_dx = curr_x - last_x;
+    log_info_manager_->log_info.lidar2odom_dy = curr_y - last_y;
+    log_info_manager_->log_info.lidar2odom_dz = curr_z - last_z;
+    log_info_manager_->log_info.lidar2odom_droll  = rad2deg (curr_roll  - last_roll);
+    log_info_manager_->log_info.lidar2odom_dpitch = rad2deg (curr_pitch - last_pitch);
+    log_info_manager_->log_info.lidar2odom_dyaw   = rad2deg (curr_yaw   - last_yaw);
 }
 
 void LocalizationModule::reset_pose_filter(){
@@ -736,7 +893,6 @@ void LocalizationModule::position_filter_thread(){
         }else if(slam_param_.localization.filter_method == 1){
             lidar_position_filter_window(last_pose, lidar_in_map, pose_filtered);
         }
-        
 
         lidar_x_ = pose_filtered.translation().x();
         lidar_y_ = pose_filtered.translation().y();
@@ -886,6 +1042,13 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 
 void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
     // ROS_INFO("livox lidar callback~");
+    static int print_cnt = 0;
+    if (print_cnt % 10 ==0){
+        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------lidar cbk"<<endl;
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------lidar cbk");
+        print_cnt = 0;
+    }
+    print_cnt++;
 
     if (running_module_status_ == MODULE_IDLE || 
         running_module_status_ == MODULE_STARTING_SLAM || 
@@ -967,7 +1130,7 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     }
     // msg->point_num = cloud_num;
     msg->point_num = msg->points.size();
-    printf("orig lidar count: %d\n", cloud_num);
+    // printf("orig lidar count: %d\n", cloud_num);
     printf("clip lidar count: %d\n", msg->point_num);
 
     slam_ -> livox_pcl_cbk(msg);
@@ -984,6 +1147,14 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 }
 
 void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
+    static int print_cnt = 0;
+    if (print_cnt % 200 ==0){
+        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------imu cbk"<<endl;
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------imu cbk");
+        print_cnt = 0;
+    }
+    print_cnt++;
+
     // ROS_INFO("livox imu callback~");
     // if (!running_slam_){
     // if (set_module_status_ == MODULE_IDLE || running_module_status_ == MODULE_IDLE){
@@ -1039,14 +1210,16 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
     // std::cout << "cal  angular velocity: "<< chassis_angular_velocity_ <<endl;
     // std::cout << "read angular velocity: "<< cur_chassis_msg.ac_angular_velocity <<endl;
 
-    static int receive_count=0;
+    static int print_cnt=0;
 
-    if(receive_count % 4 == 0){
-        std::cout << "read chassis linear velocity: "<< cur_chassis_msg.ac_linear_velocity <<" deg" <<endl;
-        receive_count = 0;
+
+    if(print_cnt % 10 == 0){
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------chassis cbk");
+        std::cout << "read chassis linear velocity: "<< cur_chassis_msg.ac_linear_velocity <<" m/s" <<endl;
+        print_cnt = 0;
     }
 
-    receive_count++;
+    print_cnt++;
 
     // 获取时间差
     ros::Time current_time = cur_chassis_msg.header.stamp;

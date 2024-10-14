@@ -10,6 +10,9 @@
 #include <Eigen/Core>
 // #define _GNU_SOURCE
 #include <pthread.h>
+
+
+#include "boost/thread.hpp"
 // #include <filesystem> // c++17
 
 // #include <ros/ros.h> // debug, use to print time

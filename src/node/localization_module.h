@@ -5,10 +5,14 @@
 #include <vector>
 #include <cstdlib>
 #include <chrono>
+
+#include "boost/thread.hpp"
+
 // #include <filesystem> // c++17 标准
 // ros
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <ros/callback_queue.h>
 #include <pcl_conversions/pcl_conversions.h>
 // #include <image_transport/image_transport.h>
 
@@ -176,6 +180,10 @@ private:
     void detect_slipping();
     void reset_pose_filter();
 
+    void position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a);
+
+    void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
+
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
         CASE_STR(START_MAPPING);
@@ -209,6 +217,14 @@ private:
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;
     ros::Timer timer_module_status_;
+
+    ros::NodeHandle nh2_;
+    ros::CallbackQueue slam_queue_;
+    ros::Timer timer_pose_filter_;
+
+    
+    ros::NodeHandle nh3_;
+    ros::CallbackQueue slam_ctrl_queue_;
 
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
@@ -288,7 +304,7 @@ private:
     lidar_slam::LidarSlamParam slam_param_;
 
     /// odometry filter ****************************
-    std::unique_ptr<std::thread> position_filter_thread_ = nullptr;
+    // std::unique_ptr<std::thread> position_filter_thread_ = nullptr;
     // std::thread position_filter_thread_;
     // std::vector<Eigen::Vector3d> pose_vec_;
     std::vector<Eigen::Isometry3d> pose_vec_;

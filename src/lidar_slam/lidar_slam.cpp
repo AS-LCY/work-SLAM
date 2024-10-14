@@ -206,6 +206,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     if (thread!=nullptr){
         thread_run = false;
         thread->join();
+        // thread->detach();
         // show_thread->join();
         thread_run = true;
         if(work_mode == SEC_MAPPING){
@@ -393,6 +394,8 @@ void LidarSlam::localizationThread()
 
     while (thread_run&&reseting == false)
     {
+        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------localization cbk");
+        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------localization thread."<<endl;
         auto start = std::chrono::steady_clock::now();
         // WorkState state;
         // pcl::PointCloud<PointType>::Ptr temp(new pcl::PointCloud<PointType>());//TODO change to xyzi
@@ -842,6 +845,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     last_timestamp_imu = timestamp; // update imu time
     localization_wait = true;
     // if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
+
+    // std::lock_guard<std::mutex> lk2(mtx_pose);
     if (globalLocalizationSuccess || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING){// TODO add lock
         if (current_pose.base_time < localization_base.base_time - 0.005){
             // std::cout << "predicate pose "<<current_pose.imu_state.pos.transpose()<<std::endl;
@@ -906,6 +911,13 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
 
 bool LidarSlam::run()
 {
+    // static int print_cnt = 0;
+    // if (print_cnt % 20 ==0){
+    //     cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------slam running"<<endl;
+    //     print_cnt = 0;
+    // }
+    // print_cnt++;
+
     // pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
     // if (pthread_setaffinity_np(this_thread, sizeof(mask), &mask) < 0) {
     //     perror("pthread_setaffinity_np");
