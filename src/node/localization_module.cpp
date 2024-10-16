@@ -402,7 +402,9 @@ bool LocalizationModule::create_ROS_IO(){
     nh4_.setCallbackQueue(&pose_filter_queue_);
     // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
     // timer_slam_ = nh4_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
-    timer_pose_filter_ = nh4_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
+    const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
+    // timer_pose_filter_ = nh4_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
+    timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
 
     // only 定位
 
@@ -456,16 +458,16 @@ bool LocalizationModule::create_ROS_IO(){
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
-    std::thread::id thisId = std::this_thread::get_id();
+    // std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_dealt_timer    Thread ID: " << thisId << std::endl;
 
-    static int print_cnt = 0;
-    if (print_cnt % 20 ==0){
-        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------slam timer thread"<<endl;
-        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------slam timer thread");
-        print_cnt = 0;
-    }
-    print_cnt++;
+    // static int print_thread_cnt = 0;
+    // if (print_thread_cnt % 20 ==0){
+    //     // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------slam timer thread"<<endl;
+    //     // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------slam timer thread");
+    //     print_thread_cnt = 0;
+    // }
+    // print_thread_cnt++;
     
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
@@ -480,7 +482,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (running_module_status_ == MODULE_IDLE || 
         running_module_status_ == MODULE_STARTING_SLAM || 
         running_module_status_ == MODULE_STOPPING_SLAM){
-        // ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
         sleep(2);
         return;
     }
@@ -488,7 +490,14 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // ROS_INFO("***********************************************");
     // cout<<"-----------------------------------------------"<<endl;
     // cout<<"***********************************************"<<endl;
-    // ROS_INFO("running module status: %s", print_ModuleStatus(running_module_status_).c_str());
+    ROS_INFO("running module status: %s", print_ModuleStatus(running_module_status_).c_str());
+
+    static int print_run_cnt = 0;
+    if (print_run_cnt % 20 ==0){
+        ROS_INFO("running module status: %s", print_ModuleStatus(running_module_status_).c_str());
+        print_run_cnt = 0;
+    }
+    print_run_cnt++;
 
     // if (control_status_.reset){
     //     sleep(1);
@@ -531,7 +540,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     msg_hb.frame_id = "lio heart beat";
     pub_heartbeat_.publish(msg_hb);
 
-    thisId = std::this_thread::get_id();
+    // thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
     bool running_slam_flag = slam_->run();
 
