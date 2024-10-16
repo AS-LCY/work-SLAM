@@ -75,6 +75,9 @@ struct LocalizationParam{
     double baselink_dyaw_thr = 1;
     int window_size = 5;
     int filter_freq = 200;
+    bool using_turning_proc = false;
+    double chassis_linear_velocity_thr = 0.02;
+    double motionless_chassis_ratio = 1.0;
 
 };
 

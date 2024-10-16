@@ -9,8 +9,8 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  # map_directory: "/home/forlinx/ws_flbot/maps/3dmap/"
-  map_directory: "/home/pmm/data/livox/v2/1010/3dmap"
+  map_directory: "/home/forlinx/ws_flbot/maps/3dmap/"
+  # map_directory: "/home/pmm/data/livox/v2/1010/3dmap"
   # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
   # map_directory: "/home/pmm/data/test/3dmap/"
   # map_directory: "/home/pmm/data/livox/0927/maps_0927_2_problem/3dmap/"
@@ -54,8 +54,11 @@ localization:
   baselink_dy_thr: 0.02
   baselink_dx_thr: 0.04
   baselink_dyaw_thr: 0.5 # unit: degree
-  window_size: 8
-  filter_freq: 200
+  window_size: 5
+  filter_freq: 100
+  using_turning_proc: true
+  chassis_linear_velocity_thr: 0.02
+  motionless_chassis_ratio: 0.95
 
 lidar_preproc:
   lidar_type: 1

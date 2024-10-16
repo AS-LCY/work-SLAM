@@ -152,6 +152,8 @@ public:
         get_param(ns+ "localization/baselink_dyaw_thr", loaded_param_.localization.baselink_dyaw_thr, &success);
         get_param(ns+ "localization/window_size", loaded_param_.localization.window_size, &success);
         get_param(ns+ "localization/filter_freq", loaded_param_.localization.filter_freq, &success);
+        get_param(ns+ "localization/chassis_linear_velocity_thr", loaded_param_.localization.chassis_linear_velocity_thr, &success);
+        get_param(ns+ "localization/motionless_chassis_ratio", loaded_param_.localization.motionless_chassis_ratio, &success);
         
         /// re-localization params *******************************************
         get_param(ns+ "re_localization/score_thr", loaded_param_.re_localization.score_thr, &success);

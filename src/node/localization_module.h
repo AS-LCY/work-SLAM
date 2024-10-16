@@ -221,10 +221,12 @@ private:
     ros::NodeHandle nh2_;
     ros::CallbackQueue slam_queue_;
     ros::Timer timer_pose_filter_;
-
     
     ros::NodeHandle nh3_;
     ros::CallbackQueue slam_ctrl_queue_;
+
+    ros::NodeHandle nh4_;
+    ros::CallbackQueue pose_filter_queue_;
 
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
@@ -310,6 +312,8 @@ private:
     std::vector<Eigen::Isometry3d> pose_vec_;
     // std::deque<Eigen::Vector3d> pose_vec_;
     int window_size = 5;
+
+    fros_hardware_node::chassic_data cur_chassis_msg_;
     
     bool position_initialized_ = false;
     ros::Time last_chassis_time_;

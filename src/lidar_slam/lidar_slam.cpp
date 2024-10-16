@@ -394,7 +394,7 @@ void LidarSlam::localizationThread()
 
     while (thread_run&&reseting == false)
     {
-        ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------localization cbk");
+        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------localization thread");
         // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------localization thread."<<endl;
         auto start = std::chrono::steady_clock::now();
         // WorkState state;
