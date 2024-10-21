@@ -50,22 +50,22 @@ localization:
   fst_order_k: 0.7
   odom2map_delta_thr: 0.05 # double: m
   odom2map_delta_set: 0.01 # double: m
-  lidar_ratio: 0.3
+  lidar_ratio: 0.2
   baselink_dy_thr: 0.02
   baselink_dx_thr: 0.04
   baselink_dyaw_thr: 0.5 # unit: degree
-  window_size: 5
+  window_size: 4 
   filter_freq: 100
   using_turning_proc: true
   chassis_linear_velocity_thr: 0.02
-  motionless_chassis_ratio: 1.0
+  motionless_chassis_ratio: 0.98
 
 lidar_preproc:
   lidar_type: 1
   line_count: 4
   blind_distance: 0.2
   flag_keep_only_last_lidar: true
-  point_filter_distance: [20, 20, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+  point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 6 # 间隔采样所需参数
