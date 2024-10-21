@@ -5,6 +5,7 @@
 #include <vector>
 #include <cstdlib>
 #include <chrono>
+#include <atomic>
 
 #include "boost/thread.hpp"
 
@@ -106,6 +107,7 @@ public:
 
 private:
     // void show_thread();
+    bool is_mapping_status(ModuleStatus status);
 
     void load_params();
 
@@ -257,9 +259,10 @@ private:
 
     // 模块 localization module
     // bool running_slam_ = false;
-    ModuleStatus last_running_module_status_ = MODULE_IDLE;
-    ModuleStatus set_module_status_ = MODULE_IDLE;
-    ModuleStatus running_module_status_ = MODULE_IDLE;
+    ModuleStatus last_running_module_status_ = ModuleStatus::MODULE_IDLE;
+    ModuleStatus set_module_status_ = ModuleStatus::MODULE_IDLE;
+    // ModuleStatus running_module_status_ = ModuleStatus::MODULE_IDLE;
+    static std::atomic<ModuleStatus> running_module_status_;
 
     // 建图 *******************************************
     // MappingStatus mapping_status_ = M_INACTIVE;
@@ -343,6 +346,7 @@ private:
     double filter_y_;
     double filter_a_;
     int filter_cout_ = 0;
+    static std::atomic<double> livox_cbk_update_time_;
     
     // nav_msgs::Odometry filter_odometry_;
     LocalizationModuleLogInfoManager * log_info_manager_;

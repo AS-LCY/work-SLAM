@@ -10,7 +10,7 @@ namespace localization_module{
 
 using namespace std;
 
-enum ModuleStatus{
+enum class ModuleStatus{
     MODULE_IDLE = 0,
     MODULE_MAPPING =1,
     MODULE_SEC_MAPPING =2,
@@ -22,16 +22,16 @@ enum ModuleStatus{
 
 static string print_ModuleStatus(ModuleStatus e){
     switch (e){
-    CASE_STR(MODULE_IDLE);
-    CASE_STR(MODULE_MAPPING);
-    CASE_STR(MODULE_SEC_MAPPING);
-    CASE_STR(MODULE_LOCALIZATION);
-    CASE_STR(MODULE_STARTING_SLAM);
-    CASE_STR(MODULE_STOPPING_SLAM);
-    default:
-        break;
+        case ModuleStatus::MODULE_IDLE: return "IDLE";
+        case ModuleStatus::MODULE_MAPPING: return "MAPPING";
+        case ModuleStatus::MODULE_SEC_MAPPING: return "SEC_MAPPING";
+        case ModuleStatus::MODULE_LOCALIZATION: return "LOCALIZATION";
+        case ModuleStatus::MODULE_STARTING_SLAM: return "STARTING_SLAM";
+        case ModuleStatus::MODULE_STOPPING_SLAM: return "STOPPING_SLAM";
+        default:
+            break;
     }
-    return "UNKNOW_MappingStatus!";
+    return "UNKNOW_ModuleStatus!";
 }
 
 

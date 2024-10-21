@@ -416,9 +416,9 @@ void LidarSlam::localizationThread()
 
                 // check 
                 if(!getLoadMap()){
-                    cout << "globalLocalization failed: map not ready ... "<<endl;
+                    cout << YELLOW << "globalLocalization failed: map not ready ... "<< RESET <<endl;
                 }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
-                    cout << "globalLocalization failed: cloud empty ... "<<endl;
+                    cout << YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET<<endl;
                 // check end
                 }else{
                     cout <<"point(in use) count: "<<UndistortCloudInOdom->points.size()<<endl;
@@ -532,7 +532,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                 }
                 
                 if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
-                    cout << "globalLocalization failed: cloud empty ... "<<endl;
+                    cout << YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET<<endl;
                 // check end
                 }else{
                     cout <<"point(in use) count: "<<UndistortCloudInOdom->points.size()<<endl;
