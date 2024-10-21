@@ -3,6 +3,7 @@ common:
   time_sync_en: false
   localization_mode: false
   offline_mode: false
+  temp_test_offline: false ########################### if test without online lidar, set to true
   fast_mode: false
   just_show_mode: false
   show_rviz: false
@@ -59,6 +60,7 @@ localization:
   using_turning_proc: true
   chassis_linear_velocity_thr: 0.02
   motionless_chassis_ratio: 0.98
+  lidar_cbk_delay_thr: 2 # 
 
 lidar_preproc:
   lidar_type: 1

@@ -29,6 +29,7 @@ public:
         get_param(ns+ "common/time_sync_en", loaded_param_.common.time_sync_en, &success);
         get_param(ns+ "common/localization_mode", loaded_param_.common.localization_mode, &success);
         get_param(ns+ "common/offline_mode", loaded_param_.common.offline_mode, &success);
+        get_param(ns+ "common/temp_test_offline", loaded_param_.common.temp_test_offline, &success);
         get_param(ns+ "common/fast_mode", loaded_param_.common.fast_mode, &success);
         get_param(ns+ "common/just_show_mode", loaded_param_.common.just_show_mode, &success);
         get_param(ns+ "common/show_rviz", loaded_param_.common.show_rviz, &success);
@@ -154,6 +155,7 @@ public:
         get_param(ns+ "localization/filter_freq", loaded_param_.localization.filter_freq, &success);
         get_param(ns+ "localization/chassis_linear_velocity_thr", loaded_param_.localization.chassis_linear_velocity_thr, &success);
         get_param(ns+ "localization/motionless_chassis_ratio", loaded_param_.localization.motionless_chassis_ratio, &success);
+        get_param(ns+ "localization/lidar_cbk_delay_thr", loaded_param_.localization.lidar_cbk_delay_thr, &success);
         
         /// re-localization params *******************************************
         get_param(ns+ "re_localization/score_thr", loaded_param_.re_localization.score_thr, &success);

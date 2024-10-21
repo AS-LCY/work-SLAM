@@ -11,6 +11,7 @@ struct CommonParam{
     bool time_sync_en = false;
     bool localization_mode = false;
     bool offline_mode = false;
+    bool temp_test_offline = false;
     bool fast_mode = false;
     bool just_show_mode = false;
     bool show_rviz = true;

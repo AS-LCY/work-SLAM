@@ -39,7 +39,8 @@ public:
         // status_info.module_status = fairland_msgs::LocalizationModuleStatus::IDLE;
         // status_info.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
         // status_info.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
-        module_status = localization_module::MODULE_IDLE;
+        // module_status = localization_module::MODULE_IDLE;
+        module_status = localization_module::ModuleStatus::MODULE_IDLE;
         l_status = lidar_slam::L_INACTIVE;
         m_status = lidar_slam::M_INACTIVE;
     }

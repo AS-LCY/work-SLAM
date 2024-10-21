@@ -1,6 +1,10 @@
 map/*
 *.pcd
 
+*.zip
+*.tar.gz
+*.tar.xz
+
 # Prerequisites
 *.d
 

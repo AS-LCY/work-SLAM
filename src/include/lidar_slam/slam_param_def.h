@@ -78,6 +78,7 @@ struct LocalizationParam{
     bool using_turning_proc = false;
     double chassis_linear_velocity_thr = 0.02;
     double motionless_chassis_ratio = 1.0;
+    double lidar_cbk_delay_thr = 1.0;
 
 };
 
