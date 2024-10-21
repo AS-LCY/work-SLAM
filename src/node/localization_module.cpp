@@ -585,7 +585,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     const int pub_frequency = 20;
     const std::chrono::milliseconds pub_period(1000 / pub_frequency);
 
-    
+
     static int print_cnt = 0;
     if (print_cnt % 100 ==0){
         // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------pose filter timer"<<endl;
@@ -1101,6 +1101,7 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
     double now_sec = now_as_ns * 1e-9;
 
+
     printf("lidar time delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
     const double thr_x = slam_param_.lidar_preproc.point_filter_distance[0];
     const double thr_y = slam_param_.lidar_preproc.point_filter_distance[1];
@@ -1173,8 +1174,6 @@ void LocalizationModule::livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 
     double t1 = omp_get_wtime();
     printf("lidar-callback, time cost: %f ms \033[0m\n", (t1 - t0)*1000);
-
-
 
 
     return;

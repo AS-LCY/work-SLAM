@@ -62,8 +62,8 @@
 // #include "lidar_slam/Viewer.hpp"
 #include "livox_datatype/livox_ros_datatype_def.h"
 
+#include "lidar/livox/point_type_livox_def.h"
 #include "node/module_param_def.h"
-#include "node/point_type_livox_def.h"
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
