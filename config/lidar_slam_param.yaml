@@ -65,7 +65,7 @@ localization:
 
 lidar_preproc:
   lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  # 
-  line_count: 4
+  line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 0.2
   flag_keep_only_last_lidar: true
   point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;

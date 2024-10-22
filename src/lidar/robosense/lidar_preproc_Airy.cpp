@@ -26,6 +26,7 @@ bool LidarPreprocAiry::msg2pcl_clip(){
 
 }
 
+///////////////// 入口函数 /////////////////
 bool LidarPreprocAiry::process(){
 
 }
