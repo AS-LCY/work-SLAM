@@ -643,29 +643,23 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             print_lidar_time_cnt = 0;
         }
         print_lidar_time_cnt++; // print_lidar_time_cnt only used here
-
         return;
+        
+    }else if(lidar_cbk_delay > lidar_cbk_delay_thr){
+        log_info_manager_->l_status = L_FAILED;
+        ROS_ERROR("pose_filter: lidar_cbk_delay: %d ms", int(lidar_cbk_delay*1000));
+        // return;
     }else if(lidar_cbk_delay > 0.5){
         log_info_manager_->l_status = L_LOW_ACCURACY;
         ROS_WARN("pose_filter: lidar_cbk_delay: %d ms", int(lidar_cbk_delay*1000));
 
-    }else if(lidar_cbk_delay > lidar_cbk_delay_thr){
-        log_info_manager_->l_status = L_FAILED;
-        ROS_ERROR("pose_filter: lidar_cbk_delay: %d ms, skip pub pose", int(lidar_cbk_delay*1000));
-        return;
-    }
-
-    if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && log_info_manager_->l_status == L_FAILED){
-        ROS_ERROR("pose_filter: localization_status: L_FAILED; return!");
-        return;
-    }
-
-    if (is_mapping_status(curr_running_module_status)  && log_info_manager_->m_status == M_FAILED){
-        ROS_ERROR("pose_filter: mapping_status: M_FAILED; return!");
-        return;
     }
 
     if (is_mapping_status(curr_running_module_status)){
+        if(log_info_manager_->m_status == M_FAILED){
+            ROS_ERROR("pose_filter: mapping_status: M_FAILED; return! skip pub pose");
+            return;
+        }
 
         static auto last_pub_time_m = std::chrono::steady_clock::now();// init
 
@@ -690,6 +684,12 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         return;
     }else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         // 定位模式
+
+        if(log_info_manager_->l_status == L_FAILED){
+            ROS_ERROR("pose_filter: localization_status: L_FAILED; return! skip pub pose");
+            return;
+        }
+        
         static auto last_pub_time_l = std::chrono::steady_clock::now();// init
 
         static Eigen::Isometry3d last_pose_filtered = Eigen::Isometry3d::Identity();
