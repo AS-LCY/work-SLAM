@@ -66,7 +66,9 @@ localization:
 lidar_preproc:
   lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  # 
   sub_lidar_topic: "/livox/lidar"
+  sub_imu_topic: "/livox/imu"
   # sub_lidar_topic: "/robosense/lidar"
+  # sub_imu_topic: "/robosense/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 0.2
   flag_keep_only_last_lidar: true

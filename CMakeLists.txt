@@ -174,7 +174,7 @@ add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
-  src/lidar_slam/preprocess.cpp
+  # src/lidar_slam/preprocess.cpp
   src/lidar_slam/IMU_Processing.cpp
   src/lidar_slam/ikd_Tree.cpp
   src/lidar_slam/Scancontext.cpp

@@ -106,6 +106,7 @@ public:
         /// lidar_preproc params *******************************************
         get_param(ns+ "lidar_preproc/lidar_type", loaded_param_.lidar_preproc.lidar_type, &success);
         get_param(ns+ "lidar_preproc/sub_lidar_topic", loaded_param_.lidar_preproc.sub_lidar_topic, &success);
+        get_param(ns+ "lidar_preproc/sub_imu_topic", loaded_param_.lidar_preproc.sub_imu_topic, &success);
         get_param(ns+ "lidar_preproc/line_count", loaded_param_.lidar_preproc.line_count, &success);
         get_param(ns+ "lidar_preproc/blind_distance", loaded_param_.lidar_preproc.blind_distance, &success);
         get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", loaded_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
