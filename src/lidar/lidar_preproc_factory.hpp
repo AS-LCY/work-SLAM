@@ -11,10 +11,12 @@
 #include "lidar/robosense/lidar_preproc_Airy.h"
 
 
+namespace localization_module {
+
 class LidarPreprocFactory{
 public:
 
-    static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type, std::string prefix){
+    static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type){
         std::shared_ptr<LidarPreprocParent> lidar_preproc_tmp;
         ROS_INFO("---");
         ROS_INFO("valid lidar_type in factory: 1-Mid360 | 2-Airy ");
@@ -54,4 +56,5 @@ public:
 
 };
 
+} // namespace localization_module
 #endif

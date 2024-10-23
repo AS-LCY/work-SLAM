@@ -144,8 +144,8 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     undistortCloud.reset(new PointCloudXYZI());  // lidar 系
     FilteredUndistortCloud.reset(new PointCloudXYZI());
     kdtreeCloud.reset(new PointCloudXYZI());
-    ObstacleCloud.reset(new PointCloudXYZI());
-    FilteredObstacleCloud.reset(new PointCloudXYZI());
+    // ObstacleCloud.reset(new PointCloudXYZI());
+    // FilteredObstacleCloud.reset(new PointCloudXYZI());
 
     // cout << "slam reset 3"<<endl;
     /// mapping 相关 *******************************************
@@ -183,9 +183,14 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     const auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
     const auto feature_enabled = config_param_.lidar_preproc.feature_enabled;
     // const auto simple_voxel_enabled = config_param_.lidar_preproc.simple_voxel_enabled;
-    p_lidar_pre.reset(new Preprocess());
-    // p_lidar_pre->set(feature_enabled, simple_voxel_enabled, AVIA, blind_distance,point_filter_num,line_count,obstacle_max_range);
-    p_lidar_pre->set(config_param_.lidar_preproc);
+    // p_lidar_pre.reset(new Preprocess());
+    // // p_lidar_pre->set(feature_enabled, simple_voxel_enabled, AVIA, blind_distance,point_filter_num,line_count,obstacle_max_range);
+    // p_lidar_pre->set(config_param_.lidar_preproc);
+
+    // lidar reset 
+    lidar_pre_ptr_ = localization_module::LidarPreprocFactory::new_lidar_preproc(config_param_.lidar_preproc.lidar_type);
+
+
     const auto gyr_cov = config_param_.mapping.gyr_cov;
     const auto acc_cov = config_param_.mapping.acc_cov;
     const auto b_gyr_cov = config_param_.mapping.b_gyr_cov;
@@ -592,6 +597,13 @@ void LidarSlam::showThread()
     }
 }
 
+void LidarSlam::robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud){
+    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    double t0 = omp_get_wtime();
+    if (reseting)
+        return;
+}
+
 void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in)
 {
     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
@@ -628,17 +640,17 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
 
     // 特征提取或间隔采样
-    p_lidar_pre->process(msg, ptr);
+    // p_lidar_pre->process(msg, ptr);
+    lidar_pre_ptr_->pre_process(msg, ptr);
 
-    {
-        std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
-        ObstacleCloud->points.clear();
-        FilteredObstacleCloud->points.clear();
-        // ObstacleCloud = transformPointCloud(p_lidar_pre->pl_obstacle, param.T_wheel_lidar);
-        int size = p_lidar_pre->pl_obstacle->points.size();
+    // {
+    //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
+    //     ObstacleCloud->points.clear();
+    //     FilteredObstacleCloud->points.clear();
+    //     // ObstacleCloud = transformPointCloud(p_lidar_pre->pl_obstacle, param.T_wheel_lidar);
+    //     int size = p_lidar_pre->pl_obstacle->points.size();
+    // }
 
-
-    }
     std::lock_guard<std::mutex> lk(mtx_buffer);
     if (flag_keep_only_last_lidar){
         lidar_buffer.clear();
@@ -653,128 +665,129 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
 }
 
-void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
-{
-    PointCloudXYZI::Ptr wheel_cloud(new PointCloudXYZI());
-    wheel_cloud = transformPointCloud(cloud, config_param_.extrinsic.T_wheel_lidar);
-    const auto obstacle_max_height = config_param_.lidar_preproc.obstacle_max_height;
-    const auto obstacle_min_height = config_param_.lidar_preproc.obstacle_min_height;
-    for(int i = 0; i < wheel_cloud->points.size(); i++){
-        if (wheel_cloud->points[i].z < obstacle_max_height && wheel_cloud->points[i].z > obstacle_min_height){
-            ObstacleCloud->points.push_back(wheel_cloud->points[i]); 
-        }
-    }
-    // 定义方格大小（5cm）
-    const auto grid_size = config_param_.lidar_preproc.grid_size; // 5cm
+// not in use, comment them by pmm
+// void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
+// {
+//     PointCloudXYZI::Ptr wheel_cloud(new PointCloudXYZI());
+//     wheel_cloud = transformPointCloud(cloud, config_param_.extrinsic.T_wheel_lidar);
+//     const auto obstacle_max_height = config_param_.lidar_preproc.obstacle_max_height;
+//     const auto obstacle_min_height = config_param_.lidar_preproc.obstacle_min_height;
+//     for(int i = 0; i < wheel_cloud->points.size(); i++){
+//         if (wheel_cloud->points[i].z < obstacle_max_height && wheel_cloud->points[i].z > obstacle_min_height){
+//             ObstacleCloud->points.push_back(wheel_cloud->points[i]); 
+//         }
+//     }
+//     // 定义方格大小（5cm）
+//     const auto grid_size = config_param_.lidar_preproc.grid_size; // 5cm
 
-    // 计算点云的范围
-    // PointType min_point, max_point;
-    // pcl::getMinMax3D(*temp_cloud, min_point, max_point);
-    const auto max_x = config_param_.lidar_preproc.obstacle_max_range;
-    const auto max_y = config_param_.lidar_preproc.obstacle_max_range;
-    const auto min_x = -config_param_.lidar_preproc.obstacle_max_range;
-    const auto min_y = -config_param_.lidar_preproc.obstacle_max_range;
+//     // 计算点云的范围
+//     // PointType min_point, max_point;
+//     // pcl::getMinMax3D(*temp_cloud, min_point, max_point);
+//     const auto max_x = config_param_.lidar_preproc.obstacle_max_range;
+//     const auto max_y = config_param_.lidar_preproc.obstacle_max_range;
+//     const auto min_x = -config_param_.lidar_preproc.obstacle_max_range;
+//     const auto min_y = -config_param_.lidar_preproc.obstacle_max_range;
 
-    // 计算x，y方向上的方格数量
-    int num_x_grids = std::ceil((max_x - min_x) / grid_size);
-    int num_y_grids = std::ceil((max_y - min_y) / grid_size);
+//     // 计算x，y方向上的方格数量
+//     int num_x_grids = std::ceil((max_x - min_x) / grid_size);
+//     int num_y_grids = std::ceil((max_y - min_y) / grid_size);
 
-    // 创建一个二维数组来存储每个方格中的点云数量
-    std::vector<std::vector<int>> grid_count(num_x_grids, std::vector<int>(num_y_grids, 0));
-    // 遍历点云，将点分配到对应的方格中
-    for (const auto& point : *ObstacleCloud)
-    {
-        int x_idx = std::floor((point.x - min_x) / grid_size);
-        int y_idx = std::floor((point.y - min_y) / grid_size);
+//     // 创建一个二维数组来存储每个方格中的点云数量
+//     std::vector<std::vector<int>> grid_count(num_x_grids, std::vector<int>(num_y_grids, 0));
+//     // 遍历点云，将点分配到对应的方格中
+//     for (const auto& point : *ObstacleCloud)
+//     {
+//         int x_idx = std::floor((point.x - min_x) / grid_size);
+//         int y_idx = std::floor((point.y - min_y) / grid_size);
 
-        // 检查索引是否在有效范围内
-        if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids)
-        {
-            grid_count[x_idx][y_idx]++;
-        }
-    }
+//         // 检查索引是否在有效范围内
+//         if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids)
+//         {
+//             grid_count[x_idx][y_idx]++;
+//         }
+//     }
 
-    // 创建一个新的点云来存储滤除后的点云
+//     // 创建一个新的点云来存储滤除后的点云
    
 
-    // 遍历点云，保留符合条件的点
-    const auto obstacle_filter_size = config_param_.lidar_preproc.obstacle_filter_size;
-    for (const auto& point : *ObstacleCloud)
-    {
-        int x_idx = std::floor((point.x - min_x) / grid_size);
-        int y_idx = std::floor((point.y - min_y) / grid_size);
+//     // 遍历点云，保留符合条件的点
+//     const auto obstacle_filter_size = config_param_.lidar_preproc.obstacle_filter_size;
+//     for (const auto& point : *ObstacleCloud)
+//     {
+//         int x_idx = std::floor((point.x - min_x) / grid_size);
+//         int y_idx = std::floor((point.y - min_y) / grid_size);
 
-        // 检查索引是否在有效范围内，并且方格中的点云数量大于等于10
-        if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids && grid_count[x_idx][y_idx] >= obstacle_filter_size)
-        {
-            FilteredObstacleCloud->push_back(point);
-        }
-    }
-}
+//         // 检查索引是否在有效范围内，并且方格中的点云数量大于等于10
+//         if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids && grid_count[x_idx][y_idx] >= obstacle_filter_size)
+//         {
+//             FilteredObstacleCloud->push_back(point);
+//         }
+//     }
+// }
 
-void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
-{
-    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
-    if (reseting)
-        return;
+// void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
+// {
+//     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+//     if (reseting)
+//         return;
     
-    // double preprocess_start_time = omp_get_wtime();
-    // scan_count++;
-    if (time_stamp < last_timestamp_lidar)
-    {
-        printf("lidar loop back, clear buffer");
-        lidar_buffer.clear();
-    }
-    // else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
-    //     printf("lidar lose rate");
-    // }
-    last_timestamp_lidar = time_stamp;
+//     // double preprocess_start_time = omp_get_wtime();
+//     // scan_count++;
+//     if (time_stamp < last_timestamp_lidar)
+//     {
+//         printf("lidar loop back, clear buffer");
+//         lidar_buffer.clear();
+//     }
+//     // else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
+//     //     printf("lidar lose rate");
+//     // }
+//     last_timestamp_lidar = time_stamp;
 
-    if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
-    {
-        printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
-    }
+//     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
+//     {
+//         printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
+//     }
 
-    if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
-    {
-        timediff_set_flg = true;
-        timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu; //????
-        printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-    }
+//     if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
+//     {
+//         timediff_set_flg = true;
+//         timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu; //????
+//         printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+//     }
 
 
-    PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
-    PointCloudXYZI::Ptr temp(new PointCloudXYZI());
-    pcl::copyPointCloud(*msg_in, *ptr);
-    ObstacleCloud->points.clear();
-    int size = ptr->points.size();
-    auto blind = config_param_.lidar_preproc.blind_distance;
-    auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
-    if (size > 2){
-        for(int i = 0; i < size; i++){
-            double range = ptr->points[i].x * ptr->points[i].x + ptr->points[i].y * ptr->points[i].y + ptr->points[i].z * ptr->points[i].z;
-            if (range>blind*blind && range<obstacle_max_range*obstacle_max_range)
-                temp->points.push_back(ptr->points[i]);
-        }
-        filter_obstacle_cloud(temp);
-    }
-    // 创建半径滤波器对象
-    // pcl::RadiusOutlierRemoval<PointType> sor;
-    // sor.setInputCloud(ObstacleCloud);
-    // sor.setRadiusSearch(0.1);  // 邻域半径
-    // sor.setMinNeighborsInRadius(5);  // 最小邻域点数量
-    // sor.filter(*FilteredObstacleCloud);
+//     PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
+//     PointCloudXYZI::Ptr temp(new PointCloudXYZI());
+//     pcl::copyPointCloud(*msg_in, *ptr);
+//     ObstacleCloud->points.clear();
+//     int size = ptr->points.size();
+//     auto blind = config_param_.lidar_preproc.blind_distance;
+//     auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
+//     if (size > 2){
+//         for(int i = 0; i < size; i++){
+//             double range = ptr->points[i].x * ptr->points[i].x + ptr->points[i].y * ptr->points[i].y + ptr->points[i].z * ptr->points[i].z;
+//             if (range>blind*blind && range<obstacle_max_range*obstacle_max_range)
+//                 temp->points.push_back(ptr->points[i]);
+//         }
+//         filter_obstacle_cloud(temp);
+//     }
+//     // 创建半径滤波器对象
+//     // pcl::RadiusOutlierRemoval<PointType> sor;
+//     // sor.setInputCloud(ObstacleCloud);
+//     // sor.setRadiusSearch(0.1);  // 邻域半径
+//     // sor.setMinNeighborsInRadius(5);  // 最小邻域点数量
+//     // sor.filter(*FilteredObstacleCloud);
 
-    std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (flag_keep_only_last_lidar){
-        lidar_buffer.clear();
-        time_buffer.clear();
-    }
-    lidar_buffer.push_back(ptr); //储存处理后的lidar特征
-    time_buffer.push_back(last_timestamp_lidar);
-   // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
+//     std::lock_guard<std::mutex> lk(mtx_buffer);
+//     if (flag_keep_only_last_lidar){
+//         lidar_buffer.clear();
+//         time_buffer.clear();
+//     }
+//     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
+//     time_buffer.push_back(last_timestamp_lidar);
+//    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
-}
+// }
 
 // void LidarSlam::image_cbk(const cv::Mat& img,double time)
 // {

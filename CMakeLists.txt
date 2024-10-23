@@ -159,7 +159,15 @@ link_directories(
  
 set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_library(lidar_preproc SHARED
+  src/lidar/lidar_preproc_parent.cpp 
+  src/lidar/livox/lidar_preproc_Mid360.cpp 
+  src/lidar/robosense/lidar_preproc_Airy.cpp 
+)
 
+target_link_libraries(lidar_preproc 
+  ${PCL_LIBRARIES} 
+) 
 
 # build: slam core
 add_library(lidar_slam SHARED
@@ -184,6 +192,7 @@ target_link_libraries(lidar_slam
   gtsam  
   fmt::fmt 
   yaml-cpp 
+  lidar_preproc
   Boost::system
   Boost::thread
   Boost::chrono
@@ -222,6 +231,7 @@ target_link_libraries(lidar_slam_node
   # ${OpenCV_LIBS}
   # ${cv_bridge_LIBRARIES}
   lidar_slam
+  lidar_preproc
   # gtsam
   # fmt::fmt 
   # yaml-cpp 

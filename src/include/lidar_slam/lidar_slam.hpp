@@ -29,16 +29,23 @@
 #include "lidar_slam/localization.hpp"
 #include "lidar_slam/backend.hpp"
 #include "lidar_slam/IMU_Processing.hpp"
-#include "lidar_slam/preprocess.h"
+// #include "lidar_slam/preprocess.h"
 // #include "lidar_slam/Viewer.hpp"
 // #include "include/livox_ros_driver2.h"
 // #include "driver_node.h"
 // #include "lddc.h"
-#include "livox_datatype/livox_ros_datatype_def.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 #include "node/module_param_def.h"
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 // #include "lds_lidar.h"
+
+// lidar
+#include "lidar/livox/pcl_point_type_def_lvx.h"
+#include "lidar/livox/lidar_preproc_Mid360.h"
+#include "lidar/robosense/pcl_point_type_def_rbs.h"
+#include "lidar/robosense/lidar_preproc_Airy.h"
+#include "lidar/lidar_preproc_factory.hpp"
 
 namespace lidar_slam {
 struct LidarParam{
@@ -120,12 +127,14 @@ class LidarSlam
             // cout<<"debug: destruct end"<<endl;
          };
         bool run();
+        void robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud);
+
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
-        void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
+        // void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
        // void cmd_cbk(WorkState& msg);
         void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in);
         // void image_cbk(const cv::Mat& img,double time);
-        void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
+        // void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);// not in use, comment them by pmm
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
             // if (param.localization_mode){
             if (working_mode_ == LOCALIZATION){
@@ -286,15 +295,15 @@ class LidarSlam
         {
             return back_end->getCurrentRGBMap();
         }
-        PointCloudXYZI::Ptr getObstacleCloud()
-        {
-            return ObstacleCloud;
-        }
-        PointCloudXYZI::Ptr getFilteredObstacleCloud()
-        {
-            std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
-            return FilteredObstacleCloud;
-        }
+        // PointCloudXYZI::Ptr getObstacleCloud()
+        // {
+        //     return ObstacleCloud;
+        // }
+        // PointCloudXYZI::Ptr getFilteredObstacleCloud()
+        // {
+        //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
+        //     return FilteredObstacleCloud;
+        // }
 
         // LocalizationStatus get_l_status(){
         //     return l_status_;
@@ -375,19 +384,22 @@ class LidarSlam
         mutex mtx_path;
         mutex mtx_pose;
         esekfom::esekf kf;
-        std::unique_ptr<Preprocess> p_lidar_pre= nullptr;
+        // std::unique_ptr<Preprocess> p_lidar_pre= nullptr;
         std::unique_ptr<ImuProcess> p_imu= nullptr;
         std::unique_ptr<BackEnd> back_end= nullptr;
         std::unique_ptr<Localization> localization= nullptr;
         std::unique_ptr<GlobalLocalization> global_localization_= nullptr;
         std::unique_ptr<CloudMap> cloud_map_manager_= nullptr;
 
+
+        std::shared_ptr<localization_module::LidarPreprocParent> lidar_pre_ptr_;
+
         PointCloudXYZI::Ptr UndistortCloudInOdom;
         PointCloudXYZI::Ptr undistortCloud;  // lidar 系
         PointCloudXYZI::Ptr FilteredUndistortCloud;
         pcl::VoxelGrid<PointType> downSizeFilterCloud;
         PointCloudXYZI::Ptr kdtreeCloud;
-        PointCloudXYZI::Ptr ObstacleCloud;
+        // PointCloudXYZI::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;

@@ -61,9 +61,8 @@
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
 // #include "lidar_slam/Viewer.hpp"
-#include "livox_datatype/livox_ros_datatype_def.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 
-#include "lidar/livox/point_type_livox_def.h"
 #include "node/module_param_def.h"
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
@@ -71,6 +70,14 @@
 
 // 另一个节点中定义
 #include "fros_hardware_node/chassic_data.h"
+
+// lidar
+#include "lidar/lidar_preproc_factory.hpp"
+#include "lidar/lidar_preproc_parent.h"
+#include "lidar/livox/pcl_point_type_def_lvx.h"
+#include "lidar/livox/lidar_preproc_Mid360.h"
+#include "lidar/robosense/pcl_point_type_def_rbs.h"
+#include "lidar/robosense/lidar_preproc_Airy.h"
 
 // #include "v4l2cam.h"
 
@@ -146,12 +153,13 @@ private:
     void pub_module_status_timer(const ros::TimerEvent &event);
 
     // void command_cbk(const std_msgs::Int32 &msg_in);
-    // void livox_pcl_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
-    // void livox_pcl_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
+    // void livox_msg_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
+    // void livox_msg_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
 
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
-
-    void livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
+    
+    void lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
+    void livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
     void chassis_cbk(const fros_hardware_node::chassic_data::ConstPtr &msg_in);
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
@@ -160,7 +168,7 @@ private:
     // publish common
     void pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud);
     void pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud);
-    void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud);
+    // void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud);
     void pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
     void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
     void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud);
@@ -350,6 +358,9 @@ private:
     
     // nav_msgs::Odometry filter_odometry_;
     LocalizationModuleLogInfoManager * log_info_manager_;
+
+    // lidar 
+    std::shared_ptr<LidarPreprocParent> lidar_ptr_;
     
 };
 

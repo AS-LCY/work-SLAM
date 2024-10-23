@@ -22,14 +22,14 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
-void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "wheel";
-	pubObstacleCloud.publish(laserCloudmsg);
-}
+// void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "wheel";
+// 	pubObstacleCloud.publish(laserCloudmsg);
+// }
 
 void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
 {

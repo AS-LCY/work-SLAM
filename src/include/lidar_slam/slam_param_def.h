@@ -18,6 +18,7 @@ struct ExtrinsicParam{
 
 struct LidarPreprocParam{
     int lidar_type=1;
+    std::string sub_lidar_topic="";
     int line_count;
     double blind_distance;
     bool flag_keep_only_last_lidar=false;
