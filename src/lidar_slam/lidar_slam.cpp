@@ -347,7 +347,7 @@ void LidarSlam::sec_mapping_loopClosureThread()
                 back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
-            if (loop_closure_wait)
+            if (!loop_closure_wait)
                 back_end->performLoopClosure(lidar_end_time);  //  回环检测
         }
 
@@ -368,7 +368,7 @@ void LidarSlam::loopClosureThread()
     while (thread_run&&reseting == false)
     {
         auto start = std::chrono::steady_clock::now();
-        if (loop_closure_wait)
+        if (!loop_closure_wait)
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
         // performSCLoopClosure();
         auto end = std::chrono::steady_clock::now();
@@ -602,6 +602,51 @@ void LidarSlam::robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &clo
     double t0 = omp_get_wtime();
     if (reseting)
         return;
+}
+
+void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
+    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    double t0 = omp_get_wtime();
+    if (reseting)
+        return;
+
+    double curr_time = cloud->header.stamp * 1.0 * 1e-6;
+
+    if ( curr_time < last_timestamp_lidar){
+        printf("lidar loop back, clear buffer");
+        lidar_buffer.clear();
+        cout<<"************************* lidar_buffer clear *********"<<endl;
+    }
+
+    /*  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
+        printf("lidar lose rate");
+    }*/ 
+
+    if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
+        printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, curr_time);
+    }
+
+    if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
+        timediff_set_flg = true;
+        timediff_lidar_wrt_imu = curr_time + 0.1 - last_timestamp_imu; //????
+        printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+    }
+
+    std::lock_guard<std::mutex> lk(mtx_buffer);
+    if (flag_keep_only_last_lidar){
+        lidar_buffer.clear();
+        time_buffer.clear();
+    }
+    lidar_buffer.push_back(cloud); //储存处理后的lidar特征
+    // cout<<"********************* lidar_buffer push back *********"<<endl;
+    time_buffer.push_back(curr_time);
+   // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
+    
+    last_timestamp_lidar = curr_time;
+    double t1 = omp_get_wtime();
+    // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
+
+    return;
 }
 
 void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in)
@@ -931,12 +976,7 @@ bool LidarSlam::run()
     // }
     // print_cnt++;
 
-    // pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
-    // if (pthread_setaffinity_np(this_thread, sizeof(mask), &mask) < 0) {
-    //     perror("pthread_setaffinity_np");
-    //     exit(EXIT_FAILURE);
-    // }
-    std::thread::id thisId = std::this_thread::get_id();
+    // std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: lidar slam main     Thread ID: " << thisId << std::endl;
     /// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
     static int frame_num = 0;

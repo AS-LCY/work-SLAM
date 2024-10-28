@@ -20,11 +20,26 @@ public:
 
     bool pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudXYZI::Ptr pcl_cld_out)  override ;
     bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_out) override ;
+    bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out);
 
 
 private:
     bool set_param();
+    void extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudXYZI::Ptr pcl_xyzin_out);
 
+
+private:
+    // loaded param from yaml
+    double thr_region_x_ = 0.0;
+    double thr_region_y_ = 0.0;
+    double thr_region_z_ = 0.0;
+
+    double blind_square_ = 0.0;
+    int point_filter_num_ = 2;
+    // loaded param end /////
+
+
+    lidar_slam::LidarPreprocParam param_;
 
 
 

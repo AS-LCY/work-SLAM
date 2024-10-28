@@ -70,11 +70,37 @@ public:
         std::vector<double> extrinsic_R; // 3 * 3
         std::vector<double> Lidar_In_Wheel; // 4* 4
         std::vector<double> extrinsic_euler_IMU_in_baselink; // 1 * 3
+        // std::vector<double> quat_lidar_in_imu;
         get_param(ns+ "extrinsic/extrinsic_est_en", loaded_param_.extrinsic.extrinsic_est_en, &success);
         get_param(ns+ "extrinsic/extrinsic_T", extrinsic_T, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_R", extrinsic_R, &success);//temp
         get_param(ns+ "extrinsic/Lidar_In_Wheel", Lidar_In_Wheel, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_baselink", extrinsic_euler_IMU_in_baselink, &success);//temp
+        // get_param(ns+ "extrinsic/quat_lidar_in_imu", quat_lidar_in_imu, &success);//temp
+        // double x = quat_lidar_in_imu[0];
+        // double y = quat_lidar_in_imu[1];
+        // double z = quat_lidar_in_imu[2];
+        // double w = quat_lidar_in_imu[3];
+        // Eigen::Vector3d tl00(0.00425, 0.00418, -0.00446);
+
+        // Eigen::Quaterniond quat(w, x, y, z);
+        // Eigen::Isometry3d transform(quat);
+        // transform.pretranslate(tl00);
+        // auto transform2 = transform.inverse();
+
+
+        // auto transla1 = transform.translation();
+        // auto angular1 = R2ypr(transform.rotation()); 
+
+        // auto transla2 = transform2.translation();
+        // auto angular2 = R2ypr(transform2.rotation());
+
+        // ROS_ERROR("translation-1: %lf, %lf, %lf", transla1.x(), transla1.y(),  transla1.z());
+        // ROS_ERROR("angular-----1: %lf, %lf, %lf", rad2deg(angular1.x()), rad2deg(angular1.y()),  rad2deg(angular1.z()));
+
+        // ROS_ERROR("translation-2: %lf, %lf, %lf", transla2.x(), transla2.y(),  transla2.z());
+        // ROS_ERROR("angular-----2: %lf, %lf, %lf", rad2deg(angular2.x()), rad2deg(angular2.y()),  rad2deg(angular2.z()));
+
     
         // extrinT & extrinR
         loaded_param_.extrinsic.extrinT<< extrinsic_T[0],extrinsic_T[1],extrinsic_T[2];

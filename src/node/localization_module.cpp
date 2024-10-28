@@ -506,9 +506,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // cout<<"***********************************************"<<endl;
 
     static int print_running_cnt = 0;
-    if (print_running_cnt % 20 ==0){
+    // if (print_running_cnt % 20 ==0){
+    if (print_running_cnt % 20 ==0 && print_running_cnt < 100){
         ROS_INFO("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
-        print_running_cnt = 0;
+        // print_running_cnt = 0;
     }
     print_running_cnt++;
 
@@ -577,6 +578,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
@@ -1143,30 +1145,38 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
         return;
     }
 
+    double t0 = omp_get_wtime();
     auto start = std::chrono::system_clock::now();
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
     double now_sec = now_as_ns * 1e-9;
     printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
     if(slam_param_.lidar_preproc.lidar_type == 1){
+        ROS_INFO("livox cbk");
         std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
         lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
         printf("clip lidar count: %d\n", lvx_msg->point_num);
 
         slam_ -> livox_pcl_cbk(lvx_msg);
     }else if(slam_param_.lidar_preproc.lidar_type == 2){
-        pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld(new pcl::PointCloud<RsPointXYZIRT>());
-        lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_cld);
-        printf("clip lidar count: %ld\n", pcl_cld->points.size());
+        // pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_cld(new pcl::PointCloud<RsPointXYZIRT>());
+        // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_rs_cld);
+        // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
+        // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
 
-        slam_ -> robosense_pcl_cbk(pcl_cld);
+        ROS_INFO("robosense cbk");
+        PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+        lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+        printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
     }
 
 
 
+    double t1 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    printf("lidar-callback, time cost: %ld ms \033[0m\n", duration.count());
+    printf("lidar-callback, time cost: %lf ms \033[0m\n", (t1-t0) *1000);
 }
 
 

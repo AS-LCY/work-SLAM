@@ -516,6 +516,7 @@ void BackEnd::performLoopClosure(double time)
         return;
 
     std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
+    // exit(1);
    // std::cout << "icp  success  " << std::endl;
 
 

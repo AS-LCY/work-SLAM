@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include "lidar_slam/common_lib.h"
 #include "node/param_manager.hpp"
 
 #include "lidar/livox/pcl_point_type_def_lvx.h"
@@ -27,6 +28,7 @@ public:
     // for robosense
     virtual bool pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_in, PointCloudXYZI::Ptr pcl_cld_out){return true;}
     virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_out){return true;}
+    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){return true;}
     
 
 
@@ -43,4 +45,18 @@ private:
 };
 
 } // namespace localization_module
+
+
+namespace lidar_common {
+    
+template<typename T>
+bool is_nan_pt(T pt) {
+    if (std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+} // namespace lidar_common
+
 #endif 

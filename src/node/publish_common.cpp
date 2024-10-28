@@ -222,12 +222,14 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
 
 void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
 {
+    // ROS_ERROR("visualizeLoopClosure");
     ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
     string odometryFrame = "odom";
 
     if (loopIndexContainer.empty())
         return;
 
+    ROS_ERROR("visualizeLoopClosure");
     visualization_msgs::MarkerArray markerArray;
     // 闭环顶点
     visualization_msgs::Marker markerNode;
@@ -260,27 +262,38 @@ void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, 
     markerEdge.color.b = 0;
     markerEdge.color.a = 1;
 
+    ROS_ERROR("visualizeLoopClosure before for loop ");
+
+    int loop_i=0;
     // 遍历闭环
     for (auto it = loopIndexContainer.begin(); it != loopIndexContainer.end(); ++it)
     {
+        ROS_ERROR("loop_i == %d --- 1", loop_i);
         int key_cur = it->first;
         int key_pre = it->second;
+        ROS_ERROR("loop_i == %d --- 2", loop_i);
         geometry_msgs::Point p;
         p.x = optimized_path_msg.poses[key_cur].pose.position.x;
         p.y = optimized_path_msg.poses[key_cur].pose.position.y;
         p.z = optimized_path_msg.poses[key_cur].pose.position.z;
+        ROS_ERROR("loop_i == %d --- 3", loop_i);
         markerNode.points.push_back(p);
         markerEdge.points.push_back(p);
         p.x = optimized_path_msg.poses[key_pre].pose.position.x;
         p.y = optimized_path_msg.poses[key_pre].pose.position.y;
         p.z = optimized_path_msg.poses[key_pre].pose.position.z;
+        ROS_ERROR("loop_i == %d --- 4", loop_i);
         markerNode.points.push_back(p);
         markerEdge.points.push_back(p);
+        ROS_ERROR("loop_i == %d --- 5", loop_i ++);
     }
+    ROS_ERROR("visualizeLoopClosure before pub ");
 
     markerArray.markers.push_back(markerNode);
     markerArray.markers.push_back(markerEdge);
     pubLoopConstraintEdge.publish(markerArray);
+
+    ROS_ERROR("visualizeLoopClosure success ");
 }
 
 void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
