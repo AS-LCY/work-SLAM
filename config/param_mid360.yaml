@@ -3,14 +3,15 @@ common:
   time_sync_en: false
   localization_mode: false
   offline_mode: false
-  temp_test_offline: false ###########################( true false ), default to "false", if test with offline bag, set to "true"
+  temp_test_offline: true ###########################( true false ), default to "false", if test with offline bag, set to "true"
   fast_mode: false
   just_show_mode: false
   show_rviz: false
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/forlinx/ws_flbot/maps/3dmap/"
+  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  map_directory: "/home/pmm/data/livox/v2/1029/maps/map4/3dmap"
   # map_directory: "/home/pmm/data/livox/v2/1017/3/3dmap"
   # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
   # map_directory: "/home/pmm/data/test/3dmap/"

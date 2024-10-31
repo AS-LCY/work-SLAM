@@ -1327,6 +1327,20 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
     //     slam_ -> imu_cbk(msg);
     // }
 
+
+    // static int print_cnt22=0;
+
+
+    // if(print_cnt22 % 40 == 0){
+    //     cout << "ang_after: x -- y -- z : "<< ang_after[0]<<" == "<< ang_after[1]<< " == "<< ang_after[2]<<endl;
+    //     cout << "acc_after: x -- y -- z : "<< acc_after[0]<<" == "<< acc_after[1]<< " == "<< acc_after[2]<<endl;
+    //     cout <<"----------------------------------------------------------------------------"<<endl;
+    //     print_cnt22 = 0;
+    // }
+
+    // print_cnt22++;
+
+
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 

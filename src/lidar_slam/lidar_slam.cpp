@@ -298,6 +298,11 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
 
         lidar_pushed = true;
     }
+    // cout << std::fixed << std::setprecision(9)<< "meas.lidar.headertm: " <<meas.lidar->header.stamp * 1e-6<<endl; 
+    // cout << std::fixed << std::setprecision(9)<< "lidar.offset-time: " <<meas.lidar->points[0].curvature <<" ms"<<endl; 
+    // cout << std::fixed << std::setprecision(9)<< "meas.lidar_beg_time: " <<meas.lidar_beg_time<<endl; 
+    // cout << std::fixed << std::setprecision(9)<< "meas.lidar_end_time: " <<meas.lidar_end_time<<endl; 
+    // cout << std::fixed << std::setprecision(9)<< "last_timestamp_imu : " <<last_timestamp_imu<<endl; 
 
     if (last_timestamp_imu < lidar_end_time)
     {
@@ -347,7 +352,8 @@ void LidarSlam::sec_mapping_loopClosureThread()
                 back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
-            if (!loop_closure_wait)
+            // if (!loop_closure_wait)
+            if (loop_closure_wait)
                 back_end->performLoopClosure(lidar_end_time);  //  回环检测
         }
 
@@ -368,7 +374,8 @@ void LidarSlam::loopClosureThread()
     while (thread_run&&reseting == false)
     {
         auto start = std::chrono::steady_clock::now();
-        if (!loop_closure_wait)
+        // if (!loop_closure_wait)
+        if (loop_closure_wait)
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
         // performSCLoopClosure();
         auto end = std::chrono::steady_clock::now();
