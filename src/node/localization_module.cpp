@@ -598,7 +598,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     // param set
     const double lidar_cbk_delay_thr = slam_param_.localization.lidar_cbk_delay_thr;
     const int pub_frequency = 20;
-    const std::chrono::milliseconds pub_period(1000 / pub_frequency);
+    const std::chrono::milliseconds pub_period(1000 / pub_frequency -5);
     
     // static int print_thread_cnt = 0;
     // if (print_thread_cnt % 100 ==0){
