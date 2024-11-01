@@ -325,6 +325,10 @@ class LidarSlam
     private:
         // LidarParam param;
         LidarSlamParam config_param_;
+        int feats_down_size_thr_ = 100;
+        bool flag_keep_only_last_lidar_ = true;
+
+
         deque<double> time_buffer;               // 记录lidar时间
         deque<PointCloudXYZI::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
