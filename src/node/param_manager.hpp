@@ -45,7 +45,7 @@ public:
         get_param(ns+ "common/receive_lidar_freq", loaded_param_.common.receive_lidar_freq, &success);
         get_param(ns+ "common/slam_lose_rate_time_thr", loaded_param_.common.slam_lose_rate_time_thr, &success);
         get_param(ns+ "common/lidar_no_point_count_thr", loaded_param_.common.lidar_no_point_count_thr, &success);
-        get_param(ns+ "common/feats_down_size", loaded_param_.common.feats_down_size, &success);
+        get_param(ns+ "common/feats_down_size_thr", loaded_param_.common.feats_down_size_thr, &success);
         get_param(ns+ "common/cpu_id", loaded_param_.common.cpu_id, &success);
         ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", loaded_param_.common.cpu_id.size());
         // process map_dir

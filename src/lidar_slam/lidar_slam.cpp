@@ -51,13 +51,15 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
     // if (!offline){
     //     start_driver(work_path);
     // }
-    cout << "debug: LidarSlam 1"<<endl;
+    cout << "Set LidarSlam Param"<<endl;
     config_param_ = yaml_param;
+    feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
+    flag_keep_only_last_lidar_ = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 
-    cout << "debug: LidarSlam 2"<<endl;
+    cout << "Reset LidarSlam"<<endl;
     LidarSlam::reset(start_mode);
 
-    cout << "debug: LidarSlam 3"<<endl;
+    // cout << "debug: LidarSlam 3"<<endl;
      
 }
 
@@ -658,7 +660,7 @@ void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
 
 void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in)
 {
-    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     double t0 = omp_get_wtime();
     if (reseting)
         return;
@@ -704,7 +706,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     // }
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (flag_keep_only_last_lidar){
+    if (flag_keep_only_last_lidar_){
         lidar_buffer.clear();
         time_buffer.clear();
     }
@@ -779,7 +781,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
 
 // void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
 // {
-//     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+//     // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 //     if (reseting)
 //         return;
     
@@ -831,7 +833,7 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
 //     // sor.filter(*FilteredObstacleCloud);
 
 //     std::lock_guard<std::mutex> lk(mtx_buffer);
-//     if (flag_keep_only_last_lidar){
+//     if (flag_keep_only_last_lidar_){
 //         lidar_buffer.clear();
 //         time_buffer.clear();
 //     }
@@ -1061,7 +1063,8 @@ bool LidarSlam::run()
         /*** initialize the map kdtree ***/
         if (ikdtree->Root_Node == nullptr)
         {
-            if (feats_down_size > 5)
+            // if (feats_down_size > 5)
+            if (feats_down_size > feats_down_size_thr_)
             {
                 ikdtree->set_downsample_param(config_param_.ikdtree.map_leaf_size);//0.5 默认0.2
                 ikdtree->set_cube_len(config_param_.ikdtree.cube_len);
@@ -1085,7 +1088,8 @@ bool LidarSlam::run()
         // cout<<"[ mapping ]: In num: "<<feats_undistort->points.size()<<" downsamp "<<feats_down_size<<" Map num: "<<featsFromMapNum<<"effect num:"<<effct_feat_num<<endl;
 
         /*** ICP and iterated Kalman filter update ***/
-        if (feats_down_size < 5)
+        // if (feats_down_size < 5)
+        if (feats_down_size < feats_down_size_thr_)
         {
             lidar_no_point_count_++;
             if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){

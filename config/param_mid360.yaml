@@ -26,7 +26,7 @@ common:
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
-  feats_down_size: 100
+  feats_down_size_thr: 100
   # cpu_id: []
   cpu_id: [4, 5]
 
