@@ -122,6 +122,7 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
     if (abs(pose.translation().x())>0.00001){
         lidar_x_ = pose.translation().x();
         lidar_y_ = pose.translation().y();
+        lidar_z_ = pose.translation().z();
         lidar_a_ = angle_norm(R2ypr(pose.rotation()).x());
 
         filter_x_ = lidar_x_; // 当前位置
@@ -130,6 +131,7 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
 
         last_lidar_x_ = lidar_x_;
         last_lidar_y_ = lidar_y_;
+        last_lidar_z_ = lidar_z_;
         last_lidar_a_ = lidar_a_;
 
         chassis_x_ = lidar_x_;
@@ -266,27 +268,29 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
     // pub_log_.publish(log_msg);
 }
 
-void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, Eigen::Isometry3d curr_pose, Eigen::Isometry3d & pose_filtered){
+void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_pose_filtered, Eigen::Isometry3d curr_pose_orig, Eigen::Isometry3d & pose_filtered){
 
     // set var for position filter
     lidar_time_ = slam_->get_lidar_time();
-    double curr_lidar_x_orig = curr_pose.translation().x();
-    double curr_lidar_y_orig = curr_pose.translation().y();
+    double curr_lidar_x_orig = curr_pose_orig.translation().x();
+    double curr_lidar_y_orig = curr_pose_orig.translation().y();
+    double curr_lidar_z_orig = curr_pose_orig.translation().z();
 
     // // int k = 0.5;
     int k = slam_param_.localization.fst_order_k;
     pose_filtered.translation().x() = last_lidar_x_ * k + curr_lidar_x_orig * (1.0-k);
     pose_filtered.translation().y() = last_lidar_y_ * k + curr_lidar_y_orig * (1.0-k);
+    pose_filtered.translation().z() = last_lidar_z_ * k + curr_lidar_z_orig * (1.0-k);
 
     // pose_filtered.translation().x() = lidar_x_;
     // pose_filtered.translation().y() = lidar_y_;
 
     // fill log **************************************************************
     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-    pcl::getTranslationAndEulerAngles(last_pose, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 的 位姿
+    pcl::getTranslationAndEulerAngles(last_pose_filtered, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 的 位姿
 
     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-    pcl::getTranslationAndEulerAngles(curr_pose, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
+    pcl::getTranslationAndEulerAngles(curr_pose_orig, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取当前帧 的 位姿
 
     double dx = curr_x - last_x; // map 坐标系下 x 方向位移
     double dy = curr_y - last_y; // map 坐标系下 y 方向位移
@@ -332,6 +336,7 @@ void LocalizationModule::position_filter(){
 
     last_lidar_x_ = lidar_x_;
     last_lidar_y_ = lidar_y_;
+    last_lidar_z_ = lidar_z_;
     last_lidar_a_ = lidar_a_;
 }
 
@@ -732,13 +737,14 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
 
         if(slam_param_.localization.filter_method == 0){
-            // lidar_position_filter_fst_order(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
+            lidar_position_filter_fst_order(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
         }else if(slam_param_.localization.filter_method == 1){
             lidar_position_filter_window(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
         }
 
         lidar_x_ = curr_pose_filtered.translation().x();
         lidar_y_ = curr_pose_filtered.translation().y();
+        lidar_z_ = curr_pose_filtered.translation().z();
         lidar_a_ = angle_norm(R2ypr(curr_pose_filtered.rotation()).x());
 
         /// filter : chassis & lidar 
@@ -816,7 +822,7 @@ void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, doub
     }
     filtered_x = (filtered_x + chassis_dx)*k_pos_ + lidar_x_*(1.0-k_pos_);
     filtered_y = (filtered_y + chassis_dy)*k_pos_ + lidar_y_*(1.0-k_pos_);
-    filtered_a = angle_norm((filtered_a + chassis_da)*ka + lidar_a_*(1.0-ka)); // 这个就很鬼畜 // 这个值没有用上
+    filtered_a = angle_norm((filtered_a + chassis_da)*ka + lidar_a_*(1.0-ka)); // // 这个值没有用上
 
     // update
     last_chassis_x_ = chassis_x_;
@@ -849,10 +855,12 @@ void LocalizationModule::reset_pose_filter(){
 
     lidar_x_ = 0.0;
     lidar_y_ = 0.0;
+    lidar_z_ = 0.0;
     lidar_a_ = 0.0;
 
     last_lidar_x_ = 0.0;
     last_lidar_y_ = 0.0;
+    last_lidar_z_ = 0.0;
     last_lidar_a_ = 0.0;
 
     chassis_x_ = 0.0;

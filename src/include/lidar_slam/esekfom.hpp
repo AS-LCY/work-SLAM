@@ -15,6 +15,7 @@
 //该hpp主要包含：广义加减法，前向传播主函数，计算特征点残差及其雅可比，ESKF主函数
 
 const double epsi = 0.001; // ESKF迭代时，如果dx<epsi 认为收敛
+// const double epsi = 0.0005; // ESKF迭代时，如果dx<epsi 认为收敛
 
 namespace esekfom
 {
@@ -241,6 +242,7 @@ namespace esekfom
 
 			for (int i = -1; i < maximum_iter; i++) // maximum_iter是卡尔曼滤波的最大迭代次数
 			{
+				// cout << YELLOW << "iter_i == "<< i << RESET<<endl;
 				dyn_share.valid = true;
 				// 计算雅克比，也就是点面残差的导数 H(代码里是h_x)
 
@@ -291,7 +293,7 @@ namespace esekfom
 				if (dyn_share.converge)
 					t++;
 
-				if (!t && i == maximum_iter - 2) //如果迭代了3次还没收敛 强制令成true，h_share_model函数中会重新寻找近邻点
+				if (!t && i == maximum_iter - 2) //如果迭代了3次还没收敛 强制令成true， h_share_model 函数中会重新寻找近邻点
 				{
 					dyn_share.converge = true;
 				}

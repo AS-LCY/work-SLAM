@@ -339,9 +339,11 @@ private:
     double last_lidar_dz_ = 0.0f;
     double last_lidar_x_ = 0.0f;
     double last_lidar_y_ = 0.0f; 
+    double last_lidar_z_ = 0.0f; 
     double last_lidar_a_ = 0.0f;
     double lidar_x_ = 0.0f;      // 雷达给出位置（一阶滤波）
     double lidar_y_ = 0.0f; 
+    double lidar_z_ = 0.0f; 
     double lidar_a_ = 0.0f;       // 雷达给出角度 
     double lidar_time_;
 
