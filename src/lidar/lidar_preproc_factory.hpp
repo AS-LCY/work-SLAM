@@ -19,11 +19,13 @@ public:
     static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type){
         std::shared_ptr<LidarPreprocParent> lidar_preproc_tmp;
         ROS_INFO("---");
-        ROS_INFO("valid lidar_type in factory: 1-Mid360 | 2-Airy ");
+        ROS_INFO("valid lidar_type in factory: 1-lvx-Mid360 | 2-RS-Airy | 3-Vanjee722 ");
         ROS_INFO("curr  lidar_type: %d", lidar_type);
         if (lidar_type == 1){
             lidar_preproc_tmp.reset(new LidarPreprocMid360());
         }else if(lidar_type == 2){ 
+            lidar_preproc_tmp.reset(new LidarPreprocAiry());
+        }else if(lidar_type == 3){ // vanjee 数据类型与 rslidar 一样, 共用
             lidar_preproc_tmp.reset(new LidarPreprocAiry());
         }else {
             lidar_preproc_tmp.reset();
