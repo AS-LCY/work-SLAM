@@ -10,26 +10,18 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  # map_directory: "/home/pmm/data/rslidar/1028/after_update/5/3dmap"
+  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  map_directory: "/home/pmm/data/2-rslidar/airy-v2/1111/07/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
-  # map_directory: "/home/pmm/data/livox/v2/1017/3/3dmap"
-  # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
-  # map_directory: "/home/pmm/data/test/3dmap/"
-  # map_directory: "/home/pmm/data/livox/0927/maps_0927_2_problem/3dmap/"
-  # map_directory: "/home/pmm/data/livox/0924/maps-0924/maps-plaza/3dmap"
-  # map_directory: "/home/pmm/data/livox/0919-ou/map"
-  # map_directory: "/home/pmm/data/livox/0923-23f/map"
-  # map_directory: "/home/pmm/data/livox/0913-ou/map"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
   pub_topic_module_loginfo: "/flbot/localization_module/log_info"
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
-  feats_down_size: 100
-  # cpu_id: []
-  cpu_id: [4, 5]
+  feats_down_size_thr: 100
+  cpu_id: []
+  # cpu_id: [4, 5]
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
@@ -63,17 +55,17 @@ extrinsic:
 
 localization:
   fgicp_freq: 1 # hz
-  fgicp_score_thr: 0.1
+  fgicp_score_thr: 0.3 # 0.1
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7
-  odom2map_delta_thr: 0.05 # double: m
-  odom2map_delta_set: 0.01 # double: m
-  lidar_ratio: 0.2
+  odom2map_delta_thr: 0.05 # 0.05 # double: m
+  odom2map_delta_set: 0.01 # 0.01 # double: m
+  lidar_ratio: 1.0 
   baselink_dy_thr: 0.02
   baselink_dx_thr: 0.04
   baselink_dyaw_thr: 0.5 # unit: degree
-  window_size: 4 
+  window_size: 2 
   filter_freq: 100
   using_turning_proc: true
   chassis_linear_velocity_thr: 0.02
@@ -92,7 +84,7 @@ lidar_preproc:
   point_filter_distance: [15, 15, 5] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
-  point_filter_num: 4 # 间隔采样所需参数
+  point_filter_num: 3 # 间隔采样所需参数
   leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
   leafsize_vec: [0.2, 0.8] # voxel 所需参数
   voxel_region_xyz: [-10, 10.0, -10.0, 10.0, -1, 15]  # order: xmin, xmax, ymin, ymax, zmin, zmax

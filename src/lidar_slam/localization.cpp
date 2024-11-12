@@ -169,6 +169,18 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
     gicp->setInputTarget(CloudGlobalMapIn);
     pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
     gicp->align(*unused_result, correctionOdomToMap.matrix().cast<float>());                    
+
+    // double last_temp_x, last_temp_y, last_temp_z, last_temp_roll, last_temp_pitch, last_temp_yaw;
+    // pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_temp_x, last_temp_y, last_temp_z, last_temp_roll, last_temp_pitch, last_temp_yaw); //  获取上一帧 相对 当前帧的 位姿
+             
+    // Eigen::Isometry3d temp_curr_correctionOdomToMap = Eigen::Isometry3d::Identity();
+    // temp_curr_correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
+    // double curr_temp_x, curr_temp_y, curr_temp_z, curr_temp_roll, curr_temp_pitch, curr_temp_yaw;
+    // pcl::getTranslationAndEulerAngles(temp_curr_correctionOdomToMap, curr_temp_x, curr_temp_y, curr_temp_z, curr_temp_roll, curr_temp_pitch, curr_temp_yaw); //  获取上一帧 相对 当前帧的 位姿
+    
+    // cout << YELLOW << "x: "<< last_temp_x << " y: "<< last_temp_y << " z: "<< last_temp_z << " roll: "<< last_temp_roll << " pitch: "<< last_temp_pitch << " yaw: "<< last_temp_yaw << RESET << endl;
+    // cout << YELLOW << "x: "<< curr_temp_x << " y: "<< curr_temp_y << " z: "<< curr_temp_z << " roll: "<< curr_temp_roll << " pitch: "<< curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl;
+
     if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
         std::cout << "gicp fail, score: "<< gicp->getFitnessScore()<<std::endl;
         return false;

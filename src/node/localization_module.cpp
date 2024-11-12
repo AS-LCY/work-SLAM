@@ -622,7 +622,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         reset_pose_filter();
         
         static int print_idle_cnt = 0;
-        if (print_idle_cnt % 200 ==0){
+        if (print_idle_cnt % 100 ==0){
             ROS_INFO("pose_filter: status not ready (module status = %s)", print_ModuleStatus(curr_running_module_status).c_str());
             print_idle_cnt = 0;
         }
@@ -667,6 +667,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
     }
 
+    // if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
     if (is_mapping_status(curr_running_module_status)){
         if(log_info_manager_->m_status == M_FAILED){
             ROS_ERROR("pose_filter: mapping_status: M_FAILED; return! skip pub pose");
