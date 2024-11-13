@@ -36,6 +36,7 @@ private:
 
     double blind_square_ = 0.0;
     int point_filter_num_ = 2;
+    int ring_filter_num_ = 1;
     // loaded param end /////
 
 

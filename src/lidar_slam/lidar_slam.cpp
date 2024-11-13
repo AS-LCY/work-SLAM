@@ -460,6 +460,14 @@ void LidarSlam::localizationThread()
                 
             }
             else{
+                // auto end = std::chrono::steady_clock::now();
+                // auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                // if (elapsed < period)
+                // {
+                //     std::this_thread::sleep_for(period - elapsed);
+                // }
+                // return;
+                // ////////////////
                 cout << "localizing ... "<<endl;
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set)){
                     // l_status_ = L_NORMAL;

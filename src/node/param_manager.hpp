@@ -137,6 +137,7 @@ public:
         get_param(ns+ "lidar_preproc/blind_distance", loaded_param_.lidar_preproc.blind_distance, &success);
         get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", loaded_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
         get_param(ns+ "lidar_preproc/point_filter_num", loaded_param_.lidar_preproc.point_filter_num, &success);
+        get_param(ns+ "lidar_preproc/ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num, &success);
         get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);
         get_param(ns+ "lidar_preproc/feature_enabled", loaded_param_.lidar_preproc.feature_enabled, &success);
         // get_param(ns+ "lidar_preproc/simple_voxel_enabled", loaded_param_.lidar_preproc.simple_voxel_enabled, &success);

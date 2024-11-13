@@ -4,7 +4,7 @@
 
 	<arg name="rviz" default="true" />
 	<arg name="use_gdb" default="false" />
-	<arg name="lidar_name" default="airy" />
+	<arg name="lidar_name" default="vanjee722" />
 
 	<!-- <param name="localization_mode" type="bool" value="0"/>
 	<param name="offline_mode" type="bool" value="0"/>

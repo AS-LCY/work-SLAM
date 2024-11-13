@@ -35,6 +35,7 @@ bool LidarPreprocAiry::set_param(){
 
         blind_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
         point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+        ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
         // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
         // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
         // ROS_ERROR("blind_square_ : %lf", blind_square_);
@@ -169,7 +170,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
             }
 
             // if(row % point_filter_num_ == 0){
-            if(col%point_filter_num_ == 0 && row%3 == 0){
+            if(col%point_filter_num_ == 0 && row%ring_filter_num_ == 0){
                 PointType xyzin_point;
                 xyzin_point.x = curpt->x;
                 xyzin_point.y = curpt->y;

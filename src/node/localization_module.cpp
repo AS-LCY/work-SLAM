@@ -471,8 +471,6 @@ bool LocalizationModule::create_ROS_IO(){
 
 void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // SLAM 主要流程， 对应于原来的 while (ros::ok()){...}
-    // std::thread::id thisId = std::this_thread::get_id();
-    // std::cout << "debug: slam_dealt_timer    Thread ID: " << thisId << std::endl;
 
     // static int print_thread_cnt = 0;
     // if (print_thread_cnt % 20 ==0){
@@ -492,44 +490,37 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
-    // if (!running_slam_){
+    static int print_idle_cnt = 0;
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
         curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
         curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        static int print_idle_cnt = 0;
-        if (print_idle_cnt % 20 ==0){
+        if (print_idle_cnt % 20 == 0  && print_idle_cnt < 60){
             ROS_INFO("slam dealt : running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
-            print_idle_cnt = 0;
+            // print_idle_cnt = 0;
         }
         print_idle_cnt++;
-        // sleep(2);
         return;
     }
+    print_idle_cnt = 0; // if not IDLE, reset to 0
 
     // ROS_INFO("***********************************************");
     // cout<<"-----------------------------------------------"<<endl;
     // cout<<"***********************************************"<<endl;
 
-    static int print_running_cnt = 0;
-    // if (print_running_cnt % 20 ==0){
-    if (print_running_cnt % 20 ==0 && print_running_cnt < 100){
-        ROS_INFO("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
-        // print_running_cnt = 0;
+    if (curr_running_module_status == ModuleStatus::MODULE_MAPPING || 
+        curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING || 
+        curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+        static int print_running_cnt = 0;
+        if (print_running_cnt % 20 ==0){
+        // if (print_running_cnt % 20 ==0 && print_running_cnt < 100){
+            ROS_INFO("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+            print_running_cnt = 0;
+        }
+        print_running_cnt++;
     }
-    print_running_cnt++;
 
-    // if (control_status_.reset){
-    //     sleep(1);
-    //     slam_.reset();
-    //     sleep(1);
-    //     localization_mode_ = control_status_.localizationMode;
-    //     // slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/lib/"),localization_mode_,offline_mode_);
-    //     slam_ = std::make_unique<lidar_slam::LidarSlam>(curr_dir_+std::string("/"),localization_mode_,offline_mode_, 0);
-    //     show_load_map_ = 0;
-    //     control_status_.reset = false;
 
-    // }
-    
+   
     // ROS_INFO("trying to get loaded map...");
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
@@ -615,21 +606,22 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
+    static int print_idle_cnt = 0;
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
         curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
         curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
 
         reset_pose_filter();
         
-        static int print_idle_cnt = 0;
-        if (print_idle_cnt % 100 ==0){
-            ROS_INFO("pose_filter: status not ready (module status = %s)", print_ModuleStatus(curr_running_module_status).c_str());
-            print_idle_cnt = 0;
+        if (print_idle_cnt % 100 == 0 && print_idle_cnt < 300){
+            ROS_INFO("pose_filter: status not ready (module status = %s), Waiting", print_ModuleStatus(curr_running_module_status).c_str());
+            // print_idle_cnt = 0;
         }
         print_idle_cnt++; // print_idle_cnt only used here
 
         return;
     }
+    print_idle_cnt = 0; // if not IDLE, reset to 0
 
     if (!slam_ || releasing_slam_flag_){ // slam_ 对象为空, 或正在释放对象
         ROS_INFO("pose_filter: slam not ready (reset pose filter!)");
@@ -667,8 +659,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
     }
 
-    // if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
-    if (is_mapping_status(curr_running_module_status)){
+    if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+    // if (is_mapping_status(curr_running_module_status)){
         if(log_info_manager_->m_status == M_FAILED){
             ROS_ERROR("pose_filter: mapping_status: M_FAILED; return! skip pub pose");
             return;
@@ -1178,8 +1170,14 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
         lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
         printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
         slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
-    }
+    }else if(slam_param_.lidar_preproc.lidar_type == 3){
+        ROS_INFO("vanjee cbk");
+        PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+        lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+        printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
 
+    }
 
 
     double t1 = omp_get_wtime();

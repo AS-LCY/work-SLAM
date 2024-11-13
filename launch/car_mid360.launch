@@ -4,6 +4,7 @@
 
 	<arg name="rviz" default="true" />
 	<arg name="use_gdb" default="false" />
+	<arg name="lidar_name" default="mid360" />
 
 	<!-- <param name="localization_mode" type="bool" value="0"/>
 	<param name="offline_mode" type="bool" value="0"/>
@@ -17,7 +18,7 @@
 
 	<!-- <env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config.cfg"/> -->
 
-	<rosparam command="load" file="$(find lidar_slam)/config/param_mid360.yaml" ns="/flbot/lidar_slam/" />
+	<rosparam command="load" file="$(find lidar_slam)/config/param_$(arg lidar_name).yaml" ns="/flbot/lidar_slam/" />
 
 	<group if="$(arg use_gdb)">
 		<node pkg="lidar_slam" type="lidar_slam_node" name="lidar_slam_node" launch-prefix="gdb -ex run --args" respawn="false" output="screen"/>

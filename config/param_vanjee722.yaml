@@ -10,8 +10,8 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  # map_directory: "/home/pmm/data/rslidar/1028/after_update/5/3dmap"
+  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/32xian/4/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -19,19 +19,19 @@ common:
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
-  feats_down_size: 100
-  # cpu_id: []
-  cpu_id: [4, 5]
+  feats_down_size_thr: 100
+  cpu_id: []
+  # cpu_id: [4, 5]
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
-  extrinsic_T: [ 0.00425, 0.00418, -0.00446 ] # lidar in imu
+  extrinsic_T: [ -0.00571, 0.00559, 0.02668 ] # lidar in imu
   # extrinsic_T: [ 0.004052, 0.004337, -0.004494 ]  # imu in lidar
   extrinsic_R: [ 0, 0, 0]  # unit(degree), yaw, pitch, roll  
   # extrinsic_R: [-89.667898, 1.307651, 179.205572]  # unit(degree), yaw, pitch, roll  
        
   # extrinsic_euler_IMU_in_baselink: [-89.667898, 1.307651, 179.205572] # lidar in imu  # unit(degree) yaw, pitch, roll    # airy
-  extrinsic_euler_IMU_in_baselink: [-89.667952, 0.801996, 178.696976] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
+  extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
   # extrinsic_euler_IMU_in_baselink: [-90.0, 0.0, 180.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
   # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll     
 
@@ -46,13 +46,13 @@ localization:
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7
-  odom2map_delta_thr: 0.05 # double: m
-  odom2map_delta_set: 0.01 # double: m
-  lidar_ratio: 0.2
+  odom2map_delta_thr: 0.5 # 0.05 # double: m
+  odom2map_delta_set: 0.1 # 0.01 # double: m
+  lidar_ratio: 1.0
   baselink_dy_thr: 0.02
   baselink_dx_thr: 0.04
   baselink_dyaw_thr: 0.5 # unit: degree
-  window_size: 4 
+  window_size: 2 
   filter_freq: 100
   using_turning_proc: true
   chassis_linear_velocity_thr: 0.02
@@ -61,7 +61,7 @@ localization:
 
 lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 
-  sub_lidar_topic: "/vanjee/lidar"
+  sub_lidar_topic: "/vanjee/lidar722"
   sub_imu_topic: "/vanjee/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1.5 
@@ -70,6 +70,7 @@ lidar_preproc:
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 4 # 间隔采样所需参数
+  ring_filter_num: 1
   leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
   leafsize_vec: [0.2, 0.8] # voxel 所需参数
   voxel_region_xyz: [-10, 10.0, -10.0, 10.0, -1, 15]  # order: xmin, xmax, ymin, ymax, zmin, zmax

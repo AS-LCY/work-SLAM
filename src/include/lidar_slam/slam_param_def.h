@@ -23,7 +23,8 @@ struct LidarPreprocParam{
     int line_count;
     double blind_distance;
     bool flag_keep_only_last_lidar=false;
-    int point_filter_num;
+    int point_filter_num = 2;
+    int ring_filter_num = 1;
     std::vector<double> point_filter_distance;
     bool feature_enabled;
     // bool simple_voxel_enabled;
