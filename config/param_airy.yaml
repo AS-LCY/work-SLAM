@@ -30,9 +30,10 @@ extrinsic:
   extrinsic_R: [ 0, 0, 0]  # unit(degree), yaw, pitch, roll  
   # extrinsic_R: [-89.667898, 1.307651, 179.205572]  # unit(degree), yaw, pitch, roll  
        
-  # extrinsic_euler_IMU_in_baselink: [-89.667898, 1.307651, 179.205572] # lidar in imu  # unit(degree) yaw, pitch, roll    # airy
-  extrinsic_euler_IMU_in_baselink: [-89.667952, 0.801996, 178.696976] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
-  extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
+  # extrinsic_euler_IMU_in_baselink: [-89.667952, 0.801996, 178.696976] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy-v1
+  extrinsic_euler_IMU_in_baselink: [-88.199227, -0.332534, 179.751635] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy-v2
+  # extrinsic_euler_IMU_in_baselink: [-89.667898, 1.307651, 179.205572] # lidar in imu  # unit(degree) yaw, pitch, roll    # airy-v1
+  # extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
   # extrinsic_euler_IMU_in_baselink: [-90.0, 0.0, 180.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
   # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll     
 
