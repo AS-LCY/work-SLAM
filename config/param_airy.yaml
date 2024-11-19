@@ -11,7 +11,7 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/2-rslidar/airy-v2/1112/01/3dmap"
+  map_directory: "/home/pmm/data/2-rslidar/airy-v2/1112/03/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"

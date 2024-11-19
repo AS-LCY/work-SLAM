@@ -412,12 +412,11 @@ bool LocalizationModule::create_ROS_IO(){
     sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
 
 
-    nh4_.setCallbackQueue(&pose_filter_queue_);
-    // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
-    // timer_slam_ = nh4_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
-    const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
-    // timer_pose_filter_ = nh4_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
-    timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
+    // nh4_.setCallbackQueue(&pose_filter_queue_);
+    // // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
+    // // timer_slam_ = nh4_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
+    // const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
+    // timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
 
     // only 定位
 
@@ -454,9 +453,9 @@ bool LocalizationModule::create_ROS_IO(){
     spinner_3.start();
 
 
-    //启动一个线程处理 slam ctrl 单独的队列
-    ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
-    spinner_4.start();
+    // //启动一个线程处理 pose filter 单独的队列
+    // ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
+    // spinner_4.start();
 
     ros::waitForShutdown(); 
 
@@ -576,9 +575,12 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
-        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
-        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+        if (slam_->isGloalLocalizationSuccess()){
+            publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
+            publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+        }
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+
     }
     if (show_rviz_){
         publish_static_transform(slam_->getWheelInLidar());

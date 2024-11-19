@@ -1,0 +1,20 @@
+<launch>
+<!-- Launch file for Livox MID360 LiDAR -->
+
+
+	<arg name="rviz" default="true" />
+	<arg name="use_gdb" default="false" />
+	<arg name="lidar_name" default="mid360" />
+
+	<!-- <env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config.cfg"/> -->
+
+	<rosparam command="load" file="$(find lidar_slam)/config/param_fusion_$(arg lidar_name).yaml" ns="/flbot/localization/" />
+
+	<group if="$(arg use_gdb)">
+		<node pkg="lidar_slam" type="localization_fusion_node" name="localization_fusion_node" launch-prefix="gdb -ex run --args" respawn="false" output="screen"/>
+	</group>
+	<group unless="$(arg use_gdb)">
+		<node pkg="lidar_slam" type="localization_fusion_node" name="localization_fusion_node" respawn="false" output="screen"/>
+	</group>
+
+</launch>

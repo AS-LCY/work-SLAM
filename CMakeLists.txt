@@ -237,7 +237,25 @@ target_link_libraries(lidar_slam_node
   # yaml-cpp 
   ) 
 
+  add_library(mango_common SHARED
+  src/fusion_node/common/numerical_process.cpp 
+  src/fusion_node/common/quaternion.cpp 
+  src/fusion_node/common/vector.cpp 
+)
 
+add_executable(localization_fusion_node
+  src/fusion_node/fusion_main.cpp
+  src/fusion_node/localization_fusion_interface.cpp
+  src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
+  src/fusion_node/ekf_fusion/pose_ekf.cpp 
+)
+
+
+  target_link_libraries(localization_fusion_node 
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  mango_common
+  ) 
 
 #############
 ## Install ##

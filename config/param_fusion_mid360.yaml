@@ -1,0 +1,23 @@
+localization_fusion:
+    status_num: 3
+    input_num: 2
+    measure_num: 3
+    localization_fusion_dt: 100 # unit: ms
+    status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta]
+    input_cov_mat_diag: [0.05, 0.0017]  # [v, w]
+    measure_cov_mat_diag: [0.01, 0.01, 0.005] # [x, y, theta]
+    gating:
+        mah_drift_thresh : 100
+        mah_drift_lateral_thresh: 10
+        mah_warn_thresh: 5
+        mah_warn_lateral_thresh: 5
+        dis_drift_lateral_thresh: 0.3 # meter
+        turn_angular_thresh: 0.01
+    use_ekf_yaw: false
+    baselink_in_lidar: [0.1, 0.0, -0.1, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    # baselink_in_lidar: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    fusion_topics:
+        sub_imu_topic: "/livox/imu"
+        sub_chassis_topic: "/flbot/hardware/chassic_data"
+        sub_slam_odom_topic: "/Odometry_lidar_in_map"
+        pub_localization_topic: "/flbot/localiztion/odometry"

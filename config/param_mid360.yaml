@@ -12,7 +12,9 @@ common:
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
   # map_directory: "/home/pmm/data/livox/lolo/1029/maps/map4/3dmap"
-  # map_directory: "/home/pmm/data/livox/v2/1017/3/3dmap"
+  # map_directory: "/home/pmm/data/1-livox/v2/1017/3/3dmap"
+  # map_directory: "/home/pmm/data/1-livox/1107/maps-2/3dmap"
+  
   # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
   # map_directory: "/home/pmm/data/test/3dmap/"
   # map_directory: "/home/pmm/data/livox/0927/maps_0927_2_problem/3dmap/"
