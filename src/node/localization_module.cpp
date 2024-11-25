@@ -411,12 +411,15 @@ bool LocalizationModule::create_ROS_IO(){
     nh3_.setCallbackQueue(&slam_ctrl_queue_);
     sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
 
+    if(slam_param_.common.use_pose_filter){
+        nh4_.setCallbackQueue(&pose_filter_queue_);
+        const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
+        timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
+        //启动一个线程处理 pose filter 单独的队列
+        ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
+        spinner_4.start();
+    }
 
-    // nh4_.setCallbackQueue(&pose_filter_queue_);
-    // // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
-    // // timer_slam_ = nh4_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
-    // const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
-    // timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
 
     // only 定位
 
@@ -453,9 +456,6 @@ bool LocalizationModule::create_ROS_IO(){
     spinner_3.start();
 
 
-    // //启动一个线程处理 pose filter 单独的队列
-    // ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
-    // spinner_4.start();
 
     ros::waitForShutdown(); 
 
@@ -1326,7 +1326,12 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
 
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg);
 	msg->time_stamp = msg_in->header.stamp.toSec();
-
+    
+    if (slam_param_.lidar_preproc.lidar_type == 3) {
+        acc_after = acc_after / G_m_s2;
+    }
+    // std::cout << RED << " acc_after : " << acc_after[0]<< " -- " << acc_after[1]<< " -- " << acc_after[2] <<RESET<<std::endl;;
+    
 	// msg->angular_velocity << msg_in->angular_velocity.x,msg_in->angular_velocity.y,msg_in->angular_velocity.z;
 	// msg->linear_acceleration << msg_in->linear_acceleration.x,msg_in->linear_acceleration.y,msg_in->linear_acceleration.z;	
 	msg->angular_velocity << ang_after[0],ang_after[1],ang_after[2];	

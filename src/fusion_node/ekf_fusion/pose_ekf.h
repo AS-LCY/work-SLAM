@@ -27,13 +27,16 @@ public:
     /// @brief get estimated status for model every loop
     Matrix get_status_estimated();
 
+
+    void reset(const Matrix& status_cov, const Matrix& input_cov, const Matrix& measure_cov);
+
     void set_dimension(const int& status_num, const int& input_num, const int& measure_num);
 
     void set_dt(const double& dt);
 
     void set_covariance(const Matrix& status_cov, const Matrix& input_cov, const Matrix& measure_cov);
 
-    void params_initialize();
+    // void params_initialize();
 
 
     ///@brief Set the status object, for initialize status

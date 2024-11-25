@@ -36,6 +36,7 @@ struct LocalizationFusionParams {
     EkfGatingParams gating_params;
     bool use_ekf_yaw = false;
     std::vector<double> baselink_in_lidar;
+    double time_lost_thr = 3.0;
     FusionTopicParams topic_params;
 };
 
@@ -76,6 +77,7 @@ public:
         success &= load_ekf_gating_params();
         get_param(title + "use_ekf_yaw", localization_fusion_params_.use_ekf_yaw, &success);
         get_param(title + "baselink_in_lidar", localization_fusion_params_.baselink_in_lidar, &success);
+        get_param(title + "time_lost_thr", localization_fusion_params_.time_lost_thr, &success);
         success &= load_fusion_topics_params();
         return success;
     }

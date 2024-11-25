@@ -58,7 +58,7 @@ public:
 
 private:
     std::shared_ptr<PoseEKF> ekf_ptr_; ///< the ekf pointer
-    fairland_msgs::LocalizationPoseData status_;
+    fairland_msgs::LocalizationPoseData pose_msg_;
 
     EkfGatingParams gating_params_;
     bool use_ekf_yaw_ = false;

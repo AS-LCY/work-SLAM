@@ -10,30 +10,42 @@ PoseEKF::PoseEKF() {
 }
 
 PoseEKF::PoseEKF(const int& status_num,
-					   const int& input_num,
-                       const int& measure_num,
-                       const Matrix& status_cov,
-                       const Matrix& input_cov,
-                       const Matrix& measure_cov,
-					   const double& dt,
-                       const EkfGatingParams& gating_params
-					   ){
+                    const int& input_num,
+                    const int& measure_num,
+                    const Matrix& status_cov,
+                    const Matrix& input_cov,
+                    const Matrix& measure_cov,
+                    const double& dt,
+                    const EkfGatingParams& gating_params
+                    ){
     set_dimension(status_num,input_num,measure_num);
     ekf_matrix_init();
     set_covariance(status_cov, input_cov, measure_cov);
     dt_=dt;
 
-    printf("P_ init: \n");
-    std::cout<<P_<<std::endl;
+    // printf("P_ init: \n");
+    // std::cout<<P_<<std::endl;
 }
 
 PoseEKF::~PoseEKF() {
 
 }
 
-void PoseEKF::params_initialize() {
+void PoseEKF::reset(const Matrix& status_cov,
+                    const Matrix& input_cov,
+                    const Matrix& measure_cov
+                    ) {
+    std::cout<<"Reseting Pose-EKF ..."<<std::endl;
+    // set_dimension(status_num,input_num,measure_num); // dimension should not be changed
     ekf_matrix_init();
+    set_covariance(status_cov, input_cov, measure_cov); // P_ need reset
+    std::cout<<"P_: "<<std::endl;
+    std::cout<<P_<<std::endl;
 }
+
+// void PoseEKF::params_initialize() {
+//     ekf_matrix_init();
+// }
 
 
 void PoseEKF::move(const Matrix& input, const double& dt){
@@ -41,20 +53,20 @@ void PoseEKF::move(const Matrix& input, const double& dt){
     auto vel = input(0,0);          // vel(k-1)
     auto w = input(1,0);        // omega(k-1)
     auto dist = vel*dt;
-    ROS_INFO("ekf move: dist: %.4f, dx: %.4f, dy: %.4f", dist, dist*std::cos(theta), dist*std::sin(theta));
+    // ROS_INFO("ekf move: dist: %.4f, dx: %.4f, dy: %.4f", dist, dist*std::cos(theta), dist*std::sin(theta));
 
 
     Eigen::Matrix<double,3,1> dx;
-    // dx << dist*std::cos(theta),
-    //     dist*std::sin(theta),
-    //     w*dt;
     dx << dist*std::cos(theta),
         dist*std::sin(theta),
-        0;        
+        w*dt;
+    // dx << dist*std::cos(theta),
+    //     dist*std::sin(theta),
+    //     0;        
 
     status_ += dx;
 
-    ROS_INFO("ekf move: theta: %.4f, w: %.4f",theta, w);
+    ROS_INFO("ekf move: dist: %.4f, theta: %.4f ",dist, theta);
     ROS_INFO("ekf move: dx: %.4f, dy: %.4f, dyaw: %.4f", dx(0,0), dx(1,0), dx(2,0));
 
 }
@@ -87,7 +99,7 @@ void PoseEKF::update(const Matrix& measure, bool trust_measure){
     // trust_measure 暂时不用
 
     measure_ = measure *1.0;
-    status_(2, 0) = measure_(2, 0);
+    // status_(2, 0) = measure_(2, 0);
 
     // h jacobian
     H_ = ekf_eye_n_; // demension: [status_num_ * status_num_]

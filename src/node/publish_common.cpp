@@ -106,7 +106,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     // q.setY(odom_for_tf.pose.pose.orientation.y);
     // q.setZ(odom_for_tf.pose.pose.orientation.z);
     // transform.setRotation(q);
-    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, "lidar"));
+    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, "base_footprint"));
 }
 
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)

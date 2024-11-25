@@ -20,6 +20,7 @@ common:
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
   feats_down_size_thr: 100
+  use_pose_filter: false 
   cpu_id: []
   # cpu_id: [4, 5]
 

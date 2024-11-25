@@ -3,6 +3,7 @@
 #define FLBOT_LOCALIZTION_FUSION_INTERFACE_H
 
 #include <ros/ros.h>
+#include <mutex>
 // ros-msg
 // #include <std_msgs/UInt32.h>
 // #include <geometry_msgs/Twist.h>
@@ -62,6 +63,10 @@ private:
 
     long seq_count_ = 0;
     Eigen::Isometry3d T_baselink2lidar_;
+    Eigen::Isometry3d T_lidar2baselink_;
+
+    double last_slam_odom_time_ = 0.0;
+    double time_lost_thr_ = 3.0; // unit: second
 
     fairland_msgs::LocalizationPoseData status_;
     fairland_msgs::LocalizationPoseData status_tmp_;

@@ -24,14 +24,14 @@ EkfLocalizationFusion::~EkfLocalizationFusion(){
     
 }
 
-void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::LocalizationPoseData& status, fairland_msgs::LocalizationPoseData *status_out){
-    status_ = status;
-    *status_out = status;
-    set_localizationfusion_input(); // set measure_ & input_ (from status_)
-    double dt = status.header.stamp.toSec() - ts_;
+void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::LocalizationPoseData& pose_msg, fairland_msgs::LocalizationPoseData *pose_msg_out){
+    pose_msg_ = pose_msg;
+    *pose_msg_out = pose_msg;
+    set_localizationfusion_input(); // set measure_ & input_ (from pose_msg_)
+    double dt = pose_msg.header.stamp.toSec() - ts_;
     ROS_INFO("input: v: %.3f, w: %.5f; dt: %.3f", input_(0,0),input_(1,0),dt);
     ekf_ptr_->predict(input_,dt);
-    ts_ = status.header.stamp.toSec();// update for next loop
+    ts_ = pose_msg.header.stamp.toSec();// update for next loop
 
     ROS_INFO("measure: %.3f, %.3f, %.4f", measure_(0,0),measure_(1,0),measure_(2,0));
     bool trust_measure = false;//////////////////////// TODO 
@@ -39,10 +39,10 @@ void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::Locali
     ekf_ptr_->update(measure_, trust_measure);
     status_estimated_ = ekf_ptr_->get_status_estimated();
     
-    status_out->fusion_pose = status_out->slam_pose;
-    status_out->fusion_pose.position.x = status_estimated_(0,0)+offset_x_;
-    status_out->fusion_pose.position.y = status_estimated_(1,0)+offset_y_;
-    geometry_msgs::Vector3 euler = localization_module::common::Quaternion::get_euler_zyx(status_out->fusion_pose.orientation);
+    pose_msg_out->fusion_pose = pose_msg_out->slam_pose;
+    pose_msg_out->fusion_pose.position.x = status_estimated_(0,0)+offset_x_;
+    pose_msg_out->fusion_pose.position.y = status_estimated_(1,0)+offset_y_;
+    geometry_msgs::Vector3 euler = localization_module::common::Quaternion::get_euler_zyx(pose_msg_out->fusion_pose.orientation);
 
     ROS_INFO("ekf dx: %.3f, dy: %.3f, dyaw: %.4f", \
                 status_estimated_(0,0)-measure_(0,0), status_estimated_(1,0)-measure_(1,0), \
@@ -50,31 +50,31 @@ void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::Locali
     if(use_ekf_yaw_){
         euler.z = status_estimated_(2,0);
     }
-    status_out->fusion_pose.orientation =  localization_module::common::Quaternion::get_quaternion(euler);
+    pose_msg_out->fusion_pose.orientation =  localization_module::common::Quaternion::get_quaternion(euler);
     ROS_INFO_STREAM("offset_x_: "<<offset_x_ << " --- offset_y_: "<<offset_y_ );
 }
 
 
 void EkfLocalizationFusion::set_localizationfusion_input() {
     // 观测量 measure
-    measure_(0,0) = status_.slam_pose.position.x - offset_x_; // ekf 观测量: x
-    measure_(1,0) = status_.slam_pose.position.y - offset_y_; // ekf 观测量: y
-    measure_(2,0) = localization_module::common::Quaternion::get_euler_zyx(status_.slam_pose.orientation).z; // ekf 观测量: theta
+    measure_(0,0) = pose_msg_.slam_pose.position.x - offset_x_; // ekf 观测量: x
+    measure_(1,0) = pose_msg_.slam_pose.position.y - offset_y_; // ekf 观测量: y
+    measure_(2,0) = localization_module::common::Quaternion::get_euler_zyx(pose_msg_.slam_pose.orientation).z; // ekf 观测量: theta
     measure_(2,0) = localization_module::common::NumericalProcess::unify_angle(measure_(2,0)); // ekf 观测量: theta-unified
 
     // 控制量 input
-    input_(0,0) = status_.chassis_status.ac_linear_velocity;
-    input_(1,0) = status_.angular_velocity.z;
+    input_(0,0) = pose_msg_.chassis_status.ac_linear_velocity;
+    input_(1,0) = pose_msg_.angular_velocity.z;
 
 }
 
 void EkfLocalizationFusion::init(const fairland_msgs::LocalizationPoseData& status) {
-    status_ = status;
-    offset_x_ = status_.slam_pose.position.x;
-    offset_y_ = status_.slam_pose.position.y;
+    pose_msg_ = status;
+    offset_x_ = pose_msg_.slam_pose.position.x;
+    offset_y_ = pose_msg_.slam_pose.position.y;
     measure_(0,0) = 0.0;
     measure_(1,0) = 0.0;
-    measure_(2,0) = localization_module::common::Quaternion::get_euler_zyx(status_.slam_pose.orientation).z;
+    measure_(2,0) = localization_module::common::Quaternion::get_euler_zyx(pose_msg_.slam_pose.orientation).z;
     measure_(2,0) = localization_module::common::NumericalProcess::unify_angle(measure_(2,0));
     ekf_ptr_->set_status(measure_);
     ts_=status.header.stamp.toSec();
@@ -91,8 +91,9 @@ void EkfLocalizationFusion::reset(){
     offset_x_=0.0;
     offset_y_=0.0;
     
-    ekf_ptr_->params_initialize();
-    ekf_ptr_->set_covariance(status_covariance_,input_covariance_,measure_covariance_);
+    ekf_ptr_ -> reset(status_covariance_,input_covariance_,measure_covariance_);
+    // ekf_ptr_->params_initialize();
+    // ekf_ptr_->set_covariance(status_covariance_,input_covariance_,measure_covariance_);
 }
 
 

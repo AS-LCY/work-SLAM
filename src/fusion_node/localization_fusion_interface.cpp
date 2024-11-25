@@ -52,7 +52,7 @@ void LocalizationFusion::chassis_msg_callback(const fros_hardware_node::chassic_
     std::lock_guard<std::mutex> lock(mutex_);
     is_chassis_rcv_ = true;
     chassis_msg_ = *chassis_msg_in;
-    ROS_INFO_STREAM("chassis-vel: "<<chassis_msg_.ac_linear_velocity );
+    // ROS_INFO_STREAM("chassis-vel: "<<chassis_msg_.ac_linear_velocity );
 }
 
 void LocalizationFusion::imu_msg_callback(const sensor_msgs::Imu::ConstPtr& imu_msg_in){
@@ -66,31 +66,35 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     ROS_INFO_STREAM_ONCE(YELLOW<<"Received slam odometry"<<RESET);
     std::lock_guard<std::mutex> lock(mutex_);
     slam_odom_msg_ = *slam_odometry_in;
-    ROS_INFO_STREAM("slam-x: "<<slam_odom_msg_.pose.pose.position.x << " --- y: "<<slam_odom_msg_.pose.pose.position.y );
 
-    // check_slam_odometry(slam_odom_msg_);
+    if (!is_chassis_rcv_ || !is_imu_rcv_){
+        ROS_INFO_STREAM_ONCE(YELLOW<<"Chassis or imu not received yet "<<RESET);
+        return;
+    }
+
+    check_slam_odometry(slam_odom_msg_);
 
     compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_origin_);
     compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
     if (lf_need_init_ == true && is_chassis_rcv_ && is_imu_rcv_) {
         ekf_fusion_ptr_->init(status_tmp_);
-        ROS_INFO_STREAM(YELLOW<<"localization fusion init"<<RESET);
+        ROS_INFO_STREAM(YELLOW<<"localization fusion init -----------------"<<RESET);
         lf_need_init_ = false;
     }
 
     if (ekf_fusion_ptr_->is_init()) {
-        ROS_INFO_STREAM(YELLOW<<"localization fusion start ----------------"<<RESET);
+        ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
         ekf_fusion_ptr_->localization_fusion_core(status_tmp_, &status_lf_);
-        ROS_INFO_STREAM(YELLOW<<"localization fusion end ------------------"<<RESET);
+        ROS_INFO_STREAM(GREEN<<"localization fusion end ------------------"<<RESET);
         status_tmp_ = status_lf_;
+
+        ROS_INFO("slam-  x: %.4f --- y:  %.4f --- yaw:  %.6f", status_lf_.slam_pose.position.x, status_lf_.slam_pose.position.y, status_lf_.slam_pose.orientation.z);
+        ROS_INFO("fusion-x: %.4f --- y:  %.4f --- yaw:  %.6f", status_lf_.fusion_pose.position.x, status_lf_.fusion_pose.position.y, status_lf_.fusion_pose.orientation.z);
+        ROS_INFO_STREAM(GREEN<<"------------------------------------------"<<RESET);
     }
 
     status_ = status_tmp_;
-    ROS_INFO_STREAM("slam  -x: "<<status_lf_.slam_pose.position.x << " --- y: "<<status_lf_.slam_pose.position.y );
-    ROS_INFO_STREAM("fusion-x: "<<status_lf_.fusion_pose.position.x << " --- y: "<<status_lf_.fusion_pose.position.y );
-    ROS_INFO_STREAM("slam-yaw: "<<status_lf_.slam_pose.orientation.z << " --- fusion-yaw: "<<status_lf_.fusion_pose.orientation.z );
-    ROS_INFO_STREAM(YELLOW<<"------------------------------------------"<<RESET);
 
 
     pub_localiztion();
@@ -101,8 +105,24 @@ void LocalizationFusion::pub_localiztion(){
     fusion_odom.header = status_.header;
     fusion_odom.header.seq = seq_count_ ++;
 
-    fusion_odom.pose.pose = status_.fusion_pose;
+    Eigen::Isometry3d T_base2map = Eigen::Isometry3d::Identity();
+    Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(status_.fusion_pose.orientation);
+    T_base2map.pretranslate(Eigen::Vector3d(status_.fusion_pose.position.x, status_.fusion_pose.position.y, status_.fusion_pose.position.z));
+    T_base2map.rotate(eigen_quat); // 应用四元数的旋转
+
+    Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
+    T_lidar2map = T_base2map * T_lidar2baselink_;
+
+    fusion_odom.pose.pose.position.x = T_lidar2map.translation().x();
+    fusion_odom.pose.pose.position.y = T_lidar2map.translation().y();
+    fusion_odom.pose.pose.position.z = T_lidar2map.translation().z();
+
+    Eigen::Quaterniond e_quat2(T_lidar2map.rotation());
+    geometry_msgs::Quaternion geo_quat = localization_module::common::Quaternion::eigen_quat_2_geo_quat(e_quat2);
+    fusion_odom.pose.pose.orientation = geo_quat;
+
     pub_fusion_odom_.publish(fusion_odom);
+    
     
     // send tf
     static tf::TransformBroadcaster br;
@@ -131,7 +151,7 @@ void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msg
     status_msg->slam_pose.position.x = T_baselink2map.translation().x();
     status_msg->slam_pose.position.y = T_baselink2map.translation().y();
     status_msg->slam_pose.position.z = T_baselink2map.translation().z();
-    
+
     status_msg->fusion_pose = status_msg->slam_pose;
     status_msg->chassis_status = chassis_msg;
     status_msg->linear_acceleration = imu_msg.linear_acceleration;
@@ -140,7 +160,18 @@ void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msg
 }
 
 void LocalizationFusion::check_slam_odometry(nav_msgs::Odometry slam_odom){
+    double curr_slam_odom_time = slam_odom.header.stamp.toSec();
 
+    double slam_dtime = curr_slam_odom_time - last_slam_odom_time_;
+    ROS_INFO_STREAM(YELLOW<<"odom_dtime: "<<slam_dtime<<RESET);
+    if(slam_dtime < 0 || std::abs(slam_dtime) > 3){
+        lf_need_init_= true;
+        ekf_fusion_ptr_->reset();
+        // exit(1);
+        ROS_INFO_STREAM(RED<<"localization fusion need reset!"<<RESET);
+    }
+
+    last_slam_odom_time_ = curr_slam_odom_time;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,13 +200,18 @@ bool LocalizationFusion::load_params(){
     // ROS_INFO_STREAM("yaw  : " << baselink_in_lidar[5]);
 
     T_baselink2lidar_ = Eigen::Isometry3d::Identity();
+    T_lidar2baselink_ = Eigen::Isometry3d::Identity();
+
     T_baselink2lidar_.pretranslate(Eigen::Vector3d(baselink_in_lidar[0], baselink_in_lidar[1], baselink_in_lidar[2]));
     T_baselink2lidar_.rotate(eigen_quat); // 应用四元数的旋转
     // std::cout << "T_baselink2lidar_: " <<std::endl;
     // std::cout << T_baselink2lidar_.translation()  <<std::endl;
     // std::cout << T_baselink2lidar_.rotation()  <<std::endl;
 
+    T_lidar2baselink_ = T_baselink2lidar_.inverse();
 
+    time_lost_thr_ = lf_params->time_lost_thr;
+    
     return true;
 }
 
