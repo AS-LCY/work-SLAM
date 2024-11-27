@@ -18,7 +18,7 @@
 
 	<!-- <env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config.cfg"/> -->
 
-	<rosparam command="load" file="$(find lidar_slam)/config/param_$(arg lidar_name).yaml" ns="/flbot/lidar_slam/" />
+	<rosparam command="load" file="$(find lidar_slam)/config/param_slam_$(arg lidar_name).yaml" ns="/flbot/lidar_slam/" />
 
 	<group if="$(arg use_gdb)">
 		<node pkg="lidar_slam" type="lidar_slam_node" name="lidar_slam_node" launch-prefix="gdb -ex run --args" respawn="false" output="screen"/>
