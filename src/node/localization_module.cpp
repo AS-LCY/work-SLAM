@@ -1041,7 +1041,7 @@ void LocalizationModule::reset_pose_filter(){
 void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     // make msg *************************************************************************
     // fill header
-    log_info_manager_->module_status = running_module_status_;
+    log_info_manager_->module_status = running_module_status_.load();
 
     fairland_msgs::LocalizationModuleStatus status_msg;
     status_msg.header.stamp = ros::Time().now();

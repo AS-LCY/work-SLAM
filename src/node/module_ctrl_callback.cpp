@@ -135,7 +135,8 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);            
             if(stop_localization()){// 停止定位成功
                 // running_module_status_ = ModuleStatus::MODULE_IDLE;
-                running_module_status_.store(ModuleStatus::MODULE_IDLE);                
+                running_module_status_.store(ModuleStatus::MODULE_IDLE);   
+                log_info_manager_->l_status = L_INACTIVE;             
             }
             else{
                 set_module_status_ = running_module_status_;
@@ -559,6 +560,8 @@ void LocalizationModule::release_slam_obj(){
     running_module_status_.store(ModuleStatus::MODULE_IDLE);    
     // mapping_status_ = M_INACTIVE;
     // localization_status_ = L_INACTIVE;
+    log_info_manager_->m_status = M_INACTIVE;
+    log_info_manager_->l_status = L_INACTIVE;
     ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
     releasing_slam_flag_ = false;
 }
