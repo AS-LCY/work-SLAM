@@ -40,10 +40,13 @@ extrinsic:
   extrinsic_T: [ 0, -0.02329, 0.04412 ] 
   extrinsic_R: [ 0,  0,  0]  # unit(degree), yaw, pitch, roll  
 
-  extrinsic_euler_IMU_in_baselink: [-89, 0.410, -13.119]   # unit(degree) yaw, pitch, roll    # 第二版样机
-  # extrinsic_euler_IMU_in_baselink: [-90, 1.478, -12.647929]   # unit(degree) yaw, pitch, roll    # 第一版样机
-  # extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
-  # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
+  extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-89, 0.410, -13.119] # unit(degree) yaw, pitch, roll
+
+  # extrinsic_euler_IMU_in_baselink: [-89, 0.410, -13.119]   # unit(degree) yaw, pitch, roll    # 第二版样机
+  # # extrinsic_euler_IMU_in_baselink: [-90, 1.478, -12.647929]   # unit(degree) yaw, pitch, roll    # 第一版样机
+  # # extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
+  # # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,

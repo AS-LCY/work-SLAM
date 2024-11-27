@@ -10,9 +10,9 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/32xian/4/3dmap"
-  map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/16xian/1/3dmap"
+  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  # map_directory: "/home/pmm/data/4-comp-rs-vj/1-1121/09-vj/3dmap"
+  # map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/32xian/4/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -28,14 +28,15 @@ common:
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
   extrinsic_T: [ -0.00571, 0.00559, 0.02668 ] # lidar in imu
-  # extrinsic_T: [ 0.004052, 0.004337, -0.004494 ]  # imu in lidar
   extrinsic_R: [ 0, 0, 0]  # unit(degree), yaw, pitch, roll  
-  # extrinsic_R: [-89.667898, 1.307651, 179.205572]  # unit(degree), yaw, pitch, roll  
        
-  # extrinsic_euler_IMU_in_baselink: [-89.667898, 1.307651, 179.205572] # lidar in imu  # unit(degree) yaw, pitch, roll    # airy
-  extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
-  # extrinsic_euler_IMU_in_baselink: [-90.0, 0.0, 180.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
-  # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll     
+  # extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
+
+  extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [1.405099, 0.819599, 0.320799] # unit(degree) yaw, pitch, roll
+  # roll: 0.320799                                       # 横滚角偏移量 °
+  # pitch: 0.819599                                      # 俯仰角偏移量 °
+  # yaw: 1.405099                                        # 航向角偏移量 °
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,
@@ -68,7 +69,7 @@ lidar_preproc:
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1.5 
   flag_keep_only_last_lidar: true
-  point_filter_distance: [15, 15, 5] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+  point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 2 # 间隔采样所需参数
