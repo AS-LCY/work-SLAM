@@ -33,10 +33,11 @@ struct LocalizationFusionParams {
     std::vector<double> status_cov_mat_diag; ///< the status initial convariance
     std::vector<double> input_cov_mat_diag; ///< the input convariance
     std::vector<double> measure_cov_mat_diag; ///< the measurement convariance
-    EkfGatingParams gating_params;
+    bool ekf_use_chassis = true;
     bool use_ekf_yaw = false;
     std::vector<double> baselink_in_lidar;
     double time_lost_thr = 3.0;
+    EkfGatingParams gating_params;
     FusionTopicParams topic_params;
 };
 
@@ -74,10 +75,11 @@ public:
         get_param(title + "status_cov_mat_diag", localization_fusion_params_.status_cov_mat_diag, &success);
         get_param(title + "input_cov_mat_diag", localization_fusion_params_.input_cov_mat_diag, &success);
         get_param(title + "measure_cov_mat_diag", localization_fusion_params_.measure_cov_mat_diag, &success);
-        success &= load_ekf_gating_params();
+        get_param(title + "ekf_use_chassis", localization_fusion_params_.ekf_use_chassis, &success);
         get_param(title + "use_ekf_yaw", localization_fusion_params_.use_ekf_yaw, &success);
         get_param(title + "baselink_in_lidar", localization_fusion_params_.baselink_in_lidar, &success);
         get_param(title + "time_lost_thr", localization_fusion_params_.time_lost_thr, &success);
+        success &= load_ekf_gating_params();
         success &= load_fusion_topics_params();
         return success;
     }

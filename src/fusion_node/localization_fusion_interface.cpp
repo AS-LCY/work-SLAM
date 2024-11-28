@@ -21,10 +21,13 @@ LocalizationFusion::LocalizationFusion(){
     }
 
     init_chassis_imu_slam_odom_stamp();
+
+    ros::spin();
 }
 
 
 LocalizationFusion::~LocalizationFusion(){
+    ros::shutdown();
     
 }
 
@@ -41,7 +44,6 @@ bool LocalizationFusion::create_ROS_IO(){
 
 	pub_fusion_odom_ = nh_.advertise<nav_msgs::Odometry>(pub_localization_topic_, 100);
 
-    ros::spin();
     
     return true;
 }
@@ -67,17 +69,27 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     std::lock_guard<std::mutex> lock(mutex_);
     slam_odom_msg_ = *slam_odometry_in;
 
-    if (!is_chassis_rcv_ || !is_imu_rcv_){
-        ROS_INFO_STREAM_ONCE(YELLOW<<"Chassis or imu not received yet "<<RESET);
+    if (!is_imu_rcv_){
+        ROS_WARN_STREAM_ONCE(YELLOW<<"IMU data not received yet "<<RESET);
         return;
     }
 
+    if(ekf_use_chassis_ && !is_chassis_rcv_){
+        ROS_WARN_STREAM_ONCE(YELLOW<<"Chassis data not received yet "<<RESET);
+        return;
+    }
+
+    ROS_INFO_STREAM("chassis_msg_.header.stamp: "<<chassis_msg_.header.stamp.toSec());
+    ROS_INFO_STREAM("chassis_msg_.ac_linear_velocity: "<<chassis_msg_.ac_linear_velocity);
+
     check_slam_odometry(slam_odom_msg_);
+    // TODO: check chassis time
 
     compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_origin_);
     compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
-    if (lf_need_init_ == true && is_chassis_rcv_ && is_imu_rcv_) {
+    // if (lf_need_init_ == true && is_chassis_rcv_ && is_imu_rcv_) { // 前面已经进行过 is_chassis_rcv_ && is_imu_rcv_ 的判断
+    if (lf_need_init_ == true ) {
         ekf_fusion_ptr_->init(status_tmp_);
         ROS_INFO_STREAM(YELLOW<<"localization fusion init -----------------"<<RESET);
         lf_need_init_ = false;
@@ -94,9 +106,18 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
         ROS_INFO_STREAM(GREEN<<"------------------------------------------"<<RESET);
     }
 
+
+    if(!ekf_use_chassis_){
+        double dt = status_tmp_.header.stamp.toSec() - status_.header.stamp.toSec();
+        double vx = (status_tmp_.fusion_pose.position.x - status_.fusion_pose.position.x)/dt;
+        double vy = (status_tmp_.fusion_pose.position.y - status_.fusion_pose.position.y)/dt;
+
+        double cal_yaw = (status_tmp_.fusion_pose.orientation.z + status_.fusion_pose.orientation.z) * 0.5;
+        slam_speed_ = vx * std::cos(cal_yaw) + vy * std::sin(cal_yaw);
+    }
+    
+    // update & publish
     status_ = status_tmp_;
-
-
     pub_localiztion();
 }
 
@@ -135,6 +156,10 @@ void LocalizationFusion::pub_localiztion(){
 
 void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fros_hardware_node::chassic_data chassis_msg, 
                                         fairland_msgs::LocalizationPoseData* status_msg){
+    if(!ekf_use_chassis_){
+        chassis_msg.ac_linear_velocity = slam_speed_;
+    }
+
     Eigen::Isometry3d T_baselink2map = Eigen::Isometry3d::Identity();
     Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(slam_odom.pose.pose.orientation);
@@ -211,6 +236,12 @@ bool LocalizationFusion::load_params(){
     T_lidar2baselink_ = T_baselink2lidar_.inverse();
 
     time_lost_thr_ = lf_params->time_lost_thr;
+
+    ekf_use_chassis_ = lf_params->ekf_use_chassis;
+
+    if(!ekf_use_chassis_){
+        // is_chassis_rcv_ = true;
+    }
     
     return true;
 }
@@ -219,6 +250,10 @@ void LocalizationFusion::init_chassis_imu_slam_odom_stamp(){
     slam_odom_msg_.header.stamp = ros::Time::now();
     chassis_msg_.header.stamp = ros::Time::now();
     imu_msg_.header.stamp = ros::Time::now();
+
+    ROS_INFO_STREAM("time-now: "<<imu_msg_.header.stamp.toSec());
+
+    slam_speed_ = 0.0;
 }
 
 

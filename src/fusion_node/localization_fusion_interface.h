@@ -66,7 +66,11 @@ private:
     Eigen::Isometry3d T_lidar2baselink_;
 
     double last_slam_odom_time_ = 0.0;
+    double slam_speed_ = 0;
+    
+    // param read
     double time_lost_thr_ = 3.0; // unit: second
+    bool ekf_use_chassis_ = true;
 
     fairland_msgs::LocalizationPoseData status_;
     fairland_msgs::LocalizationPoseData status_tmp_;
