@@ -69,7 +69,7 @@
 #include "node/param_manager.hpp"
 
 // 另一个节点中定义
-#include "fros_hardware_node/chassic_data.h"
+#include "fairland_msgs/chassic_data.h"
 
 // #include "v4l2cam.h"
 
@@ -150,7 +150,7 @@ private:
     void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
 
     void livox_pcl_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
-    void chassis_cbk(const fros_hardware_node::chassic_data::ConstPtr &msg_in);
+    void chassis_cbk(const fairland_msgs::chassic_data::ConstPtr &msg_in);
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
@@ -313,7 +313,7 @@ private:
     // std::deque<Eigen::Vector3d> pose_vec_;
     int window_size = 5;
 
-    fros_hardware_node::chassic_data cur_chassis_msg_;
+    fairland_msgs::chassic_data cur_chassis_msg_;
     
     bool position_initialized_ = false;
     ros::Time last_chassis_time_;

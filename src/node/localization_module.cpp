@@ -366,7 +366,7 @@ bool LocalizationModule::create_ROS_IO(){
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_pcl_cbk, this);
     sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 10, &LocalizationModule::livox_pcl_cbk, this);
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>("/livox/imu", 200000, &LocalizationModule::imu_cbk, this);
-    sub_chassis_ = nh_.subscribe<fros_hardware_node::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
+    sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
 
     
     // timer dealt ********************************************************************
@@ -482,8 +482,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (running_module_status_ == MODULE_IDLE || 
         running_module_status_ == MODULE_STARTING_SLAM || 
         running_module_status_ == MODULE_STOPPING_SLAM){
-        ROS_INFO("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
-        sleep(2);
+        ROS_INFO_ONCE("running module status: %s ", print_ModuleStatus(running_module_status_).c_str());
+        // sleep(2);
         return;
     }
 
@@ -1233,8 +1233,8 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
 
 }
 
-void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::ConstPtr &msg_in){
-    // fros_hardware_node::chassic_data cur_chassis_msg_ = *msg_in;
+void LocalizationModule::chassis_cbk(const fairland_msgs::chassic_data::ConstPtr &msg_in){
+    // fairland_msgs::chassic_data cur_chassis_msg_ = *msg_in;
     cur_chassis_msg_ = *msg_in;
     
     double chassis_linear_velocity_ = (cur_chassis_msg_.left_front_feedback + cur_chassis_msg_.right_front_feedback)/2.0;
