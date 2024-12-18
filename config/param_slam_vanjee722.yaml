@@ -64,7 +64,7 @@ localization:
 
 lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 
-  sub_lidar_topic: "/vanjee/lidar722"
+  sub_lidar_topic: "/vanjee/lidar"
   sub_imu_topic: "/vanjee/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1.5 
@@ -96,6 +96,7 @@ mapping:
   loopSearchDistance: 3
   loopSearchTimeDiff: 15  # unit: sec, 原本30s, 
   loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
+  loopIcpScore: 1 # 原本代码中写死为 0.3
   use_ele_pcd_flag: false   # 是否使用单区域pcd
   save_ele_pcd_flag: false  # 是否保存单区域pcd
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值

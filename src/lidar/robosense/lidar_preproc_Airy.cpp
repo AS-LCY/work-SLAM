@@ -118,7 +118,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
 
 bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){
 
-    ROS_INFO("Airy: ros_msg_in --> pcl_xyzin_out");
+    ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
     double header_time = ros_msg_in->header.stamp.toSec();

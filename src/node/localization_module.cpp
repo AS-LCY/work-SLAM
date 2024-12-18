@@ -380,7 +380,7 @@ bool LocalizationModule::create_ROS_IO(){
 
     // sub_imu_ = nh_.subscribe<sensor_msgs::Imu>("/livox/imu", 200000, &LocalizationModule::imu_cbk, this);
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(slam_param_.lidar_preproc.sub_imu_topic, 2000, &LocalizationModule::imu_cbk, this);
-    sub_chassis_ = nh_.subscribe<fros_hardware_node::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
+    sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
 
     
     // timer dealt ********************************************************************
@@ -435,8 +435,9 @@ bool LocalizationModule::create_ROS_IO(){
 	pubLoopConstraintEdge = nh_.advertise<visualization_msgs::MarkerArray>("/loop_closure_constraints", 1);
     pubKeyframePose = nh_.advertise<visualization_msgs::MarkerArray>("/key_frame_pose", 1);
 	pubOdomAftMapped = nh_.advertise<nav_msgs::Odometry>("/Odometry", 100000);
-    pubLoadMap = nh_.advertise<sensor_msgs::PointCloud2>("/Load_map", 100000);
+    pubLoadMap = nh_.advertise<sensor_msgs::PointCloud2>("/Load_map", 1);
     pubRgbCloud= nh_.advertise<sensor_msgs::PointCloud2>("rgb_cloud", 1);
+    pub_base_imu_ = nh_.advertise<sensor_msgs::Imu>("/flbot/localization/imu", 100);
     // image_pub = nh_.advertise<sensor_msgs::Image>("fisheye_image", 1);
 
 
@@ -562,7 +563,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         // pub_obstacle_cloud(slam_->getObstacleCloud(), pubObstacleCloud);// disable ObstacleCloud
         // pub_filtered_obstacle_cloud(slam_->getFilteredObstacleCloud(), pubFilteredObstacleCloud);
-        publish_unoptimized_path(slam_->get_unoptimized_path(),pubUnoptimizedPath);
+        publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
         publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
         visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
         publish_transform(slam_->getOdomToMap(),string("map"),string("odom"));
@@ -573,7 +574,11 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
-        // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
+        visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
+        // pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
+        publish_unoptimized_path(slam_->get_unoptimized_path(),string("map"),pubUnoptimizedPath);
+        // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
+        publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         if (slam_->isGloalLocalizationSuccess()){
             publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
@@ -593,6 +598,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 // 以下为 pose filter timer 
 
 void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
+    ROS_ERROR("use_pose_filter");
     // param set
     const double lidar_cbk_delay_thr = slam_param_.localization.lidar_cbk_delay_thr;
     const int pub_frequency = 20;
@@ -1134,12 +1140,13 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 
 void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
-    static int print_cnt = 0;
-    if (print_cnt % 10 ==0){
-        cout<<"received lidar -------------- lidar cbk"<<endl;
-        print_cnt = 0;
-    }
-    print_cnt++;
+    ROS_INFO_ONCE("received lidar -------------- lidar cbk");
+    // static int print_cnt = 0;
+    // if (print_cnt % 10 ==0){
+    //     cout<<"received lidar -------------- lidar cbk"<<endl;
+    //     print_cnt = 0;
+    // }
+    // print_cnt++;
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
@@ -1152,13 +1159,15 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     auto start = std::chrono::system_clock::now();
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
     double now_sec = now_as_ns * 1e-9;
-    printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
+    // printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
+    ROS_INFO("lidar cbk delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
     if(slam_param_.lidar_preproc.lidar_type == 1){
-        ROS_INFO("livox cbk");
+        ROS_INFO_ONCE("livox cbk");
         std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
         lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
-        printf("clip lidar count: %d\n", lvx_msg->point_num);
+        // printf("clip lidar count: %d\n", lvx_msg->point_num);
+        ROS_INFO("clip lidar count: %d", lvx_msg->point_num);
 
         slam_ -> livox_pcl_cbk(lvx_msg);
     }else if(slam_param_.lidar_preproc.lidar_type == 2){
@@ -1167,16 +1176,18 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
         // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
         // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
 
-        ROS_INFO("robosense cbk");
+        ROS_INFO_ONCE("robosense cbk");
         PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
         lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-        printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        // printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        ROS_INFO("clip lidar count: %ld", pcl_xyzin_cld->points.size());
         slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
     }else if(slam_param_.lidar_preproc.lidar_type == 3){
-        ROS_INFO("vanjee cbk");
+        ROS_INFO_ONCE("vanjee cbk");
         PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
         lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-        printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        // printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
+        ROS_INFO("clip lidar count: %ld", pcl_xyzin_cld->points.size());
         slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
 
     }
@@ -1185,7 +1196,8 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     double t1 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    printf("lidar-callback, time cost: %lf ms \033[0m\n", (t1-t0) *1000);
+    // printf("lidar-callback, time cost: %lf ms \033[0m\n", (t1-t0) *1000);
+    ROS_INFO("lidar-callback, time cost: %lf ms ", (t1-t0) *1000);
 }
 
 
@@ -1220,7 +1232,8 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     double now_sec = now_as_ns * 1e-9;
 
 
-    printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
+    // printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
+    ROS_INFO("lidar cbk delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
     const double thr_x = slam_param_.lidar_preproc.point_filter_distance[0];
     const double thr_y = slam_param_.lidar_preproc.point_filter_distance[1];
     const double thr_z = slam_param_.lidar_preproc.point_filter_distance[2];
@@ -1285,7 +1298,8 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     // msg->point_num = cloud_num;
     msg->point_num = msg->points.size();
     // printf("orig lidar count: %d\n", cloud_num);
-    printf("clip lidar count: %d\n", msg->point_num);
+    // printf("clip lidar count: %d\n", msg->point_num);
+    ROS_INFO_STREAM("clip lidar count: "<< msg->point_num);
 
     slam_ -> livox_pcl_cbk(msg);
     // printf("lidar callback success\n");
@@ -1295,7 +1309,8 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    printf("lidar-callback, time cost: %ld ms \033[0m\n", duration.count());
+    // printf("lidar-callback, time cost: %ld ms \033[0m\n", duration.count());
+    ROS_INFO_STREAM_ONCE("lidar-callback, time cost: "<< duration.count());
 
 
     return;
@@ -1303,15 +1318,16 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 }
 
 void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
-    static int print_cnt = 0;
-    if (print_cnt % 200 ==0){
-        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------imu cbk"<<endl;
-        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------imu cbk");
-        cout<<"received imu --------------imu cbk"<<endl;
+    ROS_INFO_ONCE("received imu -------------- imu cbk");
+    // static int print_cnt = 0;
+    // if (print_cnt % 200 ==0){
+    //     // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------imu cbk"<<endl;
+    //     // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------imu cbk");
+    //     cout<<"received imu --------------imu cbk"<<endl;
 
-        print_cnt = 0;
-    }
-    print_cnt++;
+    //     print_cnt = 0;
+    // }
+    // print_cnt++;
 
     // ROS_INFO("livox imu callback~");
 
@@ -1354,6 +1370,15 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
 
     // print_cnt22++;
 
+    sensor_msgs::Imu imu_in_base = *msg_in;
+    imu_in_base.angular_velocity.x = msg->angular_velocity.x();
+    imu_in_base.angular_velocity.y = msg->angular_velocity.y();
+    imu_in_base.angular_velocity.z = msg->angular_velocity.z();
+    imu_in_base.linear_acceleration.x = msg->linear_acceleration.x();
+    imu_in_base.linear_acceleration.y = msg->linear_acceleration.y();
+    imu_in_base.linear_acceleration.z = msg->linear_acceleration.z();
+    pub_base_imu_.publish(imu_in_base);
+
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -1368,8 +1393,8 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
 
 }
 
-void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::ConstPtr &msg_in){
-    // fros_hardware_node::chassic_data cur_chassis_msg_ = *msg_in;
+void LocalizationModule::chassis_cbk(const fairland_msgs::chassic_data::ConstPtr &msg_in){
+    // fairland_msgs::chassic_data cur_chassis_msg_ = *msg_in;
     cur_chassis_msg_ = *msg_in;
     
     double chassis_linear_velocity_ = (cur_chassis_msg_.left_front_feedback + cur_chassis_msg_.right_front_feedback)/2.0;
@@ -1381,16 +1406,18 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
     // std::cout << "cal  angular velocity: "<< chassis_angular_velocity_ <<endl;
     // std::cout << "read angular velocity: "<< cur_chassis_msg.ac_angular_velocity <<endl;
 
-    static int print_cnt=0;
+    ROS_INFO_ONCE("received chassis -------------- chassis cbk");
+
+    // static int print_cnt=0;
 
 
-    if(print_cnt % 20 == 0){
-        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------chassis cbk");
-        std::cout << "read chassis linear velocity: "<< cur_chassis_msg_.ac_linear_velocity <<" m/s -------------- chassis cbk" <<endl;
-        print_cnt = 0;
-    }
+    // if(print_cnt % 20 == 0){
+    //     // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------chassis cbk");
+    //     std::cout << "read chassis linear velocity: "<< cur_chassis_msg_.ac_linear_velocity <<" m/s -------------- chassis cbk" <<endl;
+    //     print_cnt = 0;
+    // }
 
-    print_cnt++;
+    // print_cnt++;
 
     // 获取时间差
     ros::Time current_time = cur_chassis_msg_.header.stamp;
@@ -1467,17 +1494,17 @@ void LocalizationModule::chassis_cbk(const fros_hardware_node::chassic_data::Con
 
 
 // 这里其实还包含了 update path
-void LocalizationModule::publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, ros::Publisher pubUnoptimizedPath)
+void LocalizationModule::publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubUnoptimizedPath)
 {
 	geometry_msgs::PoseStamped msg;
 
 	int size = path.size();
 	unoptimized_path_msg.poses.clear();
     unoptimized_path_msg.header.stamp = ros::Time().now();
-    unoptimized_path_msg.header.frame_id = "odom";
+    unoptimized_path_msg.header.frame_id = frame;
 	for (int i = 0 ; i <path.size();i++){
 		msg.header.stamp = ros::Time().now();
-		msg.header.frame_id = "odom";
+		msg.header.frame_id = frame;
 		msg.pose.position.x = path[i].translation().x();
 		msg.pose.position.y = path[i].translation().y();
 		msg.pose.position.z = path[i].translation().z();

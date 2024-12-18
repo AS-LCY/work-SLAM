@@ -1,6 +1,6 @@
 #include "lidar_slam/backend.hpp"
 namespace lidar_slam {
-BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, float loop_skip_key){
+BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score){
    KeyPoint.reset(new pcl::PointCloud<PointType>());
    CopyKeyPoint.reset(new pcl::PointCloud<PointType>());
    show_map.reset(new pcl::PointCloud<PointType>());
@@ -16,11 +16,16 @@ BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, float
    loopKeyframeSearchRadius = loop_dist;
    loopKeyframeSearchTimeDiff = loop_time;
    loopKeyframeSearchSkipKey = loop_skip_key;
+   loopIcpScore = loop_icp_score;
    parameters.relinearizeThreshold = 0.01;
    parameters.relinearizeSkip = 1;
    isam = new gtsam::ISAM2(parameters);
    downSizeFilterICP.setLeafSize(0.4, 0.4, 0.4);//TODO param?
    aLoopIsClosed = false;
+   ROS_INFO_STREAM(BOLDBLUE<<"loopIcpScore: "<<loopIcpScore<<RESET);
+   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchSkipKey: "<<loopKeyframeSearchSkipKey<<RESET);
+   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchTimeDiff: "<<loopKeyframeSearchTimeDiff<<RESET);
+   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchRadius: "<<loopKeyframeSearchRadius<<RESET);
 
    gravityAlignedCLoud.reset(new PointCloudXYZI());
 
@@ -87,6 +92,8 @@ void BackEnd::addLoopFactor()
         gtsam::noiseModel::Diagonal::shared_ptr noiseBetween = loopNoiseQueue[i];
         gtSAMgraph.add(gtsam::BetweenFactor<gtsam::Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
     }
+
+    ROS_INFO_STREAM(BOLDRED<<"addLoopFactor, loopIndexQueue size = " << loopIndexQueue.size() <<" *************************** "<<RESET);
   //  mtxLoopInfo.lock(); // TODO this cause CPU high
     std::lock_guard<std::mutex> lk(mtxLoopInfo);
     loopIndexQueue.clear();
@@ -119,6 +126,11 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
     // cout<<"debug: aLoopIsClosed: "<<endl;
     if (aLoopIsClosed) // 有回环因子，多update几次
     {
+        isam->update();
+        isam->update();
+        isam->update();
+        isam->update();
+        
         isam->update();
         isam->update();
         isam->update();
@@ -239,6 +251,7 @@ bool BackEnd::correctPoses()
         return false;
     if (aLoopIsClosed)
     {
+        
         // 清空里程计轨迹
         // globalPath.poses.clear();
         // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿
@@ -246,9 +259,16 @@ bool BackEnd::correctPoses()
         mtxPose.lock();
         for (int i = 0; i < numPoses; ++i)
         {
+            // ROS_INFO_STREAM("i = "<< i <<" ----------------");
+            // ROS_INFO_STREAM("px = " << KeyPoint->points[i].x);
+            // ROS_INFO_STREAM("py = " << KeyPoint->points[i].y);
+            // ROS_INFO_STREAM("pz = " << KeyPoint->points[i].z);
             KeyPoint->points[i].x = isamCurrentEstimate.at<gtsam::Pose3>(i).translation().x();
             KeyPoint->points[i].y = isamCurrentEstimate.at<gtsam::Pose3>(i).translation().y();
             KeyPoint->points[i].z = isamCurrentEstimate.at<gtsam::Pose3>(i).translation().z();
+            // ROS_INFO_STREAM("new px = " << KeyPoint->points[i].x);
+            // ROS_INFO_STREAM("new py = " << KeyPoint->points[i].y);
+            // ROS_INFO_STREAM("new pz = " << KeyPoint->points[i].z);
 
             KeyPoses[i].pose = Eigen::Isometry3d(isamCurrentEstimate.at<gtsam::Pose3>(i).matrix());
             KeyPoses[i].roll = isamCurrentEstimate.at<gtsam::Pose3>(i).rotation().roll();
@@ -262,6 +282,7 @@ bool BackEnd::correctPoses()
         // 清空局部map， reconstruct  ikdtree submap
         // recontructIKdTree(ikdtree); 
         std::cout <<"ISMA2 Update"<< std::endl;
+        ROS_INFO_STREAM(BOLDYELLOW<<"correctPoses ********************************** "<<RESET);
         aLoopIsClosed = false;
         show_index = 0;
         std::lock_guard<std::mutex> lk(mtxCurrentMap);
@@ -345,8 +366,10 @@ bool BackEnd::detectLoopClosureDistance(int *latestID, int *closestID, double ti
     for (int i = 0; i < (int)pointSearchIndLoop.size(); ++i)
     {
         int id = pointSearchIndLoop[i];
+        // ROS_INFO_STREAM(RED<<"id: "<< id <<RESET);
         // if (abs(KeyPoses[id].time - time) > 30.0)
-        if (abs(KeyPoses[id].time - time) > loopKeyframeSearchTimeDiff)
+        if (abs(KeyPoses[id].time - time) > loopKeyframeSearchTimeDiff 
+            && abs(loopKeyCur - id) > loopKeyframeSearchSkipKey)
         {
             loopKeyPre = id;
             break;
@@ -357,7 +380,7 @@ bool BackEnd::detectLoopClosureDistance(int *latestID, int *closestID, double ti
     *latestID = loopKeyCur;
     *closestID = loopKeyPre;
 
-    std::cout <<"Find loop clousre frame " << std::endl;
+    // std::cout <<"Find loop clousre frame " << std::endl;
     return true;
 }
 /**
@@ -487,6 +510,11 @@ void BackEnd::performLoopClosure(double time)
         return;
     }
 
+    ROS_INFO_STREAM(BLUE<<"loop closure found! KeyCur = "<<loopKeyCur<< ", KeyPre = " <<loopKeyPre<<RESET);
+    ROS_INFO_STREAM(BLUE<<"loopKeyCur time = "<<std::setprecision(15)<<KeyPoses[loopKeyCur].time<<RESET);
+    ROS_INFO_STREAM(BLUE<<"loopKeyPre time = "<<std::setprecision(15)<<KeyPoses[loopKeyPre].time<<RESET);
+        
+
     // 提取
     PointCloudXYZI::Ptr cureKeyframeCloud(new PointCloudXYZI()); //  cue keyframe
     PointCloudXYZI::Ptr prevKeyframeCloud(new PointCloudXYZI()); //   history keyframe submap
@@ -499,7 +527,8 @@ void BackEnd::performLoopClosure(double time)
 
     // ICP Settings zx gicp ?
     pcl::IterativeClosestPoint<PointType, PointType> icp;
-    icp.setMaxCorrespondenceDistance(150); // giseop , use a value can cover 2*historyKeyframeSearchNum range in meter
+    // icp.setMaxCorrespondenceDistance(150); // giseop , use a value can cover 2*historyKeyframeSearchNum range in meter
+    icp.setMaxCorrespondenceDistance(loopKeyframeSearchRadius *2); // giseop , use a value can cover 2*historyKeyframeSearchNum range in meter
     icp.setMaximumIterations(100);
     icp.setTransformationEpsilon(1e-6);
     icp.setEuclideanFitnessEpsilon(1e-6);
@@ -511,11 +540,14 @@ void BackEnd::performLoopClosure(double time)
     PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
     icp.align(*unused_result);
 
+    ROS_INFO_STREAM(YELLOW<<"icp.getFitnessScore(): "<<icp.getFitnessScore() <<RESET);
+
     // 未收敛，或者匹配不够好
-    if (icp.hasConverged() == false || icp.getFitnessScore() > 0.3)
+    if (icp.hasConverged() == false || icp.getFitnessScore() > loopIcpScore)
         return;
 
-    std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
+    // std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop    
+    ROS_INFO_STREAM(YELLOW<<"RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "."  <<RESET);
     // exit(1);
    // std::cout << "icp  success  " << std::endl;
 
@@ -546,6 +578,7 @@ void BackEnd::performLoopClosure(double time)
     loopPoseQueue.push_back(poseFrom.between(poseTo));
     loopNoiseQueue.push_back(constraintNoise);
     loopIndexContainer[loopKeyCur] = loopKeyPre; //   使用hash map 存储回环对
+    ROS_INFO_STREAM(BLUE<<"loopIndexContainer size: "<<loopIndexContainer.size()<<RESET);
     // mtxLoopInfo.unlock();
 
     

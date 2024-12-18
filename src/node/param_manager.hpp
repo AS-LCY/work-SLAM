@@ -89,6 +89,9 @@ public:
         double pitch = extrinsic_R[1]/180 * M_PI;
         double roll  = extrinsic_R[2]/180 * M_PI;
         loaded_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{yaw, pitch, roll});
+        // loaded_param_.extrinsic.extrinR = rpy2R(Eigen::Vector3d{roll, pitch, yaw});
+        // std::cout<<"rpy2R(Eigen::Vector3d{roll, pitch, yaw}): "<<endl<<rpy2R(Eigen::Vector3d{roll, pitch, yaw})<<endl<<endl;
+        // std::cout<<"ypr2R(Eigen::Vector3d{yaw, pitch, roll}): "<<endl<<ypr2R(Eigen::Vector3d{yaw, pitch, roll})<<endl<<endl;
 
         // loaded_param_.extrinsic.extrinR<< extrinsic_R[0],extrinsic_R[1],extrinsic_R[2],
         //                                 extrinsic_R[3],extrinsic_R[4],extrinsic_R[5],
@@ -154,6 +157,9 @@ public:
         get_param(ns+ "mapping/key_frame_distance", loaded_param_.mapping.key_frame_distance, &success);
         get_param(ns+ "mapping/key_frame_angle", loaded_param_.mapping.key_frame_angle, &success);
         get_param(ns+ "mapping/loopSearchDistance", loaded_param_.mapping.loopSearchDistance, &success);
+        get_param(ns+ "mapping/loopSearchTimeDiff", loaded_param_.mapping.loopSearchTimeDiff, &success);
+        get_param(ns+ "mapping/loopSearchSkipKey", loaded_param_.mapping.loopSearchSkipKey, &success);
+        get_param(ns+ "mapping/loopIcpScore", loaded_param_.mapping.loopIcpScore, &success);
         get_param(ns+ "mapping/use_ele_pcd_flag", loaded_param_.mapping.use_ele_pcd_flag, &success);
         get_param(ns+ "mapping/save_ele_pcd_flag", loaded_param_.mapping.save_ele_pcd_flag, &success);
         // get_param(ns+ "mapping/save_map_dir", loaded_param_.mapping.save_map_dir, &success);

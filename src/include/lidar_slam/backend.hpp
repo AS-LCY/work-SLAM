@@ -61,7 +61,7 @@ namespace lidar_slam {
 class BackEnd
 {
 public:
-    BackEnd(float dist, float angle,float loop_dist, float loop_time, float loop_skip_key);
+    BackEnd(float dist, float angle,float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
     ~BackEnd();
 
     void saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose);
@@ -118,7 +118,8 @@ private:
     float keyframeAngleThreshold; //  判断是否为关键帧的角度阈值
     float loopKeyframeSearchRadius;
     float loopKeyframeSearchTimeDiff;
-    float loopKeyframeSearchSkipKey;
+    int loopKeyframeSearchSkipKey;
+    float loopIcpScore = 0.5;
     map<int, int> loopIndexContainer;
     vector<pair<int, int>> loopIndexQueue;
     vector<gtsam::Pose3> loopPoseQueue;

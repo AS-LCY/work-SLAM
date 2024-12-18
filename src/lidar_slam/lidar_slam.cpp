@@ -166,8 +166,9 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
     auto loopSearchTimeDiff = config_param_.mapping.loopSearchTimeDiff;
     auto loopSearchSkipKey = config_param_.mapping.loopSearchSkipKey;
+    auto loopIcpScore = config_param_.mapping.loopIcpScore;
     // back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance));
-    back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance, loopSearchTimeDiff, loopSearchSkipKey));
+    back_end.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance, loopSearchTimeDiff, loopSearchSkipKey, loopIcpScore));
 
     // cout << "slam reset 4"<<endl;
     /// sec_mapping & localizaiton ********************************
@@ -354,7 +355,6 @@ void LidarSlam::sec_mapping_loopClosureThread()
                 back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
-            // if (!loop_closure_wait)
             if (loop_closure_wait)
                 back_end->performLoopClosure(lidar_end_time);  //  回环检测
         }
@@ -376,9 +376,9 @@ void LidarSlam::loopClosureThread()
     while (thread_run&&reseting == false)
     {
         auto start = std::chrono::steady_clock::now();
-        // if (!loop_closure_wait)
-        if (loop_closure_wait)
+        if (loop_closure_wait){
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
+        }
         // performSCLoopClosure();
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -1005,7 +1005,7 @@ bool LidarSlam::run()
 
     if (sync_packages(Measures))
     {
-        printf("---------sync_packages success---------------------------\n");
+        ROS_INFO("---------sync_packages success---------------------------");
         // cout<<"debug: run slam: sync_packages success"<<endl;
         // 第一帧lidar数据
         if (flg_first_scan)
@@ -1065,7 +1065,8 @@ bool LidarSlam::run()
         downSizeFilterCloud.filter(*FilteredUndistortCloud);
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
-        printf("deskew-down lidar count: %d\n", feats_down_size);
+        // printf("deskew-down lidar count: %d\n", feats_down_size);
+        ROS_INFO("deskew-down lidar count: %d", feats_down_size);
         PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/
@@ -1165,7 +1166,7 @@ bool LidarSlam::run()
                 // cout<<"************* backend: checking keyPosesCount: "<<back_end->getKeyframePoses().size()<<endl;
                 bool insert = back_end->saveKeyFramesAndFactor(T_odom_lidar,undistortCloud,lidar_end_time); // TODO add transform
                 if (insert){
-                    cout<<"************* backend: keyPosesCount: "<<back_end->getKeyframePoses().size()-1<<endl;
+                    ROS_INFO_STREAM(YELLOW<< "************************* backend: keyPosesCount: "<<back_end->getKeyframePoses().size()-1 <<RESET);
                     // cout<<"debug: loaded_key_clouds_ready_: "<<back_end->get_loaded_key_cloud_status()<<endl;
                     back_end->saveCurrentCloud(undistortCloud,getLidarInMap());//注意这里只是为了取水平面，后端还是在odom坐标系
                     {
@@ -1183,6 +1184,8 @@ bool LidarSlam::run()
                 }
 
                 // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
+
+                // ROS_INFO_STREAM(BLUE<<"check LoopIsClosed "<<RESET);
                 bool LoopIsClosed = back_end->correctPoses();
                 {
                     std::lock_guard<std::mutex> lk(mtx_path);
@@ -1250,7 +1253,7 @@ bool LidarSlam::run()
         // printf("p_imu->Process, cloud deskew    , time cost: %f ms\n", (t1-t0)*1000);
         // printf("ikdtree->lasermap_fov_segment   , time cost: %f ms\n", (t2-t1)*1000);
         // printf("lidar slam main process step1   , time cost: %f ms\n", (t0_backend-t2)*1000);
-        printf("lidar slam main update  time    , time cost: %f ms\n", (t_update_end-t_update_start)*1000);
+        // printf("lidar slam main update  time    , time cost: %f ms\n", (t_update_end-t_update_start)*1000);
         // printf("lidar slam main process         , time cost: %f ms\n", (t3-t2)*1000);
         // printf("main: lidar slam backend        , time cost: %f ms\n", (t1_backend-t0_backend)*1000);
         // printf("main: transform undistortCloud  , time cost: %f ms\n", (t1_transform-t0_transform)*1000);
@@ -1258,13 +1261,17 @@ bool LidarSlam::run()
         // printf("ikdtree->map_incremental        , time cost: %f ms\n", (t5-t4)*1000);
         // printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);
 
+        // ROS_INFO("lidar slam main update  time    , time cost: %f ms", (t_update_end-t_update_start)*1000);
+        
         // if (run_end - run_start > 0.1)
         if (run_end - run_start > config_param_.common.slam_lose_rate_time_thr)
-            printf("\033[1;32mlidar-slam    , time cost: %f ms \033[0m --- lose rate\n", (run_end - run_start)*1000);// \033[1;32m
+            // printf("\033[1;32mlidar-slam    , time cost: %f ms \033[0m --- lose rate\n", (run_end - run_start)*1000);// \033[1;32m
+            ROS_INFO_STREAM(BOLDRED<<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms --- lose rate"<<RESET);
         else
-            printf("\033[1;32mlidar-slam    , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);// \033[1;32m
+            // printf("\033[1;32mlidar-slam    , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);// \033[1;32m
+            ROS_INFO_STREAM(BOLDGREEN<<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms "<<RESET);
         
-        printf("---------------------------------------------------------\n");
+        ROS_INFO_STREAM("---------------------------------------------------------");
         lidar_no_point_count_ = 0;
 
         return true;
