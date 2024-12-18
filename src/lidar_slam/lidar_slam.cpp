@@ -355,8 +355,9 @@ void LidarSlam::sec_mapping_loopClosureThread()
                 back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
-            if (loop_closure_wait)
+            // if (loop_closure_wait){
                 back_end->performLoopClosure(lidar_end_time);  //  回环检测
+            // }
         }
 
         auto end = std::chrono::steady_clock::now();
@@ -376,9 +377,9 @@ void LidarSlam::loopClosureThread()
     while (thread_run&&reseting == false)
     {
         auto start = std::chrono::steady_clock::now();
-        if (loop_closure_wait){
+        // if (loop_closure_wait){
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
-        }
+        // }
         // performSCLoopClosure();
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
