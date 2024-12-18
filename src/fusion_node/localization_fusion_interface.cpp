@@ -35,7 +35,7 @@ LocalizationFusion::~LocalizationFusion(){
 bool LocalizationFusion::create_ROS_IO(){
 
     // sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(sub_imu_topic_, 2000, &LocalizationFusion::imu_msg_callback, this);
-    // sub_chassis_ = nh_.subscribe<fros_hardware_node::chassic_data>(sub_chassis_topic_, 100, &LocalizationFusion::chassis_msg_callback, this);
+    // sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>(sub_chassis_topic_, 100, &LocalizationFusion::chassis_msg_callback, this);
     // sub_slam_odom_ = nh_.subscribe<nav_msgs::Odometry>(sub_slam_odom_topic_, 100, &LocalizationFusion::slam_odometry_callback, this);
 
     sub_imu_ = nh_.subscribe(sub_imu_topic_, 2000, &LocalizationFusion::imu_msg_callback, this);
@@ -49,7 +49,7 @@ bool LocalizationFusion::create_ROS_IO(){
 }
 
 
-void LocalizationFusion::chassis_msg_callback(const fros_hardware_node::chassic_data::ConstPtr &chassis_msg_in){
+void LocalizationFusion::chassis_msg_callback(const fairland_msgs::chassic_data::ConstPtr &chassis_msg_in){
     ROS_INFO_STREAM_ONCE(YELLOW<<"Received chassis msg"<<RESET);
     std::lock_guard<std::mutex> lock(mutex_);
     is_chassis_rcv_ = true;
@@ -154,7 +154,7 @@ void LocalizationFusion::pub_localiztion(){
 
 }
 
-void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fros_hardware_node::chassic_data chassis_msg, 
+void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
                                         fairland_msgs::LocalizationPoseData* status_msg){
     if(!ekf_use_chassis_){
         chassis_msg.ac_linear_velocity = slam_speed_;

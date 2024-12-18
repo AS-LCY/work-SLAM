@@ -18,7 +18,7 @@
 // #include <visualization_msgs/MarkerArray.h>
 
 // 另一个节点中定义
-#include "fros_hardware_node/chassic_data.h"
+#include "fairland_msgs/chassic_data.h"
 #include "fairland_msgs/LocalizationPoseData.h"
 #include "ekf_fusion/ekf_localization_fusion.h"
 
@@ -40,14 +40,14 @@ private:
     bool create_ROS_IO();
 
     // callbacks
-    void chassis_msg_callback(const fros_hardware_node::chassic_data::ConstPtr &chassis_msg_in);
+    void chassis_msg_callback(const fairland_msgs::chassic_data::ConstPtr &chassis_msg_in);
     void slam_odometry_callback(const nav_msgs::Odometry::ConstPtr& slam_odometry_in);
     void imu_msg_callback(const sensor_msgs::Imu::ConstPtr& imu_msg_in);
 
     void init_chassis_imu_slam_odom_stamp();
 
     void check_slam_odometry(nav_msgs::Odometry slam_odom);
-    void compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fros_hardware_node::chassic_data chassis_msg, 
+    void compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
                         fairland_msgs::LocalizationPoseData* status_msg);
     void pub_localiztion();
     
@@ -87,7 +87,7 @@ private:
     std::string sub_slam_odom_topic_;
     std::string pub_localization_topic_;
 
-    fros_hardware_node::chassic_data chassis_msg_; ///< the chassis message
+    fairland_msgs::chassic_data chassis_msg_; ///< the chassis message
     nav_msgs::Odometry slam_odom_msg_; ///< the gnss message
     sensor_msgs::Imu imu_msg_; ///< the imu message
 

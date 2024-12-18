@@ -147,11 +147,14 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
     ///////////////////////////////////////////////////////////////////////////////////////////
     /// fill pcl_xyzin_out
 
+    // 说明： 每一条 ring 的第一个点的数据，存于 height = 0；
     uint valid_num = 0;
-    for (std::uint32_t row = 0; row < ros_msg_in->height; ++row){
-        const std::uint8_t* row_data = &ros_msg_in->data[row * ros_msg_in->row_step];
-        for (std::uint32_t col = 0; col < ros_msg_in->width; ++col){
-            const std::uint8_t* msg_data = row_data + col * ros_msg_in->point_step;
+    for (std::uint32_t h = 0; h < ros_msg_in->height; ++h){
+        const std::uint8_t* h_data = &ros_msg_in->data[h * ros_msg_in->row_step];
+        for (std::uint32_t w = 0; w < ros_msg_in->width; ++w){
+            const std::uint8_t* msg_data = h_data + w * ros_msg_in->point_step;
+            auto col = h;
+            auto row = w;
             RsPointXYZIRT temp_point;
             RsPointXYZIRT* curpt = &temp_point;
             std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
@@ -172,7 +175,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
             }
 
             // if(row % point_filter_num_ == 0){
-            if(col%point_filter_num_ == 0 && row%ring_filter_num_ == 0){
+            if(col % point_filter_num_ == 0 && row % ring_filter_num_ == 0){
                 PointType xyzin_point;
                 xyzin_point.x = curpt->x;
                 xyzin_point.y = curpt->y;

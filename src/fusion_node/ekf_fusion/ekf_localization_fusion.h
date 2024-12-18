@@ -13,7 +13,7 @@
 // #include <visualization_msgs/MarkerArray.h>
 
 // 另一个节点中定义
-#include "fros_hardware_node/chassic_data.h"
+#include "fairland_msgs/chassic_data.h"
 #include "fairland_msgs/LocalizationPoseData.h"
 
 #include "fusion_node/fusion_param.hpp"
