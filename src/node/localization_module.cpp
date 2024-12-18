@@ -1159,7 +1159,6 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     auto start = std::chrono::system_clock::now();
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
     double now_sec = now_as_ns * 1e-9;
-    // printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
     ROS_INFO("lidar cbk delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
     if(slam_param_.lidar_preproc.lidar_type == 1){
@@ -1232,7 +1231,6 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     double now_sec = now_as_ns * 1e-9;
 
 
-    // printf("lidar cbk delay: %lf ms\n", (now_sec - ros_msg->header.stamp.toSec())*1000);
     ROS_INFO("lidar cbk delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
     const double thr_x = slam_param_.lidar_preproc.point_filter_distance[0];
     const double thr_y = slam_param_.lidar_preproc.point_filter_distance[1];

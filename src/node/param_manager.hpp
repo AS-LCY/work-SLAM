@@ -28,6 +28,7 @@ public:
         std::string ns = "/flbot/lidar_slam/";
         bool success = true;
         /// common *******************************************
+        get_param(ns+ "common/run_on_mower", loaded_param_.common.run_on_mower, &success);
         get_param(ns+ "common/time_sync_en", loaded_param_.common.time_sync_en, &success);
         get_param(ns+ "common/localization_mode", loaded_param_.common.localization_mode, &success);
         get_param(ns+ "common/offline_mode", loaded_param_.common.offline_mode, &success);
@@ -65,6 +66,13 @@ public:
         }
 
         loaded_param_.common.map_directory = parent_dir + loaded_param_.common.map_directory;
+
+        if(loaded_param_.common.run_on_mower){
+            loaded_param_.common.map_directory = "/home/forlinx/ws_flbot/maps/1/3dmap/";
+            loaded_param_.common.cpu_id.resize(2);
+            loaded_param_.common.cpu_id[0] = 4;
+            loaded_param_.common.cpu_id[1] = 5;
+        }
 
         /// extrinsic *******************************************
         std::vector<double> extrinsic_T; // 1 * 3
@@ -199,7 +207,10 @@ public:
         get_param(ns+ "ikdtree/kdTreeReconstructPointLeafSize", loaded_param_.ikdtree.kdTreeReconstructPointLeafSize, &success);
         get_param(ns+ "ikdtree/map_leaf_size", loaded_param_.ikdtree.map_leaf_size, &success);
 
-        ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", loaded_param_.common.cpu_id.size());
+        ROS_INFO_STREAM(YELLOW<<"run_on_mower: "<<loaded_param_.common.run_on_mower<<RESET);
+        ROS_INFO_STREAM(YELLOW<<"set cpu_id size: " <<loaded_param_.common.cpu_id.size()<<RESET);
+        ROS_INFO_STREAM(YELLOW<<"map directory: " <<BOLDYELLOW<< loaded_param_.common.map_directory<<RESET);
+
         return success;
 	}
 

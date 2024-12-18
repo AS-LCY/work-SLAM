@@ -139,6 +139,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
       pcl_fields[i].offset = it->offset;
       pcl_fields[i].datatype = it->datatype;
       pcl_fields[i].count = it->count;
+    //   ROS_INFO_STREAM(RED<<"field-name: "<<pcl_fields[i].name<<RESET); // check filed name
     }
     //// create Mapping
     pcl::MsgFieldMap field_map;

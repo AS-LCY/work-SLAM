@@ -8,6 +8,7 @@
 namespace lidar_slam{
 
 struct CommonParam{
+    bool run_on_mower = true;
     bool time_sync_en = false;
     bool localization_mode = false;
     bool offline_mode = false;
