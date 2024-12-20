@@ -26,17 +26,20 @@ bool CloudMap::load_map_data(std::string map_dir){
     map_data_ready_ = false;
     
     if(!load_cloud_map(map_dir)){
-        cout<<"load cloud map failed!"<<endl;
+        // cout<<"load cloud map failed!"<<endl;
+        ROS_ERROR("load cloud map failed!");
         return false;
     }
     std::string keyframe_dir = map_dir + "/key_frame_cloud/";
     if(!load_key_frames(keyframe_dir)){
-        cout<<"load key frame clouds failed!"<<endl;
+        // cout<<"load key frame clouds failed!"<<endl;
+        ROS_ERROR("load key frame clouds failed!");
         return false;
     }
 
     map_data_ready_ = true;
-    cout<<"\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true"<<endl;
+    // cout<<"\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true"<<endl;
+    ROS_INFO_STREAM(BOLDGREEN <<"************************* load all map_data success," <<RESET<<" map_data_ready_ = true");
     return true;
 }
 
@@ -45,7 +48,8 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
     /// load key frame poses **************************************************************************
     std::string keyframe_pose_path = keyframe_dir + "/key_frame_pose.txt";
     // std::cout << "loading key_frame_pose from : " << keyframe_pose_path<<std::endl;
-    std::cout << "\033[1;32mloading key_frame_pose \033[0mfrom : " << keyframe_pose_path<<" -- ";
+    // std::cout << "\033[1;32mloading key_frame_pose \033[0mfrom : " << keyframe_pose_path<<" -- ";
+    ROS_INFO_STREAM(BOLDGREEN<<"loading key_frame_pose "<< RESET <<"from : " << keyframe_pose_path<<" -- " << std::flush);
 
     /// open pose_file
     std::ifstream pose_file(keyframe_pose_path);
@@ -54,7 +58,8 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
             throw std::runtime_error("Failed to open pose_file");
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
+        // std::cerr << "Exception occurred: " << e.what() << std::endl;
+        ROS_ERROR_STREAM("\nException occurred: " << e.what());
     }
 
     /// read data line by line, split one line by ","
@@ -104,26 +109,31 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         loaded_keyframe_poses_.push_back(read_one_line);// 数据保存 ---------------------------------------
     }
     pose_file.close();
-    std::cout << "\033[1;32msuccess\033[0m -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size() <<std::endl;
+    // std::cout << "\033[1;32msuccess\033[0m -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size() <<std::endl;
+    ROS_INFO_STREAM(BOLDGREEN<<"success"<<RESET<<" -- loaded_keyframe_poses size: "<<loaded_keyframe_poses_.size());
     /// load key frame poses end *************************************************************************
 
     /// load key frame cloud start ***********************************************************************
     loaded_keyframe_clouds_.clear();
     int key_poses_size = loaded_keyframe_poses_.size();
-    std::cout << "\033[1;32mloading key_frame_cloud\033[0m from dir: " << keyframe_dir <<endl;;
+    // std::cout << "\033[1;32mloading key_frame_cloud\033[0m from dir: " << keyframe_dir <<endl;;
+    ROS_INFO_STREAM(BOLDGREEN<<"loading key_frame_cloud"<<RESET<<" from dir: " << keyframe_dir);
     for(int i=0; i< key_poses_size; i++){
         int pose_index = loaded_keyframe_poses_[i].index;
         std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) +  ".pcd";
-        std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- ";
+        // std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- ";
+        ROS_INFO_STREAM("loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- " <<std::flush);
 
         PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
         // if (std::filesystem::exists(key_cloud_path)){
         if (0 == access(key_cloud_path.c_str(), 0)){
             pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
             loaded_keyframe_clouds_.push_back((temp_cloud));
-            std::cout <<"success -- points count: "<<temp_cloud->points.size() << std::endl;
+            // std::cout <<"success -- points count: "<<temp_cloud->points.size() << std::endl;
+            ROS_INFO_STREAM("success -- points count: "<<temp_cloud->points.size());
         }else {
-            std::cerr << "failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist." << std::endl;
+            // std::cerr << "failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist." << std::endl;
+            ROS_ERROR_STREAM("failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist.");
             return false;
         }
     }
@@ -135,14 +145,16 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     /// load cloud_map.pcd ***************************************************************************
     loaded_global_map_.reset(new PointCloudXYZI());
     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
-    // std::cout << "loading map from : " << cloud_map_file_path<<std::endl;
-    std::cout << "\033[1;32mloading cloud map\033[0m from : " << cloud_map_file_path<<" -- ";
+    // std::cout << "\033[1;32mloading cloud map\033[0m from : " << cloud_map_file_path<<" -- ";
+    ROS_INFO_STREAM(BOLDGREEN<<"loading cloud map "<<RESET<<"from : " << cloud_map_file_path<<" -- "<<std::flush);
     // if (std::filesystem::exists(cloud_map_file_path)){
     if (0 == access(cloud_map_file_path.c_str(), 0)){
         pcl::io::loadPCDFile(cloud_map_file_path, *loaded_global_map_);
-        std::cout <<"\033[1;32msuccess \033[0m-- points count: "<<loaded_global_map_->points.size() << std::endl;
+        // std::cout <<"\033[1;32msuccess \033[0m-- points count: "<<loaded_global_map_->points.size() << std::endl;
+        ROS_INFO_STREAM(BOLDGREEN<<"success "<<RESET<<"-- points count: "<<loaded_global_map_->points.size());
     }else {
-        std::cerr << "\033[1;32mfailed \033[0m-- map file does not exist." << std::endl;
+        // std::cerr << "\033[1;32mfailed \033[0m-- map file does not exist." << std::endl;
+        ROS_ERROR_STREAM(BOLDRED<<"failed "<<RESET<<"-- map file does not exist.");
         return false;
     }
     /// TODO: show map point ---------------------------------
@@ -153,14 +165,16 @@ bool CloudMap::load_cloud_map(std::string map_dir){
 
     /// open file
     // std::cout << "tring to load sc-data from : " << sc_data_file_path<<std::endl;
-    std::cout << "\033[1;32mloading sc-data\033[0m from : " << sc_data_file_path<<" -- ";
+    // std::cout << "\033[1;32mloading sc-data\033[0m from : " << sc_data_file_path<<" -- ";
+    ROS_INFO_STREAM(BOLDGREEN << "loading sc-data" << RESET<<" from : " << sc_data_file_path<<" -- " << std::flush);
     std::ifstream file(sc_data_file_path);
     try {
         if (!file) {
             throw std::runtime_error("Failed to open file");
         }
     } catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
+        // std::cerr << "Exception occurred: " << e.what() << std::endl;
+        ROS_ERROR_STREAM("Exception occurred: " << e.what());
     }
     
     // KeyMat polarcontext_invkeys_mat;
@@ -193,7 +207,8 @@ bool CloudMap::load_cloud_map(std::string map_dir){
         int maxcol = values[index++];
         /// check： sc 数据 size 是否对应
         if (values.size() - index != (maxrow*maxcol)){
-            std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
+            // std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
+            ROS_ERROR_STREAM(" error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol);
             return false;
         }
 
@@ -211,7 +226,8 @@ bool CloudMap::load_cloud_map(std::string map_dir){
     if (loaded_sc_info_.size() == 0)
         return false;
     // sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);
-    std::cout << "\033[1;32msuccess\033[0m -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
+    // std::cout << "\033[1;32msuccess\033[0m -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
+    ROS_INFO_STREAM(BOLDGREEN << "success"<< RESET <<" -- loaded_sc_info size : " << loaded_sc_info_.size());
 
 
     /// load data(pose & ScanContex) end *****************************************************************

@@ -6,7 +6,7 @@
 	<arg name="use_gdb" default="false" />
 	<arg name="lidar_name" default="vanjee722" />
 
-	<!-- <env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config.cfg"/> -->
+	<env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config_fusion.cfg"/>
 
 	<rosparam command="load" file="$(find lidar_slam)/config/param_fusion_$(arg lidar_name).yaml" ns="/flbot/localization/" />
 

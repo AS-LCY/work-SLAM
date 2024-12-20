@@ -141,10 +141,12 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
         last_chassis_y_ = chassis_y_;
         last_chassis_a_ = chassis_a_;
 
-        std::cout<< "positon: init x:" << filter_x_ << ", y:" << filter_y_ << ", a:" << filter_a_ << std::endl;
+        // std::cout<< "positon: init x:" << filter_x_ << ", y:" << filter_y_ << ", a:" << filter_a_ << std::endl;
+        ROS_INFO_STREAM( "positon: init x:" << filter_x_ << ", y:" << filter_y_ << ", a:" << filter_a_);
         return true;
     }else{
-        std::cout << "position_filter: wait for lidar pose ..." << std::endl;
+        // std::cout << "position_filter: wait for lidar pose ..." << std::endl;
+        ROS_INFO_STREAM( "position_filter: wait for lidar pose ...");
         position_initialized_ = false;
         // sleep(1);
         return false;
@@ -361,7 +363,8 @@ void LocalizationModule::detect_slipping(){
     if (chassis_linear_velocity_ > 0.1 && chassis_angular_velocity_ < 0.2 && o_dr-ln_dr > o_dr*0.75f){ // 暂时写成定值
         if (slip_count_ > 3) {
             k_pos_ = 0.0;
-            std::cout << " --- slipping ---" << std::endl; 
+            // std::cout << " --- slipping ---" << std::endl; 
+            ROS_WARN(" --- slipping ---") ; 
         }
         else slip_count_++;
     }
@@ -503,7 +506,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
     print_idle_cnt = 0; // if not IDLE, reset to 0
 
-    // ROS_INFO("***********************************************");
+    // ROS_INFO_STREAM("***********************start*****************************");
+
     // cout<<"-----------------------------------------------"<<endl;
     // cout<<"***********************************************"<<endl;
 
@@ -1202,15 +1206,17 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 
 void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
-    // ROS_INFO("livox lidar callback~");
-    static int print_cnt = 0;
-    if (print_cnt % 10 ==0){
-        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------lidar cbk"<<endl;
-        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------lidar cbk");
-        cout<<"received lidar --------------lidar cbk"<<endl;
-        print_cnt = 0;
-    }
-    print_cnt++;
+    // // ROS_INFO("livox lidar callback~");
+    // static int print_cnt = 0;
+    // if (print_cnt % 10 ==0){
+    //     // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------lidar cbk"<<endl;
+    //     // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------lidar cbk");
+    //     cout<<"received lidar --------------lidar cbk"<<endl;
+    //     print_cnt = 0;
+    // }
+    // print_cnt++;
+
+    ROS_INFO_ONCE("received lidar --------------lidar cbk");
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -1224,7 +1230,8 @@ void LocalizationModule::livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     //    return;
 
     double t0 = omp_get_wtime();
-    std::cout<<"t0: "<<t0<<endl;
+    // std::cout<<"t0: "<<t0<<endl;
+    ROS_INFO_STREAM("t0: "<<t0);
 
     auto start = std::chrono::system_clock::now();
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();

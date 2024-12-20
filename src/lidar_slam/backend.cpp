@@ -229,15 +229,15 @@ void BackEnd::saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose
     Transform.matrix().block<3, 3>(0, 0) = ypr2R(euler); 
     // std::cout << "test martrix "<< R2ypr(Transform.matrix().block<3, 3>(0, 0)).transpose()<<std::endl;
     // Eigen::Isometry3d newTransform = Eigen::Isometry3d::Identity();
-    /*  Eigen::Vector3d test = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-    std::cout << "test "<<test.transpose()<<std::endl;
-    Eigen::Isometry3d testTransform = Eigen::Isometry3d::Identity();
-    testTransform.rotate(Eigen::AngleAxisd(test[1], Eigen::Vector3d::UnitY()));
-    testTransform.rotate(Eigen::AngleAxisd(test[2], Eigen::Vector3d::UnitX()));
-    std::cout << "test martrix "<< testTransform.matrix()<<std::endl;
-    std::cout << "euler "<< euler.transpose()<<std::endl;*/
-    /* newTransform.rotate(Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
-    newTransform.rotate(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));*/
+    // Eigen::Vector3d test = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+    // std::cout << "test "<<test.transpose()<<std::endl;
+    // Eigen::Isometry3d testTransform = Eigen::Isometry3d::Identity();
+    // testTransform.rotate(Eigen::AngleAxisd(test[1], Eigen::Vector3d::UnitY()));
+    // testTransform.rotate(Eigen::AngleAxisd(test[2], Eigen::Vector3d::UnitX()));
+    // std::cout << "test martrix "<< testTransform.matrix()<<std::endl;
+    // std::cout << "euler "<< euler.transpose()<<std::endl;
+    // newTransform.rotate(Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()));
+    // newTransform.rotate(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));
     // newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,pitch,roll)); 
     // std::cout << "euler martrix "<< newTransform.matrix()<<std::endl;
     gravityAlignedCLoud.reset(new PointCloudXYZI());
@@ -281,7 +281,8 @@ bool BackEnd::correctPoses()
         mtxPose.unlock();
         // 清空局部map， reconstruct  ikdtree submap
         // recontructIKdTree(ikdtree); 
-        std::cout <<"ISMA2 Update"<< std::endl;
+        // std::cout <<"ISMA2 Update"<< std::endl;
+        ROS_INFO("ISMA2 Update");
         ROS_INFO_STREAM(BOLDYELLOW<<"correctPoses ********************************** "<<RESET);
         aLoopIsClosed = false;
         show_index = 0;
@@ -336,13 +337,16 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconst
     downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
     downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
 
-    std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
+    // std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
+    ROS_INFO_STREAM(YELLOW<<"subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()<<RESET);
     
     ikdtree.reconstruct(subMapKeyFramesDS->points);
-    std::cout << "Reconstructed  ikdtree " << std::endl;
+    // std::cout << "Reconstructed  ikdtree " << std::endl;
+    ROS_INFO_STREAM( "Reconstructed  ikdtree ");
     int featsFromMapNum = ikdtree.validnum();
     int kdtree_size_st = ikdtree.size();
-    std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
+    // std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
+    ROS_INFO_STREAM (YELLOW<< "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st << RESET);
 
 }
 
@@ -452,10 +456,12 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
     // 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
     // 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
     // T_map_odom： 传入的这个值是重定位结果
-    cout<<"loaded_key_poses size: "<<input_vec_key_poses.size()<<endl;
+    // cout<<"loaded_key_poses size: "<<input_vec_key_poses.size()<<endl;
+    ROS_INFO_STREAM("loaded_key_poses size: "<<input_vec_key_poses.size());
     int i=0;
     for(auto & kp : input_vec_key_poses){
-        cout<<"***************** load old key frame --- "<< i++ << endl;
+        // cout<<"***************** load old key frame --- "<< i++ << endl;
+        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         Eigen::Isometry3d T_map_lidar = kp.pose;
         Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
         Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
@@ -866,24 +872,30 @@ PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
-    cout << "****************************************************" << endl;
+    // cout << "****************************************************" << endl;
+    ROS_INFO( "****************************************************");
     if (KeyPoses.empty() || KeyPoses.size()==0){
-        cout<<"key frame empty"<<endl;
+        // cout<<"key frame empty"<<endl;
+        ROS_WARN("key frame empty");
         return false;
     }
     // 检查并创建 yaml 中的地图路径
     if (create_directory_if_not_exists(saveMapDirectory)) {
-        std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
+        // std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
+        ROS_INFO_STREAM("Directory created or already exists: " << saveMapDirectory);
     } else {
-        std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
+        // std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
+        ROS_ERROR_STREAM("Failed to create directory: " << saveMapDirectory );
         return false;
     }
     // 创建关键帧点云保存路径
     std::string save_key_frame_cloud_dir = saveMapDirectory + "/key_frame_cloud/";
     if (create_directory_if_not_exists(save_key_frame_cloud_dir)) {
-        std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
+        // std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
+        ROS_INFO_STREAM("Directory created or already exists: " << save_key_frame_cloud_dir);
     } else {
-        std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
+        // std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
+        ROS_ERROR_STREAM("Failed to create directory: " << save_key_frame_cloud_dir);
         return false;
     }
 
@@ -902,7 +914,8 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         end = KeyPosesSize -1;
         // pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
     }else if(start_index == -1 || end_index == -1){
-        cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
+        // cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
+        ROS_WARN("start-point or end-point not set, save all to cloud_map.pcd ");
         start = 0;
         end = KeyPosesSize -1;
     }else{
@@ -928,14 +941,17 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         key_frame_cloud_path = save_key_frame_cloud_dir  + std::to_string(i) + ".pcd";
         int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud[i]);
     }
-    cout << "\nSave resolution: " << resolution << endl;
+    // cout << "\nSave resolution: " << resolution << endl;
+    ROS_INFO_STREAM("\nSave resolution: " << resolution);
     pcl::VoxelGrid<PointType> downSizeFilter;
     downSizeFilter.setInputCloud(globalMapCloud);
     downSizeFilter.setLeafSize(resolution, resolution, resolution);
     downSizeFilter.filter(*globalSurfCloudDS);
-    cout<<"cloud_map size: "<<globalSurfCloudDS->points.size()<<endl;
+    // cout<<"cloud_map size: "<<globalSurfCloudDS->points.size()<<endl;
+    ROS_INFO_STREAM("cloud_map size: "<<globalSurfCloudDS->points.size());
 
-    cout << "Saving map to pcd file: "<<pcd_file_path << endl;
+    // cout << "Saving map to pcd file: "<<pcd_file_path << endl;
+    ROS_INFO_STREAM("Saving map to pcd file: "<<pcd_file_path);
 
     /** savePCDFileBinary 返回值：
      *  0 --- 保存成功
@@ -943,23 +959,28 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
      */
     int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
     if(ret == -1){
-        cout << "save cloud-map failed" << endl; 
+        // cout << "save cloud-map failed" << endl; 
+        ROS_ERROR("save cloud-map failed"); 
         return false;
     }else if(ret ==0){
-        cout << "Saving map to pcd files completed" << endl;
+        // cout << "Saving map to pcd files completed" << endl;
+        ROS_INFO_STREAM(GREEN << "Saving map to pcd files completed"<< RESET);
     }
     // int ret = pcl::io::savePCDFileASCII(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
     // cout<<"savePCDFileBinary result: "<<ret<<endl;
 
-    cout << "Saving loop data" << endl; 
+    // cout << "Saving loop data" << endl; 
+    ROS_INFO("Saving loop data"); 
     std::ofstream file(saveMapDirectory + "/data");
     std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
     if (!file.is_open()){
-        cout << "sc data file open failed" << endl; 
+        // cout << "sc data file open failed" << endl; 
+        ROS_ERROR("sc data file open failed"); 
         return false;
     }
     if(!file_pose.is_open()){
-        cout << "key_frame_pose file open failed" << endl; 
+        // cout << "key_frame_pose file open failed" << endl; 
+        ROS_ERROR("key_frame_pose file open failed");
         return false;
     }
     // for (int i = 0; i < (int)KeyPoses.size(); i++) {
@@ -977,8 +998,10 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     }
     file.close();
     file_pose.close();
-    cout << "Saving loop data completed" << endl;
-    cout << "****************************************************" << endl;
+    // cout << "Saving loop data completed" << endl;
+    // cout << "****************************************************" << endl;
+    ROS_INFO_STREAM(GREEN << "Saving loop data completed" << RESET);
+    ROS_INFO("****************************************************");
 
     return true;
 }
@@ -991,7 +1014,8 @@ if (0 != access(directory_path.c_str(), 0)){
         if (status){
             return true; // 创建目录成功
         }else{
-            std::cerr << "Error creating directory: " << directory_path << std::endl;
+            // std::cerr << "Error creating directory: " << directory_path << std::endl;
+            ROS_ERROR_STREAM("Error creating directory: " << directory_path);
             return false; // 创建目录失败
         }
     }else{
@@ -1008,7 +1032,8 @@ if (0 != access(directory_path.c_str(), 0)){
             std::filesystem::create_directories(path);
             return true; // 创建目录成功
         }catch (const std::filesystem::filesystem_error& ex){
-            std::cerr << "Error creating directory: " << ex.what() << std::endl;
+            // std::cerr << "Error creating directory: " << ex.what() << std::endl;
+            ROS_ERROR_STREAM("Error creating directory: " << ex.what() );
             return false; // 创建目录失败
         }
     } else {

@@ -199,7 +199,8 @@ void KD_TREE<PointType>::start_thread()
     pthread_mutex_init(&working_flag_mutex, NULL);
     pthread_mutex_init(&search_flag_mutex, NULL);
     pthread_create(&rebuild_thread, NULL, multi_thread_ptr, (void *)this);
-    printf("Multi thread started \n");
+    // printf("Multi thread started \n");
+    ROS_INFO("Multi thread started ");
 }
 
 template <typename PointType>
@@ -243,7 +244,8 @@ void KD_TREE<PointType>::multi_thread_rebuild()
             /* Traverse and copy */
             if (!Rebuild_Logger.empty())
             {
-                printf("\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n");
+                // printf("\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n");
+                ROS_ERROR("\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n");
             }
             rebuild_flag = true;
             if (*Rebuild_Ptr == Root_Node)
@@ -323,7 +325,8 @@ void KD_TREE<PointType>::multi_thread_rebuild()
             }
             else
             {
-                throw "Error: Father ptr incompatible with current node\n";
+                // throw "Error: Father ptr incompatible with current node\n";
+                ROS_ERROR("Error: Father ptr incompatible with current node");
             }
             if (new_root_node != nullptr)
                 new_root_node->father_ptr = father_ptr;
@@ -363,7 +366,8 @@ void KD_TREE<PointType>::multi_thread_rebuild()
         pthread_mutex_unlock(&termination_flag_mutex_lock);
         usleep(100);
     }
-    printf("Rebuild thread terminated normally\n");
+    // printf("Rebuild thread terminated normally\n");
+    ROS_INFO_STREAM(GREEN << "Rebuild thread terminated normally" << RESET);
 }
 
 template <typename PointType>

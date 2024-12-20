@@ -35,7 +35,8 @@ bool Localization::loadMap(std::string path){
     if (cloud_file.good()){
         pcl::io::loadPCDFile(cloud_map_file_path, *TempMap); 
         *CloudGlobalMap = *TempMap;
-        std::cout << "load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() << std::endl;
+        // std::cout << "load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() << std::endl;
+        ROS_INFO_STREAM("load map from : " << cloud_map_file_path<<"--- point size: "<<TempMap->points.size() );
     }
     // // no ComplementMap.pcd
     std::string ComplementMap_file_path = path+std::string("ComplementMap.pcd");
@@ -45,7 +46,8 @@ bool Localization::loadMap(std::string path){
         TempMap->points.clear();
         pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap); 
         *CloudGlobalMap += *TempMap;
-        std::cout << "load map from : " << ComplementMap_file_path<<"size "<<TempMap->points.size() << std::endl;
+        // std::cout << "load map from : " << ComplementMap_file_path<<"size "<<TempMap->points.size() << std::endl;
+        ROS_INFO_STREAM("load map from : " << ComplementMap_file_path<<"size "<<TempMap->points.size() );
     }  
     pcl::copyPointCloud(*(CloudGlobalMap), *CloudGlobalMapIn);
     pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
@@ -70,7 +72,8 @@ bool Localization::loadMap(std::string path){
         show_map_points.push_back(point);
     }
     if (CloudGlobalMap->points.size() == 0){
-        std::cerr << "Failed to load map." << std::endl;
+        // std::cerr << "Failed to load map." << std::endl;
+        ROS_ERROR("Failed to load map." );
         return false;            
     }
     std::vector<std::string> files;
@@ -92,11 +95,13 @@ bool Localization::loadMap(std::string path){
     for (auto filename:files){
         std::ifstream file(filename);
         if (!file) {
-            std::cerr << "Failed to open file "<< filename << std::endl;
+            // std::cerr << "Failed to open file "<< filename << std::endl;
+            ROS_ERROR_STREAM("Failed to open file "<< filename );
             continue;
         }
         else{
-            std::cout << "load file "<< filename << std::endl;
+            // std::cout << "load file "<< filename << std::endl;
+            ROS_INFO_STREAM("load file "<< filename );
         }
         while (std::getline(file, line)) {
             
@@ -128,7 +133,8 @@ bool Localization::loadMap(std::string path){
             int maxrow = values[index++];
             int maxcol = values[index++];
             if (values.size() - index != (maxrow*maxcol)){
-                std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
+                // std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
+                ROS_ERROR_STREAM(" error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol);
                 return false;
             }
             readData.polarcontext.resize(maxrow,maxcol);
@@ -153,9 +159,11 @@ bool Localization::loadMap(std::string path){
     if (LoadData.size() == 0)
         return false;
     scManager->buildRingKeyKDTree(polarcontext_invkeys_mat_, polarcontexts_);
-    std::cout << "get_load_data : " << LoadData.size() << std::endl;
+    // std::cout << "get_load_data : " << LoadData.size() << std::endl;
+    ROS_INFO_STREAM("get_load_data : " << LoadData.size() );
     map_ready_ = true;
-    cout<<"\033[1;32mLoad map success!\033[0m"<<endl;
+    // cout<<"\033[1;32mLoad map success!\033[0m"<<endl;
+    ROS_INFO_STREAM(BOLDGREEN << "Load map success!" << RESET );
     return true;
 }
 
@@ -182,14 +190,16 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
     // cout << YELLOW << "x: "<< curr_temp_x << " y: "<< curr_temp_y << " z: "<< curr_temp_z << " roll: "<< curr_temp_roll << " pitch: "<< curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl;
 
     if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
-        std::cout << "gicp fail, score: "<< gicp->getFitnessScore()<<std::endl;
+        // std::cout << "gicp fail, score: "<< gicp->getFitnessScore()<<std::endl;
+        ROS_ERROR_STREAM("gicp fail, score: "<< gicp->getFitnessScore());
         return false;
     }
     else{
         lastCorrectionOdomToMap = correctionOdomToMap;
         lastUpdateTime = curr_time_;
 
-        std::cout << "\033[1;32mgicp success with score "<< gicp->getFitnessScore() <<" \033[0m"<< std::endl;         
+        // std::cout << "\033[1;32mgicp success with score "<< gicp->getFitnessScore() <<" \033[0m"<< std::endl;         
+        ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);         
         correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
 
 
@@ -300,7 +310,8 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)
 { 
     if (!map_ready_) {
-        cout<<"map not ready"<<endl;
+        // cout<<"map not ready"<<endl;
+        ROS_WARN("map not ready");
         return false;
     }
     // std::cout << "-------------------------------------------"<<std::endl;
@@ -340,8 +351,9 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         double sc_dist = 1.0;
         auto match = scManager->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
         if (match.first != -1){
-          std::cout <<"trans: "<< t.first << " " <<t.second;
-          std::cout <<" score: "<<sc_dist<<std::endl;
+        //   std::cout <<"trans: "<< t.first << " " <<t.second;
+        //   std::cout <<" score: "<<sc_dist<<std::endl;
+          ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<" score: "<<sc_dist);
         }
         if (sc_dist < min_dist) {
             min_dist = sc_dist;
@@ -361,13 +373,15 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
     icp.setRANSACIterations(0);
 
     if (match_idx != -1) {
-        std::cout << "use index "<< match_idx<<std::endl;
+        // std::cout << "use index "<< match_idx<<std::endl;
+        ROS_INFO_STREAM("use index "<< match_idx);
         Eigen::Matrix4d init_guess = LoadData[match_idx].pose.matrix();
         Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
         // Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
         euler[0] += -best_match.second;
-        std::cout << "rotate yaw: "<<-best_match.second<<std::endl;
+        // std::cout << "rotate yaw: "<<-best_match.second<<std::endl;
+        ROS_INFO_STREAM("rotate yaw: "<<-best_match.second);
         // Eigen::Matrix3d rotate = (Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitZ()) *
         //                         Eigen::AngleAxisd(current_pitch, Eigen::Vector3d::UnitY()) *
         //                         Eigen::AngleAxisd(current_roll, Eigen::Vector3d::UnitX())).toRotationMatrix();// TODO use current pr?
@@ -399,11 +413,12 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // 未收敛，或者匹配不够好
         // if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
         if (icp.hasConverged() == false || icp.getFitnessScore() > score){//TODO add number in getFitnessScore
-            std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
+            // std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
+            ROS_WARN_STREAM("globalLocalization icp fail with score: "<< icp.getFitnessScore());
             return false;
         }
         else{
-            std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
+            ROS_INFO_STREAM("globalLocalization success with score: " << icp.getFitnessScore());
         }   
         Eigen::Isometry3d lidar_in_map;
         lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
@@ -426,7 +441,8 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // std::cout << "scancontext search success, score {} " <<match_idx<<" "<< min_dist<<std::endl;
     } else {
         // std::cout << "-------------------------------------------"<<std::endl;
-        std::cout << "scancontext search fail, score {} "<<match_idx<<" "<< min_dist<<std::endl;
+        // std::cout << "scancontext search fail, score {} "<<match_idx<<" "<< min_dist<<std::endl;
+        ROS_WARN_STREAM("scancontext search fail, score {} "<<match_idx<<" "<< min_dist);
         return false;
     }
 

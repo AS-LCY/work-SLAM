@@ -357,7 +357,7 @@ private:
     double filter_x_;
     double filter_y_;
     double filter_a_;
-    int filter_cout_ = 0;
+    int filter_count_ = 0;
     static std::atomic<double> livox_cbk_update_time_;
     
     // nav_msgs::Odometry filter_odometry_;

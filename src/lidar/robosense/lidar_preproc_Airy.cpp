@@ -212,11 +212,13 @@ bool LidarPreprocAiry::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl
     if (extract_cloud_method == 0){
         extract_cloud_by_interval_sampling(pcl_rs_in, pcl_xyzin_out);
     } else{
-        printf("extract_cloud_method set error!\n");
+        // printf("extract_cloud_method set error!\n");
+        ROS_ERROR("extract_cloud_method set error!\n");
         exit(1);
     }
     
-    printf("extract lidar count: %ld\n", pcl_xyzin_out->points.size());
+    // printf("extract lidar count: %ld\n", pcl_xyzin_out->points.size());
+    ROS_INFO("extract lidar count: %ld", pcl_xyzin_out->points.size());
 
     return true;
 }

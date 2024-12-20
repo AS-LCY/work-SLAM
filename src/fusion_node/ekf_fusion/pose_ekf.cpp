@@ -25,6 +25,8 @@ PoseEKF::PoseEKF(const int& status_num,
 
     // printf("P_ init: \n");
     // std::cout<<P_<<std::endl;
+    ROS_INFO_STREAM("P_ init: ");
+    ROS_INFO_STREAM(P_);
 }
 
 PoseEKF::~PoseEKF() {
@@ -35,12 +37,15 @@ void PoseEKF::reset(const Matrix& status_cov,
                     const Matrix& input_cov,
                     const Matrix& measure_cov
                     ) {
-    std::cout<<"Reseting Pose-EKF ..."<<std::endl;
+    // std::cout<<"Reseting Pose-EKF ..."<<std::endl;
+    ROS_WARN_STREAM("Reseting Pose-EKF ...");
     // set_dimension(status_num,input_num,measure_num); // dimension should not be changed
     ekf_matrix_init();
     set_covariance(status_cov, input_cov, measure_cov); // P_ need reset
-    std::cout<<"P_: "<<std::endl;
-    std::cout<<P_<<std::endl;
+    // std::cout<<"P_: "<<std::endl;
+    // std::cout<<P_<<std::endl;
+    ROS_INFO_STREAM("P_ : ");
+    ROS_INFO_STREAM(P_);
 }
 
 // void PoseEKF::params_initialize() {
@@ -125,8 +130,9 @@ void PoseEKF::update(const Matrix& measure, bool trust_measure){
     P_post_ = P_*1.0;
     // std::cout<<"P_post_: "<<std::endl<<P_post_<<std::endl;
     ROS_INFO_STREAM("P_post_: ");
-    std::cout<<P_post_ <<std::endl;
-    // ROS_INFO_STREAM(P_post_);
+    ROS_INFO_STREAM(P_post_);
+
+    // std::cout<<P_post_ <<std::endl;  // TODO print matrix
 
 }
 

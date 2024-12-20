@@ -549,7 +549,7 @@ void LocalizationModule::release_slam_obj(){
     // cout<<"debug: temp_slam: "<<temp_slam<<endl;
     ROS_INFO("debug: release successfully");
     delete temp_slam;
-    cout<<"temp_slam: "<<temp_slam<<endl;
+    // cout<<"temp_slam: "<<temp_slam<<endl;
     ROS_INFO("debug: delete successfully");
     temp_slam = nullptr;
     ROS_INFO("debug: set nullptr successfully");

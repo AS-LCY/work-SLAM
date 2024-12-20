@@ -126,11 +126,13 @@ bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> 
     }else if(extract_cloud_method == 3){
         extract_cloud_by_feature(msg, pcl_cld_out);
     } else{
-        printf("extract_cloud_method set error!\n");
+        // printf("extract_cloud_method set error!\n");
+        ROS_ERROR("extract_cloud_method set error!");
         exit(1);
     }
     
-    printf("extract lidar count: %ld\n", pcl_cld_out->points.size());
+    // printf("extract lidar count: %ld\n", pcl_cld_out->points.size());
+    ROS_INFO("extract lidar count: %ld\n", pcl_cld_out->points.size());
     return true;
     
 }
@@ -206,7 +208,8 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
     const double extent_ymax = param_.voxel_region_xyz[3];
     const double extent_zmin = param_.voxel_region_xyz[4];
     const double extent_zmax = param_.voxel_region_xyz[5];
-    std::cout<<"leafsize: "<<leafsize<<endl;
+    // std::cout<<"leafsize: "<<leafsize<<endl;
+    ROS_INFO_STREAM("leafsize: "<<leafsize);
 
     int plsize = msg->point_num;
     uint valid_num = 0;

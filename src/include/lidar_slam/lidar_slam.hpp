@@ -157,7 +157,8 @@ class LidarSlam
                 if(!cloud_map_manager_->load_map_data(directory))
                 return false;
             }else{
-                cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
+                // cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
+                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) );
                 return false;
             }
             return true;
@@ -208,7 +209,8 @@ class LidarSlam
                 return global_localization_->get_global_odom_to_map();
                 // return localization->getOdomToMap();
             }else{
-                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_));
                 return Eigen::Isometry3d::Identity();
             }
             // if (param.localization_mode)
@@ -227,7 +229,8 @@ class LidarSlam
             if (working_mode_ == LOCALIZATION){
                return localization->getLastOdomToMap();
             }else{
-                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) );
                 return Eigen::Isometry3d::Identity();
             }
         }

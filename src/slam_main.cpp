@@ -7,12 +7,17 @@ int main(int argc,char **argv){
     ros::init(argc, argv, "localization_module");
     ros::NodeHandle nh;
     std::string curr_path;
-    #ifdef CURRENT_DIR
-        std::cout<<"CURRENT_DIR is defined"<<std::endl;
-        curr_path = CURRENT_DIR;
-    #else
-        std::cout<<"CURRENT_DIR is not defined"<<std::endl;
-    #endif
+    // #ifdef CURRENT_DIR
+    //     // std::cout<<"CURRENT_DIR is defined"<<std::endl;
+    //     ROS_INFO("CURRENT_DIR is defined");
+    //     curr_path = CURRENT_DIR;
+    // #else
+    //     // std::cout<<"CURRENT_DIR is not defined"<<std::endl;
+    //     ROS_WARN("CURRENT_DIR is not defined");
+    // #endif
+    
+    // 设置locale为默认值，以支持当前系统的默认编码
+    setlocale(LC_ALL, "");
 
     int init_module_status = 0;
     nh.param<int>("/flbot/lidar_slam/common/init_module_status", init_module_status, 0);
