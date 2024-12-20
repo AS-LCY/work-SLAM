@@ -167,7 +167,7 @@ namespace esekfom
 			if (effct_feat_num < 1)
 			{
 				ekfom_data.valid = false;
-				printf("No Effective Points! \n");
+				// printf("No Effective Points! \n");
 				ROS_WARN_STREAM(YELLOW<<"No Effective Points!"<<RESET);
 				return;
 			}
