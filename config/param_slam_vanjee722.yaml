@@ -1,5 +1,5 @@
 common:
-  run_on_mower: true
+  run_on_mower: true            
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -11,7 +11,8 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  map_directory: "/home/pmm/data/3-vanjee/v4-mapping/data_from_vj/722建图bag包/3dmap/"
   # map_directory: "/home/pmm/data/4-comp-rs-vj/1-1121/09-vj/3dmap"
   # map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/32xian/4/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
@@ -23,8 +24,8 @@ common:
   lidar_no_point_count_thr:  10
   feats_down_size_thr: 100
   use_pose_filter: false
-  # cpu_id: []
-  cpu_id: [4, 5]
+  cpu_id: []
+  # cpu_id: [4, 5]
 
 extrinsic:    
   extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
