@@ -224,7 +224,7 @@ public:
     template <class T>
     void get_param(const std::string& param_str, T& param, bool* is_success){
         if(!nh_.getParamCached(param_str,param)){
-            ROS_WARN("load param failed : %s ", param_str.c_str());
+            ROS_WARN_STREAM(YELLOW << "load param failed : "<< param_str.c_str()<< RESET);
             *is_success = false;
         }else{
             ROS_INFO("load param success: %s", param_str.c_str());
@@ -236,7 +236,7 @@ public:
 private:
 	LocalizationModuleParamManager(){
 		if(load_config_params()==false){
-			ROS_ERROR("load config params failed");
+			ROS_ERROR_STREAM(RED << "load config params failed" <<RESET);
 			exit(0);
 		}
 	}

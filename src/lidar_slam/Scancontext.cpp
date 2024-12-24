@@ -231,7 +231,7 @@ const Eigen::MatrixXd SCManager::getSc( int i )
 {
     if (i > polarcontexts_.size() -1 ){
         // cout <<"error sc index"<< endl;
-        ROS_ERROR("error sc index");
+        ROS_ERROR_STREAM(RED << "error sc index" << RESET);
         return Eigen::MatrixXd::Zero(1, 1);
     }
     return polarcontexts_[i];

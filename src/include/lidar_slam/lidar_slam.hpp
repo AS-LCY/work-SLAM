@@ -158,7 +158,7 @@ class LidarSlam
                 return false;
             }else{
                 // cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
-                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) );
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return false;
             }
             return true;
@@ -210,7 +210,7 @@ class LidarSlam
                 // return localization->getOdomToMap();
             }else{
                 // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
-                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_));
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
             // if (param.localization_mode)
@@ -230,7 +230,7 @@ class LidarSlam
                return localization->getLastOdomToMap();
             }else{
                 // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
-                ROS_ERROR_STREAM("error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) );
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
         }

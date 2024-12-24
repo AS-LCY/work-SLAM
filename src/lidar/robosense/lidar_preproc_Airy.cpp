@@ -5,7 +5,7 @@ namespace localization_module {
 
 LidarPreprocAiry::LidarPreprocAiry(){
     if(!set_param()){
-        ROS_ERROR("Set lidar param failed!");
+        ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
         // ROS_INFO("\033[0;32mSet lidar-Airy param successfully!\033[0m");
         ROS_INFO("\033[0;32mSet lidar-Ring param successfully!\033[0m");
@@ -26,7 +26,7 @@ bool LidarPreprocAiry::set_param(){
     const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
 
     if (loaded_param == NULL) {
-        ROS_ERROR("loaded_param is NULL");
+        ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
         return false;
     }else{
         param_ = loaded_param->lidar_preproc;
@@ -213,7 +213,7 @@ bool LidarPreprocAiry::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl
         extract_cloud_by_interval_sampling(pcl_rs_in, pcl_xyzin_out);
     } else{
         // printf("extract_cloud_method set error!\n");
-        ROS_ERROR("extract_cloud_method set error!\n");
+        ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
         exit(1);
     }
     

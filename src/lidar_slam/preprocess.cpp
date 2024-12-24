@@ -98,7 +98,7 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
         extract_cloud_by_feature(msg);
     } else{
         // printf("extract_cloud_method set error!\n");
-        ROS_ERROR("extract_cloud_method set error!");
+        ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
         exit(1);
     }
     // printf("test %d %d \n",pl_full.size(),pl_obstacle.size());
@@ -470,7 +470,7 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
   if (plsize == 0)
   {
     // printf("something wrong\n");
-    ROS_ERROR("something wrong: cloud_ssize == 0");
+    ROS_ERROR_STREAM(RED << "something wrong: cloud_ssize == 0" << RESET);
     return;
   }
   uint head = 0;

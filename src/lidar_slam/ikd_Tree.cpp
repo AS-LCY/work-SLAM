@@ -245,7 +245,7 @@ void KD_TREE<PointType>::multi_thread_rebuild()
             if (!Rebuild_Logger.empty())
             {
                 // printf("\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n");
-                ROS_ERROR("\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n");
+                ROS_ERROR_STREAM(RED << "\n\n\n\n\n\n\n\n\n\n\n ERROR!!! \n\n\n\n\n\n\n\n\n" << RESET);
             }
             rebuild_flag = true;
             if (*Rebuild_Ptr == Root_Node)
@@ -326,7 +326,7 @@ void KD_TREE<PointType>::multi_thread_rebuild()
             else
             {
                 // throw "Error: Father ptr incompatible with current node\n";
-                ROS_ERROR("Error: Father ptr incompatible with current node");
+                ROS_ERROR_STREAM(RED << "Error: Father ptr incompatible with current node" << RESET);
             }
             if (new_root_node != nullptr)
                 new_root_node->father_ptr = father_ptr;

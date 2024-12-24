@@ -46,7 +46,7 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
 
     // // load_params();
     if (!load_lidar_slam_param()){
-        ROS_ERROR("Load lidar-slam param failed!");
+        ROS_ERROR_STREAM(RED << "Load lidar-slam param failed!" << RESET);
     }else {
         ROS_INFO("\033[1;32mLoad lidar-slam param successfully!\033[0m");
     }
@@ -63,7 +63,7 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
     lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type);
 
     if(!create_ROS_IO()){
-        ROS_ERROR("Create ROS-IO failed!");
+        ROS_ERROR_STREAM(RED << "Create ROS-IO failed!" << RESET);
     }else {
         ROS_INFO("Create ROS-IO successfully!");
     }
@@ -364,7 +364,7 @@ void LocalizationModule::detect_slipping(){
         if (slip_count_ > 3) {
             k_pos_ = 0.0;
             // std::cout << " --- slipping ---" << std::endl; 
-            ROS_WARN(" --- slipping ---") ; 
+            ROS_WARN_STREAM(YELLOW << " --- slipping ---"<< RESET) ; 
         }
         else slip_count_++;
     }
@@ -602,7 +602,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 // 以下为 pose filter timer 
 
 void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
-    ROS_ERROR("use_pose_filter");
+    ROS_ERROR_STREAM(RED << "use_pose_filter" << RESET);
     // param set
     const double lidar_cbk_delay_thr = slam_param_.localization.lidar_cbk_delay_thr;
     const int pub_frequency = 20;
@@ -655,7 +655,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     if(livox_update_time < 1){
         static int print_lidar_time_cnt = 0;
         if (print_lidar_time_cnt % 200 ==0){
-            ROS_WARN("pose_filter: not receive the first lidar yet! return!");
+            ROS_WARN_STREAM(YELLOW << "pose_filter: not receive the first lidar yet! return!"<< RESET);
             print_lidar_time_cnt = 0;
         }
         print_lidar_time_cnt++; // print_lidar_time_cnt only used here
@@ -663,18 +663,18 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         
     }else if(lidar_cbk_delay > lidar_cbk_delay_thr){
         log_info_manager_->l_status = L_FAILED;
-        ROS_ERROR("pose_filter: lidar_cbk_delay: %d ms", int(lidar_cbk_delay*1000));
+        ROS_ERROR_STREAM(RED << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
         // return;
     }else if(lidar_cbk_delay > 0.5){
         log_info_manager_->l_status = L_LOW_ACCURACY;
-        ROS_WARN("pose_filter: lidar_cbk_delay: %d ms", int(lidar_cbk_delay*1000));
+        ROS_WARN_STREAM(YELLOW << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
 
     }
 
     // if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
     if (is_mapping_status(curr_running_module_status)){
         if(log_info_manager_->m_status == M_FAILED){
-            ROS_ERROR("pose_filter: mapping_status: M_FAILED; return! skip pub pose");
+            ROS_ERROR_STREAM(RED << "pose_filter: mapping_status: M_FAILED; return! skip pub pose" << RESET);
             return;
         }
 
@@ -703,7 +703,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         // 定位模式
 
         if(log_info_manager_->l_status == L_FAILED){
-            ROS_ERROR("pose_filter: localization_status: L_FAILED; return! skip pub pose");
+            ROS_ERROR_STREAM(RED << "pose_filter: localization_status: L_FAILED; return! skip pub pose" << RESET);
             return;
         }
         
@@ -1072,7 +1072,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }else if(curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
         status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STOPPING;
     }else{
-        ROS_ERROR("error running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+        ROS_ERROR_STREAM(RED << "error running module status: "<< print_ModuleStatus(curr_running_module_status).c_str() <<RESET);
     }
     
 
@@ -1089,7 +1089,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }else if(log_info_manager_->m_status == M_STANDBY){
         status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_STANDBY;
     }else{
-        ROS_ERROR("error mapping status: %s", print_MappingStatus(log_info_manager_->m_status).c_str());
+        ROS_ERROR_STREAM(RED << "error mapping status: "<< print_MappingStatus(log_info_manager_->m_status).c_str() <<RESET);
     }
 
     // fill status_msg.localization_status
@@ -1107,7 +1107,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     }else if(log_info_manager_->l_status == L_FAILED){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
     }else{
-        ROS_ERROR("error localization status: %s", print_LocalizationStatus(log_info_manager_->l_status).c_str());
+        ROS_ERROR_STREAM(RED << "error localization status: " << print_LocalizationStatus(log_info_manager_->l_status).c_str() <<RESET);
     }
 
     pub_localization_module_status_.publish(status_msg);
@@ -1200,7 +1200,7 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     // printf("lidar-callback, time cost: %lf ms \033[0m\n", (t1-t0) *1000);
-    ROS_INFO("lidar-callback, time cost: %lf ms ", (t1-t0) *1000);
+    ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t1 - t0)*1000 << " ms" <<RESET);
 }
 
 
@@ -1576,7 +1576,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         }else{
             set_module_status_ = running_module_status_;
             release_slam_obj();
-            ROS_WARN("slam obj destroyed!");
+            ROS_WARN_STREAM(YELLOW << "slam obj destroyed!"<< RESET);
         }
     }else if (set_module_status_ == ModuleStatus::MODULE_LOCALIZATION){
         // TODO
@@ -1602,7 +1602,7 @@ bool LocalizationModule::load_lidar_slam_param(){
     const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
 
     if (loaded_param == NULL) {
-        ROS_ERROR("loaded_param is NULL");
+        ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
         return false;
     }else{
         slam_param_ = *loaded_param;

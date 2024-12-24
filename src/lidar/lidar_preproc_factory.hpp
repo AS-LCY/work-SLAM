@@ -29,7 +29,7 @@ public:
             lidar_preproc_tmp.reset(new LidarPreprocAiry());
         }else {
             lidar_preproc_tmp.reset();
-            ROS_ERROR("Unknown lidar type(==%d) in lidar factory!", lidar_type);
+            ROS_ERROR_STREAM(RED << "Unknown lidar type(==" << lidar_type <<") in lidar factory!" <<RESET);
             exit(0);
         }
 
@@ -48,7 +48,7 @@ public:
     //         lidar_preproc_tmp.reset(new LidarPreprocAiry(prefix));
     //     } else {
     //         lidar_preproc_tmp.reset();
-    //         ROS_ERROR("Unknown lidar type in lidar factory!");
+    //         ROS_ERROR_STREAM(RED << "Unknown lidar type in lidar factory!" << RESET);
     //         exit(0);
     //     }
 

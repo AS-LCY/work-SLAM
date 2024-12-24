@@ -62,9 +62,9 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             }else{
                 // running_module_status_ = last_running_module_status_;
                 running_module_status_.store(last_running_module_status_);                
-                ROS_ERROR("Start Sec-mapping failed!");
+                ROS_ERROR_STREAM(RED << "Start Sec-mapping failed!" <<RESET);
                 release_slam_obj();
-                ROS_WARN("slam obj destroyed!");
+                ROS_WARN_STREAM(YELLOW << "slam obj destroyed!"<< RESET);
                 // set_module_status_ = last_running_module_status_;
             }
             set_module_status_ = ModuleStatus::MODULE_IDLE;// 复位为空
@@ -152,7 +152,7 @@ void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &ms
             if(start_relocalization(map_id)){
                 ROS_INFO("restart localization successfully!");
             }else{
-                ROS_ERROR("start_relocalization failed!");
+                ROS_ERROR_STREAM(RED << "start_relocalization failed!" <<RESET);
             }
 
             break;
@@ -211,7 +211,7 @@ bool LocalizationModule::start_second_mapping(ModuleStatus set_status, int map_i
         // 加载地图
         // ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout 可以正常打印中文
         if(!slam_ -> load_map(load_map_dir)){
-            ROS_ERROR("load map failed!");
+            ROS_ERROR_STREAM(RED << "load map failed!" <<RESET);
             return false;
         }
         // mapping_status_ = M_STANDBY;
@@ -354,7 +354,7 @@ bool LocalizationModule::stop_mapping(){
             std::string pcd_dir = slam_param_.common.map_directory;
             const auto resolution = slam_param_.mapping.save_map_resolution;
             if(!slam_->save_map(pcd_dir, resolution, 0, 0)){
-                ROS_ERROR("save map data failed!");
+                ROS_ERROR_STREAM(RED << "save map data failed!" <<RESET);
             }else{
                 ROS_INFO("\033[1;32msave map data success!\033[0m");
             }
@@ -420,7 +420,7 @@ bool LocalizationModule::start_localization(ModuleStatus set_status, int map_id)
         // ROS_INFO("load map dir: %s", load_map_dir.c_str());
         // slam_ -> load_map(load_map_dir);
         if(!slam_ -> load_map(load_map_dir)){
-            ROS_ERROR("load map failed!");
+            ROS_ERROR_STREAM(RED << "load map failed!" <<RESET);
             return false;
         }
         show_load_map_=0;
@@ -519,7 +519,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     }else if(set_status == ModuleStatus::MODULE_LOCALIZATION){
         set_slam_mode = lidar_slam::SlamWorkMode::LOCALIZATION;
     }else{
-        ROS_ERROR("ModuleStatus: %s, status error!", print_ModuleStatus(set_status).c_str());
+        ROS_ERROR_STREAM(RED << "ModuleStatus: " << print_ModuleStatus(set_status).c_str() << ", status error!" <<RESET);
         return false;
     }
     ROS_INFO("Making obj(lidar_slam) --- with: set_slam_mode = %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());

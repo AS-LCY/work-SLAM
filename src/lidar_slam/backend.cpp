@@ -876,7 +876,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     ROS_INFO( "****************************************************");
     if (KeyPoses.empty() || KeyPoses.size()==0){
         // cout<<"key frame empty"<<endl;
-        ROS_WARN("key frame empty");
+        ROS_WARN_STREAM(YELLOW << "key frame empty" << RESET);
         return false;
     }
     // 检查并创建 yaml 中的地图路径
@@ -885,7 +885,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         ROS_INFO_STREAM("Directory created or already exists: " << saveMapDirectory);
     } else {
         // std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
-        ROS_ERROR_STREAM("Failed to create directory: " << saveMapDirectory );
+        ROS_ERROR_STREAM(RED << "Failed to create directory: " << saveMapDirectory  <<RESET);
         return false;
     }
     // 创建关键帧点云保存路径
@@ -895,7 +895,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         ROS_INFO_STREAM("Directory created or already exists: " << save_key_frame_cloud_dir);
     } else {
         // std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
-        ROS_ERROR_STREAM("Failed to create directory: " << save_key_frame_cloud_dir);
+        ROS_ERROR_STREAM(RED << "Failed to create directory: " << save_key_frame_cloud_dir <<RESET);
         return false;
     }
 
@@ -915,7 +915,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         // pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
     }else if(start_index == -1 || end_index == -1){
         // cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
-        ROS_WARN("start-point or end-point not set, save all to cloud_map.pcd ");
+        ROS_WARN_STREAM(YELLOW << "start-point or end-point not set, save all to cloud_map.pcd "<< RESET);
         start = 0;
         end = KeyPosesSize -1;
     }else{
@@ -960,7 +960,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
     if(ret == -1){
         // cout << "save cloud-map failed" << endl; 
-        ROS_ERROR("save cloud-map failed"); 
+        ROS_ERROR_STREAM(RED << "save cloud-map failed" << RESET); 
         return false;
     }else if(ret ==0){
         // cout << "Saving map to pcd files completed" << endl;
@@ -975,12 +975,12 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
     if (!file.is_open()){
         // cout << "sc data file open failed" << endl; 
-        ROS_ERROR("sc data file open failed"); 
+        ROS_ERROR_STREAM(RED << "sc data file open failed" << RESET); 
         return false;
     }
     if(!file_pose.is_open()){
         // cout << "key_frame_pose file open failed" << endl; 
-        ROS_ERROR("key_frame_pose file open failed");
+        ROS_ERROR_STREAM(RED << "key_frame_pose file open failed" << RESET);
         return false;
     }
     // for (int i = 0; i < (int)KeyPoses.size(); i++) {
@@ -1015,7 +1015,7 @@ if (0 != access(directory_path.c_str(), 0)){
             return true; // 创建目录成功
         }else{
             // std::cerr << "Error creating directory: " << directory_path << std::endl;
-            ROS_ERROR_STREAM("Error creating directory: " << directory_path);
+            ROS_ERROR_STREAM(RED << "Error creating directory: " << directory_path <<RESET);
             return false; // 创建目录失败
         }
     }else{
@@ -1033,7 +1033,7 @@ if (0 != access(directory_path.c_str(), 0)){
             return true; // 创建目录成功
         }catch (const std::filesystem::filesystem_error& ex){
             // std::cerr << "Error creating directory: " << ex.what() << std::endl;
-            ROS_ERROR_STREAM("Error creating directory: " << ex.what() );
+            ROS_ERROR_STREAM(RED << "Error creating directory: " << ex.what()  <<RESET);
             return false; // 创建目录失败
         }
     } else {

@@ -256,7 +256,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
 void LidarSlam::reset(const std::string work_path,bool localization_mode,bool offline, bool second_mapping){
     // cout << "this reset func has already been disabled, please use the new one"<<endl;
-    ROS_WARN("this reset func has already been disabled, please use new version");
+    ROS_WARN_STREAM(YELLOW << "this reset func has already been disabled, please use new version" << RESET);
     return;
 }
 
@@ -276,7 +276,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
        return false;
     if (lidar_pushed && omp_get_wtime()-time_buffer.front() > 1.5*0.1){
         // printf("lidar lose rate %f \n",omp_get_wtime()-time_buffer.front());
-        ROS_WARN("lidar lose rate %f ",omp_get_wtime()-time_buffer.front());
+        ROS_WARN_STREAM(RED << "lidar lose rate: " << omp_get_wtime()-time_buffer.front() << RESET);
     }
     /*** push a lidar scan ***/
     if (!lidar_pushed)
@@ -289,7 +289,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
         {
             lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime; // 记录lidar结束时间为 起始时间 + 单帧扫描时间
             // printf("Too few input point cloud!\n");
-            ROS_WARN("Too few input point cloud!");
+            ROS_WARN_STREAM(YELLOW << "Too few input point cloud!" << RESET);
         }
         else if (meas.lidar->points.back().curvature / double(1000) < 0.5 * lidar_mean_scantime) //最后一个点的时间 小于 单帧扫描时间的一半
         {
@@ -443,6 +443,7 @@ void LidarSlam::localizationThread()
                     // cout << YELLOW << "globalLocalization failed: map not ready ... "<< RESET <<endl;
                     ROS_WARN_STREAM( YELLOW << "globalLocalization failed: map not ready ... "<< RESET);
                 }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                    // cout << "globalLocalization failed: cloud empty ... "<<endl;
                     ROS_WARN_STREAM(YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET);
                 // check end
                 }else{
@@ -494,7 +495,7 @@ void LidarSlam::localizationThread()
                 }else{
                     gicp_fail_count ++;
                     // std::cout<< "fast gicp fail count: "<<gicp_fail_count<<endl;
-                    ROS_INFO_STREAM("fast gicp fail count: "<<gicp_fail_count);
+                    ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
                     if (gicp_fail_count > 5){// 连续多帧 fast-gicp 失败，则认为定位失败
                         // l_status_ = L_FAILED;
                         log_info_manager_->l_status = L_FAILED;
@@ -541,7 +542,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
         // if(m_status_ == M_RELOCALIZE_FAILED){
         if(log_info_manager_->m_status = M_RELOCALIZE_FAILED){
             // cout << "global Localization failed: time out "<<endl;
-            ROS_ERROR_STREAM("global Localization failed: time out ");
+            ROS_ERROR_STREAM(RED <<  "global Localization failed: time out " << RESET);
         }else {
             if (!globalLocalizationSuccess){
                 if(!cloud_map_manager_->get_map_data_status()){
@@ -606,7 +607,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                 }
                 if (global_localize_count > global_localize_times){
                     // cout << "global Localization failed: time out"<<endl;
-                    ROS_ERROR_STREAM("global Localization failed: time out");
+                    ROS_ERROR_STREAM(RED << "global Localization failed: time out" <<RESET);
                     // m_status_ = M_RELOCALIZE_FAILED;
                     log_info_manager_->m_status = M_RELOCALIZE_FAILED;
                     
@@ -665,12 +666,12 @@ void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
 
     /*  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
         // printf("lidar lose rate");
-        ROS_WARN("lidar lose rate");
+        ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
     }*/ 
 
     if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
         // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, curr_time);
-        ROS_WARN("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf ", last_timestamp_imu, curr_time);
+        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
     }
 
     if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
@@ -710,21 +711,21 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     if (msg->time_stamp < last_timestamp_lidar)
     {
         // printf("lidar loop back, clear buffer");
-        ROS_WARN("lidar loop back, clear buffer");
+        ROS_WARN_STREAM(YELLOW << "lidar loop back, clear buffer"<< RESET);
         lidar_buffer.clear();
         // cout<<"************************* lidar_buffer clear *********"<<endl;
         ROS_WARN_STREAM(YELLOW<<"************************* lidar_buffer clear *********"<<RESET);
     }
     /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
         // printf("lidar lose rate");
-        ROS_ERROR("lidar lose rate");
+        ROS_ERROR_STREAM(RED << "lidar lose rate" << RESET);
     }*/ 
     last_timestamp_lidar = msg->time_stamp;
 
     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
     {
         // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
-        ROS_WARN("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf ", last_timestamp_imu, last_timestamp_lidar);
+        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<<last_timestamp_imu <<", lidar header time: "<< last_timestamp_lidar<<RESET);
     }
 
     if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
@@ -946,12 +947,12 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
     if (timestamp < last_timestamp_imu)
     {
         // printf("imu loop back, clear buffer\n");
-        ROS_WARN("imu loop back, clear buffer");
+        ROS_WARN_STREAM(YELLOW << "imu loop back, clear buffer" <<RESET);
         imu_buffer.clear();
     }
     else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
         // printf("imu lose rate\n");
-        ROS_WARN("imu lose rate");
+        ROS_WARN_STREAM(YELLOW << "imu lose rate" <<RESET);
     }
     imu_buffer.push_back(msg);
     // cout<<"************************* imu_buffer push back *********"<<endl;
@@ -1091,7 +1092,7 @@ bool LidarSlam::run()
                 }
             }
             // std::cout << "No point, skip this scan!\n"<< std::endl;
-            ROS_WARN("No point, skip this scan!");
+            ROS_WARN_STREAM(YELLOW << "No point, skip this scan!" << RESET);
             return false;
         }
 
@@ -1156,7 +1157,7 @@ bool LidarSlam::run()
                 }
             }
             // std::cout <<"No point after filter, skip this scan!"<<std::endl;
-            ROS_WARN("No point after filter, skip this scan!");
+            ROS_WARN_STREAM(YELLOW << "No point after filter, skip this scan!" << RESET);
             return false;
         }else{
             lidar_no_point_count_ = 0;

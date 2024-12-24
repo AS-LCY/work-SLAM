@@ -27,13 +27,13 @@ bool CloudMap::load_map_data(std::string map_dir){
     
     if(!load_cloud_map(map_dir)){
         // cout<<"load cloud map failed!"<<endl;
-        ROS_ERROR("load cloud map failed!");
+        ROS_ERROR_STREAM(RED << "load cloud map failed!" << RESET);
         return false;
     }
     std::string keyframe_dir = map_dir + "/key_frame_cloud/";
     if(!load_key_frames(keyframe_dir)){
         // cout<<"load key frame clouds failed!"<<endl;
-        ROS_ERROR("load key frame clouds failed!");
+        ROS_ERROR_STREAM(RED << "load key frame clouds failed!" << RESET);
         return false;
     }
 
@@ -59,7 +59,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         }
     } catch (const std::exception& e) {
         // std::cerr << "Exception occurred: " << e.what() << std::endl;
-        ROS_ERROR_STREAM("\nException occurred: " << e.what());
+        ROS_ERROR_STREAM(RED << "\nException occurred: " << e.what() <<RESET);
     }
 
     /// read data line by line, split one line by ","
@@ -133,7 +133,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
             ROS_INFO_STREAM("success -- points count: "<<temp_cloud->points.size());
         }else {
             // std::cerr << "failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist." << std::endl;
-            ROS_ERROR_STREAM("failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist.");
+            ROS_ERROR_STREAM(RED << "failed -- key cloud file "<< std::to_string(pose_index) <<".pcd does not exist." <<RESET);
             return false;
         }
     }
@@ -174,7 +174,7 @@ bool CloudMap::load_cloud_map(std::string map_dir){
         }
     } catch (const std::exception& e) {
         // std::cerr << "Exception occurred: " << e.what() << std::endl;
-        ROS_ERROR_STREAM("Exception occurred: " << e.what());
+        ROS_ERROR_STREAM(RED << "Exception occurred: " << e.what() <<RESET);
     }
     
     // KeyMat polarcontext_invkeys_mat;
@@ -208,7 +208,7 @@ bool CloudMap::load_cloud_map(std::string map_dir){
         /// check： sc 数据 size 是否对应
         if (values.size() - index != (maxrow*maxcol)){
             // std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
-            ROS_ERROR_STREAM(" error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol);
+            ROS_ERROR_STREAM(RED << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol <<RESET);
             return false;
         }
 

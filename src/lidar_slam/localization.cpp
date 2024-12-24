@@ -73,7 +73,7 @@ bool Localization::loadMap(std::string path){
     }
     if (CloudGlobalMap->points.size() == 0){
         // std::cerr << "Failed to load map." << std::endl;
-        ROS_ERROR("Failed to load map." );
+        ROS_ERROR_STREAM(RED << "Failed to load map."  << RESET);
         return false;            
     }
     std::vector<std::string> files;
@@ -96,7 +96,7 @@ bool Localization::loadMap(std::string path){
         std::ifstream file(filename);
         if (!file) {
             // std::cerr << "Failed to open file "<< filename << std::endl;
-            ROS_ERROR_STREAM("Failed to open file "<< filename );
+            ROS_ERROR_STREAM(RED << "Failed to open file "<< filename  <<RESET);
             continue;
         }
         else{
@@ -134,7 +134,7 @@ bool Localization::loadMap(std::string path){
             int maxcol = values[index++];
             if (values.size() - index != (maxrow*maxcol)){
                 // std::cout << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol<< std::endl;
-                ROS_ERROR_STREAM(" error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol);
+                ROS_ERROR_STREAM(RED << " error :"<<values.size()<<" "<<index<<" "<<maxrow*maxcol <<RESET);
                 return false;
             }
             readData.polarcontext.resize(maxrow,maxcol);
@@ -191,7 +191,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 
     if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
         // std::cout << "gicp fail, score: "<< gicp->getFitnessScore()<<std::endl;
-        ROS_ERROR_STREAM("gicp fail, score: "<< gicp->getFitnessScore());
+        ROS_ERROR_STREAM(RED << "gicp fail, score: "<< gicp->getFitnessScore() <<RESET);
         return false;
     }
     else{
@@ -311,7 +311,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
 { 
     if (!map_ready_) {
         // cout<<"map not ready"<<endl;
-        ROS_WARN("map not ready");
+        ROS_WARN_STREAM(YELLOW << "map not ready" << RESET);
         return false;
     }
     // std::cout << "-------------------------------------------"<<std::endl;
@@ -353,7 +353,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         if (match.first != -1){
         //   std::cout <<"trans: "<< t.first << " " <<t.second;
         //   std::cout <<" score: "<<sc_dist<<std::endl;
-          ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<" score: "<<sc_dist);
+            ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<" score: "<<sc_dist);
         }
         if (sc_dist < min_dist) {
             min_dist = sc_dist;

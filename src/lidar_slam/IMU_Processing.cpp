@@ -29,7 +29,7 @@ ImuProcess::~ImuProcess() {}
 
 void ImuProcess::Reset()   //重置参数
 {
-  // ROS_WARN("Reset ImuProcess");
+  // ROS_WARN_STREAM(YELLOW << "Reset ImuProcess" << RESET);
   mean_acc = V3D(0, 0, -1.0);
   mean_gyr = V3D(0, 0, 0);
   angvel_last = Vector3d(0, 0, 0);
@@ -258,7 +258,8 @@ void ImuProcess::Process(const MeasureGroup &meas, esekfom::esekf &kf_state, Poi
 
       cov_acc = cov_acc_scale;// 初始化用的是cov_acc，即V3D(0.1, 0.1, 0.1)，然后初始化完成后切换到cov_acc_scale
       cov_gyr = cov_gyr_scale;
-      printf("IMU Initial Done\n");
+      // printf("IMU Initial Done\n");
+      ROS_INFO_STREAM(GREEN << "IMU Initial Done" << RESET);
     }
 
     return;

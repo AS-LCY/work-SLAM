@@ -218,12 +218,12 @@ bool GlobalLocalization::global_localize(PointCloudXYZI::Ptr cloud_in,
     /// make ScanContext using loaded_sc_info
     if(!global_map_ready_){
         // std::cout<<"global map not ready!" <<std::endl;
-        ROS_ERROR("global map not ready!");
+        ROS_ERROR_STREAM(RED << "global map not ready!" << RESET);
         return false;
     }
     if(!sc_manager_ready_){
         // std::cout<<"sc manager not ready!" <<std::endl;
-        ROS_ERROR("sc manager not ready!");
+        ROS_ERROR_STREAM(RED << "sc manager not ready!" << RESET);
         return false;
     }
     
@@ -238,12 +238,12 @@ bool GlobalLocalization::global_localize(PointCloudXYZI::Ptr cloud_in,
     std::pair<double, double> best_trans;
     if(!scancontex_search(cloud_in, initial_rotate, best_match, best_trans)){
         // std::cout<<"scancontex search failed!" <<std::endl;
-        ROS_ERROR("scancontex search failed!");
+        ROS_ERROR_STREAM(RED << "scancontex search failed!" << RESET);
         return false;
     }
     int best_match_idx = best_match.first;
     // std::cout << "scancontext search success, use index "<< best_match_idx <<std::endl;
-    ROS_ERROR_STREAM("scancontext search success, use index "<< best_match_idx);
+    ROS_ERROR_STREAM(RED << "scancontext search success, use index "<< best_match_idx <<RESET);
 
     /// get init transform ************************************************************************
     Eigen::Matrix4d init_guess = cal_init_transform(initial_rotate, best_match, best_trans);     
@@ -308,7 +308,7 @@ bool GlobalLocalization::scancontex_search(PointCloudXYZI::Ptr cloud_in, Matrix3
 
     if(match_idx == -1){
         // std::cout << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist<<std::endl;
-        ROS_ERROR_STREAM("scancontext search fail, score {}: "<<match_idx<<" "<< min_dist);
+        ROS_ERROR_STREAM(RED << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist <<RESET);
         return false;
     }else{
         return true;// match_idx != -1, (scancontext search success)
@@ -382,7 +382,7 @@ bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::I
     // 未收敛，或者匹配不够好
     if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr){//TODO add number in getFitnessScore
         // std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
-        ROS_ERROR_STREAM("globalLocalization icp fail with score: "<< icp.getFitnessScore());
+        ROS_ERROR_STREAM(RED << "globalLocalization icp fail with score: "<< icp.getFitnessScore() <<RESET);
         return false;
     }else{
         // std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
@@ -431,7 +431,7 @@ bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info){
     // std::cout <<"debug: start fill_sc_manager!"<<std::endl;
     if(input_sc_info.empty() || input_sc_info.size()==0){
         // std::cout <<" loaded sc info empty!"<<std::endl;
-        ROS_WARN(" loaded sc info empty!");
+        ROS_WARN_STREAM( YELLOW << " loaded sc info empty!"<< RESET);
         return false;
     }
 
