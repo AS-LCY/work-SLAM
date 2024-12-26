@@ -8,10 +8,10 @@ LidarPreprocAiry::LidarPreprocAiry(){
         ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
         // ROS_INFO("\033[0;32mSet lidar-Airy param successfully!\033[0m");
-        ROS_INFO("\033[0;32mSet lidar-Ring param successfully!\033[0m");
+        ROS_INFO("Set lidar-Ring param successfully!");
     }
     // ROS_INFO("\033[1;32mReset to lidar_preproc_Airy successfully!\033[0m");
-    ROS_INFO("\033[0;32mReset to lidar_preproc_Ring successfully!\033[0m");
+    ROS_INFO("Reset to lidar_preproc_Ring successfully!");
 }
 
 

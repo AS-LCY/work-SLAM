@@ -11,8 +11,9 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/3-vanjee/v4-mapping/data_from_vj/722建图bag包/3dmap/"
+  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  # map_directory: "/home/pmm/data/3-vanjee/v3-test-mapping/1214-23f-ouzh/data2vanjee/fldata_trans/3dmap/"
+  # map_directory: "/home/pmm/data/3-vanjee/v4-mapping/data_from_vj/722建图bag包/3dmap/"
   # map_directory: "/home/pmm/data/4-comp-rs-vj/1-1121/09-vj/3dmap"
   # map_directory: "/home/pmm/data/3-vanjee/v2-360-imu/1112/32xian/4/3dmap"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
@@ -35,6 +36,7 @@ extrinsic:
   # extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
 
   extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
   extrinsic_euler_lidar_in_baselink: [1.405099, 0.819599, 0.320799] # unit(degree) yaw, pitch, roll
   # roll: 0.320799                                       # 横滚角偏移量 °
   # pitch: 0.819599                                      # 俯仰角偏移量 °
@@ -68,6 +70,7 @@ lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 
   sub_lidar_topic: "/vanjee/lidar"
   sub_imu_topic: "/vanjee/imu"
+  # sub_imu_topic: "/trans/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1.5 
   flag_keep_only_last_lidar: true

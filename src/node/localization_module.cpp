@@ -46,9 +46,9 @@ LocalizationModule::LocalizationModule(/*const std::string work_path,*/ ModuleSt
 
     // // load_params();
     if (!load_lidar_slam_param()){
-        ROS_ERROR_STREAM(RED << "Load lidar-slam param failed!" << RESET);
+        ROS_ERROR_STREAM(BOLDRED << "Load lidar-slam param failed!" << RESET);
     }else {
-        ROS_INFO("\033[1;32mLoad lidar-slam param successfully!\033[0m");
+        ROS_INFO("Load lidar-slam param successfully!");
     }
 
     //************************** CPU 绑定 *******************************
@@ -388,7 +388,6 @@ bool LocalizationModule::create_ROS_IO(){
     
     // timer dealt ********************************************************************
 
-    // timer_pose_filter_ = nh_.createTimer(ros::Duration(0.01), &LocalizationModule::pose_filter_timer, this);
     timer_module_status_ = nh_.createTimer(ros::Duration(0.05), &LocalizationModule::pub_module_status_timer, this);
     
     // publish ************************************************************************
@@ -413,14 +412,12 @@ bool LocalizationModule::create_ROS_IO(){
 
     nh3_.setCallbackQueue(&slam_ctrl_queue_);
     sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
-
+    
+    ROS_INFO_STREAM(BOLDGREEN << "use_pose_filter: " << slam_param_.common.use_pose_filter <<RESET);
     if(slam_param_.common.use_pose_filter){
         nh4_.setCallbackQueue(&pose_filter_queue_);
         const double time_interval = 1.0 / (slam_param_.localization.filter_freq*1.0);
         timer_pose_filter_ = nh4_.createTimer(ros::Duration(time_interval), &LocalizationModule::pose_filter_timer, this);
-        //启动一个线程处理 pose filter 单独的队列
-        ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
-        spinner_4.start();
     }
 
 
@@ -460,6 +457,12 @@ bool LocalizationModule::create_ROS_IO(){
     spinner_3.start();
 
 
+    //启动一个线程处理 pose filter 单独的队列
+    ros::AsyncSpinner spinner_4(1, &pose_filter_queue_);
+
+    if(slam_param_.common.use_pose_filter){
+        spinner_4.start();
+    }
 
     ros::waitForShutdown(); 
 
@@ -602,7 +605,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 // 以下为 pose filter timer 
 
 void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
-    ROS_ERROR_STREAM(RED << "use_pose_filter" << RESET);
+    // ROS_INFO_STREAM(RED << "use_pose_filter" << RESET);
     // param set
     const double lidar_cbk_delay_thr = slam_param_.localization.lidar_cbk_delay_thr;
     const int pub_frequency = 20;

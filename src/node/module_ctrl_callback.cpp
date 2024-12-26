@@ -547,12 +547,12 @@ void LocalizationModule::release_slam_obj(){
 
     lidar_slam::LidarSlam *temp_slam = slam_.release();
     // cout<<"debug: temp_slam: "<<temp_slam<<endl;
-    ROS_INFO("debug: release successfully");
+    // ROS_INFO("debug: release successfully");
     delete temp_slam;
     // cout<<"temp_slam: "<<temp_slam<<endl;
-    ROS_INFO("debug: delete successfully");
+    // ROS_INFO("debug: delete successfully");
     temp_slam = nullptr;
-    ROS_INFO("debug: set nullptr successfully");
+    // ROS_INFO("debug: set nullptr successfully");
 
     start_index_ = -1;
     end_index_ = -1;

@@ -207,9 +207,9 @@ public:
         get_param(ns+ "ikdtree/kdTreeReconstructPointLeafSize", loaded_param_.ikdtree.kdTreeReconstructPointLeafSize, &success);
         get_param(ns+ "ikdtree/map_leaf_size", loaded_param_.ikdtree.map_leaf_size, &success);
 
-        ROS_INFO_STREAM(YELLOW<<"run_on_mower: "<<loaded_param_.common.run_on_mower<<RESET);
+        ROS_INFO_STREAM(BOLDGREEN<<"run_on_mower: "<<loaded_param_.common.run_on_mower<<RESET);
         ROS_INFO_STREAM(YELLOW<<"set cpu_id size: " <<loaded_param_.common.cpu_id.size()<<RESET);
-        ROS_INFO_STREAM(YELLOW<<"map directory: " <<BOLDYELLOW<< loaded_param_.common.map_directory<<RESET);
+        ROS_INFO_STREAM(YELLOW<<"map directory: " << loaded_param_.common.map_directory<<RESET);
 
         return success;
 	}

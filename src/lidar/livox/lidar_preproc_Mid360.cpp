@@ -7,9 +7,10 @@ LidarPreprocMid360::LidarPreprocMid360(){
     if(!set_param()){
         ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
-        ROS_INFO("\033[1;32mSet lidar-Mid360 param successfully!\033[0m");
+        ROS_INFO("Set lidar-Mid360 param successfully!");
     }
 
+    ROS_INFO("Reset to LidarPreproc-Mid360 successfully!");
 
 }
 
@@ -132,7 +133,7 @@ bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> 
     }
     
     // printf("extract lidar count: %ld\n", pcl_cld_out->points.size());
-    ROS_INFO("extract lidar count: %ld\n", pcl_cld_out->points.size());
+    ROS_INFO("extract lidar count: %ld", pcl_cld_out->points.size());
     return true;
     
 }

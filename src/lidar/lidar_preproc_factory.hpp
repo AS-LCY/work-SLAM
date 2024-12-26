@@ -20,7 +20,7 @@ public:
         std::shared_ptr<LidarPreprocParent> lidar_preproc_tmp;
         ROS_INFO("---");
         ROS_INFO("valid lidar_type in factory: 1-lvx-Mid360 | 2-RS-Airy | 3-Vanjee722 ");
-        ROS_INFO_STREAM(GREEN<<"curr  lidar_type: "<<lidar_type<<RESET);
+        ROS_INFO_STREAM(BOLDGREEN<<"curr lidar_type: "<<lidar_type<<RESET);
         if (lidar_type == 1){
             lidar_preproc_tmp.reset(new LidarPreprocMid360());
         }else if(lidar_type == 2){ 
