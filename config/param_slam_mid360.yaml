@@ -1,5 +1,5 @@
 common:
-  run_on_mower: true # true / false, default to: true
+  run_on_mower: false # true / false, default to: true
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -12,6 +12,7 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
   # map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
   # map_directory: "/home/pmm/data/1-livox/v2/1017/3/3dmap"
   # map_directory: "/home/pmm/data/1-livox/1107/maps-2/3dmap"
