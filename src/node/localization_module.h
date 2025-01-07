@@ -100,6 +100,7 @@ enum SlamCtrlCmd{
     START_LOCALIZATION      = 7000,  // 重定位->定位
     EXIT_LOCALIZATION       = 8000,  // 退出定位
     START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位
+    RESTART_SEC_MAPPING     = 9100,  // 重启二次建图（一般是二次建图重定位失败的情况）
     CMD_MAX
 };
 
@@ -136,8 +137,9 @@ private:
     // void start_localization(bool module_mode, int map_id);
     bool stop_localization();
 
-    bool start_relocalization(int map_id);
-
+    bool start_relocalization(int map_id); // = restart_localization;;
+    bool restart_second_mapping( int map_id);
+    bool stop_mapping_without_saving_map();
 
     bool init_module_by_set_status(ModuleStatus set_status);
     // void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
@@ -205,6 +207,7 @@ private:
         CASE_STR(START_LOCALIZATION);
         CASE_STR(EXIT_LOCALIZATION);
         CASE_STR(START_RELOCALIZATION);
+        CASE_STR(RESTART_SEC_MAPPING);
         CASE_STR(CMD_MAX);
         default:
             break;
@@ -313,6 +316,7 @@ private:
     //ros::Publisher image_pub;    
 
     ros::Publisher pub_base_imu_;
+    ros::Publisher pub_key_cloud_;
 
 
     /// params load from yaml

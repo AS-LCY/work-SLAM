@@ -1228,6 +1228,7 @@ bool LidarSlam::run()
                     state_updated.pos = T_odom_b.translation();
                     state_updated.rot =  Sophus::SO3d(T_odom_b.rotation());
                     kf.change_x(state_updated); 
+                    new_key_cloud_arrived_ = true;
                 }
 
                 // 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree

@@ -336,11 +336,20 @@ class LidarSlam
         //     return "UNKNOW_SlamWorkMode!";
         // }
 
+        void set_new_key_cloud_arrived(bool flag){
+            new_key_cloud_arrived_ = flag;
+        }
+
+        bool get_new_key_cloud_arrived(){
+            return new_key_cloud_arrived_;
+        }
+
     private:
         // LidarParam param;
         LidarSlamParam config_param_;
         int feats_down_size_thr_ = 100;
         bool flag_keep_only_last_lidar_ = true;
+        bool new_key_cloud_arrived_ = false;
 
 
         deque<double> time_buffer;               // 记录lidar时间

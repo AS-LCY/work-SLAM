@@ -9,6 +9,7 @@
 #include "lidar/lidar_preproc_parent.h"
 #include "lidar/livox/lidar_preproc_Mid360.h"
 #include "lidar/robosense/lidar_preproc_Airy.h"
+#include "lidar/vanjee/lidar_preproc_Vanjee722.h"
 
 
 namespace localization_module {
@@ -26,7 +27,7 @@ public:
         }else if(lidar_type == 2){ 
             lidar_preproc_tmp.reset(new LidarPreprocAiry());
         }else if(lidar_type == 3){ // vanjee 数据类型与 rslidar 一样, 共用
-            lidar_preproc_tmp.reset(new LidarPreprocAiry());
+            lidar_preproc_tmp.reset(new LidarPreprocVanjee722());
         }else {
             lidar_preproc_tmp.reset();
             ROS_ERROR_STREAM(RED << "Unknown lidar type(==" << lidar_type <<") in lidar factory!" <<RESET);

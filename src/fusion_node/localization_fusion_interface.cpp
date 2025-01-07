@@ -133,6 +133,7 @@ void LocalizationFusion::pub_localiztion(){
 
     Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
     T_lidar2map = T_base2map * T_lidar2baselink_;
+    // T_lidar2map = T_base2map;
 
     fusion_odom.pose.pose.position.x = T_lidar2map.translation().x();
     fusion_odom.pose.pose.position.y = T_lidar2map.translation().y();

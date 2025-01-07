@@ -13,6 +13,8 @@
 #include "lidar/livox/pcl_point_type_def_lvx.h"
 #include "lidar/livox/ros_livox_datatype_def.h"
 #include "lidar/robosense/pcl_point_type_def_rbs.h"
+#include "lidar/vanjee/pcl_point_type_def_vj.h"
+
 
 namespace localization_module{
 class LidarPreprocParent{
@@ -27,9 +29,13 @@ public:
     
     // for robosense
     virtual bool pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_in, PointCloudXYZI::Ptr pcl_cld_out){return true;}
-    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_out){return true;}
-    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){return true;}
+    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_out){return true;} // not used for now
     
+    // for vanjee 
+    virtual bool pre_process(const pcl::PointCloud<VjPointXYZIRT>::Ptr pcl_cld_in, PointCloudXYZI::Ptr pcl_cld_out){return true;}
+    
+    // for robosense & vanjee
+    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){return true;}
 
 
 protected:

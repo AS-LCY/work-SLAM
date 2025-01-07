@@ -425,7 +425,8 @@ bool LocalizationModule::create_ROS_IO(){
 
     // publish TODO: 还需要区分哪些是建图或定位发布的
     pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 100000);  
-	pubBodyCloud = nh_.advertise<sensor_msgs::PointCloud2>("/body_cloud", 100000);
+	pubBodyCloud = nh_.advertise<sensor_msgs::PointCloud2>("/body_cloud", 20);
+	pub_key_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/key_body_cloud", 20);
     pubObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/obstacle_cloud", 100000);
     pubFilteredObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/filtered_obstacle_cloud", 100000);
     pubTestCloud = nh_.advertise<sensor_msgs::PointCloud2>("/test_cloud", 100000);
@@ -528,7 +529,6 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 
 
    
-    // ROS_INFO("trying to get loaded map...");
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
     // if (show_load_map_==0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
@@ -581,6 +581,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_footprint", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        if(slam_->get_new_key_cloud_arrived()){
+            pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
+            slam_->set_new_key_cloud_arrived(false);
+        }
         visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
         // pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
         publish_unoptimized_path(slam_->get_unoptimized_path(),string("map"),pubUnoptimizedPath);
