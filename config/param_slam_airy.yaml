@@ -18,6 +18,7 @@ common:
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
+  pub_topic_module_health: "/flbot/localization_module/module_health"
   pub_topic_module_loginfo: "/flbot/localization_module/log_info"
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second

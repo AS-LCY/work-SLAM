@@ -42,6 +42,7 @@ public:
         get_param(ns+ "common/map_directory", loaded_param_.common.map_directory, &success);
         get_param(ns+ "common/sub_topic_ctrl_cmd", loaded_param_.common.sub_topic_ctrl_cmd, &success);
         get_param(ns+ "common/pub_topic_module_status", loaded_param_.common.pub_topic_module_status, &success);
+        get_param(ns+ "common/pub_topic_module_health", loaded_param_.common.pub_topic_module_health, &success);
         get_param(ns+ "common/pub_topic_module_loginfo", loaded_param_.common.pub_topic_module_loginfo, &success);
         get_param(ns+ "common/receive_lidar_freq", loaded_param_.common.receive_lidar_freq, &success);
         get_param(ns+ "common/slam_lose_rate_time_thr", loaded_param_.common.slam_lose_rate_time_thr, &success);

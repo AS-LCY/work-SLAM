@@ -54,7 +54,7 @@
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
 #include "fairland_msgs/LocalizationModuleStatus.h"
-// #include "fairland_msgs/LocalizationModuleHealth.h"
+#include "fairland_msgs/LocalizationModuleHealth.h"
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
 
 
@@ -274,6 +274,7 @@ private:
     ros::Subscriber sub_chassis_;
 
     ros::Publisher pub_localization_module_status_;
+    ros::Publisher pub_localization_module_health_;    
     ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
     ros::Publisher pub_heartbeat_;

@@ -369,6 +369,7 @@ bool LocalizationModule::create_ROS_IO(){
     
     // publish ************************************************************************
     pub_localization_module_status_ = nh_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
+    pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
     pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
 
@@ -1008,10 +1009,14 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     log_info_manager_->module_status = running_module_status_.load();
 
     fairland_msgs::LocalizationModuleStatus status_msg;
+    fairland_msgs::LocalizationModuleHealth health_msg;
     // status_msg.header.stamp = ros::Time().now();
     status_msg.header.stamp = curr_ros_time;
     // status_msg.header.frame_id = "lidar";
     status_msg.header.frame_id = "base_link";
+
+    health_msg.header.stamp = curr_ros_time;
+    health_msg.header.frame_id = "base_link";
 
     // fill status_msg.module_status
     // ModuleStatus curr_running_module_status = running_module_status_.load();
@@ -1069,32 +1074,33 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 
 
     // make health msg *************************************************************************
-    status_msg.cloud_size = orig_point_cloud_size;
+    health_msg.cloud_size = orig_point_cloud_size;
     
-    status_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
-    status_msg.delay_cbk_imu = delay_imu;       // unit: s
-    status_msg.delay_timer_slam = delay_slam;   // unit: s
-    status_msg.delay_timer_pose = delay_pose;   // unit: s
-    status_msg.delay_thread_localize = localize_delay;                      // unit: s
-    status_msg.delay_thread_loop_closure = loop_closure_delay;              // unit: s
-    status_msg.delay_thread_secmap_relocalize = secmap_relocalize_delay;    // unit: s
+    health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
+    health_msg.delay_cbk_imu = delay_imu;       // unit: s
+    health_msg.delay_timer_slam = delay_slam;   // unit: s
+    health_msg.delay_timer_pose = delay_pose;   // unit: s
+    health_msg.delay_thread_localize = localize_delay;                      // unit: s
+    health_msg.delay_thread_loop_closure = loop_closure_delay;              // unit: s
+    health_msg.delay_thread_secmap_relocalize = secmap_relocalize_delay;    // unit: s
 
-    status_msg.hb_cbk_lidar =  hb_cbk_lidar;       // value: [0] or [1]
-    status_msg.hb_cbk_imu = hb_cbk_imu;            // value: [0] or [1]
-    status_msg.hb_timer_slam = hb_timer_slam;      // value: [0] or [1]
-    status_msg.hb_timer_pose = hb_timer_pose;      // value: [0] or [1]
-    status_msg.hb_thread_localize = hb_thread_localize;                     // value: [0] or [1]
-    status_msg.hb_thread_loop_closure = hb_thread_loop_closure;             // value: [0] or [1]
-    status_msg.hb_thread_secmap_relocalize = hb_thread_secmap_relocalize;   // value: [0] or [1]
+    health_msg.hb_cbk_lidar =  hb_cbk_lidar;       // value: [0] or [1]
+    health_msg.hb_cbk_imu = hb_cbk_imu;            // value: [0] or [1]
+    health_msg.hb_timer_slam = hb_timer_slam;      // value: [0] or [1]
+    health_msg.hb_timer_pose = hb_timer_pose;      // value: [0] or [1]
+    health_msg.hb_thread_localize = hb_thread_localize;                     // value: [0] or [1]
+    health_msg.hb_thread_loop_closure = hb_thread_loop_closure;             // value: [0] or [1]
+    health_msg.hb_thread_secmap_relocalize = hb_thread_secmap_relocalize;   // value: [0] or [1]
 
-    status_msg.error_lidar_point_too_few = error_lidar_point_too_few;     // value: [0] or [1]
-    status_msg.error_livox_driver_failed = error_livox_driver_failed;     // value: [0] or [1]
+    health_msg.error_lidar_point_too_few = error_lidar_point_too_few;     // value: [0] or [1]
+    health_msg.error_livox_driver_failed = error_livox_driver_failed;     // value: [0] or [1]
 
-    status_msg.health_status = health_status_.load();
+    health_msg.health_status = health_status_.load();
 
     // make health msg end *********************************************************************
 
     pub_localization_module_status_.publish(status_msg);
+    pub_localization_module_health_.publish(health_msg);
     // ROS_INFO("pub: time: %lf ", status_msg.header.stamp.toSec());
 
 
