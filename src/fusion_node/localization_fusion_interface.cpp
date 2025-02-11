@@ -149,7 +149,7 @@ void LocalizationFusion::pub_localiztion(){
     // send tf
     static tf::TransformBroadcaster br;
     tf::Transform transform_to_send = localization_module::common::conversions::odom_to_transform(fusion_odom);
-    br.sendTransform(tf::StampedTransform(transform_to_send, fusion_odom.header.stamp, "map", "base_footprint"));
+    br.sendTransform(tf::StampedTransform(transform_to_send, fusion_odom.header.stamp, "map", "base_link"));
 
     
 

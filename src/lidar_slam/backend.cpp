@@ -942,7 +942,7 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud[i]);
     }
     // cout << "\nSave resolution: " << resolution << endl;
-    ROS_INFO_STREAM("\nSave resolution: " << resolution);
+    ROS_INFO_STREAM("Save resolution: " << resolution);
     pcl::VoxelGrid<PointType> downSizeFilter;
     downSizeFilter.setInputCloud(globalMapCloud);
     downSizeFilter.setLeafSize(resolution, resolution, resolution);

@@ -1,5 +1,6 @@
 common:
-  run_on_mower: true
+  run_on_mower: false
+  map_directory_on_mower: "/home/firefly/ws_flbot/maps/1/3dmap/"
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -13,6 +14,7 @@ common:
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
   map_directory: "/home/pmm/data/2-rslidar/1-v3-mapping/1211/01/3dmap"
+  map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -21,7 +23,7 @@ common:
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
   feats_down_size_thr: 100
-  use_pose_filter: false 
+  use_pose_filter: true 
   cpu_id: []
   # cpu_id: [4, 5]
 
@@ -38,6 +40,7 @@ extrinsic:
   extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
   # extrinsic_euler_IMU_in_lidar: [-88.199227, -0.332534, 179.751635] # unit(degree) yaw, pitch, roll  # airy-v2
   extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_translation_lidar_in_baselink: [0.0, 0.0, 0.0] # x, y, z
 
   #  0.000000, 0.170000, 0.553756,-0.009380, 0.256496,-0.030881, ## extrs_final: lidarid=0-ring=0--
   # roll, pitch, yaw(degree:): -0.537434,14.696139,-1.769328,  ## extrs_final: lidarid=0-ring=0--

@@ -49,7 +49,6 @@ public:
         get_param(ns+ "common/feats_down_size_thr", loaded_param_.common.feats_down_size_thr, &success);
         get_param(ns+ "common/use_pose_filter", loaded_param_.common.use_pose_filter, &success);
         get_param(ns+ "common/cpu_id", loaded_param_.common.cpu_id, &success);
-        ROS_INFO("\033[1;32mset cpu_id size: %lu\033[0m", loaded_param_.common.cpu_id.size());
         // process map_dir
         // std::cout << "C++ Standard: " << __cplusplus << std::endl;
         std::string parent_dir;
@@ -67,8 +66,11 @@ public:
 
         loaded_param_.common.map_directory = parent_dir + loaded_param_.common.map_directory;
 
+        std::string map_directory_on_mower_temp = "";
+        get_param(ns+ "common/map_directory_on_mower", map_directory_on_mower_temp, &success);
+
         if(loaded_param_.common.run_on_mower){
-            loaded_param_.common.map_directory = "/home/forlinx/ws_flbot/maps/1/3dmap/";
+            loaded_param_.common.map_directory = map_directory_on_mower_temp;
             loaded_param_.common.cpu_id.resize(2);
             loaded_param_.common.cpu_id[0] = 4;
             loaded_param_.common.cpu_id[1] = 5;
@@ -81,6 +83,7 @@ public:
         // std::vector<double> extrinsic_euler_IMU_in_baselink; // 1 * 3
         std::vector<double> extrinsic_euler_IMU_in_lidar; // 1 * 3
         std::vector<double> extrinsic_euler_lidar_in_baselink; // 1 * 3
+        std::vector<double> extrinsic_translation_lidar_in_baselink; // 1 * 3
         
         // std::vector<double> quat_lidar_in_imu;
         get_param(ns+ "extrinsic/extrinsic_est_en", loaded_param_.extrinsic.extrinsic_est_en, &success);
@@ -90,6 +93,7 @@ public:
         // get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_baselink", extrinsic_euler_IMU_in_baselink, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_lidar", extrinsic_euler_IMU_in_lidar, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_euler_lidar_in_baselink", extrinsic_euler_lidar_in_baselink, &success);//temp
+        get_param(ns+ "extrinsic/extrinsic_translation_lidar_in_baselink", extrinsic_translation_lidar_in_baselink, &success);//temp
     
         // extrinT & extrinR
         loaded_param_.extrinsic.extrinT<< extrinsic_T[0],extrinsic_T[1],extrinsic_T[2];

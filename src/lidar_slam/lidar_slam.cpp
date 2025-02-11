@@ -226,16 +226,20 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     // cout << "slam reset 6"<<endl;
     reseting = false;
+    double curr_time = ros::Time::now().toSec();
     if (work_mode == MAPPING){
         thread.reset(new std::thread(&LidarSlam::loopClosureThread, this));
+        hb_time_thread_loop_closure_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
         log_info_manager_->m_status = M_INACTIVE;
         log_info_manager_->l_status = L_INACTIVE;
-    }else if (work_mode == SEC_MAPPING){
+    }else if (work_mode == SEC_MAPPING){                                              
         // cloud_map_manager_->load_map_data(config_param_.common.map_directory);
         global_localization_thread_.reset(new std::thread(&LidarSlam::global_localization_for_sec_mapping_thread, this));
         thread.reset(new std::thread(&LidarSlam::sec_mapping_loopClosureThread, this));
+        hb_time_thread_loop_closure_.store(curr_time);
+        hb_time_thread_secmap_relocalize_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
         log_info_manager_->m_status = M_INACTIVE;
@@ -243,6 +247,7 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         // second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
     }else if (work_mode == LOCALIZATION){
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
+        hb_time_thread_localize_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
         log_info_manager_->m_status = M_INACTIVE;
@@ -346,7 +351,9 @@ void LidarSlam::sec_mapping_loopClosureThread()
     const std::chrono::milliseconds period(1000 / frequency);
     while (thread_run&&reseting == false)
     {
-        std::thread::id thisId = std::this_thread::get_id();
+        hb_time_thread_loop_closure_.store(ros::Time::now().toSec());
+
+        // std::thread::id thisId = std::this_thread::get_id();
         // std::cout << "debug: loopClosureThread   Thread ID: " << thisId << std::endl;
         auto start = std::chrono::steady_clock::now();
         // 对于二次建图，重定位成功之前，不进行回环检测
@@ -384,6 +391,8 @@ void LidarSlam::loopClosureThread()
     const std::chrono::milliseconds period(1000 / frequency);
     while (thread_run&&reseting == false)
     {
+        hb_time_thread_loop_closure_.store(ros::Time::now().toSec());
+
         auto start = std::chrono::steady_clock::now();
         // if (loop_closure_wait){
             back_end->performLoopClosure(lidar_end_time);  //  回环检测
@@ -417,6 +426,7 @@ void LidarSlam::localizationThread()
 
     while (thread_run&&reseting == false)
     {
+        hb_time_thread_localize_.store(ros::Time::now().toSec());
         // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------localization thread");
         // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------localization thread."<<endl;
         auto start = std::chrono::steady_clock::now();
@@ -532,7 +542,9 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
     int global_localize_count = 0;
 
     while (thread_run&&reseting == false){
-        std::thread::id thisId = std::this_thread::get_id();
+        hb_time_thread_secmap_relocalize_.store(ros::Time::now().toSec());
+
+        // std::thread::id thisId = std::this_thread::get_id();
         // std::cout << "debug: global_localization Thread ID: " << thisId << std::endl;
         auto start = std::chrono::steady_clock::now();
         // if(second_mapping_need_global_localization_){
@@ -594,8 +606,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     mutex mtx_lidar_cloud;
                     globalLocalizationSuccess = global_localization_->global_localize(undistortCloud, T_odom_lidar, p_imu->initial_rotate, score_thr);
                     // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate, score_thr); 
-                    // cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
-                    // cout << "global_localize_times_count: " << global_localize_count<<endl;
+
                     ROS_INFO_STREAM("globalLocalizationSuccess: "<<globalLocalizationSuccess);
                     ROS_INFO_STREAM("global_localize_times_count: " << global_localize_count);
                     if(globalLocalizationSuccess){

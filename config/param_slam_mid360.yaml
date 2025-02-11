@@ -1,5 +1,6 @@
 common:
   run_on_mower: true # true / false, default to: true
+  map_directory_on_mower: "/home/firefly/ws_flbot/maps/1/3dmap/"
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -11,15 +12,18 @@ common:
   save_log_dir: "/home/"
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-  map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
-  map_directory: "/home/pmm/data/3-vanjee/0106/3dmap-mid360/"
+  # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
+  # map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
+  # map_directory: "/home/pmm/data/3-vanjee/0106/3dmap-mid360/"
+  # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
+  # map_directory: "/home/pmm/data/1-livox/v2/1009-23f/3dmap/"
+  map_directory: "/home/pmm/data/1-livox/relocal/0114/3dmap/"
+  
   # map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
   # map_directory: "/home/pmm/data/1-livox/v2/1017/3/3dmap"
   # map_directory: "/home/pmm/data/1-livox/1107/maps-2/3dmap"
   # map_directory: "/home/pmm/data/1-livox/v2/1011-l-loss/3dmap"
-  
-  
+    
   # map_directory: "/home/pmm/data/livox/0929/maps_0929_1/3dmap"
   # map_directory: "/home/pmm/data/test/3dmap/"
   # map_directory: "/home/pmm/data/livox/0927/maps_0927_2_problem/3dmap/"
@@ -34,7 +38,7 @@ common:
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
   feats_down_size_thr: 100
-  use_pose_filter: false
+  use_pose_filter: true
   cpu_id: []
   # cpu_id: [4, 5]
 
@@ -44,13 +48,11 @@ extrinsic:
   extrinsic_R: [ 0,  0,  0]  # unit(degree), yaw, pitch, roll  
 
   extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
-  extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [0.0, 5.0, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -13.119] # unit(degree) yaw, pitch, roll
-
-  # extrinsic_euler_IMU_in_baselink: [-89, 0.410, -13.119]   # unit(degree) yaw, pitch, roll    # 第二版样机
-  # # extrinsic_euler_IMU_in_baselink: [-90, 1.478, -12.647929]   # unit(degree) yaw, pitch, roll    # 第一版样机
-  # # extrinsic_euler_IMU_in_baselink: [0, 13.5, -0.4]   # unit(degree) yaw, pitch, roll    # 四驱斜装           
-  # # extrinsic_euler_IMU_in_baselink: [0, 0, 0]   # unit(degree), yaw, pitch, roll               
+  # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
+  extrinsic_translation_lidar_in_baselink: [0.0, 0.0, 0.0] # x, y, z
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,
@@ -123,7 +125,7 @@ sec_mapping:
     
 
 re_localization:
-  score_thr: 0.05
+  score_thr: 0.07
   time_out_thr: 120 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:

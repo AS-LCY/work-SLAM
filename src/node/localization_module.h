@@ -54,6 +54,7 @@
 // #include <livox_ros_driver2/CustomMsg.h>
 #include "fairland_msgs/LivoxCustomMsg.h"
 #include "fairland_msgs/LocalizationModuleStatus.h"
+// #include "fairland_msgs/LocalizationModuleHealth.h"
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
 
 
@@ -119,20 +120,25 @@ private:
 
     void load_params();
 
+    bool module_member_init();
     bool load_lidar_slam_param();
     bool create_ROS_IO();
+    void ros_spinner_start();
 
     // 建图
     // void start_mapping(bool module_mode);
-    bool start_mapping(ModuleStatus set_status);
+    // bool start_mapping(ModuleStatus set_status);
+    bool start_mapping();
     bool mark_start_point();
     bool mark_end_point(int save_id);
     bool clear_curr_element();
     // void start_second_mapping(bool localization_mode, int map_id);
-    bool start_second_mapping(ModuleStatus set_status, int map_id);
+    // bool start_second_mapping(ModuleStatus set_status, int map_id);
+    bool start_second_mapping(int map_id);
     bool stop_mapping();
 
-    bool start_localization(ModuleStatus set_status, int map_id);
+    // bool start_localization(ModuleStatus set_status, int map_id);
+    bool start_localization(int map_id);
 
     // void start_localization(bool module_mode, int map_id);
     bool stop_localization();
@@ -226,6 +232,24 @@ private:
     // };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+    // 各 线程、callback、timer heartbeat
+    std::atomic<double> hb_time_cbk_imu_;
+    std::atomic<double> hb_time_cbk_lidar_;
+    std::atomic<double> hb_time_cbk_module_ctrl_;
+    std::atomic<double> hb_time_timer_slam_;
+    std::atomic<double> hb_time_timer_pose_;
+    std::atomic<double> hb_time_thread_localize_;
+    std::atomic<double> hb_time_thread_loop_closure_;
+    std::atomic<double> hb_time_thread_secmap_relocalize_;
+    // health_status_: -------------------------------------
+    // 0: all ok
+    // 1: error, stop pub tf & odom
+    // 2: error, reset slam to IDLE
+    std::atomic<int>  health_status_;
+    
+    std::atomic<int>  cloud_size_;
+    // -----------------------------------------------------
+    Eigen::Isometry3d T_lidar_baselink_;
 
     ros::NodeHandle nh_;
     ros::Timer timer_slam_;
@@ -240,6 +264,9 @@ private:
 
     ros::NodeHandle nh4_;
     ros::CallbackQueue pose_filter_queue_;
+
+    ros::NodeHandle nh5_;
+    ros::CallbackQueue health_queue_;
 
     ros::Subscriber sub_mapping_ctrl_;
     ros::Subscriber sub_pointcloud2_;
@@ -270,8 +297,8 @@ private:
 
     // 模块 localization module
     // bool running_slam_ = false;
-    ModuleStatus last_running_module_status_ = ModuleStatus::MODULE_IDLE;
-    ModuleStatus set_module_status_ = ModuleStatus::MODULE_IDLE;
+    // ModuleStatus last_running_module_status_ = ModuleStatus::MODULE_IDLE;
+    // ModuleStatus set_module_status_ = ModuleStatus::MODULE_IDLE;
     // ModuleStatus running_module_status_ = ModuleStatus::MODULE_IDLE;
     static std::atomic<ModuleStatus> running_module_status_;
 
@@ -291,7 +318,7 @@ private:
     int show_load_map_ = 0;
 
 
-    cpu_set_t mask;
+    cpu_set_t cpu_mask_;
 
     // 应该是目前没在用
     // ros::ServiceServer srvSaveMap; // 应该是目前没在用

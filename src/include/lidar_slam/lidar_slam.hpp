@@ -150,7 +150,7 @@ class LidarSlam
        
         bool load_map(string directory){
             globalLocalizationSuccess = false;
-            sleep(1);
+            // sleep(1); 只有 IDLE -> LOCALIZATION / SEC_MAPPING 时会加载地图， globalLocalization 相关为空，无需睡眠
             if(working_mode_ == LOCALIZATION){
                 localization->loadMap(directory);
             }else if(working_mode_ == SEC_MAPPING){
@@ -339,12 +339,29 @@ class LidarSlam
         void set_new_key_cloud_arrived(bool flag){
             new_key_cloud_arrived_ = flag;
         }
-
         bool get_new_key_cloud_arrived(){
             return new_key_cloud_arrived_;
         }
 
+        double get_hb_time_thread_localize(){
+            return hb_time_thread_localize_.load();
+        }
+        double get_hb_time_thread_loop_closure(){
+            return hb_time_thread_loop_closure_.load();
+        }
+        double get_hb_time_thread_secmap_relocalize(){
+            return hb_time_thread_secmap_relocalize_.load();
+        }
+
+
     private:
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 各 线程、callback、timer heartbeat
+        std::atomic<double> hb_time_thread_localize_;           // status = LOCALIZATION
+        std::atomic<double> hb_time_thread_loop_closure_;       // status = MAPPING or SEC_MAPPING
+        std::atomic<double> hb_time_thread_secmap_relocalize_;  // status = SECMAPPING
+
+
         // LidarParam param;
         LidarSlamParam config_param_;
         int feats_down_size_thr_ = 100;
