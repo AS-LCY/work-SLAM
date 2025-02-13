@@ -53,8 +53,8 @@ enum MappingStatus{
     M_INACTIVE = 0,
     M_RELOCALIZING =1,
     M_RELOCALIZE_FAILED =2,
-    M_CREATING_ELE = 3,
-    M_STANDBY =4,
+    M_STANDBY =3,
+    M_CREATING_ELE = 4,
     M_FAILED = 5
 };
 
