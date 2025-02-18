@@ -360,10 +360,10 @@ bool LocalizationModule::create_ROS_IO(){
     // subscriber ********************************************************************
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_msg_cbk, this);
     // sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 10, &LocalizationModule::livox_ros_cbk, this);
-    sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>(slam_param_.lidar_preproc.sub_lidar_topic, 10, &LocalizationModule::lidar_ros_cbk, this);
+    sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>(slam_param_.lidar_preproc.sub_lidar_topic, 10, &LocalizationModule::lidar_ros_callback, this);
 
-    sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(slam_param_.lidar_preproc.sub_imu_topic, 2000, &LocalizationModule::imu_cbk, this);
-    sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_cbk, this);
+    sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(slam_param_.lidar_preproc.sub_imu_topic, 2000, &LocalizationModule::imu_callback, this);
+    sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_callback, this);
 
     
     
@@ -389,7 +389,7 @@ bool LocalizationModule::create_ROS_IO(){
 
 
     nh3_.setCallbackQueue(&slam_ctrl_queue_);
-    sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_cbk, this);
+    sub_mapping_ctrl_ = nh3_.subscribe(slam_param_.common.sub_topic_ctrl_cmd, 3 ,&LocalizationModule::localization_module_ctrl_callback, this);
 
     // timer dealt ********************************************************************
     nh5_.setCallbackQueue(&health_queue_);
@@ -1132,7 +1132,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 // }
 
 
-void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
+void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
 
     hb_time_cbk_lidar_.store(ros::Time::now().toSec());
 
@@ -1326,7 +1326,7 @@ void LocalizationModule::lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr 
 
 // }
 
-void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
+void LocalizationModule::imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in){
     hb_time_cbk_imu_.store(ros::Time::now().toSec());
     ROS_INFO_ONCE("received imu -------------- imu cbk");
 
@@ -1359,6 +1359,11 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
     imu_in_base.linear_acceleration.z = msg->linear_acceleration.z();
     pub_base_imu_.publish(imu_in_base);
 
+    ////////////////////////////////////////////////////////////////////////////////
+    // detect slip
+
+    ////////////////////////////////////////////////////////////////////////////////
+
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -1373,38 +1378,26 @@ void LocalizationModule::imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in){
 
 }
 
-void LocalizationModule::chassis_cbk(const fairland_msgs::chassic_data::ConstPtr &msg_in){
-    // fairland_msgs::chassic_data cur_chassis_msg_ = *msg_in;
+void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::ConstPtr &msg_in){
+    fairland_msgs::chassic_data cur_chassis_msg = *msg_in;
     cur_chassis_msg_ = *msg_in;
     
-    double chassis_linear_velocity_ = (cur_chassis_msg_.left_front_feedback + cur_chassis_msg_.right_front_feedback)/2.0;
-    double chassis_angular_velocity_ = (cur_chassis_msg_.right_front_feedback - cur_chassis_msg_.left_front_feedback)/L_WHEEL;// 这个非常不准，理论上不应该用它，确认实际是否使用
-    chassis_linear_velocity_ = cur_chassis_msg_.ac_linear_velocity;
-    // chassis_angular_velocity_ = cur_chassis_msg.ac_angular_velocity;
-    // std::cout << "cal  linear  velocity: "<< chassis_linear_velocity_ <<endl;
-    // std::cout << "read linear  velocity: "<< cur_chassis_msg.ac_linear_velocity <<endl;
-    // std::cout << "cal  angular velocity: "<< chassis_angular_velocity_ <<endl;
-    // std::cout << "read angular velocity: "<< cur_chassis_msg.ac_angular_velocity <<endl;
+    double chassis_linear_velocity = (cur_chassis_msg.left_front_feedback + cur_chassis_msg.right_front_feedback)/2.0;
+    double chassis_angular_velocity = (cur_chassis_msg.right_front_feedback - cur_chassis_msg.left_front_feedback)/L_WHEEL;// 这个非常不准，理论上不应该用它，确认实际是否使用
+    chassis_linear_velocity = cur_chassis_msg.ac_linear_velocity;
+    chassis_linear_velocity_ = chassis_linear_velocity;
+    chassis_angular_velocity_ = chassis_angular_velocity;
 
     ROS_INFO_ONCE("received chassis -------------- chassis cbk");
 
-    // static int print_cnt=0;
-    // if(print_cnt % 20 == 0){
-    //     // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------chassis cbk");
-    //     std::cout << "read chassis linear velocity: "<< cur_chassis_msg_.ac_linear_velocity <<" m/s -------------- chassis cbk" <<endl;
-    //     print_cnt = 0;
-    // }
-    // print_cnt++;
-
     // 获取时间差
-    ros::Time current_time = cur_chassis_msg_.header.stamp;
-    // current_time = ros::Time::now();
+    ros::Time current_time = cur_chassis_msg.header.stamp;
     double time_interval = (current_time - last_chassis_time_).toSec();
     last_chassis_time_ = current_time;
 
     // // 计算积分位置
-    chassis_x_ += chassis_linear_velocity_ * time_interval * cos(lidar_a_);
-    chassis_y_ += chassis_linear_velocity_ * time_interval * sin(lidar_a_);
+    chassis_x_ += chassis_linear_velocity * time_interval * cos(lidar_a_);
+    chassis_y_ += chassis_linear_velocity * time_interval * sin(lidar_a_);
     // chassis_a += angular_velocity * time_interval;
     // chassis_a = angle_norm(chassis_a);
     

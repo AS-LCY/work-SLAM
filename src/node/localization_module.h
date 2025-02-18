@@ -56,6 +56,8 @@
 #include "fairland_msgs/LocalizationModuleStatus.h"
 #include "fairland_msgs/LocalizationModuleHealth.h"
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
+#include "fairland_msgs/LocalizationSlipInfo.h"
+#include "fairland_msgs/LocalizationSlip.h"
 
 
 
@@ -155,7 +157,7 @@ private:
     void release_slam_obj();
 
     // callback 
-    void localization_module_ctrl_cbk(const std_msgs::UInt32 &msg_in);
+    void localization_module_ctrl_callback(const std_msgs::UInt32 &msg_in);
     void slam_dealt_timer(const ros::TimerEvent &event);
     void pose_filter_timer(const ros::TimerEvent &event);
     void pub_module_status_timer(const ros::TimerEvent &event);
@@ -164,11 +166,11 @@ private:
     // void livox_msg_cbk(const livox_ros_driver2::CustomMsg::ConstPtr &msg_in);
     // void livox_msg_cbk(const fairland_msgs::LivoxCustomMsg::ConstPtr &msg_in);
 
-    void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in);
+    void imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in);
     
-    void lidar_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
-    void livox_ros_cbk(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
-    void chassis_cbk(const fairland_msgs::chassic_data::ConstPtr &msg_in);
+    void lidar_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
+    void livox_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
+    void chassis_callback(const fairland_msgs::chassic_data::ConstPtr &msg_in);
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubUnoptimizedPath);
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);

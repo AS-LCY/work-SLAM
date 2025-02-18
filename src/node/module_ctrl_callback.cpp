@@ -3,7 +3,7 @@
 
 
 namespace localization_module {
-void LocalizationModule::localization_module_ctrl_cbk(const std_msgs::UInt32 &msg_in){
+void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt32 &msg_in){
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
         if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
