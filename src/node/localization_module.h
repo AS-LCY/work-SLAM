@@ -56,8 +56,7 @@
 #include "fairland_msgs/LocalizationModuleStatus.h"
 #include "fairland_msgs/LocalizationModuleHealth.h"
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
-#include "fairland_msgs/LocalizationSlipInfo.h"
-#include "fairland_msgs/LocalizationSlip.h"
+#include "fairland_msgs/NameValues.h"
 
 
 
@@ -70,6 +69,7 @@
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
+#include "node/detect_slipping.h"
 
 // 另一个节点中定义
 #include "fairland_msgs/chassic_data.h"
@@ -120,8 +120,6 @@ private:
     // void show_thread();
     bool is_mapping_status(ModuleStatus status);
 
-    void load_params();
-
     bool module_member_init();
     bool load_lidar_slam_param();
     bool create_ROS_IO();
@@ -134,8 +132,6 @@ private:
     bool mark_start_point();
     bool mark_end_point(int save_id);
     bool clear_curr_element();
-    // void start_second_mapping(bool localization_mode, int map_id);
-    // bool start_second_mapping(ModuleStatus set_status, int map_id);
     bool start_second_mapping(int map_id);
     bool stop_mapping();
 
@@ -169,7 +165,6 @@ private:
     void imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in);
     
     void lidar_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
-    void livox_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg);
     void chassis_callback(const fairland_msgs::chassic_data::ConstPtr &msg_in);
 
     void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubUnoptimizedPath);
@@ -194,15 +189,17 @@ private:
     // position filter
     void lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
     void lidar_position_filter_window(Eigen::Isometry3d last_pose, Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
-    void position_filter_thread();
     bool position_init(Eigen::Isometry3d init_pose);
     void position_filter();
     void detect_slipping();
+    int detect_slipping(Eigen::Isometry3d curr_pose);
     void reset_pose_filter();
 
-    void position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a);
+    void position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a, double k_chassis);
 
     void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
+
+    void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
 
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
@@ -223,16 +220,6 @@ private:
         return "UNKNOW_SlamCtrlCmd!";
     }
     
-    // template <class T>
-    // void get_param(const std::string& param_str, T& param, bool* is_success){
-    //     if(!nh_.getParamCached(param_str,param)){
-    //         ROS_WARN("load param failed : %s ", param_str.c_str());
-    //         *is_success = false;
-    //     }else{
-    //         ROS_INFO("load param success: %s", param_str.c_str());
-    //     }
-    // };
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // 各 线程、callback、timer heartbeat
     std::atomic<double> hb_time_cbk_imu_;
@@ -279,6 +266,7 @@ private:
     ros::Publisher pub_localization_module_health_;    
     ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
+    ros::Publisher pub_slip_;    
     ros::Publisher pub_heartbeat_;
 
 
@@ -399,6 +387,7 @@ private:
 
     // lidar 
     std::shared_ptr<LidarPreprocParent> lidar_ptr_;
+    std::shared_ptr<DetectSlipping> slipping_ptr_;
     
 };
 

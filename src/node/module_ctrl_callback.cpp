@@ -677,6 +677,8 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     ROS_INFO("Making obj(lidar_slam) --- with: set_slam_mode = %s", lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
     ROS_INFO("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
+
+    slipping_ptr_->reset();
     return true;
 }
 
@@ -717,5 +719,7 @@ void LocalizationModule::release_slam_obj(){
     log_info_manager_->l_status = L_INACTIVE;
     ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
     releasing_slam_flag_ = false;
+
+    slipping_ptr_->reset();
 }
 }// namespace localization_module 

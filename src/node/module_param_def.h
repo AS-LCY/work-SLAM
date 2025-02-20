@@ -25,6 +25,7 @@ struct CommonParam{
     std::string pub_topic_module_health;
     
     std::string pub_topic_module_loginfo;
+    std::string pub_topic_slipping;
     int receive_lidar_freq = 10;
     double slam_lose_rate_time_thr = 0.1;
     int lidar_no_point_count_thr = 10;
@@ -33,6 +34,12 @@ struct CommonParam{
     std::vector<int> cpu_id;
 };
 
+struct DetectSlipParam{
+    double detect_window_time_range = 2;
+    int slipping_count_thr = 5;
+    double slipping_dist_thr = 0.2;
+
+};
 
 
 struct LidarSlamParam{
@@ -44,6 +51,7 @@ struct LidarSlamParam{
     LocalizationParam localization;
     SecondMappingParam sec_mapping;
     IkdTreeParam ikdtree;
+    DetectSlipParam detect_slip;
 };
 
 } // namespace lidar_slam

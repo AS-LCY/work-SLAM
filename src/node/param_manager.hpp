@@ -44,6 +44,7 @@ public:
         get_param(ns+ "common/pub_topic_module_status", loaded_param_.common.pub_topic_module_status, &success);
         get_param(ns+ "common/pub_topic_module_health", loaded_param_.common.pub_topic_module_health, &success);
         get_param(ns+ "common/pub_topic_module_loginfo", loaded_param_.common.pub_topic_module_loginfo, &success);
+        get_param(ns+ "common/pub_topic_slipping", loaded_param_.common.pub_topic_slipping, &success);
         get_param(ns+ "common/receive_lidar_freq", loaded_param_.common.receive_lidar_freq, &success);
         get_param(ns+ "common/slam_lose_rate_time_thr", loaded_param_.common.slam_lose_rate_time_thr, &success);
         get_param(ns+ "common/lidar_no_point_count_thr", loaded_param_.common.lidar_no_point_count_thr, &success);
@@ -211,6 +212,11 @@ public:
         get_param(ns+ "ikdtree/kdTreeReconstructKeyFrameLeafSize", loaded_param_.ikdtree.kdTreeReconstructKeyFrameLeafSize, &success);
         get_param(ns+ "ikdtree/kdTreeReconstructPointLeafSize", loaded_param_.ikdtree.kdTreeReconstructPointLeafSize, &success);
         get_param(ns+ "ikdtree/map_leaf_size", loaded_param_.ikdtree.map_leaf_size, &success);
+
+        ///  detect slip params *******************************************
+        get_param(ns+ "detect_slip/detect_window_time_range", loaded_param_.detect_slip.detect_window_time_range, &success);
+        get_param(ns+ "detect_slip/slipping_count_thr", loaded_param_.detect_slip.slipping_count_thr, &success);
+        get_param(ns+ "detect_slip/slipping_dist_thr", loaded_param_.detect_slip.slipping_dist_thr, &success);
 
         ROS_INFO_STREAM(BOLDGREEN<<"run_on_mower: "<<loaded_param_.common.run_on_mower<<RESET);
         ROS_INFO_STREAM(YELLOW<<"set cpu_id size: " <<loaded_param_.common.cpu_id.size()<<RESET);

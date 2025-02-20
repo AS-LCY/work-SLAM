@@ -251,6 +251,15 @@ class LidarSlam
                 return temp;
             }
         } 
+        double get_slam_time(){
+            if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING || working_mode_==LOCALIZATION){
+                return localization_base.update_time;
+            }else{
+                double temp = ros::Time::now().toSec();
+                return temp;
+            }
+        }
+
         Eigen::Isometry3d getWheelInOdom(){
             return getLidarInOdom()* T_lidar_wheel;
         }

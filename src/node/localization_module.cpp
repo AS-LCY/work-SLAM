@@ -295,64 +295,33 @@ void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_
 
 }
 
-void LocalizationModule::position_filter(){
-    float ka = 0.5;  // 角度滤波系数 事实上不用
-    detect_slipping();
-
-    // 轮子记录的位置增量
-    float chassis_dx = chassis_x_ - last_chassis_x_;
-    float chassis_dy = chassis_y_ - last_chassis_y_;
-    float chassis_da = angle_norm(chassis_a_ - last_chassis_a_);
-
-    // float lidar_dx = lidar_x_ - last_lidar_x_;
-    // float lidar_dy = lidar_y_ - last_lidar_y_;
-    // float lidar_da = lidar_a_ - last_lidar_a_;
-
-    filter_x_ = (filter_x_ + chassis_dx)*k_pos_ + lidar_x_*(1.0-k_pos_);
-    filter_y_ = (filter_y_ + chassis_dy)*k_pos_ + lidar_y_*(1.0-k_pos_);
-    filter_a_ = angle_norm((filter_a_ + chassis_da)*ka + lidar_a_*(1.0-ka)); // 这个就很鬼畜 // 这个值没有用上
-
-    // update
-    last_chassis_x_ = chassis_x_;
-    last_chassis_y_ = chassis_y_;
-    last_chassis_a_ = chassis_a_;
-
-    last_lidar_x_ = lidar_x_;
-    last_lidar_y_ = lidar_y_;
-    last_lidar_z_ = lidar_z_;
-    last_lidar_a_ = lidar_a_;
-}
-
 float line_length(float dx, float dy){
   return std::sqrt(dx*dx + dy*dy);
 }
 
-void LocalizationModule::detect_slipping(){
-    k_pos_ = 1 - slam_param_.localization.lidar_ratio;
-    // 雷达定位值在车身对称轴方向上的增量
-    float dx = lidar_x_ - last_lidar_x_;
-    float dy = lidar_y_ - last_lidar_y_;
-
-    float l_da = angle_norm(last_lidar_a_ + angle_norm(lidar_a_ - last_lidar_a_)/2.0);  // 两帧的角度均值
-    float p_da = std::atan2(dy, dx);// 速度方向的角度
-    float da = angle_norm(l_da - p_da);// 速度方向与车身方向的夹角
-    float l_dr = line_length(dx, dy);// lidar 计算的 两帧之间的移动距离
-
-    float ln_dr = l_dr * std::cos(da);// 车身方向的位移
-    float o_dr = line_length(chassis_x_ - last_chassis_x_, chassis_y_ - last_chassis_y_);// 底盘计算的两帧之间的移动距离
-
-    if (chassis_linear_velocity_ > 0.1 && chassis_angular_velocity_ < 0.2 && o_dr-ln_dr > o_dr*0.75f){ // 暂时写成定值
-        if (slip_count_ > 3) {
-            k_pos_ = 0.0;
-            // std::cout << " --- slipping ---" << std::endl; 
-            ROS_WARN_STREAM(YELLOW << " --- slipping ---"<< RESET) ; 
-        }
-        else slip_count_++;
-    }
-    else slip_count_ = 0;
-
-    log_info_manager_->log_info.slip_count = slip_count_;
-}
+////////////////////////// 不要删掉此部分函数代码， 备份 //////////////////////////
+// void LocalizationModule::detect_slipping(){
+//     k_pos_ = 1 - slam_param_.localization.lidar_ratio;
+//     // 雷达定位值在车身对称轴方向上的增量
+//     float dx = lidar_x_ - last_lidar_x_;
+//     float dy = lidar_y_ - last_lidar_y_;
+//     float l_da = angle_norm(last_lidar_a_ + angle_norm(lidar_a_ - last_lidar_a_)/2.0);  // 两帧的角度均值
+//     float p_da = std::atan2(dy, dx);// 速度方向的角度
+//     float da = angle_norm(l_da - p_da);// 速度方向与车身方向的夹角
+//     float l_dr = line_length(dx, dy);// lidar 计算的 两帧之间的移动距离
+//     float ln_dr = l_dr * std::cos(da);// 车身方向的位移
+//     float o_dr = line_length(chassis_x_ - last_chassis_x_, chassis_y_ - last_chassis_y_);// 底盘计算的两帧之间的移动距离
+//     if (chassis_linear_velocity_ > 0.1 && chassis_angular_velocity_ < 0.2 && o_dr-ln_dr > o_dr*0.75f){ // 暂时写成定值
+//         if (slip_count_ > 3) {
+//             k_pos_ = 0.0;
+//             // std::cout << " --- slipping ---" << std::endl; 
+//             ROS_WARN_STREAM(YELLOW << " --- slipping ---"<< RESET) ; 
+//         }
+//         else slip_count_++;
+//     }
+//     else slip_count_ = 0;
+//     log_info_manager_->log_info.slip_count = slip_count_;
+// }
 
 bool LocalizationModule::create_ROS_IO(){
 
@@ -372,6 +341,7 @@ bool LocalizationModule::create_ROS_IO(){
     pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
     pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
 
     // both 建图 & 定位
 	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100);
@@ -716,6 +686,23 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
             // update
             last_pub_time_m = check_time_m;
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+            // slipping detect 
+            int slip_flag = 0;
+            slip_flag = detect_slipping(baselink_in_map_to_pub);
+            log_info_manager_->log_info.slip_flag = slip_flag;
+            //////////////////////////////////////////////////////////////////////////////////////////////////
+
+            // pub log
+            log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
+            pub_log_.publish(log_info_manager_->log_info);
+
+            // pub slipping
+            fairland_msgs::NameValues slip_msg;
+            fill_slipping_msg(slip_msg);
+            pub_slip_.publish(slip_msg);
+
         }
 
         return;
@@ -770,6 +757,19 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             lidar_position_filter_window(last_pose_filtered, curr_pose_orig, curr_pose_filtered);
         }
 
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        // slipping detect 
+        int slip_flag = 0;
+        slip_flag = detect_slipping(curr_pose_filtered);
+
+        log_info_manager_->log_info.slip_flag = slip_flag;
+
+        double k_chassis = 1 - slam_param_.localization.lidar_ratio;
+        if(slip_flag){
+            k_chassis = 0;
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+
         lidar_x_ = curr_pose_filtered.translation().x();
         lidar_y_ = curr_pose_filtered.translation().y();
         lidar_z_ = curr_pose_filtered.translation().z();
@@ -778,7 +778,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         /// filter : chassis & lidar 
         // chassis 数据实时更新: curr_chassis 在chassis_cbk 中，last_chassis 在下面这个函数中
         // lidar   数据实时更新: curr_lidar   在 前面三行 中，    last_lidar 在下面这个函数中
-        position_filter_chassis_lidar(filter_x_, filter_y_, filter_a_);// 引用传入, 输出为更新后的值
+        position_filter_chassis_lidar(filter_x_, filter_y_, filter_a_, k_chassis);// 引用传入, 输出为更新后的值
         // update curr_pose_filtered with filter result
         curr_pose_filtered.translation().x() = filter_x_;
         curr_pose_filtered.translation().y() = filter_y_;
@@ -807,6 +807,11 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
             pub_log_.publish(log_info_manager_->log_info);
 
+            // pub slipping
+            fairland_msgs::NameValues slip_msg;
+            fill_slipping_msg(slip_msg);
+            pub_slip_.publish(slip_msg);
+
             // update
             last_pub_time_l = check_time_now_l;
 
@@ -821,13 +826,40 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
 }
 
-void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a){
+void LocalizationModule::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg){
+    fairland_msgs::NameValue slip_val;
+    slip_val.name = "slipping";
+    slip_val.value = log_info_manager_->log_info.slip_flag;
+    
+    slipping_msg.header = log_info_manager_->log_info.header;
+    slipping_msg.values.push_back(slip_val);
+    
+}
+
+int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
+
+    geometry_msgs::PoseStamped pose_stamp;
+    double slam_time_now = slam_->get_slam_time();
+    pose_stamp.header.stamp = ros::Time().fromSec(slam_time_now);
+    pose_stamp.pose = eigen_isometry_to_geo_pose(curr_pose);
+    // slipping_ptr_->update_lidar(pose_stamp);
+    slipping_ptr_->update_lidar_by_distance(pose_stamp);
+
+    int slip_flag = 0;
+    slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
+    
+    log_info_manager_->log_info.slip_flag = slip_flag;
+    log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
+
+    return slip_flag;
+}
+
+void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a, double k_chassis){
     const double chassis_linear_velocity_thr = slam_param_.localization.chassis_linear_velocity_thr;
     const double motionless_chassis_ratio = slam_param_.localization.motionless_chassis_ratio;
     const bool  using_turning_proc = slam_param_.localization.using_turning_proc;
     
     float ka = 0.5;  // 角度滤波系数 事实上不用
-    detect_slipping();
     
     // 轮子记录的位置增量
     // (     chassis_x_) & (     chassis_y_) & (     chassis_a_)的实时更新在 chassis_cbk 中
@@ -842,14 +874,14 @@ void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, doub
     if(using_turning_proc){
         bool turning_flag = cur_chassis_msg_.left_front_feedback*cur_chassis_msg_.right_front_feedback<0 ? 1 : 0; 
         if(!turning_flag && abs(cur_chassis_msg_.ac_linear_velocity)<chassis_linear_velocity_thr){
-            k_pos_ = motionless_chassis_ratio;
+            k_chassis = motionless_chassis_ratio;
         }
         if(turning_flag){
-            k_pos_ = motionless_chassis_ratio;
+            k_chassis = motionless_chassis_ratio;
         }
     }
-    filtered_x = (filtered_x + chassis_dx)*k_pos_ + lidar_x_*(1.0-k_pos_);
-    filtered_y = (filtered_y + chassis_dy)*k_pos_ + lidar_y_*(1.0-k_pos_);
+    filtered_x = (filtered_x + chassis_dx)*k_chassis + lidar_x_*(1.0-k_chassis);
+    filtered_y = (filtered_y + chassis_dy)*k_chassis + lidar_y_*(1.0-k_chassis);
     filtered_a = angle_norm((filtered_a + chassis_da)*ka + lidar_a_*(1.0-ka)); // // 这个值没有用上
 
     // update
@@ -1400,6 +1432,26 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
     chassis_y_ += chassis_linear_velocity * time_interval * sin(lidar_a_);
     // chassis_a += angular_velocity * time_interval;
     // chassis_a = angle_norm(chassis_a);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // for dectect slipping
+
+    ModuleStatus curr_running_module_status = running_module_status_.load();
+
+    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        
+        return;
+    }else{
+        if(slipping_ptr_->get_lidar_queue_init()){
+            slipping_ptr_->update_chassis(cur_chassis_msg);
+        }else{
+            slipping_ptr_->reset();
+        }
+        return;
+    }
+    
     
 }
 
@@ -1579,7 +1631,7 @@ bool LocalizationModule::module_member_init(){
 
     // lidar reset , after param load
     lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type);
-
+    slipping_ptr_.reset(new DetectSlipping());
 
     return true;
 }

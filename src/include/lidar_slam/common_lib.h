@@ -6,6 +6,9 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
+
 
 
 
@@ -338,6 +341,38 @@ static float angle_norm(float a){
         return a - PI_M*2;
     }
     return a;
+}
+
+static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation){
+    Eigen::Quaterniond quat;
+    quat.x() = orientation.x;
+    quat.y() = orientation.y;
+    quat.z() = orientation.z;
+    quat.w() = orientation.w;
+
+    Eigen::Matrix3d rotation_matrix = quat.toRotationMatrix();
+    Eigen::Vector3d angles = R2ypr(rotation_matrix);
+    double yaw   = angles[0];
+    double pitch = angles[1];
+    double roll  = angles[2];
+
+    return yaw;
+}
+
+static geometry_msgs::Pose eigen_isometry_to_geo_pose(Eigen::Isometry3d eigen_transform){
+    geometry_msgs::Pose geo_pose;
+    geo_pose.position.x = eigen_transform.translation().x();
+    geo_pose.position.y = eigen_transform.translation().y();
+    geo_pose.position.z = eigen_transform.translation().z();
+
+    Eigen::Quaterniond quaternion(eigen_transform.linear());
+
+    geo_pose.orientation.x = quaternion.x();
+    geo_pose.orientation.y = quaternion.y();
+    geo_pose.orientation.z = quaternion.z();
+    geo_pose.orientation.w = quaternion.w();
+
+    return geo_pose;
 }
 
 // temp test, already parameterized
