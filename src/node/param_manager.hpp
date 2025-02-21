@@ -32,7 +32,6 @@ public:
         get_param(ns+ "common/time_sync_en", loaded_param_.common.time_sync_en, &success);
         get_param(ns+ "common/localization_mode", loaded_param_.common.localization_mode, &success);
         get_param(ns+ "common/offline_mode", loaded_param_.common.offline_mode, &success);
-        get_param(ns+ "common/temp_test_offline", loaded_param_.common.temp_test_offline, &success);
         get_param(ns+ "common/fast_mode", loaded_param_.common.fast_mode, &success);
         get_param(ns+ "common/just_show_mode", loaded_param_.common.just_show_mode, &success);
         get_param(ns+ "common/show_rviz", loaded_param_.common.show_rviz, &success);
@@ -85,7 +84,6 @@ public:
         // std::vector<double> extrinsic_euler_IMU_in_baselink; // 1 * 3
         std::vector<double> extrinsic_euler_IMU_in_lidar; // 1 * 3
         std::vector<double> extrinsic_euler_lidar_in_baselink; // 1 * 3
-        std::vector<double> extrinsic_translation_lidar_in_baselink; // 1 * 3
         
         // std::vector<double> quat_lidar_in_imu;
         get_param(ns+ "extrinsic/extrinsic_est_en", loaded_param_.extrinsic.extrinsic_est_en, &success);
@@ -95,7 +93,6 @@ public:
         // get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_baselink", extrinsic_euler_IMU_in_baselink, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_euler_IMU_in_lidar", extrinsic_euler_IMU_in_lidar, &success);//temp
         get_param(ns+ "extrinsic/extrinsic_euler_lidar_in_baselink", extrinsic_euler_lidar_in_baselink, &success);//temp
-        get_param(ns+ "extrinsic/extrinsic_translation_lidar_in_baselink", extrinsic_translation_lidar_in_baselink, &success);//temp
     
         // extrinT & extrinR
         loaded_param_.extrinsic.extrinT<< extrinsic_T[0],extrinsic_T[1],extrinsic_T[2];
@@ -174,8 +171,8 @@ public:
         get_param(ns+ "mapping/loopSearchTimeDiff", loaded_param_.mapping.loopSearchTimeDiff, &success);
         get_param(ns+ "mapping/loopSearchSkipKey", loaded_param_.mapping.loopSearchSkipKey, &success);
         get_param(ns+ "mapping/loopIcpScore", loaded_param_.mapping.loopIcpScore, &success);
-        get_param(ns+ "mapping/use_ele_pcd_flag", loaded_param_.mapping.use_ele_pcd_flag, &success);
-        get_param(ns+ "mapping/save_ele_pcd_flag", loaded_param_.mapping.save_ele_pcd_flag, &success);
+        // get_param(ns+ "mapping/use_ele_pcd_flag", loaded_param_.mapping.use_ele_pcd_flag, &success);
+        // get_param(ns+ "mapping/save_ele_pcd_flag", loaded_param_.mapping.save_ele_pcd_flag, &success);
         // get_param(ns+ "mapping/save_map_dir", loaded_param_.mapping.save_map_dir, &success);
         get_param(ns+ "mapping/save_map_resolution", loaded_param_.mapping.save_map_resolution, &success);
         

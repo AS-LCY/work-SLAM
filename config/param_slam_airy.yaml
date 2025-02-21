@@ -42,7 +42,6 @@ extrinsic:
   extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
   # extrinsic_euler_IMU_in_lidar: [-88.199227, -0.332534, 179.751635] # unit(degree) yaw, pitch, roll  # airy-v2
   extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
-  extrinsic_translation_lidar_in_baselink: [0.0, 0.0, 0.0] # x, y, z
 
   #  0.000000, 0.170000, 0.553756,-0.009380, 0.256496,-0.030881, ## extrs_final: lidarid=0-ring=0--
   # roll, pitch, yaw(degree:): -0.537434,14.696139,-1.769328,  ## extrs_final: lidarid=0-ring=0--
@@ -121,13 +120,13 @@ mapping:
   loopSearchTimeDiff: 15  # unit: sec, 原本30s, 
   loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
   loopIcpScore: 0.3 
-  use_ele_pcd_flag: false   # 是否使用单区域pcd
-  save_ele_pcd_flag: false  # 是否保存单区域pcd
+  # use_ele_pcd_flag: false   # 是否使用单区域pcd
+  # save_ele_pcd_flag: false  # 是否保存单区域pcd
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
 
-sec_mapping:
-  load_map_dir: " " # 可以填空字符，但不能不赋值
+# sec_mapping:
+#   load_map_dir: " " # 可以填空字符，但不能不赋值
     
 
 re_localization:

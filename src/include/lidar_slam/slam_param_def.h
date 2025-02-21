@@ -59,8 +59,8 @@ struct MappingParam{
     double loopSearchTimeDiff;
     int  loopSearchSkipKey;
     double loopIcpScore;
-    bool use_ele_pcd_flag;
-    bool save_ele_pcd_flag;
+    // bool use_ele_pcd_flag;
+    // bool save_ele_pcd_flag;
     // std::string save_map_dir;
     double save_map_resolution;
 };

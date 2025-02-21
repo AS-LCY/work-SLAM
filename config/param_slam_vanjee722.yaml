@@ -47,7 +47,6 @@ extrinsic:
   # pitch: 0.819599                                      # 俯仰角偏移量 °
   # yaw: 1.405099                                        # 航向角偏移量 °
   
-  extrinsic_translation_lidar_in_baselink: [0.0, 0.0, 0.0] # x, y, z
 
   Lidar_In_Wheel: [1,  0,  0,  0,
                     0,  1,  0,  0,
@@ -109,13 +108,13 @@ mapping:
   loopSearchTimeDiff: 15  # unit: sec, 原本30s, 
   loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
   loopIcpScore: 1 # 原本代码中写死为 0.3
-  use_ele_pcd_flag: false   # 是否使用单区域pcd
-  save_ele_pcd_flag: false  # 是否保存单区域pcd
+  # use_ele_pcd_flag: false   # 是否使用单区域pcd
+  # save_ele_pcd_flag: false  # 是否保存单区域pcd
   # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
 
-sec_mapping:
-  load_map_dir: " " # 可以填空字符，但不能不赋值
+# sec_mapping:
+#   load_map_dir: " " # 可以填空字符，但不能不赋值
     
 
 re_localization:

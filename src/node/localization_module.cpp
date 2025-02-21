@@ -84,18 +84,6 @@ LocalizationModule::~LocalizationModule(){
 }
 
 bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
-    // if (running_module_status_.load() == ModuleStatus::MODULE_IDLE){
-    //     ROS_INFO("pose init: wait for module start");
-    //     position_initialized_ = false;
-    //     return false;
-    // }
-
-    // if (!slam_ || releasing_slam_flag_){
-    //     ROS_INFO("pose init: slam not ready !");
-    //     position_initialized_ = false;
-    //     return false;
-    // }
-
 
     // auto pose = slam_->getLidarInMap(); 
     auto pose = init_pose;
@@ -122,11 +110,9 @@ bool LocalizationModule::position_init(Eigen::Isometry3d init_pose){
         last_chassis_y_ = chassis_y_;
         last_chassis_a_ = chassis_a_;
 
-        // std::cout<< "positon: init x:" << filter_x_ << ", y:" << filter_y_ << ", a:" << filter_a_ << std::endl;
         ROS_INFO_STREAM( "positon: init x:" << filter_x_ << ", y:" << filter_y_ << ", a:" << filter_a_);
         return true;
     }else{
-        // std::cout << "position_filter: wait for lidar pose ..." << std::endl;
         ROS_INFO_STREAM( "position_filter: wait for lidar pose ...");
         position_initialized_ = false;
         // sleep(1);
@@ -635,7 +621,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     // double now_sec = now_as_ns * 1e-9;
     double now_sec = ros::Time::now().toSec();
 
-    if(slam_param_.common.temp_test_offline ){
+    if(!slam_param_.common.run_on_mower ){
         livox_update_time = now_sec;
     }
 
@@ -1574,7 +1560,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     if(set_status == ModuleStatus::MODULE_IDLE){
         // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
     }else if (set_status == ModuleStatus::MODULE_MAPPING){
-        if(start_mapping()){
+        int map_id = 0;/////////////// TODO
+        if(start_mapping(map_id)){
             // running_module_status_ = set_module_status_;
             // running_module_status_.store(set_status);
             // mapping_status_ = M_STANDBY;

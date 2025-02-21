@@ -126,12 +126,13 @@ private:
     void ros_spinner_start();
 
     // 建图
-    // void start_mapping(bool module_mode);
-    // bool start_mapping(ModuleStatus set_status);
-    bool start_mapping();
-    bool mark_start_point();
-    bool mark_end_point(int save_id);
-    bool clear_curr_element();
+    // bool mark_start_point();
+    // bool mark_end_point(int save_id);
+    // bool clear_curr_element();
+
+    bool make_map_directory_name(int map_id);
+    
+    bool start_mapping(int map_id);
     bool start_second_mapping(int map_id);
     bool stop_mapping();
 
