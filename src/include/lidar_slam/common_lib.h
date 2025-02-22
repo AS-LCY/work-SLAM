@@ -284,6 +284,23 @@ static Eigen::Matrix3d ypr2R(const Eigen::Vector3d &ypr)
 }
 
 
+static void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz, Eigen::Vector3d& ypr)
+{
+    double x = eigen_transform.translation().x();
+    double y = eigen_transform.translation().y();
+    double z = eigen_transform.translation().z();
+
+    xyz[0] = x;
+    xyz[1] = y;
+    xyz[2] = z;
+
+    ypr = R2ypr(eigen_transform.rotation());
+
+    // yaw   = ypr[0];
+    // pitch = ypr[1];
+    // roll  = ypr[2];
+}
+
 
 static Eigen::Matrix3d rpy2R(const Eigen::Vector3d &rpy){
 
@@ -376,6 +393,7 @@ static geometry_msgs::Pose eigen_isometry_to_geo_pose(Eigen::Isometry3d eigen_tr
     return geo_pose;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////
 static bool mkdir_p(const std::string& path, mode_t mode) {
     // 替换路径中的 "//" 为 "/" 
     std::string path_temp = path;

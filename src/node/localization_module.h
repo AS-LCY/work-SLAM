@@ -70,6 +70,7 @@
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
 #include "node/detect_slipping.h"
+#include "node/pose_filter.h"
 
 // 另一个节点中定义
 #include "fairland_msgs/chassic_data.h"
@@ -347,7 +348,7 @@ private:
     // std::vector<Eigen::Vector3d> pose_vec_;
     std::vector<Eigen::Isometry3d> pose_vec_;
     // std::deque<Eigen::Vector3d> pose_vec_;
-    int window_size = 5;
+    // int window_size = 5;
 
     fairland_msgs::chassic_data cur_chassis_msg_;
     
@@ -389,6 +390,7 @@ private:
     // lidar 
     std::shared_ptr<LidarPreprocParent> lidar_ptr_;
     std::shared_ptr<DetectSlipping> slipping_ptr_;
+    std::shared_ptr<PoseFilter> pose_filter_ptr_;
     
 };
 

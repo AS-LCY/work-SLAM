@@ -220,7 +220,8 @@ add_executable(lidar_slam_node
   src/node/localization_module.cpp
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  src/node/detect_slipping.cpp   
+  src/node/detect_slipping.cpp
+  src/node/pose_filter.cpp
 )
 
 # add_dependencies(lidar_slam_node )
