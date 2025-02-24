@@ -233,7 +233,7 @@ bool LocalizationModule::start_second_mapping(int map_id){
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
     make_map_directory_name(map_id);// 基于 map_id, 保存在 [slam_param_.common.map_directory]
-    std::string load_map_dir = slam_param_.common.map_directory;
+    std::string load_map_dir = slam_param_.common.cloud_map_directory;
 
     if (running_module_status_now == ModuleStatus::MODULE_IDLE){
         running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
@@ -429,7 +429,7 @@ bool LocalizationModule::stop_mapping(){
             running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
             ROS_INFO("mapping_status: %s", print_MappingStatus(log_info_manager_->m_status).c_str());
             ROS_INFO("\033[1;32mstart saving map data\033[0m");
-            std::string pcd_dir = slam_param_.common.map_directory;
+            std::string pcd_dir = slam_param_.common.cloud_map_directory;
             const auto resolution = slam_param_.mapping.save_map_resolution;
             if(!slam_->save_map(pcd_dir, resolution, 0, 0)){
                 ROS_ERROR_STREAM(RED << "save map data failed!" <<RESET);
@@ -488,7 +488,7 @@ bool LocalizationModule::start_localization(int map_id){
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
     make_map_directory_name(map_id);// 基于 map_id, 保存在 [slam_param_.common.map_directory]
-    std::string load_map_dir = slam_param_.common.map_directory;
+    std::string load_map_dir = slam_param_.common.cloud_map_directory;
 
     // ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -730,7 +730,7 @@ bool LocalizationModule::make_map_directory_name(int map_id){
         map_folder = slam_param_.common.map_directory;
     }
 
-    slam_param_.common.map_directory = map_folder + std::string("/")+std::to_string(map_id)+std::string("/3dmap/");
+    slam_param_.common.cloud_map_directory = map_folder + std::string("/")+std::to_string(map_id)+std::string("/3dmap/");
 
 
     // 检查并创建地图路径

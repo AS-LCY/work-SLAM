@@ -18,7 +18,8 @@ common:
   # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
   # map_directory: "/home/pmm/data/1-livox/v2/1009-23f/3dmap/"
   # map_directory: "/home/pmm/data/1-livox/relocal/0114/3dmap/"
-  map_directory: "/home/pmm/data/1-livox/slipping/0219/3dmap/"
+  # map_directory: "/home/pmm/data/1-livox/slipping/0219/3dmap/"
+  map_directory: "/home/pmm/data/1-livox/2025/0208-th-cover/maps/"
   
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"

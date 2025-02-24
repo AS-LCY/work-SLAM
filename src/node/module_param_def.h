@@ -19,6 +19,7 @@ struct CommonParam{
     std::string save_log_dir="/home/";
     int map_relative_to=0;
     std::string map_directory="/map/";
+    std::string cloud_map_directory="/map/";
     std::string sub_topic_ctrl_cmd;
     std::string pub_topic_module_status;
     std::string pub_topic_module_health;

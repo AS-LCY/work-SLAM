@@ -39,8 +39,6 @@ bool LidarPreprocMid360::set_param(){
 
         return true;
     }
-    
-
 }
 
 
