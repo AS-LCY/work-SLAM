@@ -68,13 +68,12 @@ public:
         loaded_param_.common.map_directory = parent_dir + loaded_param_.common.map_directory;
 
         std::string map_directory_on_mower_temp = "";
-        get_param(ns+ "common/map_directory_on_mower", map_directory_on_mower_temp, &success);
+        std::vector<int> cpu_id_on_mower_temp;
+        get_param(ns+ "common/cpu_id_on_mower", cpu_id_on_mower_temp, &success);
 
         if(loaded_param_.common.run_on_mower){
             loaded_param_.common.map_directory = map_directory_on_mower_temp;
-            loaded_param_.common.cpu_id.resize(2);
-            loaded_param_.common.cpu_id[0] = 4;
-            loaded_param_.common.cpu_id[1] = 5;
+            loaded_param_.common.cpu_id = cpu_id_on_mower_temp;
         }
 
         /// extrinsic *******************************************

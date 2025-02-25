@@ -197,8 +197,10 @@ bool LocalizationModule::start_mapping(int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
-    make_map_directory_name(map_id);// 基于 map_id, 保存在 [slam_param_.common.map_directory]
-
+    if(!make_map_directory_name(map_id)){// 基于 map_id, 保存在 [slam_param_.common.map_directory]
+        ROS_ERROR_STREAM("Map Directory Error!");
+        exit(EXIT_FAILURE);
+    }
     if (running_module_status_now == ModuleStatus::MODULE_IDLE){
         running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
         make_slam_obj(slam_param_, set_status);
@@ -232,7 +234,10 @@ bool LocalizationModule::start_second_mapping(int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
-    make_map_directory_name(map_id);// 基于 map_id, 保存在 [slam_param_.common.map_directory]
+    if(!make_map_directory_name(map_id)){// 基于 map_id, 保存在 [slam_param_.common.map_directory]
+        ROS_ERROR_STREAM("Map Directory Error!");
+        exit(EXIT_FAILURE);
+    }
     std::string load_map_dir = slam_param_.common.cloud_map_directory;
 
     if (running_module_status_now == ModuleStatus::MODULE_IDLE){
@@ -487,7 +492,10 @@ bool LocalizationModule::start_localization(int map_id){
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
-    make_map_directory_name(map_id);// 基于 map_id, 保存在 [slam_param_.common.map_directory]
+    if(!make_map_directory_name(map_id)){// 基于 map_id, 保存在 [slam_param_.common.map_directory]
+        ROS_ERROR_STREAM("Map Directory Error!");
+        exit(EXIT_FAILURE);
+    }
     std::string load_map_dir = slam_param_.common.cloud_map_directory;
 
     // ModuleStatus curr_running_module_status = running_module_status_.load();

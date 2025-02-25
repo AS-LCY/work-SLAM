@@ -427,11 +427,7 @@ void LidarSlam::localizationThread()
     while (thread_run&&reseting == false)
     {
         hb_time_thread_localize_.store(ros::Time::now().toSec());
-        // ROS_INFO_STREAM("Thread["<< boost::this_thread::get_id() <<"] -----------------localization thread");
-        // cout<<"Thread["<< boost::this_thread::get_id() <<"] --------------localization thread."<<endl;
         auto start = std::chrono::steady_clock::now();
-        // WorkState state;
-        // pcl::PointCloud<PointType>::Ptr temp(new pcl::PointCloud<PointType>());//TODO change to xyzi
         pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
         {
         std::lock_guard<std::mutex> lk(mtx_odom_cloud);
@@ -440,7 +436,6 @@ void LidarSlam::localizationThread()
         // if(l_status_ == L_RELOCALIZE_FAILED){
         if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
             
-            // cout << "global Localization failed: time out "<<endl;
             ROS_INFO("global Localization failed: time out ");
 
         }else{
@@ -478,10 +473,9 @@ void LidarSlam::localizationThread()
 
                 }
                 if(globalLocalizationSuccess){
-                    // cout << "\033[1;32mglobal Localization Success\033[0m"<<endl;
-                    ROS_INFO_STREAM(BOLDGREEN <<"global Localization Success" <<RESET);
+                    ROS_INFO_STREAM(BOLDGREEN <<" ======= global Localization Success ======= " <<RESET);
                     global_localize_count_ = 0;
-                    // ROS_INFO("\033[1;32mglobal Localization Success\033[0m");
+                    log_info_manager_->l_status = L_NORMAL;
                 }
                 
             }
@@ -611,9 +605,12 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     ROS_INFO_STREAM("global_localize_times_count: " << global_localize_count);
                     if(globalLocalizationSuccess){
                         // m_status_ = M_STANDBY;
+                        ROS_INFO_STREAM(BOLDGREEN <<" ======= global Localization Success ======= " <<RESET);
+                        global_localize_count_ = 0;
                         log_info_manager_->m_status = M_STANDBY;
+                    }else{
+                        global_localize_count++;
                     }
-                    global_localize_count++;
 
                 }
                 if (global_localize_count > global_localize_times){

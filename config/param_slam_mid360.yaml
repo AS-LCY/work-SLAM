@@ -1,6 +1,7 @@
 common:
   run_on_mower: true # true / false, default to: true
-  map_directory_on_mower: "/home/firefly/ws_flbot/maps/1/3dmap/"
+  map_directory_on_mower: "/home/firefly/ws_flbot/maps/"
+  cpu_id_on_mower: []
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -116,7 +117,7 @@ mapping:
     
 
 re_localization:
-  score_thr: 0.04
+  score_thr: 0.25
   time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
 ikdtree:
