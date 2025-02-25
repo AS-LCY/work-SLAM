@@ -97,15 +97,15 @@ using namespace lidar_slam;
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
-    MAPPING_POINT_BEGIN     = 3000,  // 设置起点
-    MAPPING_ELE_DELETE      = 4000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
-    MAPPING_POINT_END       = 5000,  // 设置终点
-    EXIT_MAPPING            = 6000,  // 退出建图
+    EXIT_MAPPING            = 3000,  // 退出建图
     START_LOCALIZATION      = 7000,  // 重定位->定位
     EXIT_LOCALIZATION       = 8000,  // 退出定位
     START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位
     RESTART_SEC_MAPPING     = 9100,  // 重启二次建图（一般是二次建图重定位失败的情况）
-    CMD_MAX
+    // MAPPING_POINT_BEGIN     = 3000,  // 设置起点
+    // MAPPING_ELE_DELETE      = 4000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
+    // MAPPING_POINT_END       = 5000,  // 设置终点
+    CMD_MAX = 9999
 };
 
 
@@ -207,9 +207,9 @@ private:
         switch (e){
         CASE_STR(START_MAPPING);
         CASE_STR(START_SEC_MAPPING);
-        CASE_STR(MAPPING_POINT_BEGIN);
-        CASE_STR(MAPPING_ELE_DELETE);
-        CASE_STR(MAPPING_POINT_END);
+        // CASE_STR(MAPPING_POINT_BEGIN);
+        // CASE_STR(MAPPING_ELE_DELETE);
+        // CASE_STR(MAPPING_POINT_END);
         CASE_STR(EXIT_MAPPING);
         CASE_STR(START_LOCALIZATION);
         CASE_STR(EXIT_LOCALIZATION);
