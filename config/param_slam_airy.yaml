@@ -1,6 +1,7 @@
 common:
-  run_on_mower: false
-  map_directory_on_mower: "/home/firefly/ws_flbot/maps/1/3dmap/"
+  run_on_mower: false # true / false, default to: true
+  map_directory_on_mower: "/home/forlinx/ws_flbot/maps/"
+  cpu_id_on_mower: [4, 5]
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -13,8 +14,10 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/2-rslidar/1-v3-mapping/1211/01/3dmap"
-  map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
+  # map_directory: "/home/pmm/data/2-rslidar/calib/0227-22f/"
+  # map_directory: "/home/pmm/data/2-rslidar/calib/0227-ouzh/"
+  map_directory: "/home/pmm/data/2-rslidar/calib/0301-th/"
+  # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
   pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -25,7 +28,7 @@ common:
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
   feats_down_size_thr: 100
-  use_pose_filter: true 
+  use_pose_filter: false 
   cpu_id: []
   # cpu_id: [4, 5]
 
@@ -39,9 +42,11 @@ extrinsic:
   # # extrinsic_euler_IMU_in_baselink: [-88.199227, -0.332534, 179.751635] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy-v2
   # extrinsic_euler_IMU_in_baselink: [-1.769328, 14.696139, -0.537434] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
 
-  extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
+  # extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
+  extrinsic_euler_IMU_in_lidar: [-91.68546653377834, -1.010366382353748, -179.4784633670619] # unit(degree) yaw, pitch, roll  # airy-v4-2025-0226
   # extrinsic_euler_IMU_in_lidar: [-88.199227, -0.332534, 179.751635] # unit(degree) yaw, pitch, roll  # airy-v2
-  extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-88.250826, 1.131189, -5.863650] # unit(degree) yaw, pitch, roll
 
   #  0.000000, 0.170000, 0.553756,-0.009380, 0.256496,-0.030881, ## extrs_final: lidarid=0-ring=0--
   # roll, pitch, yaw(degree:): -0.537434,14.696139,-1.769328,  ## extrs_final: lidarid=0-ring=0--
@@ -59,8 +64,8 @@ extrinsic:
   # translation-2: 0.004052, 0.004337, -0.004494
   # angular-----2: -89.667952, 0.801996, 178.696976        
 
-  Lidar_In_Wheel: [1,  0,  0,  0,
-                    0,  1,  0,  0,
+  Lidar_In_Wheel: [1,  0,  0,  0.210,
+                    0,  1,  0,  -0.01,
                     0,  0,  1,  0.1,
                     0,  0,  0,  1]
 
@@ -72,7 +77,7 @@ localization:
   fst_order_k: 0.7
   odom2map_delta_thr: 0.05 # 0.05 # double: m
   odom2map_delta_set: 0.01 # 0.01 # double: m
-  lidar_ratio: 1.0 
+  lidar_ratio: 0.2 
   baselink_dy_thr: 0.02
   baselink_dx_thr: 0.04
   baselink_dyaw_thr: 0.5 # unit: degree
@@ -90,14 +95,15 @@ lidar_preproc:
   sub_lidar_topic: "/robosense/lidar"
   sub_imu_topic: "/robosense/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
-  blind_distance: 1.5 
+  blind_distance: 1
   flag_keep_only_last_lidar: true
   point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+  cloud_size_to_keep: 3000
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 2 # 间隔采样所需参数
   ring_filter_num: 1
-  leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
+  leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数 
   leafsize_vec: [0.2, 0.8] # voxel 所需参数
   voxel_region_xyz: [-10, 10.0, -10.0, 10.0, -1, 15]  # order: xmin, xmax, ymin, ymax, zmin, zmax
   boundary_z: 3 # init: m

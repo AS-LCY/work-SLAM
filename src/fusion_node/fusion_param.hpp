@@ -43,11 +43,11 @@ struct LocalizationFusionParams {
 };
 
 
-/// @brief the class to load the gateway parameters
+/// @brief the class to load the LocalizationFusion parameters
 class LocalizationFusionParamsManager {
 public:
     /// @brief get LocalizationFusionParamsManager Instance
-    /// @return gateway class instance pointer
+    /// @return LocalizationFusion class instance pointer
     static LocalizationFusionParamsManager* Instance() {
         static LocalizationFusionParamsManager* instance;
         if (instance == nullptr) {
@@ -56,7 +56,7 @@ public:
         return instance;
     }
 
-    /// @brief load all gateway parameters
+    /// @brief load all LocalizationFusion parameters
     /// @return return true if load parameters success, otherwise return false
     bool load_config_params() {
         bool success = true;
@@ -132,7 +132,7 @@ private:
     /// @brief constructor function
     LocalizationFusionParamsManager() {
         if (load_config_params() == false) {
-            ROS_ERROR("Load gateway status params failed!");
+            ROS_ERROR("Load LocalizationFusion params failed!");
             exit(0);
         }
     }

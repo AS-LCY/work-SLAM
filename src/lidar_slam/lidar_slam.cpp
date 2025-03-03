@@ -2,27 +2,6 @@
 
 // #include <pcl/filters/radius_outlier_removal.h>
 #include "lidar_slam/lidar_slam.hpp"
-//#include "log.hpp"
-// void livox_ros::DriverNode::PointCloudDataPollThread()
-// {
-//   std::future_status status;
-//   std::this_thread::sleep_for(std::chrono::seconds(3));
-//   do {
-//     lddc_ptr_->DistributePointCloudData();
-//     status = future_.wait_for(std::chrono::microseconds(0));
-//   } while (status == std::future_status::timeout);
-// }
-
-// void livox_ros::DriverNode::ImuDataPollThread()
-// {
-//   std::future_status status;
-//   std::this_thread::sleep_for(std::chrono::seconds(3));
-//   do {
-//     lddc_ptr_->DistributeImuData();
-//     status = future_.wait_for(std::chrono::microseconds(0));
-//   } while (status == std::future_status::timeout);
-// }
-
 namespace lidar_slam {
 
 string print_SlamWorkMode(SlamWorkMode e){
@@ -66,48 +45,6 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
 }
 
 
-
-// void LidarSlam::start_driver(const std::string work_path){
-//   /** Init default system parameter */
-//   int xfer_format = livox_ros::kLivoxCustomMsg;
-//   int multi_topic = 0;
-//   int data_src = livox_ros::kSourceRawLidar;
-//   double publish_freq  = 10.0; /* Hz */ //0.5~100
-//   int output_type      = livox_ros::kOutputToRos;
-//   std::string frame_id = "livox_frame";
-//   bool lidar_bag = false;
-//   bool imu_bag   = false;
-//   livox_node.future_ = livox_node.exit_signal_.get_future();   
-//   /** Lidar data distribute control and lidar data source set */
-//  /* std::function<void(const std::shared_ptr<livox_ros::LidarMsg>&)> func_1 = [&slam](const std::shared_ptr<livox_ros::LidarMsg>& msg) {
-//       slam->livox_pcl_cbk(msg);
-//   };
-//   std::function<void(const std::shared_ptr<livox_ros::ImuMsg>&)> func_2 = [&slam](const std::shared_ptr<livox_ros::ImuMsg>& msg) {
-//       slam->imu_cbk(msg);
-//   };*/
-//   auto func_1 = std::bind(&LidarSlam::livox_pcl_cbk, this, std::placeholders::_1);
-//   auto func_2 = std::bind(&LidarSlam::imu_cbk, this, std::placeholders::_1);
-//   livox_node.lddc_ptr_ = std::make_unique<livox_ros::Lddc>(xfer_format, multi_topic, data_src, output_type,
-//                         publish_freq, frame_id, lidar_bag, imu_bag,func_1,func_2);
-//   livox_node.lddc_ptr_->SetRosNode(&livox_node);
-//   if (data_src == livox_ros::kSourceRawLidar) {
-//   //  DRIVER_INFO(livox_node, "Data Source is raw lidar.");
-//     std::string user_config_path = work_path + std::string("/config/MID360_config.json");
-//    // livox_node.getParam("user_config_path", user_config_path);
-//   //  DRIVER_INFO(livox_node, "Config file : %s", user_config_path.c_str());
-//     livox_ros::LdsLidar *read_lidar = livox_ros::LdsLidar::GetInstance(publish_freq);
-//     livox_node.lddc_ptr_->RegisterLds(static_cast<livox_ros::Lds *>(read_lidar));
-//     if ((read_lidar->InitLdsLidar(user_config_path))) {
-//       printf("Init lds lidar successfully!\n");
-//     } else {
-//       printf("Init lds lidar failed!");
-//     }
-//   } else {
-//    // DRIVER_ERROR(livox_node, "Invalid data src (%d), please check the launch file", data_src);
-//   }
-//   livox_node.pointclouddata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::PointCloudDataPollThread, &livox_node);
-//   livox_node.imudata_poll_thread_ = std::make_shared<std::thread>(&livox_ros::DriverNode::ImuDataPollThread, &livox_node);
-// }
 
 void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 0"<<endl;
@@ -655,6 +592,51 @@ void LidarSlam::robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &clo
     if (reseting)
         return;
 }
+        
+
+void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
+    // param
+    static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    if (reseting) { return; }
+
+    double t0 = omp_get_wtime();
+
+    double curr_time = cloud->header.stamp * 1.0 * 1e-6; // 转换为单位： second
+    if ( curr_time < last_timestamp_lidar){
+        ROS_INFO("lidar loop back, clear buffer");
+        lidar_buffer.clear();
+        ROS_INFO("************************* lidar_buffer clear *********");
+    }
+
+    /*  else if (msg->time_stamp - curr_time > 1.5 * 0.1){
+        // printf("lidar lose rate");
+        ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
+    }*/ 
+
+    if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
+        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+    }
+
+    if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
+        timediff_set_flg = true;
+        timediff_lidar_wrt_imu = curr_time + 0.1 - last_timestamp_imu; //????
+        ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+    }
+
+    std::lock_guard<std::mutex> lk(mtx_buffer);
+    if (flag_keep_only_last_lidar){
+        lidar_buffer.clear();
+        time_buffer.clear();
+    }
+    lidar_buffer.push_back(cloud); //储存处理后的lidar特征
+    time_buffer.push_back(curr_time);
+    // ROS_INFO_STREAM("lidar pushed ");
+    
+    last_timestamp_lidar = curr_time;
+    double t1 = omp_get_wtime();
+
+    return ;
+}
 
 void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
@@ -695,7 +677,6 @@ void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
         time_buffer.clear();
     }
     lidar_buffer.push_back(cloud); //储存处理后的lidar特征
-    // cout<<"********************* lidar_buffer push back *********"<<endl;
     time_buffer.push_back(curr_time);
    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
@@ -706,8 +687,7 @@ void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     return;
 }
 
-void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in)
-{
+void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in){
     // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     double t0 = omp_get_wtime();
     if (reseting)
@@ -771,143 +751,6 @@ void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in
     double t1 = omp_get_wtime();
     // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
 }
-
-// not in use, comment them by pmm
-// void LidarSlam::filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud)
-// {
-//     PointCloudXYZI::Ptr wheel_cloud(new PointCloudXYZI());
-//     wheel_cloud = transformPointCloud(cloud, config_param_.extrinsic.T_wheel_lidar);
-//     const auto obstacle_max_height = config_param_.lidar_preproc.obstacle_max_height;
-//     const auto obstacle_min_height = config_param_.lidar_preproc.obstacle_min_height;
-//     for(int i = 0; i < wheel_cloud->points.size(); i++){
-//         if (wheel_cloud->points[i].z < obstacle_max_height && wheel_cloud->points[i].z > obstacle_min_height){
-//             ObstacleCloud->points.push_back(wheel_cloud->points[i]); 
-//         }
-//     }
-//     // 定义方格大小（5cm）
-//     const auto grid_size = config_param_.lidar_preproc.grid_size; // 5cm
-
-//     // 计算点云的范围
-//     // PointType min_point, max_point;
-//     // pcl::getMinMax3D(*temp_cloud, min_point, max_point);
-//     const auto max_x = config_param_.lidar_preproc.obstacle_max_range;
-//     const auto max_y = config_param_.lidar_preproc.obstacle_max_range;
-//     const auto min_x = -config_param_.lidar_preproc.obstacle_max_range;
-//     const auto min_y = -config_param_.lidar_preproc.obstacle_max_range;
-
-//     // 计算x，y方向上的方格数量
-//     int num_x_grids = std::ceil((max_x - min_x) / grid_size);
-//     int num_y_grids = std::ceil((max_y - min_y) / grid_size);
-
-//     // 创建一个二维数组来存储每个方格中的点云数量
-//     std::vector<std::vector<int>> grid_count(num_x_grids, std::vector<int>(num_y_grids, 0));
-//     // 遍历点云，将点分配到对应的方格中
-//     for (const auto& point : *ObstacleCloud)
-//     {
-//         int x_idx = std::floor((point.x - min_x) / grid_size);
-//         int y_idx = std::floor((point.y - min_y) / grid_size);
-
-//         // 检查索引是否在有效范围内
-//         if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids)
-//         {
-//             grid_count[x_idx][y_idx]++;
-//         }
-//     }
-
-//     // 创建一个新的点云来存储滤除后的点云
-   
-
-//     // 遍历点云，保留符合条件的点
-//     const auto obstacle_filter_size = config_param_.lidar_preproc.obstacle_filter_size;
-//     for (const auto& point : *ObstacleCloud)
-//     {
-//         int x_idx = std::floor((point.x - min_x) / grid_size);
-//         int y_idx = std::floor((point.y - min_y) / grid_size);
-
-//         // 检查索引是否在有效范围内，并且方格中的点云数量大于等于10
-//         if (x_idx >= 0 && x_idx < num_x_grids && y_idx >= 0 && y_idx < num_y_grids && grid_count[x_idx][y_idx] >= obstacle_filter_size)
-//         {
-//             FilteredObstacleCloud->push_back(point);
-//         }
-//     }
-// }
-
-// void LidarSlam::livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp)
-// {
-//     // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
-//     if (reseting)
-//         return;
-    
-//     // double preprocess_start_time = omp_get_wtime();
-//     // scan_count++;
-//     if (time_stamp < last_timestamp_lidar)
-//     {
-//         printf("lidar loop back, clear buffer");
-//         lidar_buffer.clear();
-//     }
-//     // else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
-//     //     printf("lidar lose rate");
-//     // }
-//     last_timestamp_lidar = time_stamp;
-
-//     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
-//     {
-//         printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
-//     }
-
-//     if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
-//     {
-//         timediff_set_flg = true;
-//         timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu; //????
-//         printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-//     }
-
-
-//     PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
-//     PointCloudXYZI::Ptr temp(new PointCloudXYZI());
-//     pcl::copyPointCloud(*msg_in, *ptr);
-//     ObstacleCloud->points.clear();
-//     int size = ptr->points.size();
-//     auto blind = config_param_.lidar_preproc.blind_distance;
-//     auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
-//     if (size > 2){
-//         for(int i = 0; i < size; i++){
-//             double range = ptr->points[i].x * ptr->points[i].x + ptr->points[i].y * ptr->points[i].y + ptr->points[i].z * ptr->points[i].z;
-//             if (range>blind*blind && range<obstacle_max_range*obstacle_max_range)
-//                 temp->points.push_back(ptr->points[i]);
-//         }
-//         filter_obstacle_cloud(temp);
-//     }
-//     // 创建半径滤波器对象
-//     // pcl::RadiusOutlierRemoval<PointType> sor;
-//     // sor.setInputCloud(ObstacleCloud);
-//     // sor.setRadiusSearch(0.1);  // 邻域半径
-//     // sor.setMinNeighborsInRadius(5);  // 最小邻域点数量
-//     // sor.filter(*FilteredObstacleCloud);
-
-//     std::lock_guard<std::mutex> lk(mtx_buffer);
-//     if (flag_keep_only_last_lidar_){
-//         lidar_buffer.clear();
-//         time_buffer.clear();
-//     }
-//     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
-//     time_buffer.push_back(last_timestamp_lidar);
-//    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
-    
-// }
-
-// void LidarSlam::image_cbk(const cv::Mat& img,double time)
-// {
-//   //  printf("image in %f \n",time);
-//     for (auto it = poses_buffer.begin(); it != poses_buffer.end(); it++) {
-//         if(fabsf(it->first-time)<0.05){
-//         //  printf("use pose in %f \n",it->first);
-//         back_end->UpdateImage(img,it->second);
-//         return;
-//         }
-
-//     }
-// }
 
 void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
 {
@@ -1052,10 +895,7 @@ bool LidarSlam::run()
 
     if (sync_packages(Measures))
     {
-        // ROS_INFO_STREAM(BOLDWHITE << "---------sync_packages success---------------------------" << RESET);
-        // ROS_INFO_STREAM("---------sync_packages success---------------------------");
-        ROS_INFO_STREAM("---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
-        // cout<<"debug: run slam: sync_packages success"<<endl;
+        // ROS_INFO_STREAM("---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
         if (flg_first_scan)
         {
@@ -1068,13 +908,17 @@ bool LidarSlam::run()
         }
         
         t0 = omp_get_wtime();
+        // ROS_INFO("Measures lidar count: %ld", Measures.lidar->points.size());
+        // ROS_INFO_STREAM("lidar_beg_time: "<< Measures.lidar_beg_time);
+        // ROS_INFO_STREAM("lidar_end_time: "<< Measures.lidar_end_time);
+        // ROS_INFO_STREAM("imu size: "<< Measures.imu.size());
+        
         // 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
         {
             std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
             undistortCloud->clear();
             p_imu->Process(Measures, kf, undistortCloud);
         }
-        // ROS_INFO("deskew lidar count: %ld", undistortCloud->points.size());
         state_ikfom state_point;
         state_point = kf.get_x();
         Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix());// TODO 不优化外参数就提出去
@@ -1112,12 +956,12 @@ bool LidarSlam::run()
         ikdtree->lasermap_fov_segment(T_odom_lidar.translation()); // 根据lidar在W系下的位置，重新确定局部地图的包围盒角点，移除远端的点
         t2 = omp_get_wtime();
         /*** downsample the feature points in a scan ***/
+        // ROS_INFO("undistortCloudcount: %d", undistortCloud->points.size());
         downSizeFilterCloud.setInputCloud(undistortCloud);//zx 0.5?
         downSizeFilterCloud.filter(*FilteredUndistortCloud);
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
-        // printf("deskew-down lidar count: %d\n", feats_down_size);
-        ROS_INFO("deskew-down lidar count: %d", feats_down_size);
+        // ROS_INFO("deskew-down lidar count: %d", feats_down_size);
         PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/
@@ -1321,10 +1165,10 @@ bool LidarSlam::run()
         
         if (run_end - run_start > config_param_.common.slam_lose_rate_time_thr){
             ROS_WARN_STREAM(RED    <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms, lose rate !!!!!!!"<<RESET);
-        }else if(run_end - run_start > 0.7){
+        }else if(run_end - run_start > 0.07){
             ROS_INFO_STREAM(YELLOW <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms -------------------"<<RESET);
         }else{
-            ROS_INFO_STREAM(GREEN  <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms -------------------"<<RESET);
+            // ROS_INFO_STREAM(GREEN  <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms -------------------"<<RESET);
         }
         
         // ROS_INFO_STREAM("---------end---------------------------------------------");

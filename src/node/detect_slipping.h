@@ -1,6 +1,7 @@
 #ifndef FLBOT_LOCALIZTION_MODULE_DETECT_SLIPPING
 #define FLBOT_LOCALIZTION_MODULE_DETECT_SLIPPING
 
+#include <mutex>
 #include <queue>
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/Imu.h>

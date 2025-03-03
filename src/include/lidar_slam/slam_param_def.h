@@ -26,6 +26,7 @@ struct LidarPreprocParam{
     int point_filter_num = 2;
     int ring_filter_num = 1;
     std::vector<double> point_filter_distance;
+    int cloud_size_to_keep = 2000;
     bool feature_enabled;
     // bool simple_voxel_enabled;
     int extract_cloud_method;

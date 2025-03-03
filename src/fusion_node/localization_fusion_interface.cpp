@@ -128,7 +128,7 @@ void LocalizationFusion::pub_localiztion(){
 
     Eigen::Isometry3d T_base2map = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(status_.fusion_pose.orientation);
-    T_base2map.pretranslate(Eigen::Vector3d(status_.fusion_pose.position.x, status_.fusion_pose.position.y, status_.fusion_pose.position.z));
+    T_base2map.translate(Eigen::Vector3d(status_.fusion_pose.position.x, status_.fusion_pose.position.y, status_.fusion_pose.position.z));
     T_base2map.rotate(eigen_quat); // 应用四元数的旋转
 
     Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
@@ -164,7 +164,7 @@ void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msg
     Eigen::Isometry3d T_baselink2map = Eigen::Isometry3d::Identity();
     Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(slam_odom.pose.pose.orientation);
-    T_lidar2map.pretranslate(Eigen::Vector3d(slam_odom.pose.pose.position.x, slam_odom.pose.pose.position.y, slam_odom.pose.pose.position.z));
+    T_lidar2map.translate(Eigen::Vector3d(slam_odom.pose.pose.position.x, slam_odom.pose.pose.position.y, slam_odom.pose.pose.position.z));
     T_lidar2map.rotate(eigen_quat); // 应用四元数的旋转
 
     T_baselink2map =  T_lidar2map * T_baselink2lidar_;
@@ -228,7 +228,7 @@ bool LocalizationFusion::load_params(){
     T_baselink2lidar_ = Eigen::Isometry3d::Identity();
     T_lidar2baselink_ = Eigen::Isometry3d::Identity();
 
-    T_baselink2lidar_.pretranslate(Eigen::Vector3d(baselink_in_lidar[0], baselink_in_lidar[1], baselink_in_lidar[2]));
+    T_baselink2lidar_.translate(Eigen::Vector3d(baselink_in_lidar[0], baselink_in_lidar[1], baselink_in_lidar[2]));
     T_baselink2lidar_.rotate(eigen_quat); // 应用四元数的旋转
     // std::cout << "T_baselink2lidar_: " <<std::endl;
     // std::cout << T_baselink2lidar_.translation()  <<std::endl;

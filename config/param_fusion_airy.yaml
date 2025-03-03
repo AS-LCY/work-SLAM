@@ -2,14 +2,16 @@ localization_fusion:
     status_num: 3
     input_num: 2
     measure_num: 3
-    localization_fusion_dt: 100 # unit: ms
-    status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta]
-    input_cov_mat_diag: [0.05, 0.0017]  # [v, w]
-    measure_cov_mat_diag: [0.01, 0.01, 0.001] # [x, y, theta]
+    localization_fusion_dt: 50 # unit: ms
+    status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta], for init
+    input_cov_mat_diag: [0.05, 0.0017]  # [v, w] 
+    measure_cov_mat_diag: [0.0001, 0.0001, 0.00001] # [x, y, theta]
+    # measure_cov_mat_diag: [0.02, 0.02, 0.001] # [x, y, theta]
+    w_thr: 0.15 # unit: rad/s
     ekf_use_chassis: true # defualt to true, if test without chassis then set to false
     use_ekf_yaw: false
-    # baselink_in_lidar: [0.1, 0.0, -0.1, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     baselink_in_lidar: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    # baselink_in_lidar: [-0.2, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     time_lost_thr: 2.0  # unit: second
     
     gating:

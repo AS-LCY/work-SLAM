@@ -24,7 +24,7 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
     log_info_manager_->log_info.slip_count = 0;
     if (!lidar_queue_init_ || !chassis_queue_init_){
         slipping_count_ = 0;
-        ROS_INFO_STREAM("detect not started! lidar_queue_init = " << lidar_queue_init_  << ", chassis_queue_init = " << chassis_queue_init_);
+        // ROS_INFO_STREAM("detect waiting! lidar init = " << lidar_queue_init_  << ", chassis init = " << chassis_queue_init_);
         return false;
     }
 

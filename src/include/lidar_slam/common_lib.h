@@ -284,8 +284,7 @@ static Eigen::Matrix3d ypr2R(const Eigen::Vector3d &ypr)
 }
 
 
-static void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz, Eigen::Vector3d& ypr)
-{
+static void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz, Eigen::Vector3d& ypr){
     double x = eigen_transform.translation().x();
     double y = eigen_transform.translation().y();
     double z = eigen_transform.translation().z();

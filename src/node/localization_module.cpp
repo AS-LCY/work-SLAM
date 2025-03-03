@@ -431,8 +431,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         static int print_running_cnt = 0;
         if (print_running_cnt % 20 ==0){
         // if (print_running_cnt % 20 ==0 && print_running_cnt < 100){
-            ROS_INFO("-------------------------------------------------");
-            ROS_INFO("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+            ROS_INFO_ONCE("-------------------------------------------------");
+            ROS_INFO_ONCE("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
             print_running_cnt = 0;
         }
         print_running_cnt++;
@@ -490,7 +490,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // if(!localization_mode_){
     if(is_mapping_status(curr_running_module_status)){
         // pub_rgb_map(slam->getCurrentRGBMap());
-        publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_link", pubLidarInMap);
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
             pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
@@ -503,7 +503,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         if (slam_->isGloalLocalizationSuccess()){
-            publish_odometry_lidar_in_map(slam_->getLidarInMap(), "map", "base_link", pubLidarInMap);
+            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
             publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
@@ -645,6 +645,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
             br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_link"));
 
+            ROS_INFO_STREAM("pub tf: x=" << odometry_to_pub.pose.pose.position.x << ", y=" << odometry_to_pub.pose.pose.position.y);
             // update
             last_pub_time_m = check_time_m;
 
@@ -762,6 +763,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             static tf::TransformBroadcaster br;
             tf::Transform transform_to_send = odom_to_transform(odometry_to_pub);
             br.sendTransform(tf::StampedTransform(transform_to_send, odometry_to_pub.header.stamp, "map", "base_link"));
+
+            ROS_INFO_STREAM("pub tf: x=" << odometry_to_pub.pose.pose.position.x << ", y=" << odometry_to_pub.pose.pose.position.y);
 
             // pub log info
             fill_log(last_pose_filtered, curr_pose_filtered);
@@ -1102,6 +1105,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 
 
 void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
+    static const int cloud_size_to_keep = slam_param_.lidar_preproc.cloud_size_to_keep;
 
     hb_time_cbk_lidar_.store(ros::Time::now().toSec());
 
@@ -1136,44 +1140,77 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     auto start = std::chrono::system_clock::now();
     auto now_as_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start.time_since_epoch()).count();
     double now_sec = now_as_ns * 1e-9;
-    ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
+    // ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
-    if(slam_param_.lidar_preproc.lidar_type == 1){
-        ROS_INFO_ONCE("livox cbk");
-        std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
-        lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
-        // printf("clip lidar count: %d\n", lvx_msg->point_num);
-        ROS_INFO("clip lidar count: %d", lvx_msg->point_num);
 
-        slam_ -> livox_pcl_cbk(lvx_msg);
-    }else if(slam_param_.lidar_preproc.lidar_type == 2){
-        // pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_cld(new pcl::PointCloud<RsPointXYZIRT>());
-        // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_rs_cld);
-        // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
-        // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
+    PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+    // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
 
-        ROS_INFO_ONCE("robosense cbk");
-        PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-        lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-        // printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
-        ROS_INFO("clip lidar count: %ld", pcl_xyzin_cld->points.size());
-        slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
-    }else if(slam_param_.lidar_preproc.lidar_type == 3){
-        ROS_INFO_ONCE("vanjee cbk");
-        PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-        lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-        // printf("clip lidar count: %ld\n", pcl_xyzin_cld->points.size());
-        ROS_INFO("clip lidar count: %ld", pcl_xyzin_cld->points.size());
-        slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
-
+    PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
+    lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
+    int sample_cld_size = sample_cld_ptr->points.size();
+    if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
+        ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
     }
+
+
+    slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+
+    // if(slam_param_.lidar_preproc.lidar_type == 1){
+    //     // ROS_INFO_ONCE("livox cbk");
+    //     // std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
+    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
+    //     // // printf("clip lidar count: %d\n", lvx_msg->point_num);
+    //     // ROS_INFO("clip lidar count: %d", lvx_msg->point_num);
+
+    //     // slam_ -> livox_pcl_cbk(lvx_msg);
+
+
+    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
+
+    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
+    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
+
+    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
+
+    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+
+    // }else if(slam_param_.lidar_preproc.lidar_type == 2){
+    //     // pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_cld(new pcl::PointCloud<RsPointXYZIRT>());
+    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_rs_cld);
+    //     // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
+    //     // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
+
+    //     ROS_INFO_ONCE("robosense cbk");
+    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
+
+    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
+    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
+    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
+    //     // slam_ -> lidar_pcl_cbk(pcl_xyzin_cld);
+    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+
+    // }else if(slam_param_.lidar_preproc.lidar_type == 3){
+    //     ROS_INFO_ONCE("vanjee cbk");
+    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+    //     ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
+    //     slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
+
+    // }
 
 
     double t1 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    // printf("lidar-callback, time cost: %lf ms \033[0m\n", (t1-t0) *1000);
-    ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t1 - t0)*1000 << " ms" <<RESET);
+    if((t1 - t0)*1000 > 10){
+        ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t1 - t0)*1000 << " ms" <<RESET);
+    }
 }
 
 

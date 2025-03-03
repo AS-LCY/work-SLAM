@@ -36,6 +36,9 @@ public:
     
     // for robosense & vanjee
     virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){return true;}
+    
+    // common
+    void sampling_cloud(PointCloudXYZI::Ptr in_cloud_ptr, PointCloudXYZI::Ptr out_cloud_ptr);
 
 
 protected:
@@ -43,8 +46,14 @@ protected:
     // virtual void msg2pcl_clip()=0;
 
 private:
-    
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// member variable
+
+protected:
+    int cloud_size_to_keep_ = 2000;
+
+private:
 
 
 

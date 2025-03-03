@@ -212,14 +212,19 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
         pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
         
+        double abs_dx = std::abs(curr_x - last_x);
+        double abs_dy = std::abs(curr_y - last_y);
+        // if (abs_dx > 0.5 || abs_dy > 0.5){
+        //     log_info_manager_->l_status = L_FAILED;
+        // }
 
-        if(abs(curr_x - last_x) > odom2map_delta_thr){
-            // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs(curr_x - last_x);
-            correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs(curr_x - last_x);
+        if(abs_dx > odom2map_delta_thr){
+            // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;
+            correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
         }
-        if(abs(curr_y - last_y) > odom2map_delta_thr){
-            // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs(curr_y - last_y);
-            correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs(curr_y - last_y);
+        if(abs_dy > odom2map_delta_thr){
+            // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs_dy;
+            correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
         }
 
         pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿

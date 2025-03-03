@@ -70,6 +70,7 @@ public:
         std::string map_directory_on_mower_temp = "";
         std::vector<int> cpu_id_on_mower_temp;
         get_param(ns+ "common/cpu_id_on_mower", cpu_id_on_mower_temp, &success);
+        get_param(ns+ "common/map_directory_on_mower", map_directory_on_mower_temp, &success);
 
         if(loaded_param_.common.run_on_mower){
             loaded_param_.common.map_directory = map_directory_on_mower_temp;
@@ -144,6 +145,7 @@ public:
         get_param(ns+ "lidar_preproc/point_filter_num", loaded_param_.lidar_preproc.point_filter_num, &success);
         get_param(ns+ "lidar_preproc/ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num, &success);
         get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);
+        get_param(ns+ "lidar_preproc/cloud_size_to_keep", loaded_param_.lidar_preproc.cloud_size_to_keep, &success);
         get_param(ns+ "lidar_preproc/feature_enabled", loaded_param_.lidar_preproc.feature_enabled, &success);
         // get_param(ns+ "lidar_preproc/simple_voxel_enabled", loaded_param_.lidar_preproc.simple_voxel_enabled, &success);
         get_param(ns+ "lidar_preproc/extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method, &success);

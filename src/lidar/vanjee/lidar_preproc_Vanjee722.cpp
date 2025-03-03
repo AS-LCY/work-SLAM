@@ -7,10 +7,8 @@ LidarPreprocVanjee722::LidarPreprocVanjee722(){
     if(!set_param()){
         ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
-        // ROS_INFO("\033[0;32mSet lidar-Airy param successfully!\033[0m");
         ROS_INFO("Set lidar-Vanjee722 param successfully!");
     }
-    // ROS_INFO("\033[1;32mReset to lidar_preproc_Airy successfully!\033[0m");
     ROS_INFO("Reset to lidar_preproc_Vanjee722 successfully!");
 }
 
@@ -38,6 +36,7 @@ bool LidarPreprocVanjee722::set_param(){
         blind_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
         point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
         ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
+        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
         // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
         // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
         // ROS_ERROR("blind_square_ : %lf", blind_square_);
@@ -99,26 +98,35 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
             ///// make it dense
             if (lidar_common::is_nan_pt(*curpt)) { continue; } 
             
-            if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
-               continue;
-            }
+            // if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
+            //    continue;
+            // }
             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
             if(range_square < blind_square_){
                 continue;
             }
 
-            // if(row % point_filter_num_ == 0){
-            if(col % point_filter_num_ == 0 && row % ring_filter_num_ == 0){
-                PointType xyzin_point;
-                xyzin_point.x = curpt->x;
-                xyzin_point.y = curpt->y;
-                xyzin_point.z = curpt->z;
-                xyzin_point.intensity = curpt->intensity;
+            // // if(row % point_filter_num_ == 0){
+            // if(col % point_filter_num_ == 0 && row % ring_filter_num_ == 0){
+            //     PointType xyzin_point;
+            //     xyzin_point.x = curpt->x;
+            //     xyzin_point.y = curpt->y;
+            //     xyzin_point.z = curpt->z;
+            //     xyzin_point.intensity = curpt->intensity;
                 
-                // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
-                xyzin_point.curvature = (curpt->timestamp ) * 1000; // offset, unit = ms
-                pcl_xyzin_out->points.push_back(xyzin_point);
-            }
+            //     // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
+            //     xyzin_point.curvature = (curpt->timestamp ) * 1000; // offset, unit = ms
+            //     pcl_xyzin_out->points.push_back(xyzin_point);
+            // }
+            PointType xyzin_point;
+            xyzin_point.x = curpt->x;
+            xyzin_point.y = curpt->y;
+            xyzin_point.z = curpt->z;
+            xyzin_point.intensity = curpt->intensity;
+            
+            // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
+            xyzin_point.curvature = (curpt->timestamp ) * 1000; // offset, unit = ms
+            pcl_xyzin_out->points.push_back(xyzin_point);
 
         }
     }

@@ -1,6 +1,7 @@
 common:
-  run_on_mower: false   # true / false, default to: true   
-  map_directory_on_mower: "/home/firefly/ws_flbot/maps/1/3dmap/"       
+  run_on_mower: true   # true / false, default to: true 
+  map_directory_on_mower: "/home/forlinx/ws_flbot/maps/"
+  cpu_id_on_mower: []
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
   localization_mode: false
@@ -81,6 +82,7 @@ lidar_preproc:
   blind_distance: 1.5 
   flag_keep_only_last_lidar: true
   point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+  cloud_size_to_keep: 2000
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 5 # 间隔采样所需参数
