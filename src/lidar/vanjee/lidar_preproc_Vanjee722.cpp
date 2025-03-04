@@ -125,7 +125,8 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
             xyzin_point.intensity = curpt->intensity;
             
             // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
-            xyzin_point.curvature = (curpt->timestamp ) * 1000; // offset, unit = ms
+            // xyzin_point.curvature = (curpt->timestamp ) * 1000; // offset, unit = ms
+            xyzin_point.curvature = curpt->timestamp ; // offset, unit = second
             pcl_xyzin_out->points.push_back(xyzin_point);
 
         }

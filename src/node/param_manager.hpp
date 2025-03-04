@@ -159,6 +159,8 @@ public:
         get_param(ns+ "lidar_preproc/obstacle_min_height", loaded_param_.lidar_preproc.obstacle_min_height, &success);
         get_param(ns+ "lidar_preproc/obstacle_filter_size", loaded_param_.lidar_preproc.obstacle_filter_size, &success);
         get_param(ns+ "lidar_preproc/grid_size", loaded_param_.lidar_preproc.grid_size, &success);
+        get_param(ns+ "lidar_preproc/time_cost_thr_print", loaded_param_.lidar_preproc.time_cost_thr_print, &success);
+        
 
         /// mapping params *******************************************
         get_param(ns+ "mapping/acc_cov", loaded_param_.mapping.acc_cov, &success);

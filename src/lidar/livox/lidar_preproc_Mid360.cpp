@@ -103,7 +103,8 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
             xyzin_point.z = curpt->z;
             xyzin_point.intensity = curpt->intensity;
             // 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒       
-            xyzin_point.curvature = (curpt->timestamp * 1e-9 - header_time) * 1000; // offset, unit = ms
+            // xyzin_point.curvature = (curpt->timestamp * 1e-9 - header_time) * 1000; // offset, unit = ms
+            xyzin_point.curvature = curpt->timestamp * 1e-9 - header_time; // offset, unit = second
             // ROS_INFO_STREAM("single point time: " << xyzin_point.curvature << " ms");
             
             pcl_xyzin_out->points.push_back(xyzin_point);

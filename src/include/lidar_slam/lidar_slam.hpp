@@ -451,6 +451,9 @@ class LidarSlam
         // MappingStatus m_status_ = M_INACTIVE;
         // bool second_mapping_need_global_localization_ = false;
 
+        // LocalizationStatus l_local_thread_status_ = L_INACTIVE;
+        // LocalizationStatus l_slam_thread_status_ = L_INACTIVE;
+
         int global_localize_count_=0;
         int lidar_no_point_count_ = 0;
         localization_module::LocalizationModuleLogInfoManager * log_info_manager_;

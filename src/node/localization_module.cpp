@@ -1106,6 +1106,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
 
 void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::ConstPtr &ros_msg){
     static const int cloud_size_to_keep = slam_param_.lidar_preproc.cloud_size_to_keep;
+    static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 
     hb_time_cbk_lidar_.store(ros::Time::now().toSec());
 
@@ -1146,6 +1147,7 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
+    double t1 = omp_get_wtime();
 
     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
@@ -1153,9 +1155,11 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
         ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
     }
+    double t2 = omp_get_wtime();
 
 
     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+    double t3 = omp_get_wtime();
 
     // if(slam_param_.lidar_preproc.lidar_type == 1){
     //     // ROS_INFO_ONCE("livox cbk");
@@ -1205,11 +1209,14 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // }
 
 
-    double t1 = omp_get_wtime();
+    double t100 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    if((t1 - t0)*1000 > 10){
-        ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t1 - t0)*1000 << " ms" <<RESET);
+    if((t1 - t0)*1000 > time_cost_thr_print){
+        ROS_INFO_STREAM("lidar-callback, msg_2_pcl: "<< (t1 - t0)*1000 << " ms");
+        ROS_INFO_STREAM("lidar-callback, sampling : "<< (t2 - t1)*1000 << " ms");
+        ROS_INFO_STREAM("lidar-callback, push buff: "<< (t3 - t2)*1000 << " ms");
+        ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t100 - t0)*1000 << " ms" <<RESET);
     }
 }
 

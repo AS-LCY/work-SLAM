@@ -214,10 +214,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         
         double abs_dx = std::abs(curr_x - last_x);
         double abs_dy = std::abs(curr_y - last_y);
-        // if (abs_dx > 0.5 || abs_dy > 0.5){
-        //     log_info_manager_->l_status = L_FAILED;
-        // }
-
+        
         if(use_pose_filter){
             if(abs_dx > odom2map_delta_thr){
                 // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;

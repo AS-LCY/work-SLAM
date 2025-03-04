@@ -169,8 +169,8 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         hb_time_thread_loop_closure_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
-        log_info_manager_->m_status = M_INACTIVE;
-        log_info_manager_->l_status = L_INACTIVE;
+        // log_info_manager_->m_status = M_INACTIVE;
+        // log_info_manager_->l_status = L_INACTIVE;
     }else if (work_mode == SEC_MAPPING){                                              
         // cloud_map_manager_->load_map_data(config_param_.common.map_directory);
         global_localization_thread_.reset(new std::thread(&LidarSlam::global_localization_for_sec_mapping_thread, this));
@@ -179,19 +179,21 @@ void LidarSlam::reset(SlamWorkMode work_mode){
         hb_time_thread_secmap_relocalize_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
-        log_info_manager_->m_status = M_INACTIVE;
-        log_info_manager_->l_status = L_INACTIVE;
+        // log_info_manager_->m_status = M_INACTIVE;
+        // log_info_manager_->l_status = L_INACTIVE;
         // second_mapping_thread.reset(new std::thread(&LidarSlam::relocalizationForMappingThread, this));
     }else if (work_mode == LOCALIZATION){
         thread.reset(new std::thread(&LidarSlam::localizationThread, this));
         hb_time_thread_localize_.store(curr_time);
         // m_status_ = M_INACTIVE;
         // l_status_ = L_INACTIVE;
-        log_info_manager_->m_status = M_INACTIVE;
-        log_info_manager_->l_status = L_INACTIVE;
+        // log_info_manager_->m_status = M_INACTIVE;
+        // log_info_manager_->l_status = L_INACTIVE;
     }
     // show_thread.reset(new std::thread(&LidarSlam::showThread, this)); 
     working_mode_ = work_mode;
+    log_info_manager_->m_status = M_INACTIVE;
+    log_info_manager_->l_status = L_INACTIVE;
     // cout << "slam reset successfully"<<endl;
     ROS_INFO_STREAM(GREEN << "slam reset successfully" <<RESET);
 }

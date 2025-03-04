@@ -39,6 +39,7 @@ struct LidarPreprocParam{
     double obstacle_min_height; // above wheel center
     double obstacle_filter_size;
     double grid_size;
+    double time_cost_thr_print=10;
 
 };
 

@@ -24,6 +24,7 @@ void LidarPreprocParent::sampling_cloud(PointCloudXYZI::Ptr in_cloud_ptr, PointC
     for (int i = 0; i < out_size; ++i){
         const auto pointFrom = in_cloud_ptr->points[i];
         out_cloud_ptr->points[i] = in_cloud_ptr->points[i * point_filter_ratio];
+        out_cloud_ptr->points[i].curvature = in_cloud_ptr->points[i * point_filter_ratio].curvature * 1000; // unit=ms, 单位从秒转换为毫秒
     }
 
     out_cloud_ptr->header = in_cloud_ptr->header;
