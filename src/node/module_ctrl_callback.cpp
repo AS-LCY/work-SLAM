@@ -40,6 +40,9 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
     ROS_INFO_STREAM(BOLDGREEN << "Received Ctrl Cmd: " << print_SlamCtrlCmd(curr_cmd) << RESET);
     ROS_INFO_STREAM(" CMD_MAX: " << CMD_MAX);
 
+    int map_id = msg.data % 100;
+    if(map_id == 0) {map_id=1;}
+
     
 
     switch (curr_cmd){
@@ -49,7 +52,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             // running_module_status_ = ModuleStatus::MODULE_STARTING_SLAM;
             // running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);            
             // if(start_mapping(set_module_status_)){//启动建图成功
-            int map_id = msg.data % 100;
+            // int map_id = msg.data % 100;
             if(start_mapping(map_id)){//启动建图成功
                 // running_module_status_ = set_module_status_;
                 // running_module_status_.store(set_module_status_);
@@ -65,7 +68,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             break;
         }
         case START_SEC_MAPPING:{// 重定位，并开始建图，/// TODO/////////////////////////////////////
-            int map_id = msg.data % 100;
+            // int map_id = msg.data % 100;
             // last_running_module_status_ = running_module_status_;
             // set_module_status_ = ModuleStatus::MODULE_SEC_MAPPING;
             // // running_module_status_ = ModuleStatus::MODULE_STARTING_SLAM;
@@ -108,7 +111,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             break;
         }
         case START_LOCALIZATION:{// 开始定位，（先重定位，再定位）
-            int map_id = msg.data % 100;
+            // int map_id = msg.data % 100;
             // last_running_module_status_ = running_module_status_;
             // set_module_status_ = ModuleStatus::MODULE_LOCALIZATION;
             // // running_module_status_ = ModuleStatus::MODULE_STARTING_SLAM;
@@ -143,7 +146,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             break;
         }
         case START_RELOCALIZATION:{// 重新进行重定位
-            int map_id = msg.data % 100;
+            // int map_id = msg.data % 100;
             if(start_relocalization(map_id)){
                 ROS_INFO("restart localization successfully!");
             }else{
@@ -153,7 +156,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             break;
         }
         case RESTART_SEC_MAPPING:{// 重新进行重定位
-            int map_id = msg.data % 100;
+            // int map_id = msg.data % 100;
             if(restart_second_mapping(map_id)){
                 ROS_INFO("restart sec_mapping successfully!");
             }else{
