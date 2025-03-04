@@ -35,7 +35,7 @@ public:
    Localization();
    ~Localization();
    bool loadMap(std::string path);
-   bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set);
+   bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_filter);
    bool globalLocalization(PointCloudXYZI::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score);
    Eigen::Isometry3d getOdomToMap(){
       //  Eigen::Isometry3d isometry3d; 

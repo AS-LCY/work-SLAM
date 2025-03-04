@@ -358,6 +358,7 @@ void LidarSlam::localizationThread()
     const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
     const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
     const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
+    const auto use_pose_filter = config_param_.common.use_pose_filter;
 
     int gicp_fail_count = 0;
 
@@ -427,7 +428,7 @@ void LidarSlam::localizationThread()
                 // ////////////////
                 // cout << "localizing ... "<<endl;
                 ROS_INFO_STREAM("localizing ... ");
-                if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set)){
+                if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // l_status_ = L_NORMAL;
                     log_info_manager_->l_status = L_NORMAL;
 
