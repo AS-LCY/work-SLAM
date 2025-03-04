@@ -1213,10 +1213,10 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     auto end = std::chrono::system_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if((t1 - t0)*1000 > time_cost_thr_print){
-        ROS_INFO_STREAM("lidar-callback, msg_2_pcl: "<< (t1 - t0)*1000 << " ms");
-        ROS_INFO_STREAM("lidar-callback, sampling : "<< (t2 - t1)*1000 << " ms");
-        ROS_INFO_STREAM("lidar-callback, push buff: "<< (t3 - t2)*1000 << " ms");
-        ROS_INFO_STREAM(GREEN << "lidar-callback, time cost: "<< (t100 - t0)*1000 << " ms" <<RESET);
+        // ROS_INFO_STREAM("lidar-callback, msg_2_pcl: "<< (t1 - t0)*1000 << " ms");
+        // ROS_INFO_STREAM("lidar-callback, sampling : "<< (t2 - t1)*1000 << " ms");
+        // ROS_INFO_STREAM("lidar-callback, push buff: "<< (t3 - t2)*1000 << " ms");
+        ROS_INFO_STREAM(YELLOW << "lidar-callback, time cost: "<< (t100 - t0)*1000 << " ms --------" <<RESET);
     }
 }
 
