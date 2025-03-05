@@ -9,7 +9,7 @@ localization_fusion:
     w_thr: 0.15 # unit: rad/s
     ekf_use_chassis: true # defualt to true, if test without chassis then set to false
     use_ekf_yaw: false
-    baselink_in_lidar: [0.1, 0.0, -0.1, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    baselink_in_lidar: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     # baselink_in_lidar: [-0.2, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     time_lost_thr: 2.0  # unit: second
     
