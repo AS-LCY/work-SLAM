@@ -23,4 +23,5 @@ localization_fusion:
         sub_imu_topic: "/vanjee/imu"
         sub_chassis_topic: "/flbot/hardware/chassic_data"
         sub_slam_odom_topic: "/Odometry_lidar_in_map"
-        pub_localization_topic: "/flbot/localiztion/odometry"
+        # pub_localization_topic: "/flbot/localiztion/odometry"
+        pub_localization_topic: "/Odometry_lidar_in_map_filter"
