@@ -32,7 +32,7 @@ common:
   lidar_no_point_count_thr:  10
   check_delay: false
   feats_down_size_thr: 100
-  use_pose_filter: true
+  use_pose_filter: false
   cpu_id: []
   # cpu_id: [4, 5]
 
