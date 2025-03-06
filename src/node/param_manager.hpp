@@ -47,6 +47,7 @@ public:
         get_param(ns+ "common/receive_lidar_freq", loaded_param_.common.receive_lidar_freq, &success);
         get_param(ns+ "common/slam_lose_rate_time_thr", loaded_param_.common.slam_lose_rate_time_thr, &success);
         get_param(ns+ "common/lidar_no_point_count_thr", loaded_param_.common.lidar_no_point_count_thr, &success);
+        get_param(ns+ "common/check_delay", loaded_param_.common.check_delay, &success);
         get_param(ns+ "common/feats_down_size_thr", loaded_param_.common.feats_down_size_thr, &success);
         get_param(ns+ "common/use_pose_filter", loaded_param_.common.use_pose_filter, &success);
         get_param(ns+ "common/cpu_id", loaded_param_.common.cpu_id, &success);
@@ -199,8 +200,9 @@ public:
         get_param(ns+ "localization/chassis_linear_velocity_thr", loaded_param_.localization.chassis_linear_velocity_thr, &success);
         get_param(ns+ "localization/motionless_chassis_ratio", loaded_param_.localization.motionless_chassis_ratio, &success);
         get_param(ns+ "localization/lidar_cbk_delay_thr", loaded_param_.localization.lidar_cbk_delay_thr, &success);
+        get_param(ns+ "localization/localization_fail_count_thr", loaded_param_.localization.localization_fail_count_thr, &success);
         
-        /// re-localization params *******************************************
+        /// re-localization params *******************************************s
         get_param(ns+ "re_localization/score_thr", loaded_param_.re_localization.score_thr, &success);
         get_param(ns+ "re_localization/time_out_thr", loaded_param_.re_localization.time_out_thr, &success);
 

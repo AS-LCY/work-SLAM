@@ -29,6 +29,7 @@ common:
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
+  check_delay: false
   feats_down_size_thr: 100
   use_pose_filter: true
   cpu_id: []
@@ -72,6 +73,7 @@ localization:
   chassis_linear_velocity_thr: 0.02
   motionless_chassis_ratio: 0.98
   lidar_cbk_delay_thr: 2 # 
+  localization_fail_count_thr: 3
 
 lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 

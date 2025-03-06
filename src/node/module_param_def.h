@@ -29,6 +29,7 @@ struct CommonParam{
     int receive_lidar_freq = 10;
     double slam_lose_rate_time_thr = 0.1;
     int lidar_no_point_count_thr = 10;
+    bool check_delay = false;
     int feats_down_size_thr = 100;
     bool use_pose_filter = false;
     std::vector<int> cpu_id;

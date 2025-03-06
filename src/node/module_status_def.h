@@ -37,7 +37,8 @@ static string print_ModuleStatus(ModuleStatus e){
 
 } //namespace localization_module
 
-namespace lidar_slam{
+// namespace lidar_slam{
+namespace localization_module{
 using namespace std;
 
 enum LocalizationStatus{
@@ -86,6 +87,7 @@ static string print_MappingStatus(MappingStatus e){
 }
 
 
-}// namespace lidar_slam
+}// namespace localization_module
+// }// namespace lidar_slam
 
 #endif

@@ -36,7 +36,7 @@
 // #include "lddc.h"
 #include "lidar/livox/ros_livox_datatype_def.h"
 #include "node/module_param_def.h"
-#include "node/module_status_def.h"
+// #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 // #include "lds_lidar.h"
 
@@ -362,8 +362,48 @@ class LidarSlam
             return hb_time_thread_secmap_relocalize_.load();
         }
 
+        int get_local_thrd_status(){
+            return local_thrd_status_.load();
+        }
+        int get_slam_run_status(){
+            return slam_run_status_.load();
+        }
+        int get_secmap_relocal_thrd_status(){
+            return secmap_relocal_thrd_status_.load();
+        }
+
 
     private:
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// slam status    //
+        /*************************************************** */
+        /** @local_thrd_status_: 
+         * 0: inactive
+         * 1: relocalize ing
+         * 2: relocalize failed
+         * 3: normal
+         * 4: local low accuracy
+         * 5: local failed
+         */
+        std::atomic<int> local_thrd_status_{0};
+
+        /*************************************************** */
+        /** @slam_run_status_: 
+         * 0: inactive
+         * 1: normal
+         * 2: slam fail: cloud no enough point 
+         */
+        std::atomic<int>  slam_run_status_{0};
+
+        /*************************************************** */
+        /** @secmap_relocal_thrd_status_: 
+         * 0: inactive
+         * 1: relocalize ing
+         * 2: relocalize failed
+         * 3: normal
+         */
+        std::atomic<int> secmap_relocal_thrd_status_{0};
+        
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         // 各 线程、callback、timer heartbeat
         std::atomic<double> hb_time_thread_localize_;           // status = LOCALIZATION

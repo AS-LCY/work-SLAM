@@ -202,6 +202,11 @@ private:
     void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
 
     void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
+    
+    int  check_fill_health_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleHealth &health_msg);
+    void check_fill_module_status_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg);
+    void fill_module_l_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg);
+    void fill_module_m_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg);
 
     string print_SlamCtrlCmd(SlamCtrlCmd e){
         switch (e){
@@ -223,13 +228,33 @@ private:
     }
     
     ////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// module status    //
+    /*************************************************** */
+    /** @local_node_status_: 
+     * 0: inactive
+     * 1: normal
+     * 2: lidar cbk delay
+     * 3: localize thread delay
+     */
+    std::atomic<int> local_node_status_{0};
+    /*************************************************** */
+    /** @local_node_status_: 
+     * 0: inactive
+     * 1: normal
+     * 2: lidar cbk delay
+     * 3: secmap-relocal thread delay
+     * 4: loop_closure_thread_delay 
+     */
+    std::atomic<int> mapping_node_status_{0};
+    
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
     // 各 线程、callback、timer heartbeat
     std::atomic<double> hb_time_cbk_imu_;
     std::atomic<double> hb_time_cbk_lidar_;
     std::atomic<double> hb_time_cbk_module_ctrl_;
     std::atomic<double> hb_time_timer_slam_;
     std::atomic<double> hb_time_timer_pose_;
-    std::atomic<double> hb_time_thread_localize_;
+    // std::atomic<double> hb_time_thread_localize_;
     std::atomic<double> hb_time_thread_loop_closure_;
     std::atomic<double> hb_time_thread_secmap_relocalize_;
     // health_status_: -------------------------------------
@@ -297,6 +322,8 @@ private:
 
     // 建图 *******************************************
     // MappingStatus mapping_status_ = M_INACTIVE;
+    std::atomic<int> mapping_status_{0};
+    std::atomic<int> localization_status_{0};
     int start_index_ = -1;
     int end_index_ = -1;
 

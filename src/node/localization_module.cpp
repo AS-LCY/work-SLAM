@@ -324,7 +324,7 @@ bool LocalizationModule::create_ROS_IO(){
 
     // timer dealt ********************************************************************
     nh5_.setCallbackQueue(&health_queue_);
-    timer_module_status_ = nh5_.createTimer(ros::Duration(0.05), &LocalizationModule::pub_module_status_timer, this);
+    timer_module_status_ = nh5_.createTimer(ros::Duration(0.1), &LocalizationModule::pub_module_status_timer, this);
     
     ROS_INFO_STREAM(BOLDGREEN << "use_pose_filter: " << slam_param_.common.use_pose_filter <<RESET);
     if(slam_param_.common.use_pose_filter){
@@ -337,18 +337,18 @@ bool LocalizationModule::create_ROS_IO(){
     // only 定位
 
     // publish TODO: 还需要区分哪些是建图或定位发布的
-    pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 100000);  
+    pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 10);  
 	pubBodyCloud = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/body_cloud", 20);
 	pub_key_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/key_body_cloud", 20);
-    pubObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/obstacle_cloud", 100000);
-    pubFilteredObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/filtered_obstacle_cloud", 100000);
-    pubTestCloud = nh_.advertise<sensor_msgs::PointCloud2>("/test_cloud", 100000);
-	pubKdtreeCloud = nh_.advertise<sensor_msgs::PointCloud2>("/kdtree_cloud", 100000); 
+    pubObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/obstacle_cloud", 10);
+    pubFilteredObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/filtered_obstacle_cloud", 10);
+    pubTestCloud = nh_.advertise<sensor_msgs::PointCloud2>("/test_cloud", 10);
+	pubKdtreeCloud = nh_.advertise<sensor_msgs::PointCloud2>("/kdtree_cloud", 10); 
 	pubOptimizedPath= nh_.advertise<nav_msgs::Path>("/optimized_path", 1000);
     pubUnoptimizedPath= nh_.advertise<nav_msgs::Path>("/unoptimized_path", 1000);
 	pubLoopConstraintEdge = nh_.advertise<visualization_msgs::MarkerArray>("/flbot/mapping/loop_closure_constraints", 1);
     pubKeyframePose = nh_.advertise<visualization_msgs::MarkerArray>("/key_frame_pose", 1);
-	pubOdomAftMapped = nh_.advertise<nav_msgs::Odometry>("/Odometry", 100000);
+	pubOdomAftMapped = nh_.advertise<nav_msgs::Odometry>("/Odometry", 10);
     pubLoadMap = nh_.advertise<sensor_msgs::PointCloud2>("/Load_map", 1);
     pubRgbCloud= nh_.advertise<sensor_msgs::PointCloud2>("rgb_cloud", 1);
     pub_base_imu_ = nh_.advertise<sensor_msgs::Imu>("/flbot/localization/imu", 100);
@@ -534,22 +534,22 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     int health_status_now = health_status_.load();
     // ROS_ERROR_STREAM(RED << "health_status_now: " << health_status_now << RESET);
 
-    if (health_status_now == 1){
-        // exit(1);
-        return;
-    }else if(health_status_now == 2){
-        if(curr_running_module_status == ModuleStatus::MODULE_MAPPING){
-            // last_running_module_status_ = running_module_status_;
-            // set_module_status_ = ModuleStatus::MODULE_IDLE;
-            // running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
-            stop_mapping_without_saving_map();
-        }else if(curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING){
-            stop_mapping_without_saving_map();
-        }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
-            stop_localization();
-        }
-        return;
-    }
+    // if (health_status_now == 1){
+    //     // exit(1);
+    //     return;
+    // }else if(health_status_now == 2){
+    //     if(curr_running_module_status == ModuleStatus::MODULE_MAPPING){
+    //         // last_running_module_status_ = running_module_status_;
+    //         // set_module_status_ = ModuleStatus::MODULE_IDLE;
+    //         // running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
+    //         stop_mapping_without_saving_map();
+    //     }else if(curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING){
+    //         stop_mapping_without_saving_map();
+    //     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+    //         stop_localization();
+    //     }
+    //     return;
+    // }
 
     // ROS_INFO_STREAM(RED << "use_pose_filter" << RESET);
     // param set
@@ -601,28 +601,29 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     }
 
     double lidar_cbk_delay = now_sec - livox_update_time;
-    if(livox_update_time < 1){
-        static int print_lidar_time_cnt = 0;
-        if (print_lidar_time_cnt % 200 ==0){
-            ROS_WARN_STREAM(YELLOW << "pose_filter: not receive the first lidar yet! return!"<< RESET);
-            print_lidar_time_cnt = 0;
-        }
-        print_lidar_time_cnt++; // print_lidar_time_cnt only used here
-        return;
+    // if(livox_update_time < 1){
+    //     static int print_lidar_time_cnt = 0;
+    //     if (print_lidar_time_cnt % 200 ==0){
+    //         ROS_WARN_STREAM(YELLOW << "pose_filter: not receive the first lidar yet! return!"<< RESET);
+    //         print_lidar_time_cnt = 0;
+    //     }
+    //     print_lidar_time_cnt++; // print_lidar_time_cnt only used here
+    //     return;
         
-    }else if(lidar_cbk_delay > lidar_cbk_delay_thr){
-        log_info_manager_->l_status = L_FAILED;
-        ROS_ERROR_STREAM(RED << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
-        // return;
-    }else if(lidar_cbk_delay > 0.5){
-        log_info_manager_->l_status = L_LOW_ACCURACY;
-        ROS_WARN_STREAM(YELLOW << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
+    // }else if(lidar_cbk_delay > lidar_cbk_delay_thr){
+    //     log_info_manager_->l_status = L_FAILED;
+    //     ROS_ERROR_STREAM(RED << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
+    //     // return;
+    // }else if(lidar_cbk_delay > 0.5){
+    //     log_info_manager_->l_status = L_LOW_ACCURACY;
+    //     ROS_WARN_STREAM(YELLOW << "pose_filter: lidar_cbk_delay: " << int(lidar_cbk_delay*1000) <<" ms" << RESET);
 
-    }
+    // }
 
     // if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
     if (is_mapping_status(curr_running_module_status)){
-        if(log_info_manager_->m_status == M_FAILED){
+        // if(log_info_manager_->m_status == M_FAILED){
+        if(mapping_status_.load() == 5){
             ROS_ERROR_STREAM(RED << "pose_filter: mapping_status: M_FAILED; return! skip pub pose" << RESET);
             return;
         }
@@ -632,7 +633,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         auto check_time_m = std::chrono::steady_clock::now();                
         auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_m - last_pub_time_m);
 
-        if (pub_elapsed > pub_period  && log_info_manager_->m_status==3){
+        // if (pub_elapsed > pub_period  && log_info_manager_->m_status == 3){
+        if (pub_elapsed > pub_period  && mapping_status_ == 3){
 
             // Eigen::Isometry3d lidar_in_map_to_pub = slam_->getLidarInMap();
             Eigen::Isometry3d baselink_in_map_to_pub = slam_->getLidarInMap() * T_lidar_baselink_; // baselink_in_map
@@ -670,8 +672,10 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         return;
     }else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         // 定位模式
+        auto localization_status_now = localization_status_.load();
 
-        if(log_info_manager_->l_status == L_FAILED){
+        // if(log_info_manager_->l_status == L_FAILED){
+        if(localization_status_now == 5 || localization_status_now == 2){
             ROS_ERROR_STREAM(RED << "pose_filter: localization_status: L_FAILED; return! skip pub pose" << RESET);
             return;
         }
@@ -685,7 +689,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         // position init
         if (!position_initialized_){
             bool localize_flag = (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION ? 1 : 0);
-            bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
+            // bool l_status_ok = (log_info_manager_->l_status == L_NORMAL ? 1 : 0);
+            bool l_status_ok = (localization_status_now == 3 ? 1 : 0);
 
             if (localize_flag && l_status_ok){
                 // auto curr_pose = slam_->getLidarInMap(); 
@@ -752,7 +757,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         auto check_time_now_l = std::chrono::steady_clock::now();
         auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_now_l - last_pub_time_l);
 
-        if (pub_elapsed > pub_period && log_info_manager_->l_status==3){
+        // if (pub_elapsed > pub_period && log_info_manager_->l_status==3){
+        if (pub_elapsed > pub_period && localization_status_.load()==3){
             // pub odom 
             Eigen::Isometry3d lidar_in_map_to_pub = curr_pose_filtered;// 结果数据赋值
             nav_msgs::Odometry odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_link");  
@@ -907,8 +913,7 @@ void LocalizationModule::reset_pose_filter(){
 //////////////////////////////////////////////////////////////////////////////////////
 
 
-
-void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
+int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleHealth &health_msg){
     static const double imu_interval = 0.005;
     static const double lidar_interval = 0.1;
     static const double slam_interval = 0.05;
@@ -924,8 +929,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     static const int loop_closure_ratio = 3;
     static const int secmap_relocalize_ratio = 3;
     static const int point_cloud_size_thr = 150;
-    // ******************************************************************************************
-    ModuleStatus curr_running_module_status = running_module_status_.load();
+
     // check ROS IO status **********************************************************************
     int health_status_now = 0;
     // health_status_.store(0); // reset to status ok
@@ -964,7 +968,9 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
         hb_thread_loop_closure = loop_closure_delay  < loop_closure_interval  * loop_closure_ratio  ? true : false;
         if(!hb_thread_loop_closure){
             health_status_now = std::max(1, health_status_now);
-            log_info_manager_->m_status = M_FAILED;
+
+            mapping_node_status_.store(4);// 0: inactive
+            // log_info_manager_->m_status = M_FAILED;
         }
     }else if(curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING){
         loop_closure_delay = curr_time - slam_->get_hb_time_thread_loop_closure();
@@ -973,14 +979,16 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
         hb_thread_secmap_relocalize = secmap_relocalize_delay  < secmap_relocalize_interval  * secmap_relocalize_ratio  ? true : false;
         if(!hb_thread_loop_closure || !hb_thread_secmap_relocalize){
             health_status_now = std::max(1, health_status_now);
-            log_info_manager_->m_status = M_FAILED;
+            mapping_node_status_.store(4);// 0: inactive
+            // log_info_manager_->m_status = M_FAILED;
         }
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
         localize_delay = curr_time - slam_->get_hb_time_thread_localize();
         hb_thread_localize = localize_delay  < localize_interval  * localize_ratio  ? true : false;
         if(!hb_thread_localize){
             health_status_now = std::max(1, health_status_now);
-            log_info_manager_->l_status = L_FAILED;
+            local_node_status_.store(3);// 0: inactive
+            // log_info_manager_->l_status = L_FAILED;
         }
     }
     // check lidar driver **************************************************************
@@ -997,79 +1005,8 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
         health_status_now = std::max(2, health_status_now);
     }
 
-    health_status_.store(health_status_now);
 
-
-    // make status msg *************************************************************************
-    // fill header
-    log_info_manager_->module_status = running_module_status_.load();
-
-    fairland_msgs::LocalizationModuleStatus status_msg;
-    fairland_msgs::LocalizationModuleHealth health_msg;
-    // status_msg.header.stamp = ros::Time().now();
-    status_msg.header.stamp = curr_ros_time;
-    // status_msg.header.frame_id = "lidar";
-    status_msg.header.frame_id = "base_link";
-
-    health_msg.header.stamp = curr_ros_time;
-    health_msg.header.frame_id = "base_link";
-
-    // fill status_msg.module_status
-    // ModuleStatus curr_running_module_status = running_module_status_.load();
-    if(curr_running_module_status == ModuleStatus::MODULE_IDLE){
-        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::IDLE;
-    }else if(is_mapping_status(curr_running_module_status)){
-        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::MAPPING;
-    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
-        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::LOCALIZATION;
-        // localization_status_ = slam_->get_l_status();
-    }else if(curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM){
-        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STARTING;
-    }else if(curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STOPPING;
-    }else{
-        ROS_ERROR_STREAM(RED << "error running module status: "<< print_ModuleStatus(curr_running_module_status).c_str() <<RESET);
-    }
-    
-
-    // fill status_msg.mapping_status
-    // ROS_INFO("set mapping_status");
-    if(log_info_manager_->m_status == M_INACTIVE){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
-    }else if(log_info_manager_->m_status == M_RELOCALIZING){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZING;
-    }else if(log_info_manager_->m_status == M_RELOCALIZE_FAILED){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZE_FAILED;
-    }else if(log_info_manager_->m_status == M_CREATING_ELE){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_CREATING_ELE;
-    }else if(log_info_manager_->m_status == M_STANDBY){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_STANDBY;
-    }else if(log_info_manager_->m_status == M_FAILED){
-        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
-    }else{
-        ROS_ERROR_STREAM(RED << "error mapping status: "<< print_MappingStatus(log_info_manager_->m_status).c_str() <<RESET);
-    }
-
-    // fill status_msg.localization_status
-    // ROS_INFO("set localization_status");
-    if(log_info_manager_->l_status == L_INACTIVE){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
-    }else if(log_info_manager_->l_status == L_RELOCALIZING){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZING;
-    }else if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZE_FAILED;
-    }else if(log_info_manager_->l_status == L_NORMAL){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_NORMAL;
-    }else if(log_info_manager_->l_status == L_LOW_ACCURACY){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_LOW_ACCURACY;
-    }else if(log_info_manager_->l_status == L_FAILED){
-        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
-    }else{
-        ROS_ERROR_STREAM(RED << "error localization status: " << print_LocalizationStatus(log_info_manager_->l_status).c_str() <<RESET);
-    }
-
-
-    // make health msg *************************************************************************
+    // fill health msg *************************************************************************
     health_msg.cloud_size = orig_point_cloud_size;
     
     health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
@@ -1091,7 +1028,69 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     health_msg.error_lidar_point_too_few = error_lidar_point_too_few;     // value: [0] or [1]
     health_msg.error_livox_driver_failed = error_livox_driver_failed;     // value: [0] or [1]
 
-    health_msg.health_status = health_status_.load();
+    health_msg.health_status = health_status_now;
+
+    return health_status_now;
+
+
+}
+
+
+void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
+    // ******************************************************************************************
+    auto curr_running_module_status = running_module_status_.load();
+    auto curr_ros_time = ros::Time::now();
+
+    fairland_msgs::LocalizationModuleHealth health_msg;
+    int health_status_now = check_fill_health_msg(curr_running_module_status, health_msg);
+    health_msg.header.stamp = curr_ros_time;
+    health_msg.header.frame_id = "base_link";
+
+    health_status_.store(health_status_now);
+    // make status msg *************************************************************************
+    // fill header
+    log_info_manager_->module_status = running_module_status_.load();
+
+    fairland_msgs::LocalizationModuleStatus status_msg;
+
+    check_fill_module_status_msg(curr_running_module_status, status_msg);
+    status_msg.header.stamp = curr_ros_time;
+    status_msg.header.frame_id = "base_link";
+
+    // // fill status_msg.mapping_status
+    // // ROS_INFO("set mapping_status");
+    // if(log_info_manager_->m_status == M_INACTIVE){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
+    // }else if(log_info_manager_->m_status == M_RELOCALIZING){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZING;
+    // }else if(log_info_manager_->m_status == M_RELOCALIZE_FAILED){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_RELOCALIZE_FAILED;
+    // }else if(log_info_manager_->m_status == M_CREATING_ELE){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_CREATING_ELE;
+    // }else if(log_info_manager_->m_status == M_STANDBY){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_STANDBY;
+    // }else if(log_info_manager_->m_status == M_FAILED){
+    //     status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+    // }else{
+    //     ROS_ERROR_STREAM(RED << "error mapping status: "<< print_MappingStatus(log_info_manager_->m_status).c_str() <<RESET);
+    // }
+    // // fill status_msg.localization_status
+    // // ROS_INFO("set localization_status");
+    // if(log_info_manager_->l_status == L_INACTIVE){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
+    // }else if(log_info_manager_->l_status == L_RELOCALIZING){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZING;
+    // }else if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_RELOCALIZE_FAILED;
+    // }else if(log_info_manager_->l_status == L_NORMAL){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_NORMAL;
+    // }else if(log_info_manager_->l_status == L_LOW_ACCURACY){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_LOW_ACCURACY;
+    // }else if(log_info_manager_->l_status == L_FAILED){
+    //     status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
+    // }else{
+    //     ROS_ERROR_STREAM(RED << "error localization status: " << print_LocalizationStatus(log_info_manager_->l_status).c_str() <<RESET);
+    // }
 
     // make health msg end *********************************************************************
 
@@ -1099,7 +1098,150 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     pub_localization_module_health_.publish(health_msg);
     // ROS_INFO("pub: time: %lf ", status_msg.header.stamp.toSec());
 
+}
 
+
+void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){
+
+    // fill status_msg.module_status
+    if(curr_running_module_status == ModuleStatus::MODULE_IDLE){
+        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::IDLE;
+    }else if(is_mapping_status(curr_running_module_status)){
+        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::MAPPING;
+    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::LOCALIZATION;
+    }else if(curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM){
+        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STARTING;
+    }else if(curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        status_msg.module_status = fairland_msgs::LocalizationModuleStatus::STOPPING;
+    }else{
+        ROS_ERROR_STREAM(RED << "error running module status: "<< print_ModuleStatus(curr_running_module_status).c_str() <<RESET);
+    }
+
+    // fill status_msg.localization_status
+    fill_module_l_status(curr_running_module_status, status_msg);
+
+    // fill status_msg.mapping_status
+    fill_module_m_status(curr_running_module_status, status_msg);
+}
+
+void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){
+    if(curr_running_module_status != ModuleStatus::MODULE_LOCALIZATION){
+        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
+        localization_status_.store(0); // inactive
+        return;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    int node_status = local_node_status_.load();
+    int local_thrd_status = slam_ -> get_local_thrd_status();
+    int slam_run_status = slam_ -> get_slam_run_status();
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    static const bool check_delay = slam_param_.common.check_delay;
+    if(!check_delay){
+        if(node_status == 2 || node_status == 3 ){
+            node_status = 1;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    if(node_status == 0){
+        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
+        localization_status_.store(0);
+    }else if (node_status == 1){ // node_status = normal
+        if( slam_run_status == 1){ // slam_run_status = normal
+            status_msg.localization_status = local_thrd_status;
+            localization_status_.store(local_thrd_status); // 与 定位线程的状态一致
+        }else if (slam_run_status == 2){// 
+            status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
+            localization_status_.store(5); // 定位失败
+        }else {
+            // ROS_ERROR_STREAM("node_status: 1, slam_run_status: " << slam_run_status);
+            // status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
+            // localization_status_.store(5); // 定位失败
+        }   
+    }else if(node_status == 2){ // lidar cbk delay 
+        ROS_ERROR_STREAM(RED << "lidar cbk delay !!!" << RESET);
+        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
+        localization_status_.store(5); // 定位失败
+    }else if(node_status == 3){ // localize thread delay 
+        ROS_ERROR_STREAM(RED << "localize thread delay  !!!" << RESET);
+        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;  
+        localization_status_.store(5); // 定位失败
+    }else{
+        ROS_ERROR_STREAM(RED << "status error, set to L_FAILED" << RESET);
+        ROS_ERROR_STREAM("node_status: " << node_status);
+        ROS_ERROR_STREAM("slam_run_status: " << slam_run_status);
+        ROS_ERROR_STREAM("local_thrd_status: " << local_thrd_status);
+        status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
+        localization_status_.store(5); // 定位失败
+    }
+}
+
+void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){
+    if(curr_running_module_status != ModuleStatus::MODULE_MAPPING && 
+        curr_running_module_status != ModuleStatus::MODULE_SEC_MAPPING){
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
+        mapping_status_.store(0);
+        return;
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    int node_status = mapping_node_status_.load();
+    int slam_run_status = slam_ -> get_slam_run_status();
+    int secmap_relocal_thrd_status = slam_ -> get_secmap_relocal_thrd_status();
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    static const bool check_delay = slam_param_.common.check_delay;
+    if(!check_delay){
+        if(node_status == 2 || node_status == 3 || node_status == 4){
+            node_status = 1;
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////
+    if(node_status == 0){
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
+        mapping_status_.store(0);
+    }else if (node_status == 1){ // node_status = normal
+        if( slam_run_status == 1){ // slam_run_status = normal
+            if(curr_running_module_status == ModuleStatus::MODULE_MAPPING){
+                status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_STANDBY;;
+                mapping_status_.store(3);
+            }else if(curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING){
+                status_msg.mapping_status = secmap_relocal_thrd_status;
+                mapping_status_.store(secmap_relocal_thrd_status);
+            }
+        }else if (slam_run_status == 2){// 
+            status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+            mapping_status_.store(5);
+        }else {
+            // ROS_ERROR_STREAM("node_status: 1, slam_run_status: " << slam_run_status);
+            // status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+            // mapping_status_.store(5); // 建图失败
+        }   
+    }else if(node_status == 2){ // lidar cbk delay 
+        ROS_ERROR_STREAM(RED << "lidar cbk delay !!!" << RESET);
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+        mapping_status_.store(5);
+    }else if(node_status == 3){ // localize thread delay 
+        ROS_ERROR_STREAM(RED << "secmap-relocal thread delay  !!!" << RESET);
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+        mapping_status_.store(5);
+    }else if(node_status == 4){ // loop_closure_thread_delay
+        ROS_ERROR_STREAM(RED << "loop_closure_thread_delay  !!!" << RESET);
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+        mapping_status_.store(5);
+    }else{
+        ROS_ERROR_STREAM(RED << "status error, set to M_FAILED" << RESET);
+        ROS_ERROR_STREAM("node_status: " << node_status);
+        ROS_ERROR_STREAM("slam_run_status: " << slam_run_status);
+        ROS_ERROR_STREAM("secmap_relocal_thrd_status: " << secmap_relocal_thrd_status);
+        status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
+        mapping_status_.store(5);
+    }
 }
 
 
@@ -1159,6 +1301,7 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
 
 
     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+    // fill status_msg.localization_status
     double t3 = omp_get_wtime();
 
     // if(slam_param_.lidar_preproc.lidar_type == 1){
@@ -1384,10 +1527,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     }else if (set_status == ModuleStatus::MODULE_MAPPING){
         int map_id = 0;/////////////// TODO
         if(start_mapping(map_id)){
-            // running_module_status_ = set_module_status_;
-            // running_module_status_.store(set_status);
             // mapping_status_ = M_STANDBY;
-            log_info_manager_->m_status = M_STANDBY;
+            // log_info_manager_->m_status = M_STANDBY;
         }else{
             // set_module_status_ = running_module_status_;
         }
@@ -1398,7 +1539,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
             // running_module_status_ = ModuleStatus::MODULE_SEC_MAPPING;
             // running_module_status_.store(ModuleStatus::MODULE_SEC_MAPPING);
             // mapping_status_ = M_STANDBY;
-            log_info_manager_->m_status = M_STANDBY;
+            // log_info_manager_->m_status = M_STANDBY;
         }else{
             // set_module_status_ = running_module_status_;
             // release_slam_obj();
@@ -1429,11 +1570,18 @@ bool LocalizationModule::module_member_init(){
     hb_time_cbk_module_ctrl_.store(curr_time);
     hb_time_timer_slam_.store(curr_time);
     hb_time_timer_pose_.store(curr_time);
-    hb_time_thread_localize_.store(curr_time);
+    // hb_time_thread_localize_.store(curr_time);
     hb_time_thread_loop_closure_.store(curr_time);
     hb_time_thread_secmap_relocalize_.store(curr_time);
 
     health_status_.store(-1);
+
+    mapping_node_status_.store(0);
+    local_node_status_.store(0);
+
+    mapping_status_.store(0);
+    localization_status_.store(0);
+    running_module_status_.store(ModuleStatus::MODULE_IDLE);
 
 
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();

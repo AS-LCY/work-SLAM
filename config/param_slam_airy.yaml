@@ -27,6 +27,7 @@ common:
   receive_lidar_freq: 10 # unit: hz
   slam_lose_rate_time_thr: 0.1 # unit: second
   lidar_no_point_count_thr:  10
+  check_delay: false
   feats_down_size_thr: 100
   use_pose_filter: false 
   cpu_id: []
@@ -48,21 +49,7 @@ extrinsic:
   # extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
   extrinsic_euler_lidar_in_baselink: [-88.250826, 1.131189, -5.863650] # unit(degree) yaw, pitch, roll
 
-  #  0.000000, 0.170000, 0.553756,-0.009380, 0.256496,-0.030881, ## extrs_final: lidarid=0-ring=0--
-  # roll, pitch, yaw(degree:): -0.537434,14.696139,-1.769328,  ## extrs_final: lidarid=0-ring=0--
-
-  # quat_lidar_in_imu: [
-  #     0.7091456712806948,
-  #    -0.704935566635953,
-  #    -0.012979647414583783,
-  #    -0.003129304793923593]  # x, y, z, w     
-
-  # orig == transform lidar_in_imu
-  # translation-1: 0.004250, 0.004180, -0.004460
-  # angular-----1: -89.667898, 1.307651, 179.205572
-  # inverse(), == transform imu_in_lidar
-  # translation-2: 0.004052, 0.004337, -0.004494
-  # angular-----2: -89.667952, 0.801996, 178.696976        
+     
 
   Lidar_In_Wheel: [1,  0,  0,  0.210,
                     0,  1,  0,  -0.01,
@@ -87,6 +74,7 @@ localization:
   chassis_linear_velocity_thr: 0.02
   motionless_chassis_ratio: 0.98
   lidar_cbk_delay_thr: 2 # 
+  localization_fail_count_thr: 3
 
 lidar_preproc:
   lidar_type: 2 # 1: livox-mid360  # 2: robosense-Airy  # 
