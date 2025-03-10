@@ -97,7 +97,7 @@ using namespace lidar_slam;
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
-    EXIT_MAPPING            = 3000,  // 退出建图
+    EXIT_MAPPING            = 6000,  // 退出建图
     START_LOCALIZATION      = 7000,  // 重定位->定位
     EXIT_LOCALIZATION       = 8000,  // 退出定位
     START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位

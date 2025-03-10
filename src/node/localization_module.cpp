@@ -316,7 +316,7 @@ bool LocalizationModule::create_ROS_IO(){
     // ros::CallbackQueue slam_queue_;
     nh2_.setCallbackQueue(&slam_queue_);
     // 建图主要流程，timer 时间间隔需要调整，10hz? 100hz? 200hz?
-    timer_slam_ = nh2_.createTimer(ros::Duration(0.05), &LocalizationModule::slam_dealt_timer, this);
+    timer_slam_ = nh2_.createTimer(ros::Duration(0.1), &LocalizationModule::slam_dealt_timer, this);
 
 
     nh3_.setCallbackQueue(&slam_ctrl_queue_);
@@ -488,7 +488,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // pub_kdtree_cloud(slam_->get_kdtree_cloud());		//not used yet
     }
     // if(!localization_mode_){
-    if(is_mapping_status(curr_running_module_status)){
+    auto localization_status_now = localization_status_.load();
+    if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
         // pub_rgb_map(slam->getCurrentRGBMap());
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
@@ -501,7 +502,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_unoptimized_path(slam_->get_unoptimized_path(),string("map"),pubUnoptimizedPath);
         // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
-    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
         if (slam_->isGloalLocalizationSuccess()){
             publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
             publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
@@ -916,7 +917,7 @@ void LocalizationModule::reset_pose_filter(){
 int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleHealth &health_msg){
     static const double imu_interval = 0.005;
     static const double lidar_interval = 0.1;
-    static const double slam_interval = 0.05;
+    static const double slam_interval = 0.1;
     static const double pose_interval = 0.05;
     static const double localize_interval = 1.0;
     static const double loop_closure_interval = 1.0;
@@ -950,10 +951,10 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     bool error_lidar_point_too_few = false;
     bool error_livox_driver_failed = false;
 
-    if(curr_running_module_status == ModuleStatus::MODULE_IDLE){
-        hb_cbk_lidar = 1;
-        hb_cbk_imu = 1;
-    }
+    // if(curr_running_module_status == ModuleStatus::MODULE_IDLE){
+    //     hb_cbk_lidar = 1;
+    //     hb_cbk_imu = 1;
+    // }
 
     if (!hb_cbk_lidar|| !hb_cbk_imu || !hb_timer_slam || !hb_timer_pose ){
         health_status_now = 1;
