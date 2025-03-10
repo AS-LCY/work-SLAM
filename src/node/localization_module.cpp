@@ -622,9 +622,9 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
     // }
 
     // if (is_mapping_status(curr_running_module_status) || curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+    auto mapping_status_now = mapping_status_.load();
     if (is_mapping_status(curr_running_module_status)){
-        // if(log_info_manager_->m_status == M_FAILED){
-        if(mapping_status_.load() == 5){
+        if(mapping_status_is_failed(mapping_status_now)){
             ROS_ERROR_STREAM(RED << "pose_filter: mapping_status: M_FAILED; return! skip pub pose" << RESET);
             return;
         }
@@ -634,8 +634,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         auto check_time_m = std::chrono::steady_clock::now();                
         auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_m - last_pub_time_m);
 
-        // if (pub_elapsed > pub_period  && log_info_manager_->m_status == 3){
-        if (pub_elapsed > pub_period  && mapping_status_ == 3){
+        if (pub_elapsed > pub_period  && mapping_status_is_ok(mapping_status_now)){
 
             // Eigen::Isometry3d lidar_in_map_to_pub = slam_->getLidarInMap();
             Eigen::Isometry3d baselink_in_map_to_pub = slam_->getLidarInMap() * T_lidar_baselink_; // baselink_in_map
@@ -675,8 +674,8 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         // 定位模式
         auto localization_status_now = localization_status_.load();
 
-        // if(log_info_manager_->l_status == L_FAILED){
-        if(localization_status_now == 5 || localization_status_now == 2){
+        // if(localization_status_now == 5 || localization_status_now == 2){
+        if(localization_status_is_failed(localization_status_now)){
             ROS_ERROR_STREAM(RED << "pose_filter: localization_status: L_FAILED; return! skip pub pose" << RESET);
             return;
         }
@@ -758,8 +757,7 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
         auto check_time_now_l = std::chrono::steady_clock::now();
         auto pub_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(check_time_now_l - last_pub_time_l);
 
-        // if (pub_elapsed > pub_period && log_info_manager_->l_status==3){
-        if (pub_elapsed > pub_period && localization_status_.load()==3){
+        if (pub_elapsed > pub_period && localization_status_is_ok(localization_status_.load())){
             // pub odom 
             Eigen::Isometry3d lidar_in_map_to_pub = curr_pose_filtered;// 结果数据赋值
             nav_msgs::Odometry odometry_to_pub = isometry3d_to_odom(lidar_in_map_to_pub, "map", "base_link");  

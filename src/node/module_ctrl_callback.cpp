@@ -380,6 +380,7 @@ bool LocalizationModule::stop_mapping(){
 bool LocalizationModule::start_localization(int map_id){
     ModuleStatus running_module_status_now = running_module_status_.load();
     ModuleStatus set_status = ModuleStatus::MODULE_LOCALIZATION;
+    auto localization_status_now = localization_status_.load();
     
     ROS_INFO("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
     ROS_INFO("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
@@ -392,7 +393,8 @@ bool LocalizationModule::start_localization(int map_id){
 
     // ModuleStatus curr_running_module_status = running_module_status_.load();
 
-    if (running_module_status_now == ModuleStatus::MODULE_IDLE){
+    // if (running_module_status_now == ModuleStatus::MODULE_IDLE){
+    if (need_start_localization(running_module_status_now, localization_status_now)){
         // update status
         running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 
@@ -404,22 +406,22 @@ bool LocalizationModule::start_localization(int map_id){
             release_slam_obj();
 
             running_module_status_.store(ModuleStatus::MODULE_IDLE);
-            local_node_status_.store(0);
+            local_node_status_.store(0);// 0 = INACTIVE
             return false;
         }else{
             show_load_map_=0;
 
             // update status
             running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
-            local_node_status_.store(1);
+            local_node_status_.store(1);// 1 = NORMAL
             return true;
 
         }
-    }else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION){
-        ROS_INFO("skip, already running localization now");
+    }else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION && (localization_status_is_ok(localization_status_now))){
+        ROS_INFO("skip, already running localization normally now");
         return false;
     }else if(is_mapping_status(running_module_status_now)){
-        ROS_INFO("skip, running mapping now, please stop localizing first");
+        ROS_INFO("skip, running mapping now, please stop mapping first");
         return false;
     }else{
         ROS_INFO("skip, status error! start localization failed !");
@@ -655,5 +657,44 @@ bool LocalizationModule::make_map_directory_name(int map_id){
     return true;
 }
 
+bool LocalizationModule::need_start_localization(ModuleStatus running_module_status_now, int localiztion_status_now){
+    if (running_module_status_now == ModuleStatus::MODULE_IDLE){
+        return true;
+    }else if(running_module_status_now == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_failed(localiztion_status_now)){
+        return true;
+    }else{
+        return false;
+    }
+
+}
+
+bool LocalizationModule::localization_status_is_ok(int localiztion_status_now){
+    if (localiztion_status_now == 3 || localiztion_status_now == 4){
+        return true;
+    }else{
+        return false;
+    }
+}
+bool LocalizationModule::localization_status_is_failed(int localiztion_status_now){
+    if (localiztion_status_now == 2 || localiztion_status_now == 5){
+        return true;
+    }else{
+        return false;
+    }
+}
+bool LocalizationModule::mapping_status_is_ok(int mapping_status_now){
+    if (mapping_status_now == 3 ){
+        return true;
+    }else{
+        return false;
+    }
+}
+bool LocalizationModule::mapping_status_is_failed(int mapping_status_now){
+    if (mapping_status_now == 2 || mapping_status_now == 5){
+        return true;
+    }else{
+        return false;
+    }
+}
 
 }// namespace localization_module 

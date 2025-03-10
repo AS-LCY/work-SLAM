@@ -120,6 +120,11 @@ public:
 private:
     // void show_thread();
     bool is_mapping_status(ModuleStatus status);
+    bool need_start_localization(ModuleStatus running_module_status_now, int localiztion_status_now);    
+    bool localization_status_is_ok(int localiztion_status_now);
+    bool localization_status_is_failed(int localiztion_status_now);
+    bool mapping_status_is_ok(int mapping_status_now);
+    bool mapping_status_is_failed(int mapping_status_now);
 
     bool module_member_init();
     bool load_lidar_slam_param();
