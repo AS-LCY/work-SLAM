@@ -327,7 +327,6 @@ class LidarSlam
         //     globalLocalizationSuccess = global_success_flag;
         //     global_localize_count_ = 0;
         //     // l_status_ = L_RELOCALIZING;
-        //     log_info_manager_->l_status = L_RELOCALIZING;
         // }
 
         double get_lidar_time(){

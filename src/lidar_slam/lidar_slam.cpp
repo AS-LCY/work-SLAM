@@ -53,7 +53,6 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
     log_info_manager_->reset_log_info();
     log_info_manager_->reset_module_status();
-    // log_info_manager_->l_status = L_INACTIVE;
     slam_run_status_.store(0);
 
     sleep(1);
@@ -362,7 +361,6 @@ void LidarSlam::localizationThread()
         pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
         }
         // if(l_status_ == L_RELOCALIZE_FAILED){
-        // if(log_info_manager_->l_status == L_RELOCALIZE_FAILED){
         if(local_thrd_status_.load() == 2){
             
             ROS_INFO("global Localization failed: time out ");
@@ -370,7 +368,6 @@ void LidarSlam::localizationThread()
         }else{
             if (!globalLocalizationSuccess){
                 // l_status_ = L_RELOCALIZING;
-                // log_info_manager_->l_status = L_RELOCALIZING;
                 local_thrd_status_.store(1);
 
                 // check 
@@ -398,7 +395,6 @@ void LidarSlam::localizationThread()
                     // cout << "global Localization failed: time out"<<endl;
                     ROS_INFO_STREAM("global Localization failed: time out");
                     // l_status_ = L_RELOCALIZE_FAILED;
-                    // log_info_manager_->l_status = L_RELOCALIZE_FAILED;
 
                     local_thrd_status_.store(2);
 
@@ -406,7 +402,6 @@ void LidarSlam::localizationThread()
                 if(globalLocalizationSuccess){
                     ROS_INFO_STREAM(BOLDGREEN <<" ======= global Localization Success ======= " <<RESET);
                     global_localize_count_ = 0;
-                    // log_info_manager_->l_status = L_NORMAL;
                     local_thrd_status_.store(3);
                 }
                 
@@ -416,7 +411,6 @@ void LidarSlam::localizationThread()
                 ROS_INFO_STREAM("localizing ... ");
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // l_status_ = L_NORMAL;
-                    // log_info_manager_->l_status = L_NORMAL;
                     local_thrd_status_.store(3);
 
                     gicp_fail_count = 0;
@@ -425,15 +419,12 @@ void LidarSlam::localizationThread()
                     gicp_fail_count ++;
                     ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
                     if (gicp_fail_count >= localization_fail_count_thr){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        // log_info_manager_->l_status = L_FAILED;
                         local_thrd_status_.store(5);
                     }else if (gicp_fail_count >= 1){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        // log_info_manager_->l_status = L_LOW_ACCURACY;
                         local_thrd_status_.store(4);
                     }
                 }
                 log_info_manager_->log_info.gicp_fail_count=gicp_fail_count;
-                // log_info_manager_->log_info.l_status = log_info_manager_->l_status;
 
                 //state.state("normal");
             }
@@ -469,7 +460,6 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
         // }
 
         // if(m_status_ == M_RELOCALIZE_FAILED){
-        // if(log_info_manager_->m_status == M_RELOCALIZE_FAILED){
         if(secmap_relocal_thrd_status_.load() == 2){// 重定位失败
             ROS_ERROR_STREAM(RED <<  "secmap relocalization failed: time out " << RESET);
         }else {
@@ -524,7 +514,6 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                         // m_status_ = M_STANDBY;
                         ROS_INFO_STREAM(BOLDGREEN <<" ======= global Localization Success ======= " <<RESET);
                         global_localize_count_ = 0;
-                        // log_info_manager_->m_status = M_STANDBY;
                         secmap_relocal_thrd_status_.store(3);//重定位成功 =============================================
                     }else{
                         global_localize_count++;
@@ -535,7 +524,6 @@ void LidarSlam::global_localization_for_sec_mapping_thread(){
                     // cout << "global Localization failed: time out"<<endl;
                     ROS_ERROR_STREAM(RED << "global Localization failed: time out" <<RESET);
                     // m_status_ = M_RELOCALIZE_FAILED;
-                    // log_info_manager_->m_status = M_RELOCALIZE_FAILED;
                     secmap_relocal_thrd_status_.store(2);//重定位失败 =============================================
 
                 }
@@ -910,15 +898,6 @@ bool LidarSlam::run()
             lidar_no_point_count_++;
             if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
                 slam_run_status_.store(2);
-                // if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
-                //     // lidar_no_point_count_++;
-                //     // m_status_ = M_FAILED;
-                //     log_info_manager_->m_status = M_FAILED;
-                // }else if(working_mode_==LOCALIZATION){
-                //     // lidar_no_point_count_++;
-                //     // l_status_ = L_FAILED;
-                //     log_info_manager_->l_status = L_FAILED;
-                // }
             }
             // std::cout << "No point, skip this scan!\n"<< std::endl;
             ROS_WARN_STREAM(YELLOW << "No point, skip this scan!" << RESET);
@@ -977,10 +956,8 @@ bool LidarSlam::run()
                 slam_run_status_.store(2);
                 // if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
                 //     // m_status_ = M_FAILED;
-                //     log_info_manager_->m_status = M_FAILED;
                 // }else if(working_mode_==LOCALIZATION){
                 //     // l_status_ = L_FAILED;
-                //     log_info_manager_->l_status = L_FAILED;
                 // }
             }
             ROS_WARN_STREAM(YELLOW << "No point after filter, skip this scan!" << RESET);

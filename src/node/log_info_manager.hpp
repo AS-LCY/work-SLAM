@@ -28,10 +28,6 @@ public:
     // fairland_msgs::LocalizationModuleStatus status_info;
 
     localization_module::ModuleStatus module_status;
-    // localization_module::LocalizationStatus l_status;
-    // localization_module::MappingStatus m_status;
-    // lidar_slam::LocalizationStatus l_status;
-    // lidar_slam::MappingStatus m_status;
 
     void reset_log_info(){
         fairland_msgs::LocalizationModuleLogInfo temp_log_info;
@@ -43,8 +39,6 @@ public:
         // status_info.mapping_status = fairland_msgs::LocalizationModuleStatus::M_INACTIVE;
         // module_status = localization_module::MODULE_IDLE;
         module_status = localization_module::ModuleStatus::MODULE_IDLE;
-        // l_status = lidar_slam::L_INACTIVE;
-        // m_status = lidar_slam::M_INACTIVE;
     }
 
 }; // class LocalizationModuleLogInfoManager
