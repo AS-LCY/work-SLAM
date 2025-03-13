@@ -17,8 +17,8 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
 	laserCloudmsg.header.stamp = ros::Time().now();
-	// laserCloudmsg.header.frame_id = "lidar";
-	laserCloudmsg.header.frame_id = "base_footprint";
+	laserCloudmsg.header.frame_id = "lidar";
+	// laserCloudmsg.header.frame_id = "base_footprint";
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
