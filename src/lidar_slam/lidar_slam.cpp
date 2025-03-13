@@ -344,6 +344,8 @@ void LidarSlam::localizationThread()
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
     // int global_localize_count_ = 0;
     const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
+    const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
+    const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
     const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
     const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
     const auto use_pose_filter = config_param_.common.use_pose_filter;
@@ -409,6 +411,7 @@ void LidarSlam::localizationThread()
             else{
                 // cout << "localizing ... "<<endl;
                 ROS_INFO_STREAM("localizing ... ");
+                // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // l_status_ = L_NORMAL;
                     local_thrd_status_.store(3);

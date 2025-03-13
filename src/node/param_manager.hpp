@@ -185,8 +185,10 @@ public:
 
         /// localization params *******************************************
         // get_param(ns+ "localization/load_map_dir", loaded_param_.localization.load_map_dir, &success);
-        get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
         get_param(ns+ "localization/fgicp_freq", loaded_param_.localization.fgicp_freq, &success);
+        get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
+        get_param(ns+ "localization/fgicp_score_fail_thr", loaded_param_.localization.fgicp_score_fail_thr, &success);
+        get_param(ns+ "localization/fgicp_score_low_accuracy_thr", loaded_param_.localization.fgicp_score_low_accuracy_thr, &success);
         get_param(ns+ "localization/filter_method", loaded_param_.localization.filter_method, &success);
         get_param(ns+ "localization/fst_order_k", loaded_param_.localization.fst_order_k, &success);
         get_param(ns+ "localization/odom2map_delta_thr", loaded_param_.localization.odom2map_delta_thr, &success);

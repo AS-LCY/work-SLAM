@@ -59,6 +59,8 @@ extrinsic:
 localization:
   fgicp_freq: 1 # hz
   fgicp_score_thr: 0.3 # 0.1
+  fgicp_score_fail_thr: 0.3
+  fgicp_score_low_accuracy_thr: 0.1
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7

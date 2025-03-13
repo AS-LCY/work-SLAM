@@ -69,8 +69,10 @@ struct MappingParam{
 
 struct LocalizationParam{
     // std::string load_map_dir;
-    double fgicp_score_thr = 0.1;
     int fgicp_freq = 1;
+    double fgicp_score_thr = 0.1;
+    double fgicp_score_fail_thr = 0.3;
+    double fgicp_score_low_accuracy_thr = 0.1;
     int filter_method = 0;
     float fst_order_k = 0.7;
     double odom2map_delta_thr = 0.025;
