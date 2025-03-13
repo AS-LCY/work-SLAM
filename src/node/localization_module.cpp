@@ -1083,6 +1083,13 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
     // fill status_msg.mapping_status
     fill_module_m_status(curr_running_module_status, status_msg);
+
+    if(localization_status_.load() != 0 && localization_status_.load() != 3){
+        ROS_WARN_STREAM(RED << "[Status Timer]: localization_status: " << localization_status_ << RESET);
+    }
+    if(mapping_status_.load() != 0 && mapping_status_.load() != 3){
+        ROS_WARN_STREAM(RED << "[Status Timer]: mapping_status: " << mapping_status_ << RESET);
+    }
 }
 
 void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){
