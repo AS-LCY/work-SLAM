@@ -870,12 +870,12 @@ void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::I
     pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 
     // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
-    log_info_manager_->log_info.lidar2odom_dx = curr_x - last_x;
-    log_info_manager_->log_info.lidar2odom_dy = curr_y - last_y;
-    log_info_manager_->log_info.lidar2odom_dz = curr_z - last_z;
-    log_info_manager_->log_info.lidar2odom_droll  = rad2deg (curr_roll  - last_roll);
-    log_info_manager_->log_info.lidar2odom_dpitch = rad2deg (curr_pitch - last_pitch);
-    log_info_manager_->log_info.lidar2odom_dyaw   = rad2deg (curr_yaw   - last_yaw);
+    log_info_manager_->log_info.lidar2odom_dxyz.x = curr_x - last_x;
+    log_info_manager_->log_info.lidar2odom_dxyz.y = curr_y - last_y;
+    log_info_manager_->log_info.lidar2odom_dxyz.z = curr_z - last_z;
+    log_info_manager_->log_info.lidar2odom_drpy.x = rad2deg (curr_roll  - last_roll);
+    log_info_manager_->log_info.lidar2odom_drpy.y = rad2deg (curr_pitch - last_pitch);
+    log_info_manager_->log_info.lidar2odom_drpy.z = rad2deg (curr_yaw   - last_yaw);
 }
 
 void LocalizationModule::reset_pose_filter(){

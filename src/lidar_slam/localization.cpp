@@ -229,15 +229,15 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
         pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
         // update log_info (log_info_manager_)
         log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
-        log_info_manager_->log_info.odom2map_x = curr_x;
-        log_info_manager_->log_info.odom2map_y = curr_y;
-        log_info_manager_->log_info.odom2map_z = curr_z;
-        log_info_manager_->log_info.odom2map_dx = curr_x - last_x;
-        log_info_manager_->log_info.odom2map_dy = curr_y - last_y;
-        log_info_manager_->log_info.odom2map_dz = curr_z - last_z;
-        log_info_manager_->log_info.odom2map_droll  = 180 / PI_M * (curr_roll  - last_roll);
-        log_info_manager_->log_info.odom2map_dpitch = 180 / PI_M * (curr_pitch - last_pitch);
-        log_info_manager_->log_info.odom2map_dyaw   = 180 / PI_M * (curr_yaw   - last_yaw);
+        log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
+        log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
+        log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
+        log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
+        log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
+        log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
+        log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
+        log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
+        log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
 
         // Eigen::Isometry3d temp_correct  =  Eigen::Isometry3d::Identity();
         // temp_correct.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
