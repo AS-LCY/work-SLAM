@@ -186,7 +186,7 @@ public:
         /// localization params *******************************************
         // get_param(ns+ "localization/load_map_dir", loaded_param_.localization.load_map_dir, &success);
         get_param(ns+ "localization/fgicp_freq", loaded_param_.localization.fgicp_freq, &success);
-        get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
+        // get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
         get_param(ns+ "localization/fgicp_score_fail_thr", loaded_param_.localization.fgicp_score_fail_thr, &success);
         get_param(ns+ "localization/fgicp_score_low_accuracy_thr", loaded_param_.localization.fgicp_score_low_accuracy_thr, &success);
         get_param(ns+ "localization/filter_method", loaded_param_.localization.filter_method, &success);
@@ -202,7 +202,8 @@ public:
         get_param(ns+ "localization/chassis_linear_velocity_thr", loaded_param_.localization.chassis_linear_velocity_thr, &success);
         get_param(ns+ "localization/motionless_chassis_ratio", loaded_param_.localization.motionless_chassis_ratio, &success);
         get_param(ns+ "localization/lidar_cbk_delay_thr", loaded_param_.localization.lidar_cbk_delay_thr, &success);
-        get_param(ns+ "localization/localization_fail_count_thr", loaded_param_.localization.localization_fail_count_thr, &success);
+        get_param(ns+ "localization/fgicp_fail_count_thr", loaded_param_.localization.fgicp_fail_count_thr, &success);
+        get_param(ns+ "localization/fgicp_low_accuracy_count_thr", loaded_param_.localization.fgicp_low_accuracy_count_thr, &success);
         
         /// re-localization params *******************************************s
         get_param(ns+ "re_localization/score_thr", loaded_param_.re_localization.score_thr, &success);

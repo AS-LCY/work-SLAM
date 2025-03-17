@@ -167,7 +167,10 @@ bool Localization::loadMap(std::string path){
     return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
+// bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
+// bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double &score,  double score_fail_thr, double score_low_accuracy_thr,
+                            double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
 {
     // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
     // pcl::copyPointCloud(*(odomCloud), *cloudIn);
@@ -189,132 +192,115 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
     // cout << YELLOW << "x: "<< last_temp_x << " y: "<< last_temp_y << " z: "<< last_temp_z << " roll: "<< last_temp_roll << " pitch: "<< last_temp_pitch << " yaw: "<< last_temp_yaw << RESET << endl;
     // cout << YELLOW << "x: "<< curr_temp_x << " y: "<< curr_temp_y << " z: "<< curr_temp_z << " roll: "<< curr_temp_roll << " pitch: "<< curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl;
 
-    if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
-        // std::cout << "gicp fail, score: "<< gicp->getFitnessScore()<<std::endl;
-        ROS_ERROR_STREAM(RED << "gicp fail, score: "<< gicp->getFitnessScore() <<RESET);
+    if(gicp->hasConverged() == false){
+        ROS_ERROR_STREAM(RED << "gicp not converged, score: "<< gicp->getFitnessScore() <<RESET);
         return false;
-    }
-    else{
-        lastCorrectionOdomToMap = correctionOdomToMap;
-        lastUpdateTime = curr_time_;
-
-        // std::cout << "\033[1;32mgicp success with score "<< gicp->getFitnessScore() <<" \033[0m"<< std::endl;         
-        ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);         
-        correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
-
-
-        curr_time_ = omp_get_wtime();
-        // correctionOdomToMap = temp_correct;
+    }else{
+        double fit_score = gicp->getFitnessScore();
+        if(fit_score < score_low_accuracy_thr){
+            lastCorrectionOdomToMap = correctionOdomToMap;
+            lastUpdateTime = curr_time_;
+            ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);         
+            correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
+    
+            curr_time_ = omp_get_wtime();
 
 
-        double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-        pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-        double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-        pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-        
-        double abs_dx = std::abs(curr_x - last_x);
-        double abs_dy = std::abs(curr_y - last_y);
-        
-        if(use_pose_filter){
-            if(abs_dx > odom2map_delta_thr){
-                // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;
-                correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
+            double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+            pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+            double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+            pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+            
+            double abs_dx = std::abs(curr_x - last_x);
+            double abs_dy = std::abs(curr_y - last_y);
+            
+            if(use_pose_filter){
+                if(abs_dx > odom2map_delta_thr){
+                    // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;
+                    correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
+                }
+                if(abs_dy > odom2map_delta_thr){
+                    // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs_dy;
+                    correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
+                }
             }
-            if(abs_dy > odom2map_delta_thr){
-                // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs_dy;
-                correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
-            }
+    
+            pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+            // update log_info (log_info_manager_)
+            log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
+            log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
+            log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
+            log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
+            log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
+            log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
+            log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
+            log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
+            log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
+            log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
+
+        }else{
+            ROS_INFO_STREAM(YELLOW << "gicp converged, score: "<< fit_score <<RESET);
         }
 
-        pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-        // update log_info (log_info_manager_)
-        log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
-        log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
-        log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
-        log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
-        log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
-        log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
-        log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
-        log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
-        log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
-        log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
-
-        // Eigen::Isometry3d temp_correct  =  Eigen::Isometry3d::Identity();
-        // temp_correct.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
-
-
-        // double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-        // pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-        // double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-        // pcl::getTranslationAndEulerAngles(temp_correct, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-
-        
-        // double curr_time = omp_get_wtime();
-        // correctionOdomToMap = temp_correct;
-        // lastUpdateTime = curr_time;
-
-        // if (lastUpdateTime < 1){
-        //     correctionOdomToMap = temp_correct;
-        //     lastUpdateTime = curr_time;
-        // }else{
-        //     double delta_xy = std::sqrt((curr_x - last_x)*(curr_x - last_x) + (curr_y - last_y)*(curr_y - last_y));
-        //     double delta_yaw = curr_yaw - last_yaw;
-        //     // double delta_time = curr_time - lastUpdateTime;
-
-        //     double dy = curr_y - last_y; // map 坐标系下 y 方向位移
-        //     double dx = curr_x - last_x; // map 坐标系下 x 方向位移
-        //     // double theta = atan2(dy, dx) - curr_yaw;
-        //     double theta = atan2(dy, dx) - last_yaw;
-        //     // std::cout<<"theta: "<<theta * 180/3.1415926<<std::endl;
-        //     // std::cout<<"delta_yaw: "<<delta_yaw * 180/3.1415926<<std::endl;
-
-        //     double delta_y = delta_xy * sin(theta);// 相对前进方向的横向位移
-
-        //     // double vel = delta_xy / delta_time;
-        //     double k_cur = 0.9;
-
-        //     std::cout<<"odom_delta_y: \033[0m"<<delta_y<<std::endl;
-        //     if (abs(delta_y) > odom2map_delta_thr){
-        //         // std::cout<<"\033[1;32mdelta_y: \033[0m"<<delta_y<<std::endl;
-        //         // delta_xy = delta_xy * cos(theta);
-        //         // // double final_dx = delta_xy * cos(curr_yaw);
-        //         // // double final_dy = delta_xy * sin(curr_yaw);
-
-        //         // double final_dx = delta_xy * cos(last_yaw);
-        //         // double final_dy = delta_xy * sin(last_yaw);
-
-        //         // temp_correct.translation().x() = correctionOdomToMap.translation().x() + final_dx;
-        //         // temp_correct.translation().y() = correctionOdomToMap.translation().y() + final_dy;
-        //         // k_cur = 1-k_cur;
-        //         // // temp_correct.translation().x() = temp_correct.translation().x() * k_cur +  correctionOdomToMap.translation().x() * (1-k_cur);
-        //         // // temp_correct.translation().y() = temp_correct.translation().y() * k_cur +  correctionOdomToMap.translation().y() * (1-k_cur);
-
-
-        //         correctionOdomToMap = temp_correct;
-        //         lastUpdateTime = curr_time;
-
-        //     }else{
-        //         // temp_correct.translation().x() = temp_correct.translation().x() * k_cur +  correctionOdomToMap.translation().x() * (1-k_cur);
-        //         // temp_correct.translation().y() = temp_correct.translation().y() * k_cur +  correctionOdomToMap.translation().y() * (1-k_cur);
-        //         correctionOdomToMap = temp_correct;
-        //         lastUpdateTime = curr_time;
-
-        //     }
-
-        // }
-
-
         return true;
-        // float x, y, z, roll, pitch, yaw;
-        // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
-        // std::cout << "gicp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
+
     }
+
+    // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
+    //     ROS_ERROR_STREAM(RED << "gicp fail, score: "<< gicp->getFitnessScore() <<RESET);
+    //     return false;
+    // }
+    // else{
+    //     lastCorrectionOdomToMap = correctionOdomToMap;
+    //     lastUpdateTime = curr_time_;
+       
+    //     ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);         
+    //     correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
+
+    //     curr_time_ = omp_get_wtime();
+    //     // correctionOdomToMap = temp_correct;
+
+
+    //     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+    //     pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+    //     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+    //     pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+        
+    //     double abs_dx = std::abs(curr_x - last_x);
+    //     double abs_dy = std::abs(curr_y - last_y);
+        
+    //     if(use_pose_filter){
+    //         if(abs_dx > odom2map_delta_thr){
+    //             // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;
+    //             correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
+    //         }
+    //         if(abs_dy > odom2map_delta_thr){
+    //             // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs_dy;
+    //             correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
+    //         }
+    //     }
+
+    //     pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+    //     // update log_info (log_info_manager_)
+    //     log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
+    //     log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
+    //     log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
+    //     log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
+    //     log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
+    //     log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
+    //     log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
+    //     log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
+    //     log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
+    //     log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
+
+    //     return true;
+    // }
 }
 
 bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)
 { 
     if (!map_ready_) {
-        // cout<<"map not ready"<<endl;
         ROS_WARN_STREAM(YELLOW << "map not ready" << RESET);
         return false;
     }
@@ -418,11 +404,11 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
         if (icp.hasConverged() == false || icp.getFitnessScore() > score){//TODO add number in getFitnessScore
             // std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
-            ROS_WARN_STREAM("globalLocalization icp fail with score: "<< icp.getFitnessScore());
+            ROS_WARN_STREAM(YELLOW << "globalLocalization icp fail with score: "<< icp.getFitnessScore() << RESET);
             return false;
         }
         else{
-            ROS_INFO_STREAM("globalLocalization success with score: " << icp.getFitnessScore());
+            ROS_INFO_STREAM(GREEN << "globalLocalization success with score: " << icp.getFitnessScore() << RESET);
         }   
         Eigen::Isometry3d lidar_in_map;
         lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
@@ -445,7 +431,6 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         // std::cout << "scancontext search success, score {} " <<match_idx<<" "<< min_dist<<std::endl;
     } else {
         // std::cout << "-------------------------------------------"<<std::endl;
-        // std::cout << "scancontext search fail, score {} "<<match_idx<<" "<< min_dist<<std::endl;
         ROS_WARN_STREAM("scancontext search fail, score {} "<<match_idx<<" "<< min_dist);
         return false;
     }

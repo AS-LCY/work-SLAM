@@ -102,7 +102,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     odomAftMapped.twist.twist.linear.y = vel[1];
     odomAftMapped.twist.twist.linear.z = vel[2];
 
-    log_info_manager_->log_info.slam_vel = odomAftMapped.twist.twist.linear.x;
+    log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
 
     pubOdomAftMapped.publish(odomAftMapped);
 

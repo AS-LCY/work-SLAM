@@ -343,15 +343,19 @@ void LidarSlam::localizationThread()
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
     // int global_localize_count_ = 0;
-    const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
-    const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
-    const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
     const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
     const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
     const auto use_pose_filter = config_param_.common.use_pose_filter;
-    const auto localization_fail_count_thr = config_param_.localization.localization_fail_count_thr;
+
+    // const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
+    const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
+    const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
+    const auto fgicp_fail_count_thr = config_param_.localization.fgicp_fail_count_thr;
+    const auto fgicp_low_accuracy_count_thr = config_param_.localization.fgicp_low_accuracy_count_thr;
+    
 
     int gicp_fail_count = 0;
+    int gicp_low_acc_count = 0;
 
     while (thread_run&&reseting == false)
     {
@@ -362,42 +366,33 @@ void LidarSlam::localizationThread()
         std::lock_guard<std::mutex> lk(mtx_odom_cloud);
         pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
         }
-        // if(l_status_ == L_RELOCALIZE_FAILED){
-        if(local_thrd_status_.load() == 2){
+        if(local_thrd_status_.load() == 2){ // 重定位失败
             
             ROS_INFO("global Localization failed: time out ");
 
         }else{
             if (!globalLocalizationSuccess){
-                // l_status_ = L_RELOCALIZING;
                 local_thrd_status_.store(1);
 
                 // check 
                 if(!getLoadMap()){
                     ROS_WARN_STREAM( YELLOW << "globalLocalization failed: map not ready ... "<< RESET);
                 }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
-                    // cout << "globalLocalization failed: cloud empty ... "<<endl;
                     ROS_WARN_STREAM(YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET);
                 // check end
                 }else{
-                    // cout <<"point(in use) count: "<<UndistortCloudInOdom->points.size()<<endl;
-                    // cout << "start globalLocalization ... "<<endl;
                     ROS_INFO_STREAM("point(in use) count: "<<UndistortCloudInOdom->points.size());
                     ROS_INFO_STREAM("start globalLocalization ... ");
 
                     //state.state("lost");
                     mutex mtx_lidar_cloud;
                     globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
-                    // cout << "globalLocalizationSuccess: "<<globalLocalizationSuccess<<endl;
                     ROS_INFO_STREAM("globalLocalizationSuccess: "<<globalLocalizationSuccess);
 
                     global_localize_count_++;
                 }
                 if (!globalLocalizationSuccess && global_localize_count_ > global_localize_times){
-                    // cout << "global Localization failed: time out"<<endl;
                     ROS_INFO_STREAM("global Localization failed: time out");
-                    // l_status_ = L_RELOCALIZE_FAILED;
-
                     local_thrd_status_.store(2);
 
                 }
@@ -411,22 +406,38 @@ void LidarSlam::localizationThread()
             else{
                 // ROS_INFO_STREAM("localizing ... ");
                 // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                    // l_status_ = L_NORMAL;
-                    local_thrd_status_.store(3);
-
-                    gicp_fail_count = 0;
-                    // break;
-                }else{
-                    gicp_fail_count ++;
-                    ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
-                    if (gicp_fail_count >= localization_fail_count_thr){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        local_thrd_status_.store(5);
-                    }else if (gicp_fail_count >= 1){// 连续多帧 fast-gicp 失败，则认为定位失败
-                        local_thrd_status_.store(4);
+                // if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
+                double fit_score = 0.0;
+                if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
+                    if (fit_score < fgicp_score_low_accuracy_thr){
+                        local_thrd_status_.store(3);
+                        gicp_fail_count = 0;
+                        gicp_low_acc_count = 0;
+                    }else if(fit_score < fgicp_score_fail_thr){
+                        gicp_low_acc_count++;
+                        ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
+                    }else{
+                        gicp_fail_count++;
+                        gicp_low_acc_count++;
+                        ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
+                        ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                     }
+                }else{ // 未收敛
+                    gicp_fail_count++;
+                    gicp_low_acc_count++;
+                    ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
+                    ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                 }
+
+                if (gicp_fail_count >= fgicp_fail_count_thr || gicp_low_acc_count >= fgicp_low_accuracy_count_thr ){// 连续多帧 fast-gicp 失败，则认为定位失败
+                    local_thrd_status_.store(5);
+                }else if (gicp_fail_count >= 1 || gicp_low_acc_count >= 2){// 
+                    local_thrd_status_.store(4);
+                }
+
+                log_info_manager_->log_info.gicp_fit_score=fit_score;
                 log_info_manager_->log_info.gicp_fail_count=gicp_fail_count;
+                log_info_manager_->log_info.gicp_low_acc_count=gicp_low_acc_count;
 
                 //state.state("normal");
             }

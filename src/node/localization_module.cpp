@@ -1234,12 +1234,6 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
 
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
     ROS_INFO_ONCE("received lidar -------------- lidar cbk");
-    // static int print_cnt = 0;
-    // if (print_cnt % 10 ==0){
-    //     cout<<"received lidar -------------- lidar cbk"<<endl;
-    //     print_cnt = 0;
-    // }
-    // print_cnt++;
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 

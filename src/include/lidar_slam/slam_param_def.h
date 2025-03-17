@@ -70,7 +70,7 @@ struct MappingParam{
 struct LocalizationParam{
     // std::string load_map_dir;
     int fgicp_freq = 1;
-    double fgicp_score_thr = 0.1;
+    // double fgicp_score_thr = 0.1;
     double fgicp_score_fail_thr = 0.3;
     double fgicp_score_low_accuracy_thr = 0.1;
     int filter_method = 0;
@@ -87,7 +87,8 @@ struct LocalizationParam{
     double chassis_linear_velocity_thr = 0.02;
     double motionless_chassis_ratio = 1.0;
     double lidar_cbk_delay_thr = 1.0;
-    int localization_fail_count_thr = 3;
+    int fgicp_fail_count_thr = 3;
+    int fgicp_low_accuracy_count_thr = 10;
 
 };
 
