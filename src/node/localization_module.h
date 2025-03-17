@@ -57,6 +57,7 @@
 #include "fairland_msgs/LocalizationModuleHealth.h"
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
 #include "fairland_msgs/NameValues.h"
+#include "fairland_msgs/chassic_data.h"
 
 
 
@@ -69,11 +70,9 @@
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
-#include "node/detect_slipping.h"
 #include "node/pose_filter.h"
+#include "slipping/detect_slipping.h"
 
-// 另一个节点中定义
-#include "fairland_msgs/chassic_data.h"
 
 // lidar
 #include "lidar/lidar_preproc_factory.hpp"
@@ -185,6 +184,7 @@ private:
     void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
     void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud);
     void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped);
+    void publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped);
     void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher publisher);
     void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
     void publish_transform(const Eigen::Isometry3d& correction,string parent, string child);

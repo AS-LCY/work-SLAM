@@ -71,8 +71,8 @@ void PoseEKF::move(const Matrix& input, const double& dt){
 
     status_ += dx;
 
-    ROS_INFO("ekf move: dist: %.4f, theta: %.4f ",dist, theta);
-    ROS_INFO("ekf move: dx: %.4f, dy: %.4f, dyaw: %.4f", dx(0,0), dx(1,0), dx(2,0));
+    ROS_INFO("ekf move: dist: %7.4f, theta: %7.4f ", dist, theta);
+    ROS_INFO("ekf move:   dx: %7.4f,    dy: %7.4f, dyaw: %7.4f", dx(0,0), dx(1,0), dx(2,0));
 
 }
 
@@ -128,11 +128,9 @@ void PoseEKF::update(const Matrix& measure, bool trust_measure){
     status_post_ = status_*1.0;
     // printf("Matrix copy is %s\n", (status_post_(1,0)==status_prior_(1,0)?"shallow copy":"deep copy"));
     P_post_ = P_*1.0;
-    // std::cout<<"P_post_: "<<std::endl<<P_post_<<std::endl;
-    ROS_INFO_STREAM("P_post_: ");
-    ROS_INFO_STREAM(P_post_);
+    // ROS_INFO_STREAM("P_post_: ");
+    // ROS_INFO_STREAM(P_post_);
 
-    // std::cout<<P_post_ <<std::endl;  // TODO print matrix
 
 }
 

@@ -29,11 +29,11 @@ void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::Locali
     *pose_msg_out = pose_msg;
     set_localizationfusion_input(); // set measure_ & input_ (from pose_msg_)
     double dt = pose_msg.header.stamp.toSec() - ts_;
-    ROS_INFO("input: v: %.3f, w: %.5f; dt: %.3f", input_(0,0),input_(1,0),dt);
+    ROS_INFO("input: v: %6.3f, w: %8.5f; dt: %6.3f", input_(0,0),input_(1,0),dt);
     ekf_ptr_->predict(input_,dt);
     ts_ = pose_msg.header.stamp.toSec();// update for next loop
 
-    ROS_INFO("measure: %.3f, %.3f, %.4f", measure_(0,0),measure_(1,0),measure_(2,0));
+    ROS_INFO("measure x: %8.3f,  y: %8.3f,  yaw: %7.4f", measure_(0,0),measure_(1,0),measure_(2,0));
     bool trust_measure = false;//////////////////////// TODO 
 
     ekf_ptr_->update(measure_, trust_measure);
@@ -44,7 +44,7 @@ void EkfLocalizationFusion::localization_fusion_core(const fairland_msgs::Locali
     pose_msg_out->fusion_pose.position.y = status_estimated_(1,0)+offset_y_;
     geometry_msgs::Vector3 euler = localization_module::common::Quaternion::get_euler_zyx(pose_msg_out->fusion_pose.orientation);
 
-    ROS_INFO("ekf dx: %.3f, dy: %.3f, dyaw: %.4f", \
+    ROS_INFO("ekf -- dx: %8.3f, dy: %8.3f, dyaw: %7.4f", \
                 status_estimated_(0,0)-measure_(0,0), status_estimated_(1,0)-measure_(1,0), \
                 localization_module::common::NumericalProcess::unify_angle(status_estimated_(2,0) - euler.z));
     if(use_ekf_yaw_){

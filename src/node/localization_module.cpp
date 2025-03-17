@@ -491,7 +491,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     auto localization_status_now = localization_status_.load();
     if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
         // pub_rgb_map(slam->getCurrentRGBMap());
-        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
             pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
@@ -504,7 +504,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
         if (slam_->isGloalLocalizationSuccess()){
-            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, "map", "base_link", pubLidarInMap);
+            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", pubLidarInMap);
             publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
@@ -1058,6 +1058,8 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     pub_localization_module_health_.publish(health_msg);
     // ROS_INFO("pub: time: %lf ", status_msg.header.stamp.toSec());
 
+    pub_log_.publish(log_info_manager_->log_info);
+
 }
 
 
@@ -1085,7 +1087,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     fill_module_m_status(curr_running_module_status, status_msg);
 
     if(localization_status_.load() != 0 && localization_status_.load() != 3){
-        ROS_WARN_STREAM(RED << "[Status Timer]: localization_status: " << localization_status_ << RESET);
+        ROS_WARN_STREAM(YELLOW << "[Status Timer]: localization_status: " << localization_status_ << RESET);
     }
     if(mapping_status_.load() != 0 && mapping_status_.load() != 3){
         ROS_WARN_STREAM(RED << "[Status Timer]: mapping_status: " << mapping_status_ << RESET);
@@ -1393,6 +1395,7 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
     chassis_linear_velocity = cur_chassis_msg.ac_linear_velocity;
     chassis_linear_velocity_ = chassis_linear_velocity;
     chassis_angular_velocity_ = chassis_angular_velocity;
+    log_info_manager_->log_info.chassis_vel = chassis_linear_velocity;
 
     ROS_INFO_ONCE("received chassis -------------- chassis cbk");
 

@@ -251,6 +251,12 @@ class LidarSlam
                 return temp;
             }
         } 
+        
+        Localization_base get_current_pose(){
+            std::lock_guard<std::mutex> lk(mtx_pose);
+            return current_pose;
+        }
+
         double get_slam_time(){
             if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING || working_mode_==LOCALIZATION){
                 return localization_base.update_time;

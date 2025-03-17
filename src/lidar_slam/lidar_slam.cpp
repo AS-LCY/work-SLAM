@@ -409,8 +409,7 @@ void LidarSlam::localizationThread()
                 
             }
             else{
-                // cout << "localizing ... "<<endl;
-                ROS_INFO_STREAM("localizing ... ");
+                // ROS_INFO_STREAM("localizing ... ");
                 // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // l_status_ = L_NORMAL;

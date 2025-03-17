@@ -220,8 +220,9 @@ add_executable(lidar_slam_node
   src/node/localization_module.cpp
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  src/node/detect_slipping.cpp
+  # src/node/detect_slipping.cpp
   src/node/pose_filter.cpp
+  src/slipping/detect_slipping.cpp
 )
 
 # add_dependencies(lidar_slam_node )
@@ -251,6 +252,7 @@ add_executable(localization_fusion_node
   src/fusion_node/localization_fusion_interface.cpp
   src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
   src/fusion_node/ekf_fusion/pose_ekf.cpp 
+  src/slipping/detect_slipping.cpp
 )
 
 

@@ -13,6 +13,7 @@ struct FusionTopicParams {
     std::string sub_chassis_topic = "/livox/imu";
     std::string sub_slam_odom_topic = "/livox/imu";
     std::string pub_localization_topic = "/flbot/localiztion/odometry";
+    std::string pub_slipping_topic = "/flbot/localiztion/slipping";
 };
 
 struct EkfGatingParams {
@@ -107,6 +108,7 @@ public:
         get_param(title + "sub_chassis_topic", topic_params.sub_chassis_topic, &success);
         get_param(title + "sub_slam_odom_topic", topic_params.sub_slam_odom_topic, &success);
         get_param(title + "pub_localization_topic", topic_params.pub_localization_topic, &success);
+        get_param(title + "pub_slipping_topic", topic_params.pub_slipping_topic, &success);
         return success;
     }
 

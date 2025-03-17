@@ -11,6 +11,7 @@ localization_fusion:
     # baselink_in_lidar: [0.1, 0.0, -0.1, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     baselink_in_lidar: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
     time_lost_thr: 2.0  # unit: second
+    reset_time_thr: 300 # unit: second
 
     gating:
         mah_drift_thresh : 100
@@ -25,3 +26,4 @@ localization_fusion:
         sub_slam_odom_topic: "/Odometry_lidar_in_map"
         # pub_localization_topic: "/flbot/localiztion/odometry"
         pub_localization_topic: "/Odometry_lidar_in_map_filter"
+        pub_slipping_topic: "/flbot/localization_module/slipping"

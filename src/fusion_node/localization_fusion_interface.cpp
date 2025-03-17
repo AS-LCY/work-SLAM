@@ -13,6 +13,8 @@ LocalizationFusion::LocalizationFusion(){
     }
 
     ekf_fusion_ptr_= std::make_shared<EkfLocalizationFusion>();
+    log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
+    slipping_ptr_.reset(new DetectSlipping());
 
     if(!create_ROS_IO()){
         ROS_ERROR("Create ROS-IO failed!");
@@ -43,6 +45,7 @@ bool LocalizationFusion::create_ROS_IO(){
     sub_slam_odom_ = nh_.subscribe(sub_slam_odom_topic_, 100, &LocalizationFusion::slam_odometry_callback, this);
 
 	pub_fusion_odom_ = nh_.advertise<nav_msgs::Odometry>(pub_localization_topic_, 100);
+    pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(pub_slipping_topic_, 100); 
 
     
     return true;
@@ -54,6 +57,12 @@ void LocalizationFusion::chassis_msg_callback(const fairland_msgs::chassic_data:
     std::lock_guard<std::mutex> lock(mutex_);
     is_chassis_rcv_ = true;
     chassis_msg_ = *chassis_msg_in;
+
+    if(slipping_ptr_->get_lidar_queue_init()){
+        slipping_ptr_->update_chassis(chassis_msg_);
+    }else{
+        slipping_ptr_->reset();
+    }
     // ROS_INFO_STREAM("chassis-vel: "<<chassis_msg_.ac_linear_velocity );
 }
 
@@ -79,21 +88,28 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
         return;
     }
 
-    ROS_INFO_STREAM("chassis_msg_.header.stamp: "<<chassis_msg_.header.stamp.toSec());
+    // ROS_INFO_STREAM("chassis_msg_.header.stamp: "<<chassis_msg_.header.stamp.toSec());
     ROS_INFO_STREAM("chassis_msg_.ac_linear_velocity: "<<chassis_msg_.ac_linear_velocity);
 
     check_slam_odometry(slam_odom_msg_);
     // TODO: check chassis time
 
-    compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_origin_);
-    compose_status(slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
     // if (lf_need_init_ == true && is_chassis_rcv_ && is_imu_rcv_) { // 前面已经进行过 is_chassis_rcv_ && is_imu_rcv_ 的判断
     if (lf_need_init_ == true ) {
         ekf_fusion_ptr_->init(status_tmp_);
         ROS_INFO_STREAM(YELLOW<<"localization fusion init -----------------"<<RESET);
         lf_need_init_ = false;
+
+        slipping_ptr_->reset();
     }
+
+    // slipping detect 
+    int slip_flag = 0;
+    slip_flag = detect_slipping(slam_odom_msg_);
+
+    compose_status(slip_flag, slam_odom_msg_, imu_msg_, chassis_msg_, &status_origin_);
+    compose_status(slip_flag, slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
     if (ekf_fusion_ptr_->is_init()) {
         ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
@@ -101,34 +117,68 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
         ROS_INFO_STREAM(GREEN<<"localization fusion end ------------------"<<RESET);
         status_tmp_ = status_lf_;
 
-        ROS_INFO("slam-  x: %.4f --- y:  %.4f --- yaw:  %.6f", status_lf_.slam_pose.position.x, status_lf_.slam_pose.position.y, status_lf_.slam_pose.orientation.z);
-        ROS_INFO("fusion-x: %.4f --- y:  %.4f --- yaw:  %.6f", status_lf_.fusion_pose.position.x, status_lf_.fusion_pose.position.y, status_lf_.fusion_pose.orientation.z);
+        ROS_INFO("slam-  x: %8.3f --- y: %8.3f --- yaw: %9.6f", status_lf_.slam_pose.position.x, status_lf_.slam_pose.position.y, status_lf_.slam_pose.orientation.z);
+        ROS_INFO("fusion-x: %8.3f --- y: %8.3f --- yaw: %9.6f", status_lf_.fusion_pose.position.x, status_lf_.fusion_pose.position.y, status_lf_.fusion_pose.orientation.z);
         ROS_INFO_STREAM(GREEN<<"------------------------------------------"<<RESET);
     }
 
 
-    if(!ekf_use_chassis_){
-        double dt = status_tmp_.header.stamp.toSec() - status_.header.stamp.toSec();
-        double vx = (status_tmp_.fusion_pose.position.x - status_.fusion_pose.position.x)/dt;
-        double vy = (status_tmp_.fusion_pose.position.y - status_.fusion_pose.position.y)/dt;
+    // if(!ekf_use_chassis_){
+    //     double dt = status_tmp_.header.stamp.toSec() - last_status_.header.stamp.toSec();
+    //     double vx = (status_tmp_.fusion_pose.position.x - last_status_.fusion_pose.position.x)/dt;
+    //     double vy = (status_tmp_.fusion_pose.position.y - last_status_.fusion_pose.position.y)/dt;
 
-        double cal_yaw = (status_tmp_.fusion_pose.orientation.z + status_.fusion_pose.orientation.z) * 0.5;
-        slam_speed_ = vx * std::cos(cal_yaw) + vy * std::sin(cal_yaw);
-    }
+    //     double cal_yaw = (status_tmp_.fusion_pose.orientation.z + last_status_.fusion_pose.orientation.z) * 0.5;
+    //     slam_speed_ = vx * std::cos(cal_yaw) + vy * std::sin(cal_yaw);
+    // }
     
     // update & publish
-    status_ = status_tmp_;
-    pub_localiztion();
+    last_status_ = status_tmp_;
+    pub_localiztion(status_tmp_);
+
+    // pub slipping
+    fairland_msgs::NameValues slip_msg;
+    fill_slipping_msg(slip_msg, slam_odom_msg_.header.stamp, slip_flag);
+    pub_slip_.publish(slip_msg);
 }
 
-void LocalizationFusion::pub_localiztion(){
+
+int LocalizationFusion::detect_slipping(nav_msgs::Odometry curr_odom){
+
+    geometry_msgs::PoseStamped pose_stamp;
+    pose_stamp.header.stamp = curr_odom.header.stamp;
+
+    pose_stamp.pose = curr_odom.pose.pose;
+    // slipping_ptr_->update_lidar(pose_stamp);
+    slipping_ptr_->update_lidar_by_distance(pose_stamp);
+
+    int slip_flag = 0;
+    slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
+    
+    // log_info_manager_->log_info.slip_flag = slip_flag;
+    // log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
+
+    return slip_flag;
+}
+
+void LocalizationFusion::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag){
+    fairland_msgs::NameValue slip_val;
+    slip_val.name = "slipping";
+    slip_val.value = slip_flag;
+    
+    slipping_msg.header.stamp = slam_odom_stamp;
+    slipping_msg.header.frame_id = "base_link";
+    slipping_msg.values.push_back(slip_val);
+}
+
+void LocalizationFusion::pub_localiztion(fairland_msgs::LocalizationPoseData cur_status){
     nav_msgs::Odometry fusion_odom;
-    fusion_odom.header = status_.header;
+    fusion_odom.header = cur_status.header;
     fusion_odom.header.seq = seq_count_ ++;
 
     Eigen::Isometry3d T_base2map = Eigen::Isometry3d::Identity();
-    Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(status_.fusion_pose.orientation);
-    T_base2map.translate(Eigen::Vector3d(status_.fusion_pose.position.x, status_.fusion_pose.position.y, status_.fusion_pose.position.z));
+    Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(cur_status.fusion_pose.orientation);
+    T_base2map.translate(Eigen::Vector3d(cur_status.fusion_pose.position.x, cur_status.fusion_pose.position.y, cur_status.fusion_pose.position.z));
     T_base2map.rotate(eigen_quat); // 应用四元数的旋转
 
     Eigen::Isometry3d T_lidar2map = Eigen::Isometry3d::Identity();
@@ -155,10 +205,14 @@ void LocalizationFusion::pub_localiztion(){
 
 }
 
-void LocalizationFusion::compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
+void LocalizationFusion::compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
                                         fairland_msgs::LocalizationPoseData* status_msg){
-    if(!ekf_use_chassis_){
-        chassis_msg.ac_linear_velocity = slam_speed_;
+    // if(!ekf_use_chassis_){
+    //     chassis_msg.ac_linear_velocity = slam_speed_;
+    // }
+
+    if(slip_flag || !ekf_use_chassis_){
+        chassis_msg.ac_linear_velocity = slam_odom.twist.twist.linear.x;
     }
 
     Eigen::Isometry3d T_baselink2map = Eigen::Isometry3d::Identity();
@@ -209,6 +263,7 @@ bool LocalizationFusion::load_params(){
     sub_chassis_topic_ = lf_params->topic_params.sub_chassis_topic;
     sub_slam_odom_topic_ = lf_params->topic_params.sub_slam_odom_topic;
     pub_localization_topic_ = lf_params->topic_params.pub_localization_topic;
+    pub_slipping_topic_ = lf_params->topic_params.pub_slipping_topic;
     std::vector<double> baselink_in_lidar = lf_params->baselink_in_lidar;
 
     double roll  = localization_module::common::Quaternion::deg2rad(baselink_in_lidar[3]);

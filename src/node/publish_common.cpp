@@ -74,7 +74,7 @@ void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publi
 //     globalPath.poses.push_back(pose_stamped);
 // }
 
-void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
@@ -89,6 +89,21 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     odomAftMapped.pose.pose.orientation.y = quaternion.y();
     odomAftMapped.pose.pose.orientation.z = quaternion.z();
     odomAftMapped.pose.pose.orientation.w = quaternion.w();
+
+    Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
+    Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
+    iso_transform.linear() = mat;
+    Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
+    Eigen::Matrix3d rot = iso_transform_inv.linear();
+
+    auto vel = rot * curr_pose.imu_state.vel;
+
+    odomAftMapped.twist.twist.linear.x = vel[0];
+    odomAftMapped.twist.twist.linear.y = vel[1];
+    odomAftMapped.twist.twist.linear.z = vel[2];
+
+    log_info_manager_->log_info.slam_vel = odomAftMapped.twist.twist.linear.x;
+
     pubOdomAftMapped.publish(odomAftMapped);
 
 

@@ -18,9 +18,13 @@
 // #include <visualization_msgs/MarkerArray.h>
 
 // 另一个节点中定义
+#include "fairland_msgs/NameValues.h"
 #include "fairland_msgs/chassic_data.h"
 #include "fairland_msgs/LocalizationPoseData.h"
 #include "ekf_fusion/ekf_localization_fusion.h"
+
+#include "slipping/detect_slipping.h"
+#include "node/log_info_manager.hpp"
 
 
 #include "fusion_param.hpp"
@@ -47,15 +51,23 @@ private:
     void init_chassis_imu_slam_odom_stamp();
 
     void check_slam_odometry(nav_msgs::Odometry slam_odom);
-    void compose_status(nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
+    void compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
                         fairland_msgs::LocalizationPoseData* status_msg);
-    void pub_localiztion();
+    void pub_localiztion(fairland_msgs::LocalizationPoseData cur_status);
+
+    // slipping detect
+    int detect_slipping(nav_msgs::Odometry curr_odom);
+    void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
     
+
+public:
+    LocalizationModuleLogInfoManager * log_info_manager_;
 
 private:
 
     std::mutex mutex_; ///< the only mutex
     std::shared_ptr<EkfLocalizationFusion> ekf_fusion_ptr_;
+    std::shared_ptr<DetectSlipping> slipping_ptr_;
 
     bool is_chassis_rcv_ = false;
     bool is_imu_rcv_ = false;
@@ -72,7 +84,7 @@ private:
     double time_lost_thr_ = 3.0; // unit: second
     bool ekf_use_chassis_ = true;
 
-    fairland_msgs::LocalizationPoseData status_;
+    fairland_msgs::LocalizationPoseData last_status_;
     fairland_msgs::LocalizationPoseData status_tmp_;
     fairland_msgs::LocalizationPoseData status_origin_; ///< the origin status message
     fairland_msgs::LocalizationPoseData status_lf_; ///< the lfed status message
@@ -82,10 +94,13 @@ private:
     ros::Subscriber sub_chassis_;
     ros::Subscriber sub_slam_odom_;
     ros::Publisher pub_fusion_odom_;
+    ros::Publisher pub_slip_;  
     std::string sub_imu_topic_;
     std::string sub_chassis_topic_;
     std::string sub_slam_odom_topic_;
     std::string pub_localization_topic_;
+    std::string pub_slipping_topic_;
+    
 
     fairland_msgs::chassic_data chassis_msg_; ///< the chassis message
     nav_msgs::Odometry slam_odom_msg_; ///< the gnss message
