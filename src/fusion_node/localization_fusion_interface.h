@@ -14,6 +14,7 @@
 // #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <std_msgs/Float64MultiArray.h>
 // #include <visualization_msgs/Marker.h>
 // #include <visualization_msgs/MarkerArray.h>
 
@@ -57,7 +58,8 @@ private:
 
     // slipping detect
     int detect_slipping(nav_msgs::Odometry curr_odom);
-    void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
+    // void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
+    void fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
     
 
 public:

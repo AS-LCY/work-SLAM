@@ -45,7 +45,8 @@ bool LocalizationFusion::create_ROS_IO(){
     sub_slam_odom_ = nh_.subscribe(sub_slam_odom_topic_, 100, &LocalizationFusion::slam_odometry_callback, this);
 
 	pub_fusion_odom_ = nh_.advertise<nav_msgs::Odometry>(pub_localization_topic_, 100);
-    pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(pub_slipping_topic_, 100); 
+    // pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(pub_slipping_topic_, 100); 
+    pub_slip_ = nh_.advertise<std_msgs::Float64MultiArray>(pub_slipping_topic_, 100); 
 
     
     return true;
@@ -112,14 +113,14 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     compose_status(slip_flag, slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
     if (ekf_fusion_ptr_->is_init()) {
-        ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
+        // ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
         ekf_fusion_ptr_->localization_fusion_core(status_tmp_, &status_lf_);
-        ROS_INFO_STREAM(GREEN<<"localization fusion end ------------------"<<RESET);
+        ROS_INFO_STREAM(GREEN<<"------------------------------------------"<<RESET);
         status_tmp_ = status_lf_;
 
         ROS_INFO("slam-  x: %8.3f --- y: %8.3f --- yaw: %9.6f", status_lf_.slam_pose.position.x, status_lf_.slam_pose.position.y, status_lf_.slam_pose.orientation.z);
         ROS_INFO("fusion-x: %8.3f --- y: %8.3f --- yaw: %9.6f", status_lf_.fusion_pose.position.x, status_lf_.fusion_pose.position.y, status_lf_.fusion_pose.orientation.z);
-        ROS_INFO_STREAM(GREEN<<"------------------------------------------"<<RESET);
+        ROS_INFO_STREAM(GREEN<<"localization fusion end ------------------"<<RESET);
     }
 
 
@@ -137,7 +138,8 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     pub_localiztion(status_tmp_);
 
     // pub slipping
-    fairland_msgs::NameValues slip_msg;
+    // fairland_msgs::NameValues slip_msg;
+    std_msgs::Float64MultiArray slip_msg;
     fill_slipping_msg(slip_msg, slam_odom_msg_.header.stamp, slip_flag);
     pub_slip_.publish(slip_msg);
 }
@@ -161,20 +163,47 @@ int LocalizationFusion::detect_slipping(nav_msgs::Odometry curr_odom){
     return slip_flag;
 }
 
-void LocalizationFusion::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag){
-    fairland_msgs::NameValue slip_val;
-    slip_val.name = "slipping";
-    slip_val.value = slip_flag;
+void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp, int slip_flag){
+    // fairland_msgs::NameValue slip_val;
+    // slip_val.name = "slipping";
+    // slip_val.value = slip_flag;
     
-    slipping_msg.header.stamp = slam_odom_stamp;
-    slipping_msg.header.frame_id = "base_link";
-    slipping_msg.values.push_back(slip_val);
+    // slipping_msg.header.stamp = slam_odom_stamp;
+    // slipping_msg.header.frame_id = "base_link";
+    // slipping_msg.values.push_back(slip_val);
+
+    std_msgs::MultiArrayDimension dim0;
+    std_msgs::MultiArrayDimension dim1;
+    dim0.label = "slipping, time_double";
+    dim0.size = 2;
+    // dim0.stride = 2;
+    // dim1.label = " ";
+    // dim1.size = 2;
+    // dim1.stride = 1;
+
+    slipping_msg.layout.dim.push_back(dim0);
+    // slipping_msg.layout.dim.push_back(dim1);
+
+    slipping_msg.data.push_back(slip_flag*1.0);
+    slipping_msg.data.push_back(slam_odom_stamp.toSec());
+
 }
+
+// void LocalizationFusion::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag){
+//     fairland_msgs::NameValue slip_val;
+//     slip_val.name = "slipping";
+//     slip_val.value = slip_flag;
+    
+//     slipping_msg.header.stamp = slam_odom_stamp;
+//     slipping_msg.header.frame_id = "base_link";
+//     slipping_msg.values.push_back(slip_val);
+// }
 
 void LocalizationFusion::pub_localiztion(fairland_msgs::LocalizationPoseData cur_status){
     nav_msgs::Odometry fusion_odom;
     fusion_odom.header = cur_status.header;
     fusion_odom.header.seq = seq_count_ ++;
+    fusion_odom.child_frame_id = "base_link";
 
     Eigen::Isometry3d T_base2map = Eigen::Isometry3d::Identity();
     Eigen::Quaterniond eigen_quat = localization_module::common::Quaternion::geo_quat_2_eigen_quat(cur_status.fusion_pose.orientation);

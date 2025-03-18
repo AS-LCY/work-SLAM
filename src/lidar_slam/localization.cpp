@@ -169,7 +169,7 @@ bool Localization::loadMap(std::string path){
 
 // bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
 // bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double &score,  double score_fail_thr, double score_low_accuracy_thr,
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double &fit_score,  double score_fail_thr, double score_low_accuracy_thr,
                             double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter)
 {
     // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
@@ -191,12 +191,12 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
     
     // cout << YELLOW << "x: "<< last_temp_x << " y: "<< last_temp_y << " z: "<< last_temp_z << " roll: "<< last_temp_roll << " pitch: "<< last_temp_pitch << " yaw: "<< last_temp_yaw << RESET << endl;
     // cout << YELLOW << "x: "<< curr_temp_x << " y: "<< curr_temp_y << " z: "<< curr_temp_z << " roll: "<< curr_temp_roll << " pitch: "<< curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl;
-
+    // fit_score = gicp->getFitnessScore();
     if(gicp->hasConverged() == false){
-        ROS_ERROR_STREAM(RED << "gicp not converged, score: "<< gicp->getFitnessScore() <<RESET);
+        ROS_ERROR_STREAM(RED << "gicp not converged "<<RESET);
         return false;
     }else{
-        double fit_score = gicp->getFitnessScore();
+        fit_score = gicp->getFitnessScore();
         if(fit_score < score_low_accuracy_thr){
             lastCorrectionOdomToMap = correctionOdomToMap;
             lastUpdateTime = curr_time_;

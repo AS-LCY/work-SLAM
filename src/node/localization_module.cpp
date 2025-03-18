@@ -302,7 +302,7 @@ bool LocalizationModule::create_ROS_IO(){
     pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
     pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
-    pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
+    // pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
 
     // both 建图 & 定位
 	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100);
@@ -663,9 +663,9 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
-            fairland_msgs::NameValues slip_msg;
-            fill_slipping_msg(slip_msg);
-            pub_slip_.publish(slip_msg);
+            // fairland_msgs::NameValues slip_msg;
+            // fill_slipping_msg(slip_msg);
+            // pub_slip_.publish(slip_msg);
 
         }
 
@@ -776,9 +776,9 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
             pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
-            fairland_msgs::NameValues slip_msg;
-            fill_slipping_msg(slip_msg);
-            pub_slip_.publish(slip_msg);
+            // fairland_msgs::NameValues slip_msg;
+            // fill_slipping_msg(slip_msg);
+            // pub_slip_.publish(slip_msg);
 
             // update
             last_pub_time_l = check_time_now_l;

@@ -409,6 +409,7 @@ void LidarSlam::localizationThread()
                 // if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 double fit_score = 0.0;
                 if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
+                    // ROS_INFO_STREAM("fit_score: " << fit_score);
                     if (fit_score < fgicp_score_low_accuracy_thr){
                         local_thrd_status_.store(3);
                         gicp_fail_count = 0;
@@ -423,6 +424,7 @@ void LidarSlam::localizationThread()
                         ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                     }
                 }else{ // 未收敛
+                    // ROS_INFO_STREAM("fit_score: " << fit_score);
                     gicp_fail_count++;
                     gicp_low_acc_count++;
                     ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
