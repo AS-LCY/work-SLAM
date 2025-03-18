@@ -21,7 +21,7 @@
 #include "lidar_slam/use-ikfom.hpp"
 #include "lidar_slam/esekfom.hpp"
 // #include "lddc.h"
-#include "livox_datatype/livox_ros_datatype_def.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 
 /*
 这个hpp主要包含：

@@ -17,19 +17,19 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
 	laserCloudmsg.header.stamp = ros::Time().now();
-	// laserCloudmsg.header.frame_id = "lidar";
-	laserCloudmsg.header.frame_id = "base_footprint";
+	laserCloudmsg.header.frame_id = "lidar";
+	// laserCloudmsg.header.frame_id = "base_footprint";
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
-void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "wheel";
-	pubObstacleCloud.publish(laserCloudmsg);
-}
+// void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "wheel";
+// 	pubObstacleCloud.publish(laserCloudmsg);
+// }
 
 void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
 {
@@ -74,7 +74,7 @@ void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publi
 //     globalPath.poses.push_back(pose_stamped);
 // }
 
-void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
@@ -89,11 +89,26 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     odomAftMapped.pose.pose.orientation.y = quaternion.y();
     odomAftMapped.pose.pose.orientation.z = quaternion.z();
     odomAftMapped.pose.pose.orientation.w = quaternion.w();
+
+    Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
+    Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
+    iso_transform.linear() = mat;
+    Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
+    Eigen::Matrix3d rot = iso_transform_inv.linear();
+
+    auto vel = rot * curr_pose.imu_state.vel;
+
+    odomAftMapped.twist.twist.linear.x = vel[0];
+    odomAftMapped.twist.twist.linear.y = vel[1];
+    odomAftMapped.twist.twist.linear.z = vel[2];
+
+    log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
+
     pubOdomAftMapped.publish(odomAftMapped);
 
 
-    // // auto odom_for_tf = odomAftMapped;
-    // auto odom_for_tf = filter_odometry_;
+    // auto odom_for_tf = odomAftMapped;
+    // // auto odom_for_tf = filter_odometry_;
 
     // static tf::TransformBroadcaster br;
     // tf::Transform transform;
@@ -106,7 +121,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     // q.setY(odom_for_tf.pose.pose.orientation.y);
     // q.setZ(odom_for_tf.pose.pose.orientation.z);
     // transform.setRotation(q);
-    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, child_frameid));
+    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, "base_link"));
 }
 
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
@@ -222,12 +237,14 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
 
 void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
 {
+    // ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
     ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
     string odometryFrame = "odom";
 
     if (loopIndexContainer.empty())
         return;
 
+    // ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
     visualization_msgs::MarkerArray markerArray;
     // 闭环顶点
     visualization_msgs::Marker markerNode;
@@ -260,27 +277,38 @@ void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, 
     markerEdge.color.b = 0;
     markerEdge.color.a = 1;
 
+    // ROS_ERROR_STREAM(RED << "visualizeLoopClosure before for loop " << RESET);
+
+    int loop_i=0;
     // 遍历闭环
     for (auto it = loopIndexContainer.begin(); it != loopIndexContainer.end(); ++it)
     {
+        // ROS_ERROR_STREAM(RED << "loop_i == %d --- 1", loop_i << RESET);
         int key_cur = it->first;
         int key_pre = it->second;
+        // ROS_ERROR_STREAM(RED << "loop_i == %d --- 2", loop_i << RESET);
         geometry_msgs::Point p;
         p.x = optimized_path_msg.poses[key_cur].pose.position.x;
         p.y = optimized_path_msg.poses[key_cur].pose.position.y;
         p.z = optimized_path_msg.poses[key_cur].pose.position.z;
+        // ROS_ERROR_STREAM(RED << "loop_i == %d --- 3", loop_i << RESET);
         markerNode.points.push_back(p);
         markerEdge.points.push_back(p);
         p.x = optimized_path_msg.poses[key_pre].pose.position.x;
         p.y = optimized_path_msg.poses[key_pre].pose.position.y;
         p.z = optimized_path_msg.poses[key_pre].pose.position.z;
+        // ROS_ERROR_STREAM(RED << "loop_i == %d --- 4", loop_i << RESET);
         markerNode.points.push_back(p);
         markerEdge.points.push_back(p);
+        // ROS_ERROR_STREAM(RED << "loop_i == %d --- 5", loop_i ++ << RESET);
     }
+    // ROS_ERROR_STREAM(RED << "visualizeLoopClosure before pub " << RESET);
 
     markerArray.markers.push_back(markerNode);
     markerArray.markers.push_back(markerEdge);
     pubLoopConstraintEdge.publish(markerArray);
+
+    // ROS_ERROR_STREAM(RED << "visualizeLoopClosure success "<< RESET);
 }
 
 void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){

@@ -2,6 +2,8 @@
 #define LIVOX_ROS_DATATYPE_DEF_H
 
 #include "fairland_msgs/LivoxCustomMsg.h"
+#include <Eigen/Eigen>
+#include <Eigen/Dense>
 
 namespace livox_ros {
 

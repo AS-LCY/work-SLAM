@@ -159,14 +159,23 @@ link_directories(
  
 set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_library(lidar_preproc SHARED
+  src/lidar/lidar_preproc_parent.cpp 
+  src/lidar/livox/lidar_preproc_Mid360.cpp 
+  src/lidar/robosense/lidar_preproc_Airy.cpp 
+  src/lidar/vanjee/lidar_preproc_Vanjee722.cpp 
+)
 
+target_link_libraries(lidar_preproc 
+  ${PCL_LIBRARIES} 
+) 
 
 # build: slam core
 add_library(lidar_slam SHARED
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
-  src/lidar_slam/preprocess.cpp
+  # src/lidar_slam/preprocess.cpp
   src/lidar_slam/IMU_Processing.cpp
   src/lidar_slam/ikd_Tree.cpp
   src/lidar_slam/Scancontext.cpp
@@ -184,6 +193,7 @@ target_link_libraries(lidar_slam
   gtsam  
   fmt::fmt 
   yaml-cpp 
+  lidar_preproc
   Boost::system
   Boost::thread
   Boost::chrono
@@ -210,7 +220,9 @@ add_executable(lidar_slam_node
   src/node/localization_module.cpp
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  # src/node/load_param.cpp 
+  # src/node/detect_slipping.cpp
+  src/node/pose_filter.cpp
+  src/slipping/detect_slipping.cpp
 )
 
 # add_dependencies(lidar_slam_node )
@@ -223,12 +235,32 @@ target_link_libraries(lidar_slam_node
   # ${OpenCV_LIBS}
   # ${cv_bridge_LIBRARIES}
   lidar_slam
+  lidar_preproc
   # gtsam
   # fmt::fmt 
   # yaml-cpp 
   ) 
 
+  add_library(mango_common SHARED
+  src/fusion_node/common/numerical_process.cpp 
+  src/fusion_node/common/quaternion.cpp 
+  src/fusion_node/common/vector.cpp 
+)
 
+add_executable(localization_fusion_node
+  src/fusion_node/fusion_main.cpp
+  src/fusion_node/localization_fusion_interface.cpp
+  src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
+  src/fusion_node/ekf_fusion/pose_ekf.cpp 
+  src/slipping/detect_slipping.cpp
+)
+
+
+  target_link_libraries(localization_fusion_node 
+  ${catkin_LIBRARIES} 
+  ${PCL_LIBRARIES} 
+  mango_common
+  ) 
 
 #############
 ## Install ##

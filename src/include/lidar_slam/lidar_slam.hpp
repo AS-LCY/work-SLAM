@@ -29,16 +29,23 @@
 #include "lidar_slam/localization.hpp"
 #include "lidar_slam/backend.hpp"
 #include "lidar_slam/IMU_Processing.hpp"
-#include "lidar_slam/preprocess.h"
+// #include "lidar_slam/preprocess.h"
 // #include "lidar_slam/Viewer.hpp"
 // #include "include/livox_ros_driver2.h"
 // #include "driver_node.h"
 // #include "lddc.h"
-#include "livox_datatype/livox_ros_datatype_def.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 #include "node/module_param_def.h"
-#include "node/module_status_def.h"
+// #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 // #include "lds_lidar.h"
+
+// lidar
+#include "lidar/livox/pcl_point_type_def_lvx.h"
+#include "lidar/livox/lidar_preproc_Mid360.h"
+#include "lidar/robosense/pcl_point_type_def_rbs.h"
+#include "lidar/robosense/lidar_preproc_Airy.h"
+#include "lidar/lidar_preproc_factory.hpp"
 
 namespace lidar_slam {
 struct LidarParam{
@@ -120,12 +127,16 @@ class LidarSlam
             // cout<<"debug: destruct end"<<endl;
          };
         bool run();
+        void robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud);
+        void robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud);
+        void lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud);
+
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
-        void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
+        // void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
        // void cmd_cbk(WorkState& msg);
         void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in);
         // void image_cbk(const cv::Mat& img,double time);
-        void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);
+        // void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);// not in use, comment them by pmm
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
             // if (param.localization_mode){
             if (working_mode_ == LOCALIZATION){
@@ -139,14 +150,15 @@ class LidarSlam
        
         bool load_map(string directory){
             globalLocalizationSuccess = false;
-            sleep(1);
+            // sleep(1); 只有 IDLE -> LOCALIZATION / SEC_MAPPING 时会加载地图， globalLocalization 相关为空，无需睡眠
             if(working_mode_ == LOCALIZATION){
                 localization->loadMap(directory);
             }else if(working_mode_ == SEC_MAPPING){
                 if(!cloud_map_manager_->load_map_data(directory))
                 return false;
             }else{
-                cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
+                // cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return false;
             }
             return true;
@@ -197,7 +209,8 @@ class LidarSlam
                 return global_localization_->get_global_odom_to_map();
                 // return localization->getOdomToMap();
             }else{
-                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
             // if (param.localization_mode)
@@ -216,7 +229,8 @@ class LidarSlam
             if (working_mode_ == LOCALIZATION){
                return localization->getLastOdomToMap();
             }else{
-                cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
+                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
         }
@@ -237,6 +251,21 @@ class LidarSlam
                 return temp;
             }
         } 
+        
+        Localization_base get_current_pose(){
+            std::lock_guard<std::mutex> lk(mtx_pose);
+            return current_pose;
+        }
+
+        double get_slam_time(){
+            if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING || working_mode_==LOCALIZATION){
+                return localization_base.update_time;
+            }else{
+                double temp = ros::Time::now().toSec();
+                return temp;
+            }
+        }
+
         Eigen::Isometry3d getWheelInOdom(){
             return getLidarInOdom()* T_lidar_wheel;
         }
@@ -286,15 +315,15 @@ class LidarSlam
         {
             return back_end->getCurrentRGBMap();
         }
-        PointCloudXYZI::Ptr getObstacleCloud()
-        {
-            return ObstacleCloud;
-        }
-        PointCloudXYZI::Ptr getFilteredObstacleCloud()
-        {
-            std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
-            return FilteredObstacleCloud;
-        }
+        // PointCloudXYZI::Ptr getObstacleCloud()
+        // {
+        //     return ObstacleCloud;
+        // }
+        // PointCloudXYZI::Ptr getFilteredObstacleCloud()
+        // {
+        //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
+        //     return FilteredObstacleCloud;
+        // }
 
         // LocalizationStatus get_l_status(){
         //     return l_status_;
@@ -304,7 +333,6 @@ class LidarSlam
         //     globalLocalizationSuccess = global_success_flag;
         //     global_localize_count_ = 0;
         //     // l_status_ = L_RELOCALIZING;
-        //     log_info_manager_->l_status = L_RELOCALIZING;
         // }
 
         double get_lidar_time(){
@@ -322,9 +350,79 @@ class LidarSlam
         //     return "UNKNOW_SlamWorkMode!";
         // }
 
+        void set_new_key_cloud_arrived(bool flag){
+            new_key_cloud_arrived_ = flag;
+        }
+        bool get_new_key_cloud_arrived(){
+            return new_key_cloud_arrived_;
+        }
+
+        double get_hb_time_thread_localize(){
+            return hb_time_thread_localize_.load();
+        }
+        double get_hb_time_thread_loop_closure(){
+            return hb_time_thread_loop_closure_.load();
+        }
+        double get_hb_time_thread_secmap_relocalize(){
+            return hb_time_thread_secmap_relocalize_.load();
+        }
+
+        int get_local_thrd_status(){
+            return local_thrd_status_.load();
+        }
+        int get_slam_run_status(){
+            return slam_run_status_.load();
+        }
+        int get_secmap_relocal_thrd_status(){
+            return secmap_relocal_thrd_status_.load();
+        }
+
+
     private:
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// slam status    //
+        /*************************************************** */
+        /** @local_thrd_status_: 
+         * 0: inactive
+         * 1: relocalize ing
+         * 2: relocalize failed
+         * 3: normal
+         * 4: local low accuracy
+         * 5: local failed
+         */
+        std::atomic<int> local_thrd_status_{0};
+
+        /*************************************************** */
+        /** @slam_run_status_: 
+         * 0: inactive
+         * 1: normal
+         * 2: slam fail: cloud no enough point 
+         */
+        std::atomic<int>  slam_run_status_{0};
+
+        /*************************************************** */
+        /** @secmap_relocal_thrd_status_: 
+         * 0: inactive
+         * 1: relocalize ing
+         * 2: relocalize failed
+         * 3: normal
+         */
+        std::atomic<int> secmap_relocal_thrd_status_{0};
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        // 各 线程、callback、timer heartbeat
+        std::atomic<double> hb_time_thread_localize_;           // status = LOCALIZATION
+        std::atomic<double> hb_time_thread_loop_closure_;       // status = MAPPING or SEC_MAPPING
+        std::atomic<double> hb_time_thread_secmap_relocalize_;  // status = SECMAPPING
+
+
         // LidarParam param;
         LidarSlamParam config_param_;
+        int feats_down_size_thr_ = 100;
+        bool flag_keep_only_last_lidar_ = true;
+        bool new_key_cloud_arrived_ = false;
+
+
         deque<double> time_buffer;               // 记录lidar时间
         deque<PointCloudXYZI::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
@@ -375,25 +473,31 @@ class LidarSlam
         mutex mtx_path;
         mutex mtx_pose;
         esekfom::esekf kf;
-        std::unique_ptr<Preprocess> p_lidar_pre= nullptr;
+        // std::unique_ptr<Preprocess> p_lidar_pre= nullptr;
         std::unique_ptr<ImuProcess> p_imu= nullptr;
         std::unique_ptr<BackEnd> back_end= nullptr;
         std::unique_ptr<Localization> localization= nullptr;
         std::unique_ptr<GlobalLocalization> global_localization_= nullptr;
         std::unique_ptr<CloudMap> cloud_map_manager_= nullptr;
 
+
+        std::shared_ptr<localization_module::LidarPreprocParent> lidar_pre_ptr_;
+
         PointCloudXYZI::Ptr UndistortCloudInOdom;
         PointCloudXYZI::Ptr undistortCloud;  // lidar 系
         PointCloudXYZI::Ptr FilteredUndistortCloud;
         pcl::VoxelGrid<PointType> downSizeFilterCloud;
         PointCloudXYZI::Ptr kdtreeCloud;
-        PointCloudXYZI::Ptr ObstacleCloud;
+        // PointCloudXYZI::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
         PointCloudXYZI::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
         // LocalizationStatus l_status_ = L_INACTIVE;
         // MappingStatus m_status_ = M_INACTIVE;
         // bool second_mapping_need_global_localization_ = false;
+
+        // LocalizationStatus l_local_thread_status_ = L_INACTIVE;
+        // LocalizationStatus l_slam_thread_status_ = L_INACTIVE;
 
         int global_localize_count_=0;
         int lidar_no_point_count_ = 0;

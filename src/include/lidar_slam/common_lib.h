@@ -1,10 +1,14 @@
 #ifndef COMMON_LIB_H
 #define COMMON_LIB_H
 
+#include <sys/stat.h> // makedir
 #include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
 #include <Eigen/Eigen>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 
 
 
@@ -44,6 +48,23 @@ typedef Matrix3f M3F;
 
 
 
+#define RESET   "\033[0m"
+#define BLACK   "\033[30m"      /* Black */
+#define RED     "\033[31m"      /* Red */
+#define GREEN   "\033[32m"      /* Green */
+#define YELLOW  "\033[33m"      /* Yellow */
+#define BLUE    "\033[34m"      /* Blue */
+#define MAGENTA "\033[35m"      /* Magenta */
+#define CYAN    "\033[36m"      /* Cyan */
+#define WHITE   "\033[37m"      /* White */
+#define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+#define BOLDYELLOW  "\033[1m\033[33m"      /* Bold Yellow */
+#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
+#define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
+#define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
+#define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
 
 
 
@@ -263,6 +284,22 @@ static Eigen::Matrix3d ypr2R(const Eigen::Vector3d &ypr)
 }
 
 
+static void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz, Eigen::Vector3d& ypr){
+    double x = eigen_transform.translation().x();
+    double y = eigen_transform.translation().y();
+    double z = eigen_transform.translation().z();
+
+    xyz[0] = x;
+    xyz[1] = y;
+    xyz[2] = z;
+
+    ypr = R2ypr(eigen_transform.rotation());
+
+    // yaw   = ypr[0];
+    // pitch = ypr[1];
+    // roll  = ypr[2];
+}
+
 
 static Eigen::Matrix3d rpy2R(const Eigen::Vector3d &rpy){
 
@@ -321,6 +358,124 @@ static float angle_norm(float a){
         return a - PI_M*2;
     }
     return a;
+}
+
+static double get_yaw_from_orientation(geometry_msgs::Quaternion orientation){
+    Eigen::Quaterniond quat;
+    quat.x() = orientation.x;
+    quat.y() = orientation.y;
+    quat.z() = orientation.z;
+    quat.w() = orientation.w;
+
+    Eigen::Matrix3d rotation_matrix = quat.toRotationMatrix();
+    Eigen::Vector3d angles = R2ypr(rotation_matrix);
+    double yaw   = angles[0];
+    double pitch = angles[1];
+    double roll  = angles[2];
+
+    return yaw;
+}
+
+static geometry_msgs::Pose eigen_isometry_to_geo_pose(Eigen::Isometry3d eigen_transform){
+    geometry_msgs::Pose geo_pose;
+    geo_pose.position.x = eigen_transform.translation().x();
+    geo_pose.position.y = eigen_transform.translation().y();
+    geo_pose.position.z = eigen_transform.translation().z();
+
+    Eigen::Quaterniond quaternion(eigen_transform.linear());
+
+    geo_pose.orientation.x = quaternion.x();
+    geo_pose.orientation.y = quaternion.y();
+    geo_pose.orientation.z = quaternion.z();
+    geo_pose.orientation.w = quaternion.w();
+
+    return geo_pose;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+static bool mkdir_p(const std::string& path, mode_t mode) {
+    // 替换路径中的 "//" 为 "/" 
+    std::string path_temp = path;
+    std::string to_replace = "//";
+    std::string replacement = "/";
+    std::size_t pos = 0;
+
+    while ((pos = path_temp.find(to_replace, pos)) != std::string::npos) {
+        path_temp.replace(pos, to_replace.length(), replacement);
+        pos += replacement.length(); // 更新位置，继续查找
+    }
+
+    char tmp[256];
+    char *p = NULL;
+    size_t len;
+
+    // Copy string so we can modify it.
+    snprintf(tmp, sizeof(tmp), "%s", path_temp.c_str());
+    len = strlen(tmp);
+
+    // Remove trailing slashes.
+    // 删除末尾的'/'
+    while (len > 1 && tmp[len - 1] == '/')
+        tmp[--len] = 0;
+
+    // Iterate over the path, creating directories as needed.
+    // 根据找到的'/'，创建目录
+    for (p = tmp + 1; *p; p++) {
+        if (*p == '/') {
+            *p = 0;
+            if (mkdir(tmp, mode) && errno != EEXIST) {
+                return false;
+            }
+            *p = '/';
+        }
+    }
+
+    // Create the final directory.
+    // 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
+    // TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
+    if (mkdir(tmp, mode) && errno != EEXIST) {
+        return false;
+    }
+
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+// Used in: Backend & module_ctrl_callback
+static bool create_directory_if_not_exists(const std::string& directory_path){
+#if 1
+if (0 != access(directory_path.c_str(), 0)){
+        // int status = mkdir(directory_path.c_str(),0777);
+        bool status = mkdir_p(directory_path.c_str(),0777);
+        if (status){
+            return true; // 创建目录成功
+        }else{
+            // std::cerr << "Error creating directory: " << directory_path << std::endl;
+            ROS_ERROR_STREAM(RED << "Error creating directory: " << directory_path <<RESET);
+            return false; // 创建目录失败
+        }
+    }else{
+        //folder exist
+        return true;
+    }
+#endif
+
+#if 0
+    std::filesystem::path path(directory_path);
+
+    if (!std::filesystem::exists(path)){
+        try {
+            std::filesystem::create_directories(path);
+            return true; // 创建目录成功
+        }catch (const std::filesystem::filesystem_error& ex){
+            // std::cerr << "Error creating directory: " << ex.what() << std::endl;
+            ROS_ERROR_STREAM(RED << "Error creating directory: " << ex.what()  <<RESET);
+            return false; // 创建目录失败
+        }
+    } else {
+        return true; // 目录已存在
+    }
+#endif
 }
 
 // temp test, already parameterized

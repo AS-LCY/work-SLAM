@@ -15,6 +15,7 @@
 //该hpp主要包含：广义加减法，前向传播主函数，计算特征点残差及其雅可比，ESKF主函数
 
 const double epsi = 0.001; // ESKF迭代时，如果dx<epsi 认为收敛
+// const double epsi = 0.0005; // ESKF迭代时，如果dx<epsi 认为收敛
 
 namespace esekfom
 {
@@ -166,7 +167,8 @@ namespace esekfom
 			if (effct_feat_num < 1)
 			{
 				ekfom_data.valid = false;
-				printf("No Effective Points! \n");
+				// printf("No Effective Points! \n");
+				ROS_WARN_STREAM(YELLOW<<"No Effective Points!"<<RESET);
 				return;
 			}
 
@@ -241,6 +243,7 @@ namespace esekfom
 
 			for (int i = -1; i < maximum_iter; i++) // maximum_iter是卡尔曼滤波的最大迭代次数
 			{
+				// cout << YELLOW << "iter_i == "<< i << RESET<<endl;
 				dyn_share.valid = true;
 				// 计算雅克比，也就是点面残差的导数 H(代码里是h_x)
 
@@ -291,20 +294,29 @@ namespace esekfom
 				if (dyn_share.converge)
 					t++;
 
-				if (!t && i == maximum_iter - 2) //如果迭代了3次还没收敛 强制令成true，h_share_model函数中会重新寻找近邻点
+				if (!t && i == maximum_iter - 2) //如果迭代了3次还没收敛 强制令成true， h_share_model 函数中会重新寻找近邻点
 				{
 					dyn_share.converge = true;
 				}
 				double t_update_7 = omp_get_wtime();//计算矩阵 K * H
-				// printf("iter: %d-----------------------------------------\n", i);
-				// printf("------ 计算雅克比矩阵, time cost    : %f ms\n", (t_update_1-t_update_0)*1000);
-				// printf("------ 计算矩阵 x^k - x^, time cost: %f ms\n", (t_update_2-t_update_1)*1000);
-				// printf("------ 计算矩阵 H^T * H, time cost : %f ms\n", (t_update_3-t_update_2)*1000);
-				// printf("------ 计算卡尔曼增益, time cost    : %f ms\n", (t_update_4-t_update_3)*1000);
-				// printf("------ 计算 K * H, time cost       : %f ms\n", (t_update_5-t_update_4)*1000);
-				// printf("------ boxplus, time cost         : %f ms\n", (t_update_6-t_update_5)*1000);
-				// printf("------ end  , time cost           : %f ms\n", (t_update_7-t_update_6)*1000);
-				// printf("iter: %d-----------------------------------------\n", i);
+				// // printf("iter: %d-----------------------------------------\n", i);
+				// // printf("------ 计算雅克比矩阵, time cost    : %f ms\n", (t_update_1-t_update_0)*1000);
+				// // printf("------ 计算矩阵 x^k - x^, time cost: %f ms\n", (t_update_2-t_update_1)*1000);
+				// // printf("------ 计算矩阵 H^T * H, time cost : %f ms\n", (t_update_3-t_update_2)*1000);
+				// // printf("------ 计算卡尔曼增益, time cost    : %f ms\n", (t_update_4-t_update_3)*1000);
+				// // printf("------ 计算 K * H, time cost       : %f ms\n", (t_update_5-t_update_4)*1000);
+				// // printf("------ boxplus, time cost         : %f ms\n", (t_update_6-t_update_5)*1000);
+				// // printf("------ end  , time cost           : %f ms\n", (t_update_7-t_update_6)*1000);
+				// // printf("iter: %d-----------------------------------------\n", i);
+				// ROS_INFO_STREAM("iter: "<< i << " -----------------------------------------" << RESET);
+				// ROS_INFO_STREAM("------ 计算雅克比矩阵, time cost    : " << (t_update_1-t_update_0)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ 计算矩阵 x^k - x^, time cost: " << (t_update_2-t_update_1)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ 计算矩阵 H^T * H, time cost : " << (t_update_3-t_update_2)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ 计算卡尔曼增益, time cost    : " << (t_update_4-t_update_3)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ 计算 K * H, time cost       : " << (t_update_5-t_update_4)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ boxplus, time cost         : " << (t_update_6-t_update_5)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ end  , time cost           : " << (t_update_7-t_update_6)*1000 << " ms" );
+				// ROS_INFO_STREAM("iter: "<< i << " -----------------------------------------" << RESET);
 
 				if (t > 1 || i == maximum_iter - 1)
 				{

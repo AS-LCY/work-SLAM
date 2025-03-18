@@ -4,7 +4,7 @@
 
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/slam_param_def.h"
-#include "livox_datatype/livox_ros_datatype_def.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 // #include "lddc.h"
 using namespace std;
 
