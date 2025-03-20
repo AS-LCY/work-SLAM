@@ -810,11 +810,11 @@ int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
     double slam_time_now = slam_->get_slam_time();
     pose_stamp.header.stamp = ros::Time().fromSec(slam_time_now);
     pose_stamp.pose = eigen_isometry_to_geo_pose(curr_pose);
-    // slipping_ptr_->update_lidar(pose_stamp);
-    slipping_ptr_->update_lidar_by_distance(pose_stamp);
+    // // slipping_ptr_->update_lidar(pose_stamp);
+    // slipping_ptr_->update_lidar_by_distance(pose_stamp);
 
     int slip_flag = 0;
-    slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
+    // slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
     
     log_info_manager_->log_info.slip_flag = slip_flag;
     log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
@@ -1415,15 +1415,15 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
         
         return;
     }else{
-        if(slipping_ptr_->get_lidar_queue_init()){
-            slipping_ptr_->update_chassis(cur_chassis_msg);
-        }else{
-            slipping_ptr_->reset();
-        }
+        // if(slipping_ptr_->get_lidar_queue_init()){
+        //     slipping_ptr_->update_chassis(cur_chassis_msg);
+        // }else{
+        //     slipping_ptr_->reset();
+        // }
 
-        // pose_filter_ptr_->update_chassis(cur_chassis_msg);
+        // // pose_filter_ptr_->update_chassis(cur_chassis_msg);
 
-        return;
+        // return;
     }
     
     
@@ -1550,7 +1550,7 @@ bool LocalizationModule::module_member_init(){
 
     // lidar reset , after param load
     lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type);
-    slipping_ptr_.reset(new DetectSlipping());
+    // slipping_ptr_.reset(new DetectSlipping());
 
     return true;
 }

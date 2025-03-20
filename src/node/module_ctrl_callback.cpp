@@ -473,7 +473,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
     ROS_INFO("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
 
-    slipping_ptr_->reset();
+    // slipping_ptr_->reset();
     return true;
 }
 
@@ -503,7 +503,7 @@ void LocalizationModule::release_slam_obj(){
     ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
     releasing_slam_flag_ = false;
 
-    slipping_ptr_->reset();
+    // slipping_ptr_->reset();
 }
 
 bool LocalizationModule::make_map_directory_name(int map_id){

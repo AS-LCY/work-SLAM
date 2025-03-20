@@ -71,7 +71,7 @@
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
 #include "node/pose_filter.h"
-#include "slipping/detect_slipping.h"
+// #include "slipping/detect_slipping.h"
 
 
 // lidar
