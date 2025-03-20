@@ -29,3 +29,8 @@ localization_fusion:
         # pub_localization_topic: "/flbot/localiztion/odometry"
         pub_localization_topic: "/Odometry_lidar_in_map_filter"
         pub_slipping_topic: "/flbot/localization_module/slipping"
+
+    detect_slip: 
+        detect_window_time_range: 2 # unit: second
+        slipping_count_thr: 5 # 连续帧数超过距离阈值，即为打滑, 20hz 前提下
+        slipping_dist_thr: 0.15 # unit: m

@@ -240,16 +240,16 @@ void DetectSlipping::update_imu(sensor_msgs::Imu imu_msg){
 }
 
 bool DetectSlipping::load_params(){
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+    LocalizationFusionParamsManager *param_manager = LocalizationFusionParamsManager::Instance();
+    const LocalizationFusionParams* loaded_param = param_manager->get_localization_fusion_params();
 
     if (loaded_param == NULL) {
         ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
         return false;
     }else{
-        param_detect_window_time_range_ = loaded_param->detect_slip.detect_window_time_range;
-        param_slipping_dist_thr_ = loaded_param->detect_slip.slipping_dist_thr;
-        param_slipping_count_thr_ = loaded_param->detect_slip.slipping_count_thr;
+        param_detect_window_time_range_ = loaded_param->slip_params.detect_window_time_range;
+        param_slipping_dist_thr_ = loaded_param->slip_params.slipping_dist_thr;
+        param_slipping_count_thr_ = loaded_param->slip_params.slipping_count_thr;
         return true;
     }
 }

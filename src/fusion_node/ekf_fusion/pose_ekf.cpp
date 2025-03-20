@@ -23,10 +23,8 @@ PoseEKF::PoseEKF(const int& status_num,
     set_covariance(status_cov, input_cov, measure_cov);
     dt_=dt;
 
-    // printf("P_ init: \n");
-    // std::cout<<P_<<std::endl;
-    ROS_INFO_STREAM("P_ init: ");
-    ROS_INFO_STREAM(P_);
+    // ROS_INFO_STREAM("P_ init: ");
+    // ROS_INFO_STREAM(P_);
 }
 
 PoseEKF::~PoseEKF() {

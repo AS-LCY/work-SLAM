@@ -421,7 +421,7 @@ private:
 
     // lidar 
     std::shared_ptr<LidarPreprocParent> lidar_ptr_;
-    std::shared_ptr<DetectSlipping> slipping_ptr_;
+    // std::shared_ptr<DetectSlipping> slipping_ptr_;
     std::shared_ptr<PoseFilter> pose_filter_ptr_;
     
 };

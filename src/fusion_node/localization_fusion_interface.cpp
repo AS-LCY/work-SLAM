@@ -336,7 +336,7 @@ void LocalizationFusion::init_chassis_imu_slam_odom_stamp(){
     chassis_msg_.header.stamp = ros::Time::now();
     imu_msg_.header.stamp = ros::Time::now();
 
-    ROS_INFO_STREAM("time-now: "<<imu_msg_.header.stamp.toSec());
+    ROS_INFO_STREAM("init time-now: "<< setprecision(15)<<imu_msg_.header.stamp.toSec());
 
     slam_speed_ = 0.0;
 }
