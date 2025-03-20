@@ -491,7 +491,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     auto localization_status_now = localization_status_.load();
     if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
         // pub_rgb_map(slam->getCurrentRGBMap());
-        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", pubLidarInMap);
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "mapping", "base_link", pubLidarInMap);
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
             pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
@@ -504,7 +504,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
         if (slam_->isGloalLocalizationSuccess()){
-            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", pubLidarInMap);
+            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "localization", "base_link", pubLidarInMap);
             publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);

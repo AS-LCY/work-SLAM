@@ -8,7 +8,7 @@ DetectSlipping::DetectSlipping(/* args */){
     if (!load_params()){
         ROS_ERROR_STREAM(BOLDRED << "Load DetectSlipping param failed!" << RESET);
     }else {
-        ROS_INFO("Load DetectSlipping param successfully!");
+        ROS_INFO("Load detect-slipping param successfully!");
     }
 
     reset();
