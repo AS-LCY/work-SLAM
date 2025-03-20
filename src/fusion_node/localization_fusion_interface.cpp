@@ -189,16 +189,10 @@ void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping
     // slipping_msg.values.push_back(slip_val);
 
     std_msgs::MultiArrayDimension dim0;
-    std_msgs::MultiArrayDimension dim1;
     dim0.label = "slipping, time_double";
-    dim0.size = 2;
-    // dim0.stride = 2;
-    // dim1.label = " ";
-    // dim1.size = 2;
-    // dim1.stride = 1;
+    // dim0.size = 2;
 
     slipping_msg.layout.dim.push_back(dim0);
-    // slipping_msg.layout.dim.push_back(dim1);
 
     slipping_msg.data.push_back(slip_flag*1.0);
     slipping_msg.data.push_back(slam_odom_stamp.toSec());
