@@ -49,10 +49,8 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
 void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 0"<<endl;
     reseting = true;
-    // l_status_ = L_INACTIVE;
     log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
     log_info_manager_->reset_log_info();
-    log_info_manager_->reset_module_status();
     slam_run_status_.store(0);
 
     sleep(1);
@@ -410,6 +408,7 @@ void LidarSlam::localizationThread()
                 double fit_score = 0.0;
                 if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
+                    log_info_manager_->slam_info.data[3]=1; // if converge
                     if (fit_score < fgicp_score_low_accuracy_thr){
                         local_thrd_status_.store(3);
                         gicp_fail_count = 0;
@@ -424,6 +423,7 @@ void LidarSlam::localizationThread()
                         ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                     }
                 }else{ // 未收敛
+                    log_info_manager_->slam_info.data[3]=0; // if converge
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
                     gicp_fail_count++;
                     gicp_low_acc_count++;
@@ -437,9 +437,9 @@ void LidarSlam::localizationThread()
                     local_thrd_status_.store(4);
                 }
 
-                log_info_manager_->log_info.gicp_fit_score=fit_score;
-                log_info_manager_->log_info.gicp_fail_count=gicp_fail_count;
-                log_info_manager_->log_info.gicp_low_acc_count=gicp_low_acc_count;
+                log_info_manager_->slam_info.data[4]=fit_score;
+                log_info_manager_->slam_info.data[5]=gicp_fail_count;
+                log_info_manager_->slam_info.data[6]=gicp_low_acc_count;
 
                 //state.state("normal");
             }

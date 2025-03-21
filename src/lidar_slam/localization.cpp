@@ -3,6 +3,7 @@
 namespace lidar_slam {
 Localization::Localization(){
     log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
+    log_info_manager_->reset_log_info();
     
     gicp.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
     gicp->setNumThreads(1);
@@ -226,17 +227,17 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
             }
     
             pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-            // update log_info (log_info_manager_)
-            log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
-            log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
-            log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
-            log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
-            log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
-            log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
-            log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
-            log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
-            log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
-            log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
+            // // update log_info (log_info_manager_) 暂时注释掉，后期再补充
+            // log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
+            // log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
+            // log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
+            // log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
+            // log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
+            // log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
+            // log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
+            // log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
+            // log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
+            // log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
 
         }else{
             ROS_INFO_STREAM(YELLOW << "gicp converged, score: "<< fit_score <<RESET);
@@ -246,56 +247,6 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 
     }
 
-    // /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // if (gicp->hasConverged() == false || gicp->getFitnessScore() > score_thr){// TODO check param
-    //     ROS_ERROR_STREAM(RED << "gicp fail, score: "<< gicp->getFitnessScore() <<RESET);
-    //     return false;
-    // }
-    // else{
-    //     lastCorrectionOdomToMap = correctionOdomToMap;
-    //     lastUpdateTime = curr_time_;
-       
-    //     ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);         
-    //     correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>(); 
-
-    //     curr_time_ = omp_get_wtime();
-    //     // correctionOdomToMap = temp_correct;
-
-
-    //     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-    //     pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-    //     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-    //     pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-        
-    //     double abs_dx = std::abs(curr_x - last_x);
-    //     double abs_dy = std::abs(curr_y - last_y);
-        
-    //     if(use_pose_filter){
-    //         if(abs_dx > odom2map_delta_thr){
-    //             // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 * (curr_x - last_x)/abs_dx;
-    //             correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
-    //         }
-    //         if(abs_dy > odom2map_delta_thr){
-    //             // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 * (curr_y - last_y)/abs_dy;
-    //             correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
-    //         }
-    //     }
-
-    //     pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
-    //     // update log_info (log_info_manager_)
-    //     log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
-    //     log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
-    //     log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
-    //     log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
-    //     log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
-    //     log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
-    //     log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
-    //     log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
-    //     log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
-    //     log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
-
-    //     return true;
-    // }
 }
 
 bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)

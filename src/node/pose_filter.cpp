@@ -200,8 +200,8 @@ void PoseFilter::lidar_position_filter_window(Eigen::Isometry3d last_pose_smooth
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
 
         if (abs(baselink_dy) > baselink_dy_thr && abs(delta_yaw * 180 / PI_M) < baselink_dyaw_thr){
             // delta_xy = delta_xy * cos(theta);
@@ -259,11 +259,11 @@ void PoseFilter::lidar_position_filter_window(Eigen::Isometry3d last_pose_smooth
         double baselink_dy = dist_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = dist_xy * cos(theta);// 
 
-        log_info_manager_->log_info.map_frame_dx = dx; 
-        log_info_manager_->log_info.map_frame_dy = dy; 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-        log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
+        // log_info_manager_->log_info.map_frame_dx = dx; 
+        // log_info_manager_->log_info.map_frame_dy = dy; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
     }
 }
 

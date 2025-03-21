@@ -149,8 +149,8 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
 
         if (abs(baselink_dy) > slam_param_.localization.baselink_dy_thr && abs(delta_yaw * 180 / PI_M)<slam_param_.localization.baselink_dyaw_thr){
             // delta_xy = delta_xy * cos(theta);
@@ -220,11 +220,12 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        log_info_manager_->log_info.map_frame_dx = dx; 
-        log_info_manager_->log_info.map_frame_dy = dy; 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-        log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
+        // 暂时注释， pose filter timer 中
+        // log_info_manager_->log_info.map_frame_dx = dx; 
+        // log_info_manager_->log_info.map_frame_dy = dy; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
 
     }
 
@@ -272,12 +273,13 @@ void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_
     double baselink_dx = delta_xy * cos(theta);// 
     double baselink_dyaw = rad2deg(delta_yaw);// 
 
-    log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-    log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-    log_info_manager_->log_info.base_frame_dyaw = baselink_dyaw; 
+    // 暂时注释， pose filter timer 中
+    // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+    // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+    // log_info_manager_->log_info.base_frame_dyaw = baselink_dyaw; 
 
-    log_info_manager_->log_info.map_frame_dx = dx; 
-    log_info_manager_->log_info.map_frame_dy = dy; 
+    // log_info_manager_->log_info.map_frame_dx = dx; 
+    // log_info_manager_->log_info.map_frame_dy = dy; 
 
 }
 
@@ -301,7 +303,8 @@ bool LocalizationModule::create_ROS_IO(){
     pub_localization_module_status_ = nh_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
     pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
-    pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    // pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    pub_log_ = nh_.advertise<std_msgs::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo, 100); 
     // pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
 
     // both 建图 & 定位
@@ -653,14 +656,16 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
             //////////////////////////////////////////////////////////////////////////////////////////////////
             // slipping detect 
-            int slip_flag = 0;
-            slip_flag = detect_slipping(baselink_in_map_to_pub);
-            log_info_manager_->log_info.slip_flag = slip_flag;
+            // // 暂时注释， pose filter timer 中
+            // int slip_flag = 0;
+            // slip_flag = detect_slipping(baselink_in_map_to_pub);
+            // log_info_manager_->log_info.slip_flag = slip_flag;
             //////////////////////////////////////////////////////////////////////////////////////////////////
 
+            // // 暂时注释， pose filter timer 中
             // pub log
-            log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
-            pub_log_.publish(log_info_manager_->log_info);
+            // log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
+            // pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
             // fairland_msgs::NameValues slip_msg;
@@ -725,15 +730,16 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // slipping detect 
-        int slip_flag = 0;
-        slip_flag = detect_slipping(curr_pose_filtered);
+        // // // 暂时注释， pose filter timer 中
+        // int slip_flag = 0;
+        // slip_flag = detect_slipping(curr_pose_filtered);
 
-        log_info_manager_->log_info.slip_flag = slip_flag;
+        // log_info_manager_->log_info.slip_flag = slip_flag;
 
         double k_chassis = 1 - slam_param_.localization.lidar_ratio;
-        if(slip_flag){
-            k_chassis = 0;
-        }
+        // if(slip_flag){
+        //     k_chassis = 0;
+        // }
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         lidar_x_ = curr_pose_filtered.translation().x();
@@ -770,10 +776,11 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
             ROS_INFO_STREAM("pub tf: x=" << odometry_to_pub.pose.pose.position.x << ", y=" << odometry_to_pub.pose.pose.position.y);
 
-            // pub log info
-            fill_log(last_pose_filtered, curr_pose_filtered);
-            log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
-            pub_log_.publish(log_info_manager_->log_info);
+            // // // 暂时注释， pose filter timer 中
+            // // pub log info
+            // fill_log(last_pose_filtered, curr_pose_filtered);
+            // log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
+            // pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
             // fairland_msgs::NameValues slip_msg;
@@ -794,15 +801,15 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
 }
 
-void LocalizationModule::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg){
-    fairland_msgs::NameValue slip_val;
-    slip_val.name = "slipping";
-    slip_val.value = log_info_manager_->log_info.slip_flag;
+// void LocalizationModule::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg){
+//     fairland_msgs::NameValue slip_val;
+//     slip_val.name = "slipping";
+//     slip_val.value = log_info_manager_->log_info.slip_flag;
     
-    slipping_msg.header = log_info_manager_->log_info.header;
-    slipping_msg.values.push_back(slip_val);
+//     slipping_msg.header = log_info_manager_->log_info.header;
+//     slipping_msg.values.push_back(slip_val);
     
-}
+// }
 
 int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
 
@@ -816,8 +823,8 @@ int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
     int slip_flag = 0;
     // slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
     
-    log_info_manager_->log_info.slip_flag = slip_flag;
-    log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
+    // log_info_manager_->log_info.slip_flag = slip_flag;
+    // log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
 
     return slip_flag;
 }
@@ -862,21 +869,21 @@ void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, doub
 
 }
 
-void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom){
+// void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom){
 
-    double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-    pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-    double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-    pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+//     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+//     pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+//     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+//     pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 
-    // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
-    log_info_manager_->log_info.lidar2odom_dxyz.x = curr_x - last_x;
-    log_info_manager_->log_info.lidar2odom_dxyz.y = curr_y - last_y;
-    log_info_manager_->log_info.lidar2odom_dxyz.z = curr_z - last_z;
-    log_info_manager_->log_info.lidar2odom_drpy.x = rad2deg (curr_roll  - last_roll);
-    log_info_manager_->log_info.lidar2odom_drpy.y = rad2deg (curr_pitch - last_pitch);
-    log_info_manager_->log_info.lidar2odom_drpy.z = rad2deg (curr_yaw   - last_yaw);
-}
+//     // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
+//     log_info_manager_->log_info.lidar2odom_dxyz.x = curr_x - last_x;
+//     log_info_manager_->log_info.lidar2odom_dxyz.y = curr_y - last_y;
+//     log_info_manager_->log_info.lidar2odom_dxyz.z = curr_z - last_z;
+//     log_info_manager_->log_info.lidar2odom_drpy.x = rad2deg (curr_roll  - last_roll);
+//     log_info_manager_->log_info.lidar2odom_drpy.y = rad2deg (curr_pitch - last_pitch);
+//     log_info_manager_->log_info.lidar2odom_drpy.z = rad2deg (curr_yaw   - last_yaw);
+// }
 
 void LocalizationModule::reset_pose_filter(){
     position_initialized_ = false;
@@ -926,7 +933,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     static const int localize_ratio = 3;
     static const int loop_closure_ratio = 3;
     static const int secmap_relocalize_ratio = 3;
-    static const int point_cloud_size_thr = 150;
+    static const int point_cloud_size_thr = 600;
 
     // check ROS IO status **********************************************************************
     int health_status_now = 0;
@@ -1003,6 +1010,8 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 
     // fill health msg *************************************************************************
     health_msg.cloud_size = orig_point_cloud_size;
+
+    log_info_manager_->slam_info.data[7]=orig_point_cloud_size; // if converge
     
     health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
     health_msg.delay_cbk_imu = delay_imu;       // unit: s
@@ -1044,7 +1053,6 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     health_status_.store(health_status_now);
     // make status msg *************************************************************************
     // fill header
-    log_info_manager_->module_status = running_module_status_.load();
 
     fairland_msgs::LocalizationModuleStatus status_msg;
 
@@ -1058,7 +1066,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     pub_localization_module_health_.publish(health_msg);
     // ROS_INFO("pub: time: %lf ", status_msg.header.stamp.toSec());
 
-    pub_log_.publish(log_info_manager_->log_info);
+    pub_log_.publish(log_info_manager_->slam_info);
 
 }
 
@@ -1389,7 +1397,8 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
     chassis_linear_velocity = cur_chassis_msg.ac_linear_velocity;
     chassis_linear_velocity_ = chassis_linear_velocity;
     chassis_angular_velocity_ = chassis_angular_velocity;
-    log_info_manager_->log_info.chassis_vel = chassis_linear_velocity;
+    // log_info_manager_->log_info.chassis_vel = chassis_linear_velocity;
+    log_info_manager_->slam_info.data[8] = chassis_linear_velocity; // 8: chassis_vel
 
     ROS_INFO_ONCE("received chassis -------------- chassis cbk");
 
@@ -1547,6 +1556,7 @@ bool LocalizationModule::module_member_init(){
 
 
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
+    log_info_manager_->reset_log_info();
 
     // lidar reset , after param load
     lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type);

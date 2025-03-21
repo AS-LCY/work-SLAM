@@ -206,7 +206,7 @@ private:
 
     void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
 
-    void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
+    // void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
     
     int  check_fill_health_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleHealth &health_msg);
     void check_fill_module_status_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg);
