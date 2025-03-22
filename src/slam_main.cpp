@@ -31,12 +31,12 @@ int main(int argc,char **argv){
     ROS_INFO(
         "After set rlimit CORE dump current is:%d, max is:%d", (int)rlmt.rlim_cur,
         (int)rlmt.rlim_max);
-    //! core缓存数设为三个 运行roslaunch一般保存在 $HOME/.ros/下
-    std::string HOME(getenv("HOME"));
-    // if (boost::filesystem::exists(HOME + "/.ros/core-decision_planni")) {
-    if (boost::filesystem::exists(HOME + "/.ros/core-lidar_slam_node")) {
-        int re = system("rm core-lidar_slam_node");
-    }
+    // //! core缓存数设为三个 运行roslaunch一般保存在 $HOME/.ros/下
+    // std::string HOME(getenv("HOME"));
+    // // if (boost::filesystem::exists(HOME + "/.ros/core-decision_planni")) {
+    // if (boost::filesystem::exists(HOME + "/.ros/core-lidar_slam_node")) {
+    //     system("rm core-lidar_slam_node");
+    // }
 #else
     ROS_INFO("save core dump is disable");
 #endif
