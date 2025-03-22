@@ -72,6 +72,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
     /// fill lvx_msg_out
     // lvx_msg_out->time_stamp = ros_msg_in->header.stamp.toSec();
 
+    pcl_xyzin_out->points.reserve(cloud_num);
     for (std::uint32_t row = 0; row < ros_msg_in->height; ++row){
         const std::uint8_t* row_data = &ros_msg_in->data[row * ros_msg_in->row_step];
         for (std::uint32_t col = 0; col < ros_msg_in->width; ++col){
@@ -116,6 +117,8 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
             // lvx_msg_out->points.push_back(livox_point);
         }
     }
+    pcl_xyzin_out->points.shrink_to_fit();
+
     pcl_xyzin_out->header   = pcl_header;
     pcl_xyzin_out->width    = pcl_xyzin_out->points.size();
     pcl_xyzin_out->height   = 1;
@@ -125,6 +128,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
 
 }
 
+//// 弃用
 bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;

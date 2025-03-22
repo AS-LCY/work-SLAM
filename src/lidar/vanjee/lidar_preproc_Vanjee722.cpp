@@ -81,6 +81,7 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
 
     // 说明： 每一条 ring 的第一个点的数据，存于 height = 0；
     uint valid_num = 0;
+    pcl_xyzin_out->points.reserve(cloud_num);
     for (std::uint32_t h = 0; h < ros_msg_in->height; ++h){
         const std::uint8_t* h_data = &ros_msg_in->data[h * ros_msg_in->row_step];
         for (std::uint32_t w = 0; w < ros_msg_in->width; ++w){
@@ -131,6 +132,7 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
 
         }
     }
+    pcl_xyzin_out->points.shrink_to_fit();
     ///// Copy info fields
     pcl_xyzin_out->header   = pcl_header;
     pcl_xyzin_out->width    = pcl_xyzin_out->points.size();
