@@ -1011,7 +1011,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     // fill health msg *************************************************************************
     health_msg.cloud_size = orig_point_cloud_size;
 
-    log_info_manager_->slam_info.data[7]=orig_point_cloud_size; // if converge
+    log_info_manager_->slam_info.data[12]=orig_point_cloud_size; // 
     
     health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
     health_msg.delay_cbk_imu = delay_imu;       // unit: s
@@ -1154,6 +1154,8 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
         localization_status_.store(5); // 定位失败
     }
+
+    log_info_manager_->slam_info.data[2]= localization_status_.load(); // 
 }
 
 void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){

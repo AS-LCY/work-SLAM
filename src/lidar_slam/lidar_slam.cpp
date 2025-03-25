@@ -861,6 +861,7 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
 
 bool LidarSlam::run()
 {
+    static const int prm_lidar_no_point_count_thr = config_param_.common.lidar_no_point_count_thr;
 
     // std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: lidar slam main     Thread ID: " << thisId << std::endl;
@@ -874,7 +875,7 @@ bool LidarSlam::run()
 
     if (sync_packages(Measures))
     {
-        // ROS_INFO_STREAM("---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
+        // ROS_INFO_STREAM(setprecision(15) << ros::Time::now().toSec() << ": ---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
         if (flg_first_scan)
         {
@@ -885,12 +886,11 @@ bool LidarSlam::run()
             ROS_INFO("***************** flg_first_scan ********");
             return false;
         }
+
+        // log_info_manager_->slam_info.data[13]= -100; // 
+        // log_info_manager_->slam_info.data[15]= -100; // 
         
         t0 = omp_get_wtime();
-        // ROS_INFO("Measures lidar count: %ld", Measures.lidar->points.size());
-        // ROS_INFO_STREAM("lidar_beg_time: "<< Measures.lidar_beg_time);
-        // ROS_INFO_STREAM("lidar_end_time: "<< Measures.lidar_end_time);
-        // ROS_INFO_STREAM("imu size: "<< Measures.imu.size());
         
         // 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
         {
@@ -911,11 +911,13 @@ bool LidarSlam::run()
         if (undistortCloud->empty() || (undistortCloud == NULL))
         {
             lidar_no_point_count_++;
-            if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
+            if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
             }
             // std::cout << "No point, skip this scan!\n"<< std::endl;
             ROS_WARN_STREAM(YELLOW << "No point, skip this scan!" << RESET);
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
+            log_info_manager_->slam_info.data[13]=0; // 
             return false;
         }
 
@@ -932,6 +934,7 @@ bool LidarSlam::run()
         downSizeFilterCloud.filter(*FilteredUndistortCloud);
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
+        log_info_manager_->slam_info.data[13]=feats_down_size; // 
         // ROS_INFO("deskew-down lidar count: %d", feats_down_size);
         PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
         double filter_time = omp_get_wtime();
@@ -967,7 +970,7 @@ bool LidarSlam::run()
         // if (feats_down_size < 5)
         if (feats_down_size < feats_down_size_thr_){
             lidar_no_point_count_++;
-            if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
+            if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
                 // if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
                 //     // m_status_ = M_FAILED;
@@ -975,10 +978,12 @@ bool LidarSlam::run()
                 //     // l_status_ = L_FAILED;
                 // }
             }
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             ROS_WARN_STREAM(YELLOW << "No point after filter, skip this scan!" << RESET);
             return false;
         }else{
             lidar_no_point_count_ = 0;
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             slam_run_status_.store(1);
         }
         
