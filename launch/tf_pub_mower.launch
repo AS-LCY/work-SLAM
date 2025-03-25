@@ -2,7 +2,7 @@
     <node pkg="tf" type="static_transform_publisher" name="map_to_odom_tf" args="0.0 0 0.0 0 0 0 map odom 100" />
     <!-- <node pkg="tf" type="static_transform_publisher" name="footprint_to_base_link_tf" args="-0.305 0 -0.160 0 0 0 base_footprint base_link 100" /> -->
     <!-- <node pkg="tf" type="static_transform_publisher" name="base_to_lidar_tf" args="0.210 -0.01 0.160 0 0 0 base_link lidar  100" /> -->
-    <node pkg="tf" type="static_transform_publisher" name="base_to_lidar_tf" args="0.305 -0.01 0.160 0 0 0 base_link lidar  100" />
+    <node pkg="tf" type="static_transform_publisher" name="base_to_lidar_tf" args="0.305 -0.01 0.156 0 0 0 base_link lidar  100" />
     <node pkg="tf" type="static_transform_publisher" name="lidar_to_livox_tf" args="0.0 0 0.0 0 0 0 lidar livox_frame 100" />
 
 

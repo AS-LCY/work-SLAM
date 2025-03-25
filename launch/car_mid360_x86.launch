@@ -1,0 +1,30 @@
+<launch>
+<!-- Launch file for Livox MID360 LiDAR -->
+
+
+	<arg name="rviz" default="true" />
+	<arg name="use_gdb" default="false" />
+	<arg name="lidar_name" default="mid360_x86" />
+
+	<!-- <param name="localization_mode" type="bool" value="0"/>
+	<param name="offline_mode" type="bool" value="0"/>
+	<param name="fast" type="bool" value="0"/>
+	<param name="just_show_mode" type="bool" value="0"/>
+	<param name="log_folder" type="string" value="/home/"/>
+    <param name="show_rviz" type="bool" value="1"/> -->
+   
+    <!-- <node pkg="lidar_slam" type="slam_interface" name="slam_interface" output="screen"/>  -->
+    <!-- <node pkg="lidar_slam" type="lidar_slam_node" name="lidar_slam_node" output="screen"/>  -->
+
+	<env name="ROSCONSOLE_CONFIG_FILE" value="/$(find lidar_slam)/config/log4cxx_config_slam.cfg"/>
+
+	<rosparam command="load" file="$(find lidar_slam)/config/param_slam_$(arg lidar_name).yaml" ns="/flbot/lidar_slam/" />
+
+	<group if="$(arg use_gdb)">
+		<node pkg="lidar_slam" type="lidar_slam_node" name="lidar_slam_node" launch-prefix="gdb -ex run --args" respawn="false" output="screen"/>
+	</group>
+	<group unless="$(arg use_gdb)">
+		<node pkg="lidar_slam" type="lidar_slam_node" name="lidar_slam_node" respawn="false" output="screen"/>
+	</group>
+
+</launch>
