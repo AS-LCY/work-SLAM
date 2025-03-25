@@ -87,7 +87,8 @@ lidar_preproc:
   sub_imu_topic: "/robosense/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1
-  flag_keep_only_last_lidar: true
+  # flag_keep_only_last_lidar: true 
+  keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 3000
   feature_enabled: false  # default to false

@@ -22,7 +22,8 @@ struct LidarPreprocParam{
     std::string sub_imu_topic="";
     int line_count;
     double blind_distance;
-    bool flag_keep_only_last_lidar=false;
+    // bool flag_keep_only_last_lidar=false;
+    int keep_lidar_num_before_curr = 1;
     int point_filter_num = 2;
     int ring_filter_num = 1;
     std::vector<double> point_filter_distance;
