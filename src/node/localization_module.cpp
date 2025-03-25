@@ -1237,18 +1237,18 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
         }
     }
 
-    cloud_size_.store(ros_msg->width * ros_msg->height);
+    // cloud_size_.store(ros_msg->width * ros_msg->height);
     
 
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
     ROS_INFO_ONCE("received lidar -------------- lidar cbk");
 
-    ModuleStatus curr_running_module_status = running_module_status_.load();
-    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
-        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
-        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        return;
-    }
+    // ModuleStatus curr_running_module_status = running_module_status_.load();
+    // if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+    //     return;
+    // }
 
     double t0 = omp_get_wtime();
     auto start = std::chrono::system_clock::now();
@@ -1270,58 +1270,18 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     }
     double t2 = omp_get_wtime();
 
+    cloud_size_.store(pcl_xyzin_cld->points.size());
+
+    ModuleStatus curr_running_module_status = running_module_status_.load();
+    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        return;
+    }
 
     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
     // fill status_msg.localization_status
     double t3 = omp_get_wtime();
-
-    // if(slam_param_.lidar_preproc.lidar_type == 1){
-    //     // ROS_INFO_ONCE("livox cbk");
-    //     // std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
-    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
-    //     // // printf("clip lidar count: %d\n", lvx_msg->point_num);
-    //     // ROS_INFO("clip lidar count: %d", lvx_msg->point_num);
-
-    //     // slam_ -> livox_pcl_cbk(lvx_msg);
-
-
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-
-    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
-    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
-
-    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
-
-    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
-
-    // }else if(slam_param_.lidar_preproc.lidar_type == 2){
-    //     // pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_cld(new pcl::PointCloud<RsPointXYZIRT>());
-    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_rs_cld);
-    //     // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
-    //     // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
-
-    //     ROS_INFO_ONCE("robosense cbk");
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-
-    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
-    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
-    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
-    //     // slam_ -> lidar_pcl_cbk(pcl_xyzin_cld);
-    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
-
-    // }else if(slam_param_.lidar_preproc.lidar_type == 3){
-    //     ROS_INFO_ONCE("vanjee cbk");
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-    //     slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
-
-    // }
-
 
     double t100 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
