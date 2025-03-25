@@ -1463,11 +1463,11 @@ void LocalizationModule::publish_optimized_path(const std::vector<Eigen::Isometr
 
 bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     // set_module_status_ = set_status;
-
+    int map_id = 1;/////////////// TODO
     if(set_status == ModuleStatus::MODULE_IDLE){
         // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
     }else if (set_status == ModuleStatus::MODULE_MAPPING){
-        int map_id = 0;/////////////// TODO
+        // int map_id = 0;/////////////// TODO
         if(start_mapping(map_id)){
             // mapping_status_ = M_STANDBY;
         }else{
@@ -1475,7 +1475,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         }
     }else if (set_status == ModuleStatus::MODULE_SEC_MAPPING){
         // TODO
-        int map_id = 0;/////////////// TODO
+        // int map_id = 0;/////////////// TODO
         if(start_second_mapping(map_id)){
             // running_module_status_ = ModuleStatus::MODULE_SEC_MAPPING;
             // running_module_status_.store(ModuleStatus::MODULE_SEC_MAPPING);
@@ -1487,7 +1487,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         }
     }else if (set_status == ModuleStatus::MODULE_LOCALIZATION){
         // TODO
-        int map_id = 0;/////////////// TODO
+        // int map_id = 1;/////////////// TODO
         if(start_localization( map_id)){
             // running_module_status_ = ModuleStatus::MODULE_LOCALIZATION;
             // running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);

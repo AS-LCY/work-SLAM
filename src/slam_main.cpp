@@ -41,6 +41,8 @@ int main(int argc,char **argv){
     ROS_INFO("save core dump is disable");
 #endif
 
+    ROS_INFO("\033[1;32m----> ros init \033[0m");
+
     ros::init(argc, argv, "localization_module");
     ros::NodeHandle nh;
     std::string curr_path;
