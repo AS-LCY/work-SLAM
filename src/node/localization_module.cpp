@@ -1109,6 +1109,13 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
         return;
     }
 
+    auto last_local_status = localization_status_.load();
+    if(last_local_status == 2 || last_local_status == 5){
+        status_msg.localization_status = last_local_status;
+        log_info_manager_->slam_info.data[2]= last_local_status; // 
+        return;
+    }
+
     //////////////////////////////////////////////////////////////////////////////////////////////
     int node_status = local_node_status_.load();
     int local_thrd_status = slam_ -> get_local_thrd_status();
