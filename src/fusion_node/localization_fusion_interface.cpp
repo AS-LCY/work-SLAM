@@ -107,10 +107,10 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
         lf_need_init_ = false;
 
         slipping_ptr_->reset();
-        ROS_INFO_STREAM(YELLOW<<"localization fusion init 1 -----------------"<<RESET);
+        ROS_INFO_STREAM(YELLOW<<"localization fusion init end -----------------"<<RESET);
         time_last = ros::Time::now().toSec();
     }
-    ROS_INFO_STREAM(YELLOW<<"localization fusion init end -----------------"<<RESET);
+    // ROS_INFO_STREAM(YELLOW<<"localization fusion init end -----------------"<<RESET);
 
     // slipping detect 
     int slip_flag = 0;
@@ -249,7 +249,9 @@ void LocalizationFusion::pub_fusion_info(double time_last){
     log_info_manager_->fusion_info.data[0] = time_now;
     log_info_manager_->fusion_info.data[1] = time_now - time_last;
 
-    // pub_info_.publish(log_info_manager_->fusion_info);
+    pub_info_.publish(log_info_manager_->fusion_info);
+    // log_info_manager_->fusion_info.data.clear();
+    // log_info_manager_->fusion_info.data.resize(20);
     
 }
 
