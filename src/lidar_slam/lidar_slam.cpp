@@ -581,7 +581,7 @@ void LidarSlam::showThread()
 
 void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     // param
-    static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    // static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
     if (reseting) { return; }
 
