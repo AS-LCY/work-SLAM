@@ -331,6 +331,8 @@ private:
     std::atomic<int> localization_status_{0};
     int start_index_ = -1;
     int end_index_ = -1;
+    std::atomic<int> map_saved_{0};
+    
 
     // 定位 *******************************************
     // enum LocalizationStatus

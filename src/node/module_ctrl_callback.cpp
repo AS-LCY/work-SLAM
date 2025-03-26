@@ -259,6 +259,8 @@ bool LocalizationModule::stop_mapping(){
                 ROS_INFO("\033[1;32msave map data success!\033[0m");
             }
 
+            map_saved_.store(1);
+
             ROS_INFO("start stop mapping");
             // mapping_status_ = M_INACTIVE;
             sleep(1);
