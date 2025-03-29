@@ -600,7 +600,8 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     }*/ 
 
     if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
-        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+        ROS_WARN_STREAM(YELLOW << setprecision(15)<<  "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+        ROS_WARN_STREAM(YELLOW << setprecision(15)<<  "IMU and LiDAR not Synced, imu - lidar time diff: "<< last_timestamp_imu - curr_time << RESET);
     }
 
     if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){

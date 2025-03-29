@@ -508,7 +508,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
         if (slam_->isGloalLocalizationSuccess()){
             // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "localization", "base_link", pubLidarInMap);
-            publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+            // publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
         pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
 
@@ -1109,10 +1109,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "localization", "base_link", pubLidarInMap);
+        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
     }
 
-    if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
+    if(is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())){
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "mapping", "base_link", pubLidarInMap);
+        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
     }
 }
 
@@ -1331,6 +1333,7 @@ void LocalizationModule::imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in){
 
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg);
 	msg->time_stamp = msg_in->header.stamp.toSec();
+	// msg->time_stamp = msg_in->header.stamp.toSec() + 28799.8614; temp, 测试万集雷达时用到
     
     if (slam_param_.lidar_preproc.lidar_type == 3) {
         // acc_after = acc_after / G_m_s2;

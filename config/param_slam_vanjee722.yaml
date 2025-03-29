@@ -1,5 +1,5 @@
 common:
-  run_on_mower: true   # true / false, default to: true 
+  run_on_mower: false   # true / false, default to: true 
   map_directory_on_mower: "/root/lds_mower/ws_flbot/maps/"
   cpu_id_on_mower: []
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
@@ -14,7 +14,10 @@ common:
   log_keep_time: 500
   map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-  map_directory: "/home/pmm/data/3-vanjee/0103/2vj/3dmap/"
+  # map_directory: "/home/pmm/data/3-vanjee/0103/2vj/3dmap/"
+  # map_directory: "/home/pmm/data/3-vanjee/0319-tianhe/"
+  map_directory: "/home/pmm/data/3-vanjee/0109/天和草场/0109/nopeople/"
+  
   # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
 
   # map_directory: "/home/pmm/data/3-vanjee/v4-mapping/data_from_vj/722建图bag包/3dmap/"
@@ -31,7 +34,7 @@ common:
   lidar_no_point_count_thr:  10
   check_delay: false
   feats_down_size_thr: 100
-  use_pose_filter: true
+  use_pose_filter: false
   cpu_id: []
   # cpu_id: [4, 5]
 
@@ -42,16 +45,17 @@ extrinsic:
        
   # extrinsic_euler_IMU_in_baselink: [0.0, 0.0, 0.0] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
 
-  extrinsic_euler_IMU_in_lidar: [-1.23, 2.7, 0.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_IMU_in_lidar: [0, 0, 0.0] # unit(degree) yaw, pitch, roll
   extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [1.405099, 0.819599, 0.320799] # unit(degree) yaw, pitch, roll
   # roll: 0.320799                                       # 横滚角偏移量 °
   # pitch: 0.819599                                      # 俯仰角偏移量 °
   # yaw: 1.405099                                        # 航向角偏移量 °
   
-
-  Lidar_In_Wheel: [1,  0,  0,  0,
-                    0,  1,  0,  0,
+  # 0.210 -0.01
+  Lidar_In_Wheel: [1,  0,  0,  0.0,
+                    0,  1,  0,  -0.0,
                     0,  0,  1,  0.1,
                     0,  0,  0,  1]
 
@@ -91,7 +95,7 @@ lidar_preproc:
   cloud_size_to_keep: 2000
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
-  point_filter_num: 5 # 间隔采样所需参数
+  point_filter_num: 6 # 间隔采样所需参数
   ring_filter_num: 1
   leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
   leafsize_vec: [0.2, 0.8] # voxel 所需参数

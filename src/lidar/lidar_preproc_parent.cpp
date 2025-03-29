@@ -16,7 +16,7 @@ void LidarPreprocParent::sampling_cloud(PointCloudXYZI::Ptr in_cloud_ptr, PointC
     int in_size = in_cloud_ptr->points.size();
     int cal_ratio = std::round(in_size * 1.0 / cloud_size_to_keep_);
     int point_filter_ratio = cal_ratio > 1 ? cal_ratio : 1;
-
+    // point_filter_ratio = 1; // temp, 测试 vanjee 时用到过
     int out_size = in_size / point_filter_ratio;
     out_cloud_ptr->points.resize(out_size);
 
