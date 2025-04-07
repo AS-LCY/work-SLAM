@@ -100,7 +100,7 @@ public:
         return loaded_key_clouds_ready_;
     }
 
-    bool set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, 
+    bool set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, std::vector<ScInfo> input_vec_sc_info, 
                                 std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d trans_map_odom);
 
 private:

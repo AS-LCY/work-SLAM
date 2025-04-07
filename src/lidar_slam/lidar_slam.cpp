@@ -287,10 +287,11 @@ void LidarSlam::sec_mapping_loopClosureThread()
             ROS_INFO_STREAM(BOLDGREEN<< "Setting gtsam ... "<<RESET);
             auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudXYZI::Ptr>
             auto loaded_keyframe_poses  = cloud_map_manager_->get_loaded_keyframe_poses();  // auto : std::vector<KeyPose>
+            auto loaded_sc_info  = cloud_map_manager_->get_load_sc_info_();  // auto : std::vector<KeyPose>
             auto global_odom_to_map     = global_localization_->get_global_odom_to_map();    // auto : Eigen::Isometry3d
             //////// TODO bug here
             if(cloud_map_manager_->get_map_data_status()){
-                back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
+                back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_sc_info, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
             // if (loop_closure_wait){

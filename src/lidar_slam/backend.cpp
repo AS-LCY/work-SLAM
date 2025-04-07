@@ -446,7 +446,8 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyfra
 }
 
 
-bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
+bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds,  std::vector<ScInfo> input_vec_sc_info, 
+                                    std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
     
     KeyPoses.clear();
     KeyPoint.reset(new pcl::PointCloud<PointType>());
@@ -461,7 +462,6 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
     int i=0;
     for(auto & kp : input_vec_key_poses){
         // cout<<"***************** load old key frame --- "<< i++ << endl;
-        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         Eigen::Isometry3d T_map_lidar = kp.pose;
         Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
         Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
@@ -482,6 +482,10 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
         temp_pnt.y = T_odom_lidar.translation().y();
         temp_pnt.z = T_odom_lidar.translation().z();
         KeyPoint->points.push_back(temp_pnt);
+
+        ////// saveCurrentCloud(KeyFrameCloud[i], T_map_lidar);
+        scManager.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
+        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         
     }
 
