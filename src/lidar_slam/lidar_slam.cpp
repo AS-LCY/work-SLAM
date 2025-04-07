@@ -405,7 +405,7 @@ void LidarSlam::localizationThread()
                 // ROS_INFO_STREAM("localizing ... ");
                 // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 // if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                double fit_score = 0.0;
+                double fit_score = 0.0; // gicp_fit_score
                 if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
                     log_info_manager_->slam_info.data[3]=1; // if converge

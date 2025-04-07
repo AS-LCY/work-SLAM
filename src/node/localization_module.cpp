@@ -1190,6 +1190,12 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
     }
 
 
+    auto last_mapping_status = mapping_status_.load();
+    if(last_mapping_status == 2 || last_mapping_status == 5){
+        status_msg.mapping_status = last_mapping_status;
+        // log_info_manager_->slam_info.data[2]= last_mapping_status; // 
+        return;
+    }
     //////////////////////////////////////////////////////////////////////////////////////////////
     int node_status = mapping_node_status_.load();
     int slam_run_status = slam_ -> get_slam_run_status();
