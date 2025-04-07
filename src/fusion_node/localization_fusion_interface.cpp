@@ -211,6 +211,7 @@ void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping
 void LocalizationFusion::pub_localiztion(fairland_msgs::LocalizationPoseData cur_status){
     nav_msgs::Odometry fusion_odom;
     fusion_odom.header = cur_status.header;
+    fusion_odom.header.frame_id = "map";
     fusion_odom.header.seq = seq_count_ ++;
     fusion_odom.child_frame_id = "base_link";
 
