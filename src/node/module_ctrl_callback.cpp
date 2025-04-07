@@ -18,12 +18,13 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
      * enum SlamCtrlCmd{
      *     START_MAPPING           = 1000,  // 开始建图
      *     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
-     *     EXIT_MAPPING            = 3000,  // 退出建图
+     *     CANCLE_MAPPING          = 5000,  // 不保存地图， 直接取消建图
+     *     SAVE_AND_END_MAPPING    = 6000,  // 退出建图
      *     START_LOCALIZATION      = 7000,  // localization, 重定位->定位
      *     EXIT_LOCALIZATION       = 8000,  // exit localization, 退出定位
      *     START_RELOCALIZATION    = 9000,  // relocalization, 重定位，定位过程中，重新进行重定位
      *     RESTART_SEC_MAPPING     = 9100,  // restart sec-mapping, 重启二次建图（一般是二次建图重定位失败的情况）
-     *     CMD_MAX
+     *     CMD_MAX                 = 9999
      *     [MAPPING_POINT_BEGIN]     = 3000,  // invalid, 设置起点
      *     [MAPPING_ELE_DELETE ]     = 4000,  // invalid, 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
      *     [MAPPING_POINT_END  ]     = 5000,  // invalid, 设置终点，带子地图ID，5001，ID=1
@@ -65,7 +66,15 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             }
             break;
         }
-        case EXIT_MAPPING:{// 退出建图           
+        case CANCLE_MAPPING:{// 不保存地图， 直接退出建图           
+            if(stop_mapping_without_saving_map()){
+                ROS_INFO_STREAM(GREEN << "stop_mapping(not saving map) success!" <<RESET);
+            }else{
+                ROS_ERROR_STREAM(RED << "stop_mapping failed!" <<RESET);
+            }
+            break;
+        }
+        case SAVE_AND_END_MAPPING:{// 保存地图，并结束建图           
             if(stop_mapping()){
                 ROS_INFO_STREAM(GREEN << "stop_mapping success!" <<RESET);
             }else{
