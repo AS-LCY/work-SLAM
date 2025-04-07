@@ -116,10 +116,22 @@ public:
         // loaded_param_.extrinsic.R_baselink_IMU = rpy2R(Eigen::Vector3d{roll1,pitch1, yaw1});
 
         // IMU in base_link
-        double yaw2   = extrinsic_euler_IMU_in_lidar[0]/180 * M_PI;
-        double pitch2 = extrinsic_euler_IMU_in_lidar[1]/180 * M_PI;
-        double roll2  = extrinsic_euler_IMU_in_lidar[2]/180 * M_PI;
-        auto R_imu_in_lidar = rpy2R(Eigen::Vector3d{roll2,pitch2, yaw2});
+        Eigen::Matrix3d R_imu_in_lidar = Eigen::Matrix3d::Identity();
+        if(extrinsic_euler_IMU_in_lidar.size() == 3){
+            double yaw2   = extrinsic_euler_IMU_in_lidar[0]/180 * M_PI;
+            double pitch2 = extrinsic_euler_IMU_in_lidar[1]/180 * M_PI;
+            double roll2  = extrinsic_euler_IMU_in_lidar[2]/180 * M_PI;
+            R_imu_in_lidar = rpy2R(Eigen::Vector3d{roll2,pitch2, yaw2});
+        }else if(extrinsic_euler_IMU_in_lidar.size() == 4){
+            double qx = extrinsic_euler_IMU_in_lidar[0];
+            double qy = extrinsic_euler_IMU_in_lidar[1];
+            double qz = extrinsic_euler_IMU_in_lidar[2];
+            double qw = extrinsic_euler_IMU_in_lidar[3];
+            Eigen::Quaterniond eigen_quat = Eigen::Quaterniond(qw, qx, qy, qz);
+            R_imu_in_lidar = eigen_quat.toRotationMatrix();
+
+        }
+
         double yaw3   = extrinsic_euler_lidar_in_baselink[0]/180 * M_PI;
         double pitch3 = extrinsic_euler_lidar_in_baselink[1]/180 * M_PI;
         double roll3  = extrinsic_euler_lidar_in_baselink[2]/180 * M_PI;
