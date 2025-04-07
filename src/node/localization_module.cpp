@@ -1097,6 +1097,8 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     status_msg.map_saved = 0;
     if(curr_running_module_status == ModuleStatus::MODULE_IDLE && map_saved_.load() == 1){
         status_msg.map_saved = 1;
+        ROS_WARN_STREAM(YELLOW << "[Status Timer]: status_msg.map_saved: " << int(status_msg.map_saved) << RESET);
+
         map_saved_.store(0);
     }
 

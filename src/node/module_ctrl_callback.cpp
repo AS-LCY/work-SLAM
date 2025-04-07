@@ -269,6 +269,7 @@ bool LocalizationModule::stop_mapping(){
             }
 
             map_saved_.store(1);
+            ROS_WARN_STREAM(YELLOW << "[Slam ctrl]: map_saved_: " << map_saved_.load() << RESET);
 
             ROS_INFO("start stop mapping");
             // mapping_status_ = M_INACTIVE;
