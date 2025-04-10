@@ -28,11 +28,15 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #add_compile_definitions(CURRENT_DIR="${CURRENT_DIR}")
 
 message("Current CPU archtecture: ${CMAKE_SYSTEM_PROCESSOR}")
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)" )
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)|(aarch64)|(AARCH64)" )
   include(ProcessorCount)
   ProcessorCount(N)
   message("Processer number:  ${N}")
-  if(N GREATER 4)
+  if(N GREATER 6)
+    add_definitions(-DMP_EN)
+    add_definitions(-DMP_PROC_NUM=5)
+    message("core for MP: 5")
+  elseif(N GREATER 4)
     add_definitions(-DMP_EN)
     add_definitions(-DMP_PROC_NUM=3)
     message("core for MP: 3")
@@ -222,7 +226,7 @@ add_executable(lidar_slam_node
   src/node/publish_common.cpp 
   # src/node/detect_slipping.cpp
   src/node/pose_filter.cpp
-  src/slipping/detect_slipping.cpp
+  # src/slipping/detect_slipping.cpp
 )
 
 # add_dependencies(lidar_slam_node )
