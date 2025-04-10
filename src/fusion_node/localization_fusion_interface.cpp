@@ -119,10 +119,13 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     compose_status(slip_flag, slam_odom_msg_, imu_msg_, chassis_msg_, &status_origin_);
     compose_status(slip_flag, slam_odom_msg_, imu_msg_, chassis_msg_, &status_tmp_);
 
-
-    if(slam_odom_msg_.header.frame_id == "mapping"){
+    
+    // if(slam_odom_msg_.header.frame_id == "mapping"){
+    // }else if(slam_odom_msg_.header.frame_id == "localization"){
+    // }
+    if(slam_odom_msg_.pose.covariance[1] == 2){ // 建图模式
         // empty, 不需要融合
-    }else if(slam_odom_msg_.header.frame_id == "localization"){
+    }else if(slam_odom_msg_.pose.covariance[1] == 3){ // 定位模式
         if (ekf_fusion_ptr_->is_init()) {
             // ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
             ekf_fusion_ptr_->localization_fusion_core(status_tmp_, &status_lf_);

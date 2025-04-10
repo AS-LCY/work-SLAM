@@ -507,10 +507,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
     }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
         if (slam_->isGloalLocalizationSuccess()){
-            // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "localization", "base_link", pubLidarInMap);
+            // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
             // publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
 
     }
     if (show_rviz_){
@@ -1110,12 +1110,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     }
 
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
-        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "localization", "base_link", pubLidarInMap);
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
     }
 
     if(is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())){
-        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "mapping", "base_link", pubLidarInMap);
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "map", "base_link",curr_running_module_status, pubLidarInMap);
         publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
     }
 }
