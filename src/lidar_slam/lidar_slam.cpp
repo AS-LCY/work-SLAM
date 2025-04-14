@@ -97,6 +97,11 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     auto cloud_leaf_size = config_param_.mapping.cloud_leaf_size;
     downSizeFilterCloud.setLeafSize(cloud_leaf_size, cloud_leaf_size, cloud_leaf_size);
+    // ROS_INFO_STREAM(RED << "cloud_leaf_size: " << cloud_leaf_size << RESET);
+    auto cloud_leaf_size_test = config_param_.lidar_preproc.leafsize;
+    downSizeFilterCloud_test.setLeafSize(cloud_leaf_size_test, cloud_leaf_size_test, cloud_leaf_size_test);
+
+
 
     auto key_frame_distance = config_param_.mapping.key_frame_distance;
     auto key_frame_angle = config_param_.mapping.key_frame_angle;
@@ -355,16 +360,24 @@ void LidarSlam::localizationThread()
 
     int gicp_fail_count = 0;
     int gicp_low_acc_count = 0;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+    PointCloudXYZI::Ptr UndistortCloudInOdom_test(new PointCloudXYZI()); 
 
     while (thread_run&&reseting == false)
     {
         hb_time_thread_localize_.store(ros::Time::now().toSec());
         auto start = std::chrono::steady_clock::now();
-        pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+        // pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+        temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
+        UndistortCloudInOdom_test.reset(new PointCloudXYZI());
         {
-        std::lock_guard<std::mutex> lk(mtx_odom_cloud);
-        pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
+            std::lock_guard<std::mutex> lk(mtx_odom_cloud);
+            downSizeFilterCloud_test.setInputCloud(UndistortCloudInOdom);
+            downSizeFilterCloud_test.filter(*UndistortCloudInOdom_test);
+            // pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);
+            pcl::copyPointCloud(*(UndistortCloudInOdom_test), *temp);   
         }
+
         if(local_thrd_status_.load() == 2){ // 重定位失败
             
             ROS_INFO("global Localization failed: time out ");
@@ -376,16 +389,23 @@ void LidarSlam::localizationThread()
                 // check 
                 if(!getLoadMap()){
                     ROS_WARN_STREAM( YELLOW << "globalLocalization failed: map not ready ... "<< RESET);
-                }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                }else if(!temp || temp->points.size()==0){
                     ROS_WARN_STREAM(YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET);
                 // check end
                 }else{
-                    ROS_INFO_STREAM("point(in use) count: "<<UndistortCloudInOdom->points.size());
+                    ROS_INFO_STREAM("point(in use) count: "<<temp->points.size());
                     ROS_INFO_STREAM("start globalLocalization ... ");
 
                     //state.state("lost");
-                    mutex mtx_lidar_cloud;
-                    globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
+                    PointCloudXYZI::Ptr FilteredUndistortCloud_test(new PointCloudXYZI()); 
+                    {
+                        std::lock_guard<std::mutex> lk(mtx_lidar_cloud); 
+                        downSizeFilterCloud_test.setInputCloud(undistortCloud);
+                        downSizeFilterCloud_test.filter(*FilteredUndistortCloud_test);
+                    }
+
+                    // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
+                    globalLocalizationSuccess = localization->globalLocalization(FilteredUndistortCloud_test,T_odom_lidar,p_imu->initial_rotate,score_thr); 
                     ROS_INFO_STREAM("globalLocalizationSuccess: "<<globalLocalizationSuccess);
 
                     global_localize_count_++;
@@ -942,7 +962,7 @@ bool LidarSlam::run()
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
         log_info_manager_->slam_info.data[13]=feats_down_size; // 
-        // ROS_INFO("deskew-down lidar count: %d", feats_down_size);
+        // ROS_INFO("FilteredUndistortCloud count: %d", feats_down_size);
         PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/

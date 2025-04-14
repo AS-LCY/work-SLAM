@@ -494,6 +494,7 @@ class LidarSlam
         PointCloudXYZI::Ptr undistortCloud;  // lidar 系
         PointCloudXYZI::Ptr FilteredUndistortCloud;
         pcl::VoxelGrid<PointType> downSizeFilterCloud;
+        pcl::VoxelGrid<PointType> downSizeFilterCloud_test;
         PointCloudXYZI::Ptr kdtreeCloud;
         // PointCloudXYZI::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
         PointCloudXYZI::Ptr FilteredObstacleCloud;
