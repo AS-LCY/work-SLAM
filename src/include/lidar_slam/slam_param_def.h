@@ -14,6 +14,8 @@ struct ExtrinsicParam{
     Eigen::Isometry3d  T_wheel_lidar = Eigen::Isometry3d::Identity();
     Eigen::Isometry3d  T_lidar_wheel = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d R_baselink_IMU = Eigen::Matrix3d::Identity();
+
+    std::vector<double> yaw_pitch_roll_deg;
 };
 
 struct LidarPreprocParam{

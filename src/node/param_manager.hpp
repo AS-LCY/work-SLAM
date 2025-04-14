@@ -137,7 +137,7 @@ public:
         double roll3  = extrinsic_euler_lidar_in_baselink[2]/180 * M_PI;
         auto R_lidar_in_base = rpy2R(Eigen::Vector3d{roll3,pitch3, yaw3});
         loaded_param_.extrinsic.R_baselink_IMU = R_lidar_in_base * R_imu_in_lidar;
-
+        loaded_param_.extrinsic.yaw_pitch_roll_deg = extrinsic_euler_lidar_in_baselink;
 
         // T_wheel_lidar & T_lidar_wheel
         Eigen::Matrix4d T_wheel_lidar;

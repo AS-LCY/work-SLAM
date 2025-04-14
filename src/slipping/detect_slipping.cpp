@@ -21,10 +21,10 @@ DetectSlipping::~DetectSlipping(){
 }
 
 bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
-    ROS_INFO_STREAM("detect_by_chassis_and_lidar 0");
+    // ROS_INFO_STREAM("detect_by_chassis_and_lidar 0");
     log_info_manager_->fusion_info.data[2] = 0;   // 2: slip_flag
     log_info_manager_->fusion_info.data[3] = 0;   // 3: slip_count
-    ROS_INFO_STREAM("detect_by_chassis_and_lidar 1");
+    // ROS_INFO_STREAM("detect_by_chassis_and_lidar 1");
 
     if (!lidar_queue_init_ || !chassis_queue_init_){
         slipping_count_ = 0;
@@ -32,7 +32,7 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
         return false;
     }
 
-    ROS_INFO_STREAM("detect_by_chassis_and_lidar 2");
+    // ROS_INFO_STREAM("detect_by_chassis_and_lidar 2");
 
     ///////////////////////////////////////////////////////////////////////////////
     // pop chassic data before lidar

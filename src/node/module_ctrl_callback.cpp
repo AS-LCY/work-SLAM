@@ -268,6 +268,8 @@ bool LocalizationModule::stop_mapping(){
                 ROS_INFO("\033[1;32msave map data success!\033[0m");
             }
 
+            save_extrinsic_to_file();
+
             map_saved_.store(1);
             ROS_WARN_STREAM(YELLOW << "[Slam ctrl]: map_saved_: " << map_saved_.load() << RESET);
 
@@ -312,6 +314,24 @@ bool LocalizationModule::stop_mapping(){
     // return;
 }
 
+bool LocalizationModule::save_extrinsic_to_file(){
+
+    std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
+    std::ofstream extrinsic_file(extrinsic_file_name);
+    if(!extrinsic_file.is_open()){
+        ROS_ERROR_STREAM("open extrinsic file failed!");
+        return false;
+    }
+
+    extrinsic_file << "extrinsic_euler_lidar_in_baselink: \n";
+    extrinsic_file << "  yaw:   "<< slam_param_.extrinsic.yaw_pitch_roll_deg[0] << " degree, \n";
+    extrinsic_file << "  pitch: "<< slam_param_.extrinsic.yaw_pitch_roll_deg[1] << " degree, \n";
+    extrinsic_file << "  roll:  "<< slam_param_.extrinsic.yaw_pitch_roll_deg[2] << " degree, \n";
+
+    extrinsic_file.close();
+
+    return true;
+}
 
 bool LocalizationModule::start_localization(int map_id){
     ModuleStatus running_module_status_now = running_module_status_.load();
