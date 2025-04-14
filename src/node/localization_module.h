@@ -375,6 +375,7 @@ private:
 
     ros::Publisher pub_base_imu_;
     ros::Publisher pub_key_cloud_;
+    ros::Publisher pub_body_cloud_filter_;
 
 
     /// params load from yaml

@@ -174,6 +174,13 @@ class LidarSlam
           return undistortCloud;
         }
 
+        PointCloudXYZI::Ptr get_filter_lidar_cloud()
+        {
+          std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
+          return FilteredUndistortCloud;
+        }
+        
+
         PointCloudXYZI::Ptr get_odom_cloud()
         {
            std::lock_guard<std::mutex> lk(mtx_odom_cloud);

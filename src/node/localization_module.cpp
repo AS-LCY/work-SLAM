@@ -342,6 +342,7 @@ bool LocalizationModule::create_ROS_IO(){
     // publish TODO: 还需要区分哪些是建图或定位发布的
     pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 10);  
 	pubBodyCloud = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/body_cloud", 20);
+	pub_body_cloud_filter_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/body_cloud_filter", 20);
 	pub_key_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/key_body_cloud", 20);
     pubObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/obstacle_cloud", 10);
     pubFilteredObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/filtered_obstacle_cloud", 10);
@@ -492,12 +493,15 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
     // if(!localization_mode_){
     auto localization_status_now = localization_status_.load();
+    pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+    // pub_lidar_cloud(slam_->get_filter_lidar_cloud(), pub_body_cloud_filter_);
+
     if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
         // pub_rgb_map(slam->getCurrentRGBMap());
-        // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "mapping", "base_link", pubLidarInMap);
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", curr_running_module_status, pubLidarInMap);
+        // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
-            pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
+            // pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
             slam_->set_new_key_cloud_arrived(false);
         }
         visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
