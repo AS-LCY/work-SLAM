@@ -43,7 +43,8 @@ extrinsic:
 
   extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # 红色机器  # unit(degree) yaw, pitch, roll
-  extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0] # 设计角度   # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # test-car   # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [0.0, 5.0, 0.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
