@@ -909,7 +909,6 @@ bool LidarSlam::run()
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
             p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
             flg_first_scan = false;
-            // cout<<"***************** flg_first_scan ********"<<endl;
             ROS_INFO("***************** flg_first_scan ********");
             return false;
         }
@@ -962,7 +961,6 @@ bool LidarSlam::run()
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
         log_info_manager_->slam_info.data[13]=feats_down_size; // 
-        // ROS_INFO("FilteredUndistortCloud count: %d", feats_down_size);
         PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/

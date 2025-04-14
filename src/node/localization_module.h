@@ -272,7 +272,9 @@ private:
     // 2: error, reset slam to IDLE
     std::atomic<int>  health_status_;
     
-    std::atomic<int>  cloud_size_;
+    std::atomic<int>  cloud_size_orig_;
+    std::atomic<int>  cloud_size_sample_;
+    std::atomic<int>  cloud_size_feat_;
     // -----------------------------------------------------
     Eigen::Isometry3d T_lidar_baselink_;
 
@@ -303,7 +305,6 @@ private:
     ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
     ros::Publisher pub_slip_;    
-    ros::Publisher pub_heartbeat_;
 
 
     // slam node

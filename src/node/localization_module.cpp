@@ -309,7 +309,6 @@ bool LocalizationModule::create_ROS_IO(){
 
     // both 建图 & 定位
 	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100);
-	pub_heartbeat_ = nh_.advertise<std_msgs::Header>("/flbot/localization_module/heartbeat", 2);
 
     // only 建图 
 
@@ -466,11 +465,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (just_show_mode_){
         return;
     } 
-    /********************************- run slam -********************************/    
-    std_msgs::Header msg_hb;
-    msg_hb.stamp = ros::Time().now();
-    msg_hb.frame_id = "lio heart beat";
-    pub_heartbeat_.publish(msg_hb);
+    /********************************- run slam -********************************/ 
 
     // thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
@@ -999,8 +994,10 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     }
     // check lidar driver **************************************************************
     int orig_point_cloud_size = 0;
+    int sample_point_cloud_size = 0;
     if(hb_cbk_lidar){
-        orig_point_cloud_size = cloud_size_.load();
+        orig_point_cloud_size = cloud_size_orig_.load();
+        sample_point_cloud_size = cloud_size_sample_.load();
         if(orig_point_cloud_size < point_cloud_size_thr){
             error_lidar_point_too_few = true;
         }
@@ -1016,6 +1013,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     health_msg.cloud_size = orig_point_cloud_size;
 
     log_info_manager_->slam_info.data[12]=orig_point_cloud_size; // 
+    log_info_manager_->slam_info.data[14]=sample_point_cloud_size; // 
     
     health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
     health_msg.delay_cbk_imu = delay_imu;       // unit: s
@@ -1274,7 +1272,7 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
         }
     }
 
-    // cloud_size_.store(ros_msg->width * ros_msg->height);
+    // cloud_size_orig_.store(ros_msg->width * ros_msg->height);
     
 
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
@@ -1307,7 +1305,8 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // }
     double t2 = omp_get_wtime();
 
-    cloud_size_.store(pcl_xyzin_cld->points.size());
+    cloud_size_orig_.store(pcl_xyzin_cld->points.size());
+    cloud_size_sample_.store(sample_cld_size);
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
