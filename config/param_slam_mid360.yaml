@@ -1,6 +1,6 @@
 common:
   run_on_mower: true # true / false, default to: true
-  map_directory_on_mower: "/root/lds_mower/ws_flbot/maps/"
+  map_directory_on_mower: "/userdata/lds_mower/maps/"
   cpu_id_on_mower: []
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
