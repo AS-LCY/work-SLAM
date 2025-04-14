@@ -19,7 +19,9 @@ common:
   # map_directory: "/home/pmm/data/2-rslidar/calib/0301-th/"
   # map_directory: "/home/pmm/data/2-rslidar/0402/1-22f"
   # map_directory: "/home/pmm/data/2-rslidar/0402/2-ouzh"
-  map_directory: "/home/pmm/data/2-rslidar/0403/5-1"
+  # map_directory: "/home/pmm/data/2-rslidar/5-五个雷达-3576/0408/2-ouzh_5-2"
+  map_directory: "/home/pmm/data/2-rslidar/0411/5-3"
+  
   # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
