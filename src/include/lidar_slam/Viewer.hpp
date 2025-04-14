@@ -81,7 +81,7 @@ class Viewer{
         reset = std::unique_ptr<pangolin::Var<bool>>(new pangolin::Var<bool>("menu.reset", false, false));
         MapMin = std::unique_ptr<pangolin::Var<float>>(new pangolin::Var<float>("menu.min map ", 0, -1, 1));
         MapMax = std::unique_ptr<pangolin::Var<float>>(new pangolin::Var<float>("menu.max map ", 0.5, 0.5, 2));
-        odom_cloud.reset(new PointCloudXYZI());    
+        odom_cloud.reset(new PointCloudType());    
         std::cout << "start pangolin viewer"<<std::endl; 
     }
     ~Viewer(){}
@@ -254,7 +254,7 @@ class Viewer{
             //3更新矩阵
         glPopMatrix();
     }
-    void DrawCloud(PointCloudXYZI::Ptr cloud,Eigen::Isometry3d pose,Eigen::Vector3f color,float size){
+    void DrawCloud(PointCloudType::Ptr cloud,Eigen::Isometry3d pose,Eigen::Vector3f color,float size){
         if (cloud->points.size() == 0)
            return;
         glPushMatrix();  
@@ -270,7 +270,7 @@ class Viewer{
         glEnd();
         glPopMatrix();
     }
-    void DrawCloud(PointCloudXYZI::Ptr cloud,Eigen::Vector3f color,float size){
+    void DrawCloud(PointCloudType::Ptr cloud,Eigen::Vector3f color,float size){
         if (cloud->points.size() == 0)
            return;
         pcl::copyPointCloud(*cloud, *odom_cloud);
@@ -301,7 +301,7 @@ class Viewer{
     private:
         pangolin::OpenGlRenderState s_cam;
         pangolin::View d_cam;
-        PointCloudXYZI::Ptr odom_cloud;
+        PointCloudType::Ptr odom_cloud;
         std::unique_ptr<pangolin::Var<bool>> localizationMode;
         std::unique_ptr<pangolin::Var<bool>> saveMap;
         std::unique_ptr<pangolin::Var<bool>> reset;

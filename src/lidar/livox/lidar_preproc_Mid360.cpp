@@ -42,7 +42,7 @@ bool LidarPreprocMid360::set_param(){
     }
 }
 
-bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){
+bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
     double header_time = ros_msg_in->header.stamp.toSec();
@@ -205,7 +205,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &
 
 
 ///////////////// 入口函数 /////////////////
-bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr pcl_cld_out){
+bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
     const int extract_cloud_method = param_.extract_cloud_method;
     int plsize = msg->point_num;
 
@@ -235,7 +235,7 @@ bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // 间隔采样
-void LidarPreprocMid360::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr pcl_cld_out){
+void LidarPreprocMid360::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
     // std::cout<<"extract cloud by method:  interval sampling"<<std::endl;
     int plsize = msg->point_num;
     uint valid_num = 0;
@@ -292,7 +292,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_sampling(const std::shared_pt
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr pcl_cld_out){
+void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
     // std::cout<<"extract cloud by method: interval and voxel"<<std::endl;
     const double leafsize = param_.leafsize;
     const double extent_xmin = param_.voxel_region_xyz[0];
@@ -385,7 +385,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
 }
 
 
-void LidarPreprocMid360::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr pcl_cld_out){
+void LidarPreprocMid360::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
     // std::cout<<"extract cloud by method: simple voxel"<<std::endl;
     const std::vector<double> leafsize = param_.leafsize_vec;
     const double extent_xmin = param_.voxel_region_xyz[0];
@@ -505,7 +505,7 @@ void LidarPreprocMid360::extract_cloud_by_simple_voxel(const std::shared_ptr<liv
 // give_feature()
 // plane_judge()
 // edge_jump_judge()
-void LidarPreprocMid360::extract_cloud_by_feature(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr pcl_cld_out){
+void LidarPreprocMid360::extract_cloud_by_feature(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
 
     return;
 }

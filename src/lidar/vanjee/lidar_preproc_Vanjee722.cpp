@@ -47,7 +47,7 @@ bool LidarPreprocVanjee722::set_param(){
 }
 
 // current used
-bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudXYZI::Ptr pcl_xyzin_out){
+bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
     ROS_INFO_ONCE("Vanjee: ros_msg_in --> pcl_xyzin_out");
 
@@ -144,7 +144,7 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
 }
 
 ///////////////// 入口函数 /////////////////                  
-bool LidarPreprocVanjee722::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudXYZI::Ptr pcl_xyzin_out){
+bool LidarPreprocVanjee722::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
     ROS_INFO("Airy: pcl_rs_in --> pcl_xyzin_out");
     const int extract_cloud_method = param_.extract_cloud_method;
@@ -170,7 +170,7 @@ bool LidarPreprocVanjee722::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Pt
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // 间隔采样
-void LidarPreprocVanjee722::extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudXYZI::Ptr pcl_xyzin_out){
+void LidarPreprocVanjee722::extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
 }
 

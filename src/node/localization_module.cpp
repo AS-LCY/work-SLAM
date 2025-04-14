@@ -1292,12 +1292,12 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
 
-    PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
     double t1 = omp_get_wtime();
 
-    PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
+    PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
     int sample_cld_size = sample_cld_ptr->points.size();
     // if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){

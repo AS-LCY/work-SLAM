@@ -3,7 +3,7 @@
 
 namespace localization_module{
 
-void LocalizationModule::pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud)
+void LocalizationModule::pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -12,7 +12,7 @@ void LocalizationModule::pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publish
 	pubOdomCloud.publish(laserCloudmsg);
 }
 
-void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud)
+void LocalizationModule::pub_lidar_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubBodyCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -22,7 +22,7 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 	pubBodyCloud.publish(laserCloudmsg);
 }
 
-// void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
+// void LocalizationModule::pub_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubObstacleCloud)
 // {
 // 	sensor_msgs::PointCloud2 laserCloudmsg;
 // 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -31,7 +31,7 @@ void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publis
 // 	pubObstacleCloud.publish(laserCloudmsg);
 // }
 
-void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
+void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -40,7 +40,7 @@ void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in,
 	pubFilteredObstacleCloud.publish(laserCloudmsg);
 }
 
-void LocalizationModule::pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
+void LocalizationModule::pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -52,7 +52,7 @@ void LocalizationModule::pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localiz
 	pubTestCloud.publish(laserCloudmsg);
 }
 
-void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
+void LocalizationModule::pub_kdtree_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubKdtreeCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);

@@ -43,12 +43,12 @@ struct MeasureGroup     // Lidar data and imu dates for the curent process
     {
         lidar_beg_time = 0.0;
         lidar_end_time = 0.0;
-        this->lidar.reset(new PointCloudXYZI());
+        this->lidar.reset(new PointCloudType());
         imu.clear();
     };
     double lidar_beg_time; // lidar data begin time in the MeasureGroup
     double lidar_end_time; // lidar data end time in the MeasureGroup
-    PointCloudXYZI::Ptr lidar;
+    PointCloudType::Ptr lidar;
     deque<std::shared_ptr<livox_ros::ImuMsg>> imu;
 };
 struct Pose6D{
@@ -91,7 +91,7 @@ class ImuProcess
   void Reset();
   void set_param(const V3D &transl, const M3D &rot, const V3D &gyr, const V3D &acc, const V3D &gyr_bias, const V3D &acc_bias);
   Eigen::Matrix<double, 12, 12> Q;    //噪声协方差矩阵  对应论文式(8)中的Q
-  void Process(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudXYZI::Ptr &pcl_un_);
+  void Process(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudType::Ptr &pcl_un_);
 
   V3D cov_acc;             //加速度测量协方差
   V3D cov_gyr;             //角速度测量协方差
@@ -105,9 +105,9 @@ class ImuProcess
 
  private:
   void IMU_init(const MeasureGroup &meas, esekfom::esekf &kf_state, int &N);
-  void UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudXYZI &pcl_in_out);
+  void UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudType &pcl_in_out);
 
-  PointCloudXYZI::Ptr cur_pcl_un_;        //当前帧点云未去畸变
+  PointCloudType::Ptr cur_pcl_un_;        //当前帧点云未去畸变
   std::shared_ptr<livox_ros::ImuMsg> last_imu_;     // 上一帧imu
   vector<Pose6D> IMUpose;                 // 存储imu位姿(反向传播用)
   M3D Lidar_R_wrt_IMU;                    // lidar到IMU的旋转外参

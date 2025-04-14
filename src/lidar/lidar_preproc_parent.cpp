@@ -12,7 +12,7 @@ LidarPreprocParent::~LidarPreprocParent(){
 
 }
 
-void LidarPreprocParent::sampling_cloud(PointCloudXYZI::Ptr in_cloud_ptr, PointCloudXYZI::Ptr out_cloud_ptr){
+void LidarPreprocParent::sampling_cloud(PointCloudType::Ptr in_cloud_ptr, PointCloudType::Ptr out_cloud_ptr){
     int in_size = in_cloud_ptr->points.size();
     int cal_ratio = std::round(in_size * 1.0 / cloud_size_to_keep_);
     int point_filter_ratio = cal_ratio > 1 ? cal_ratio : 1;
@@ -39,8 +39,8 @@ void LidarPreprocParent::sampling_cloud(PointCloudXYZI::Ptr in_cloud_ptr, PointC
 // bool LidarPreprocParent::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){return true;}
 // bool LidarPreprocParent::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr &pcl_cld_out){return true;}
 
-// bool LidarPreprocParent::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI& pcl_cld_out){return true;}
-// bool LidarPreprocParent::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudXYZI& pcl_cld_out){return true;}
+// bool LidarPreprocParent::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType& pcl_cld_out){return true;}
+// bool LidarPreprocParent::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType& pcl_cld_out){return true;}
 
 
 } // namespace localization_module

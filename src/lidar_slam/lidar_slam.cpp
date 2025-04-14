@@ -79,12 +79,12 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     // cout << "slam reset 2"<<endl;
     /// 点云 reset *******************************************
-    UndistortCloudInOdom.reset(new PointCloudXYZI());
-    undistortCloud.reset(new PointCloudXYZI());  // lidar 系
-    FilteredUndistortCloud.reset(new PointCloudXYZI());
-    kdtreeCloud.reset(new PointCloudXYZI());
-    // ObstacleCloud.reset(new PointCloudXYZI());
-    // FilteredObstacleCloud.reset(new PointCloudXYZI());
+    UndistortCloudInOdom.reset(new PointCloudType());
+    undistortCloud.reset(new PointCloudType());  // lidar 系
+    FilteredUndistortCloud.reset(new PointCloudType());
+    kdtreeCloud.reset(new PointCloudType());
+    // ObstacleCloud.reset(new PointCloudType());
+    // FilteredObstacleCloud.reset(new PointCloudType());
 
     // cout << "slam reset 3"<<endl;
     /// mapping 相关 *******************************************
@@ -290,7 +290,7 @@ void LidarSlam::sec_mapping_loopClosureThread()
         }else if(!back_end->get_loaded_key_cloud_status()){
             // cout<<"\033[1;32mSetting gtsam ... \033[0m"<<endl;
             ROS_INFO_STREAM(BOLDGREEN<< "Setting gtsam ... "<<RESET);
-            auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudXYZI::Ptr>
+            auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudType::Ptr>
             auto loaded_keyframe_poses  = cloud_map_manager_->get_loaded_keyframe_poses();  // auto : std::vector<KeyPose>
             auto loaded_sc_info  = cloud_map_manager_->get_load_sc_info_();  // auto : std::vector<KeyPose>
             auto global_odom_to_map     = global_localization_->get_global_odom_to_map();    // auto : Eigen::Isometry3d
@@ -361,7 +361,7 @@ void LidarSlam::localizationThread()
     int gicp_fail_count = 0;
     int gicp_low_acc_count = 0;
     pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
-    PointCloudXYZI::Ptr UndistortCloudInOdom_test(new PointCloudXYZI()); 
+    PointCloudType::Ptr UndistortCloudInOdom_test(new PointCloudType()); 
 
     while (thread_run&&reseting == false)
     {
@@ -369,7 +369,7 @@ void LidarSlam::localizationThread()
         auto start = std::chrono::steady_clock::now();
         // pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
         temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
-        UndistortCloudInOdom_test.reset(new PointCloudXYZI());
+        UndistortCloudInOdom_test.reset(new PointCloudType());
         {
             std::lock_guard<std::mutex> lk(mtx_odom_cloud);
             downSizeFilterCloud_test.setInputCloud(UndistortCloudInOdom);
@@ -397,7 +397,7 @@ void LidarSlam::localizationThread()
                     ROS_INFO_STREAM("start globalLocalization ... ");
 
                     //state.state("lost");
-                    PointCloudXYZI::Ptr FilteredUndistortCloud_test(new PointCloudXYZI()); 
+                    PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType()); 
                     {
                         std::lock_guard<std::mutex> lk(mtx_lidar_cloud); 
                         downSizeFilterCloud_test.setInputCloud(undistortCloud);
@@ -600,7 +600,7 @@ void LidarSlam::showThread()
 // }
         
 
-void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
+void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     // param
     // static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
@@ -650,7 +650,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     return ;
 }
 
-// void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
+// void LidarSlam::robosense_pcl_cbk(const PointCloudType::Ptr &cloud){
 //     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 //     double t0 = omp_get_wtime();
 //     if (reseting)
@@ -736,7 +736,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
 //         ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf ", timediff_lidar_wrt_imu);
 //     }
 
-//     PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
+//     PointCloudType::Ptr ptr(new PointCloudType());
 
 //     // 特征提取或间隔采样
 //     // p_lidar_pre->process(msg, ptr);
@@ -961,7 +961,7 @@ bool LidarSlam::run()
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
         log_info_manager_->slam_info.data[13]=feats_down_size; // 
-        PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
+        PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/
         if (ikdtree->Root_Node == nullptr)

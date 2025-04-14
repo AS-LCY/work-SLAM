@@ -31,13 +31,13 @@ public:
     bool load_map_data(std::string map_dir);
 
 
-    PointCloudXYZI::Ptr get_loaded_cloud_map(){
+    PointCloudType::Ptr get_loaded_cloud_map(){
         return loaded_global_map_;
     }
     std::vector<ScInfo> get_load_sc_info_(){
         return loaded_sc_info_;
     }
-    std::vector<PointCloudXYZI::Ptr> get_loaded_keyframe_clouds(){
+    std::vector<PointCloudType::Ptr> get_loaded_keyframe_clouds(){
         return loaded_keyframe_clouds_;
     }
     std::vector<KeyPose> get_loaded_keyframe_poses(){
@@ -59,9 +59,9 @@ private:
 
     //// variable
     bool map_data_ready_ = false;
-    PointCloudXYZI::Ptr loaded_global_map_;
+    PointCloudType::Ptr loaded_global_map_;
     std::vector<KeyPose> loaded_keyframe_poses_;
-    std::vector<PointCloudXYZI::Ptr> loaded_keyframe_clouds_;
+    std::vector<PointCloudType::Ptr> loaded_keyframe_clouds_;
     std::vector<ScInfo> loaded_sc_info_;
 
     /// 加载data数据所用
@@ -71,7 +71,7 @@ private:
     std::vector<Eigen::MatrixXd> polarcontexts_;
     pcl::PointCloud<PointType>::Ptr loaded_key_point_;
     std::vector<Eigen::Isometry3d> accumulate_key_pose_;
-    PointCloudXYZI::Ptr accumulate_map_;
+    PointCloudType::Ptr accumulate_map_;
 };
 
 } // namespace lidar_slam

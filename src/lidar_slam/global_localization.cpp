@@ -6,7 +6,7 @@ namespace lidar_slam{
 
 GlobalLocalization::GlobalLocalization(){
     loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudXYZI());
+    loaded_global_map_.reset(new PointCloudType());
 
     loaded_keyframe_poses_.clear();
     loaded_keyframe_clouds_.clear();
@@ -16,7 +16,7 @@ GlobalLocalization::GlobalLocalization(){
 GlobalLocalization::~GlobalLocalization(){
     
     loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudXYZI());
+    loaded_global_map_.reset(new PointCloudType());
 
     loaded_keyframe_poses_.clear();
     loaded_keyframe_clouds_.clear();
@@ -103,7 +103,7 @@ GlobalLocalization::~GlobalLocalization(){
 //         int pose_index = loaded_keyframe_poses_[i].index;
 //         std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) +  ".pcd";
 //         std::cout << "tring to load key_frame_cloud from : " << key_cloud_path<<std::endl;
-//         PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
+//         PointCloudType::Ptr temp_cloud(new PointCloudType());
 //         if (std::filesystem::exists(key_cloud_path)){
 //             pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
 //             loaded_keyframe_clouds_.push_back((temp_cloud));
@@ -118,7 +118,7 @@ GlobalLocalization::~GlobalLocalization(){
 
 // bool GlobalLocalization::load_cloud_map(std::string map_dir){
 //     /// load cloud_map.pcd ***************************************************************************
-//     loaded_global_map_.reset(new PointCloudXYZI());
+//     loaded_global_map_.reset(new PointCloudType());
 //     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
 //     std::cout << "tring to load map from : " << cloud_map_file_path<<std::endl;
 //     if (std::filesystem::exists(cloud_map_file_path)){
@@ -210,7 +210,7 @@ GlobalLocalization::~GlobalLocalization(){
 
 
 //////////////////////////////////// - global_localize - /////////////////////////////////////////
-bool GlobalLocalization::global_localize(PointCloudXYZI::Ptr cloud_in, 
+bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, 
                                             Eigen::Isometry3d pose, 
                                             Matrix3d initial_rotate, 
                                             double score_thr){
@@ -265,11 +265,11 @@ bool GlobalLocalization::global_localize(PointCloudXYZI::Ptr cloud_in,
 /// @param best_match       : result out 
 /// @param best_trans       : result out 
 /// @return : if search success
-bool GlobalLocalization::scancontex_search(PointCloudXYZI::Ptr cloud_in, Matrix3d initial_rotate, 
+bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3d initial_rotate, 
                                             std::pair<int, float>& best_match, std::pair<double, double>& best_trans){
 
     // transform (gravity_align) curr cloud
-    PointCloudXYZI::Ptr gravity_aligned_cLoud(new PointCloudXYZI());
+    PointCloudType::Ptr gravity_aligned_cLoud(new PointCloudType());
     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
     transform.matrix().block<3, 3>(0, 0) = initial_rotate;
     *gravity_aligned_cLoud = *transformPointCloud(cloud_in, transform);
@@ -364,7 +364,7 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 /// @param pose         : param in 
 /// @param init_guess   : param in 
 /// @param res_global_odom_to_map    : param out  Eigen::Isometry3d result
-bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr, Eigen::Isometry3d& res_global_odom_to_map){
+bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr, Eigen::Isometry3d& res_global_odom_to_map){
     // set: icp-common
     pcl::IterativeClosestPoint<PointType, PointType> icp;
     icp.setMaxCorrespondenceDistance(100);
@@ -377,7 +377,7 @@ bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::I
     icp.setInputTarget(loaded_global_map_);
 
     // exec icp
-    PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
+    PointCloudType::Ptr unused_result(new PointCloudType());
     icp.align(*unused_result, init_guess.cast<float>());
     // 未收敛，或者匹配不够好
     if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr){//TODO add number in getFitnessScore
@@ -410,7 +410,7 @@ bool GlobalLocalization::registration_icp(PointCloudXYZI::Ptr cloud_in, Eigen::I
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-bool GlobalLocalization::set_global_map(PointCloudXYZI::Ptr input_global_map){
+bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map){
     if(input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size()==0){
         // std::cout <<" loaded global map empty!"<<std::endl;
         ROS_WARN_STREAM(" loaded global map empty!");

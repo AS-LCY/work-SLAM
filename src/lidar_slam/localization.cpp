@@ -12,9 +12,9 @@ Localization::Localization(){
     gicp->setMaxCorrespondenceDistance(2.0);
     gicp->setCorrespondenceRandomness(20);
     KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    CloudGlobalMap.reset(new PointCloudXYZI());
-    accumulateMap_.reset(new PointCloudXYZI());
-    testMatchcloud.reset(new PointCloudXYZI());
+    CloudGlobalMap.reset(new PointCloudType());
+    accumulateMap_.reset(new PointCloudType());
+    testMatchcloud.reset(new PointCloudType());
     CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
     map_ready_ = false;
 
@@ -25,10 +25,10 @@ Localization::~Localization(){
 
 bool Localization::loadMap(std::string path){
     map_ready_ = false;
-    CloudGlobalMap.reset(new PointCloudXYZI());
+    CloudGlobalMap.reset(new PointCloudType());
     CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
     show_map_points.clear();
-    PointCloudXYZI::Ptr TempMap(new PointCloudXYZI());
+    PointCloudType::Ptr TempMap(new PointCloudType());
 
     std::string cloud_map_file_path = path+std::string("cloud_map.pcd");
     // if (std::filesystem::exists(cloud_map_file_path)){
@@ -249,7 +249,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 
 }
 
-bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)
+bool Localization::globalLocalization(PointCloudType::Ptr cloudIn,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score)
 { 
     if (!map_ready_) {
         ROS_WARN_STREAM(YELLOW << "map not ready" << RESET);
@@ -267,7 +267,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
     // newTransform.rotate(Eigen::AngleAxisd(current_roll, Eigen::Vector3d::UnitX()));
     // std::cout <<newTransform.matrix()<<std::endl;
     // newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,current_pitch,current_roll)); 
-    PointCloudXYZI::Ptr gravityAlignedCLoud(new PointCloudXYZI());
+    PointCloudType::Ptr gravityAlignedCLoud(new PointCloudType());
     Eigen::Isometry3d Transform = Eigen::Isometry3d::Identity();
     Transform.matrix().block<3, 3>(0, 0) = initial_rotate;
     *gravityAlignedCLoud = *transformPointCloud(cloudIn, Transform);
@@ -349,7 +349,7 @@ bool Localization::globalLocalization(PointCloudXYZI::Ptr cloudIn,Eigen::Isometr
         icp.setInputSource(cloudIn);
         icp.setInputTarget(CloudGlobalMap);
         // std::cout << "globalLocalization icp fail "<<cloudIn->points.size()<<" "<<CloudGlobalMap->points.size()<<std::endl;
-        PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
+        PointCloudType::Ptr unused_result(new PointCloudType());
         icp.align(*unused_result, init_guess.cast<float>());
         // 未收敛，或者匹配不够好
         // if (icp.hasConverged() == false || icp.getFitnessScore() > 0.2){//TODO add number in getFitnessScore
