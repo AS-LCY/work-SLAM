@@ -1302,9 +1302,9 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
     int sample_cld_size = sample_cld_ptr->points.size();
-    if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
-        ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
-    }
+    // if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
+    //     ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
+    // }
     double t2 = omp_get_wtime();
 
     cloud_size_.store(pcl_xyzin_cld->points.size());

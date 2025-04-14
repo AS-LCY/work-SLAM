@@ -226,7 +226,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
                 }
             }
     
-            pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+            // pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
             // // update log_info (log_info_manager_) 暂时注释掉，后期再补充
             // log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
             // log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
