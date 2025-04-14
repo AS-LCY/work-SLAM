@@ -60,8 +60,8 @@ localization:
   # fgicp_score_thr: 0.1
   fgicp_score_fail_thr: 0.3
   fgicp_score_low_accuracy_thr: 0.1
-  fgicp_fail_count_thr: 3
-  fgicp_low_accuracy_count_thr: 10
+  fgicp_fail_count_thr: 5
+  fgicp_low_accuracy_count_thr: 180
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7
@@ -77,8 +77,6 @@ localization:
   chassis_linear_velocity_thr: 0.02
   motionless_chassis_ratio: 0.98
   lidar_cbk_delay_thr: 2 # 
-  fgicp_fail_count_thr: 3
-  fgicp_low_accuracy_count_thr: 10
 
 lidar_preproc:
   lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  # 
