@@ -997,11 +997,6 @@ bool LidarSlam::run()
             lidar_no_point_count_++;
             if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
-                // if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
-                //     // m_status_ = M_FAILED;
-                // }else if(working_mode_==LOCALIZATION){
-                //     // l_status_ = L_FAILED;
-                // }
             }
             log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             ROS_WARN_STREAM(YELLOW << "No point after filter, skip this scan!" << RESET);

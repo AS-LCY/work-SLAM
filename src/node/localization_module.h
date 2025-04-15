@@ -179,22 +179,27 @@ private:
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
     
     // publish common
-    void pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud);
-    void pub_lidar_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubBodyCloud);
+    void publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id, ros::Time ros_time, ros::Publisher pub_cloud);
+    void publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string child_frameid, ros::Publisher pub);
+    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, 
+                                        string frameid, string child_frameid, ModuleStatus curr_running_module_status, 
+                                        ros::Publisher pubOdomAftMapped);
+
+
+
+
+    // void pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud);
+    // void pub_lidar_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubBodyCloud);
     // void pub_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubObstacleCloud);
-    void pub_filtered_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
+    // void pub_filtered_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
+    // void pub_kdtree_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubKdtreeCloud);
+    // void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
     void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
-    void pub_kdtree_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubKdtreeCloud);
-    void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped);
-    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ModuleStatus curr_running_module_status, ros::Publisher pubOdomAftMapped);
-    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped);
-    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher publisher);
     void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
     void publish_transform(const Eigen::Isometry3d& correction,string parent, string child);
     void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud);
     void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge);
     void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
-    void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
 
     // position filter
     void lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);

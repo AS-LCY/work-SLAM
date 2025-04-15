@@ -469,42 +469,41 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 
     // thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
+    // running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
     bool running_slam_flag = slam_->run();
+    ros::Time ros_time_now = ros::Time().now();
 
-    if (running_slam_flag && show_rviz_){
-        // if (!localization_mode_ || slam_->isGloalLocalizationSuccess()){
+    if(running_slam_flag){
         if ((is_mapping_status(curr_running_module_status))|| slam_->isGloalLocalizationSuccess()){
-            pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
+            publish_cloud(slam_->get_odom_cloud(), "odom", ros_time_now, pubOdomCloud);
         }
-        pub_test_cloud(slam_->getTestCloud(), localization_mode_, pubTestCloud);
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
-        // pub_obstacle_cloud(slam_->getObstacleCloud(), pubObstacleCloud);// disable ObstacleCloud
-        // pub_filtered_obstacle_cloud(slam_->getFilteredObstacleCloud(), pubFilteredObstacleCloud);
-        publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
-        publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
-        visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
-        publish_transform(slam_->getOdomToMap(),string("map"),string("odom"));
-        // pub_kdtree_cloud(slam_->get_kdtree_cloud());		//not used yet
-    }
-    // if(!localization_mode_){
-    auto localization_status_now = localization_status_.load();
-    pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
-    // pub_lidar_cloud(slam_->get_filter_lidar_cloud(), pub_body_cloud_filter_);
+        // pub body cloud
+        publish_cloud(slam_->get_lidar_cloud(), "lidar", ros_time_now,  pubBodyCloud);
+        // publish_cloud(slam_->get_filter_lidar_cloud(), "lidar", ros_time_now,  pub_body_cloud_filter_);
 
+        // publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
+        // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
+        // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
+    }
+
+    auto localization_status_now = localization_status_.load();
     if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
-        // pub_rgb_map(slam->getCurrentRGBMap());
         // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", curr_running_module_status, pubLidarInMap);
         // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
-            // pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
+            publish_cloud(slam_->get_lidar_cloud(), "lidar", ros_time_now, pub_key_cloud_);
             slam_->set_new_key_cloud_arrived(false);
         }
+        // pub kdtree cloud
+        publish_cloud(slam_->get_kdtree_cloud(), "odom", ros_time_now, pubKdtreeCloud);
+        // pub odom cloud
+        publish_cloud(slam_->get_odom_cloud(), "odom", ros_time_now, pubOdomCloud);
+
         visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
-        // pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
         publish_unoptimized_path(slam_->get_unoptimized_path(),string("map"),pubUnoptimizedPath);
         // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
-    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
+    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_now)){
         if (slam_->isGloalLocalizationSuccess()){
             // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
             // publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
@@ -512,10 +511,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
 
     }
-    if (show_rviz_){
-        publish_static_transform(slam_->getWheelInLidar());
-        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
-    }
+    // if (show_rviz_){
+    //     publish_static_transform(slam_->getWheelInLidar());
+    //     publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+    // }
 }
 
 
@@ -1113,12 +1112,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
-        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+        // publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
     }
 
     if(is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())){
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "map", "base_link",curr_running_module_status, pubLidarInMap);
-        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+        // publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
     }
 }
 
