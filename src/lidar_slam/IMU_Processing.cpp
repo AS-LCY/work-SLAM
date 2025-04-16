@@ -38,7 +38,7 @@ void ImuProcess::Reset()   //重置参数
   init_iter_num = 1;                       //初始化迭代次数
   IMUpose.clear();                         // imu位姿清空
   last_imu_.reset(new livox_ros::ImuMsg); //上一帧imu初始化
-  cur_pcl_un_.reset(new PointCloudXYZI()); //当前帧点云未去畸变初始化
+  cur_pcl_un_.reset(new PointCloudType()); //当前帧点云未去畸变初始化
 }
 
 //传入外部参数
@@ -110,7 +110,7 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, esekfom::esekf &kf_state, in
 }
 
 //反向传播
-void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudXYZI &pcl_out)
+void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudType &pcl_out)
 {
   /***将上一帧最后尾部的imu添加到当前帧头部的imu ***/
   auto v_imu = meas.imu;         //取出当前帧的IMU队列
@@ -233,7 +233,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
 
 
 //double T1,T2;
-void ImuProcess::Process(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudXYZI::Ptr &cur_pcl_un_)
+void ImuProcess::Process(const MeasureGroup &meas, esekfom::esekf &kf_state, PointCloudType::Ptr &cur_pcl_un_)
 {
   // T1 = omp_get_wtime();
 

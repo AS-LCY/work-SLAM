@@ -128,15 +128,15 @@ class LidarSlam
          };
         bool run();
         void robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud);
-        void robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud);
-        void lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud);
+        void robosense_pcl_cbk(const PointCloudType::Ptr &cloud);
+        void lidar_pcl_cbk(const PointCloudType::Ptr &cloud);
 
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
-        // void livox_pcl_offline_cbk(const PointCloudXYZI::Ptr msg_in,double time_stamp);
+        // void livox_pcl_offline_cbk(const PointCloudType::Ptr msg_in,double time_stamp);
        // void cmd_cbk(WorkState& msg);
         void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in);
         // void image_cbk(const cv::Mat& img,double time);
-        // void filter_obstacle_cloud(const PointCloudXYZI::Ptr cloud);// not in use, comment them by pmm
+        // void filter_obstacle_cloud(const PointCloudType::Ptr cloud);// not in use, comment them by pmm
         bool save_map(string saveMapDirectory,double resolution, int start_index, int end_index){ 
             // if (param.localization_mode){
             if (working_mode_ == LOCALIZATION){
@@ -168,19 +168,26 @@ class LidarSlam
             return back_end->getCurrentPoseIndex();
         }
         
-        PointCloudXYZI::Ptr get_lidar_cloud()
+        PointCloudType::Ptr get_lidar_cloud()
         {
           std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
           return undistortCloud;
         }
 
-        PointCloudXYZI::Ptr get_odom_cloud()
+        PointCloudType::Ptr get_filter_lidar_cloud()
+        {
+          std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
+          return FilteredUndistortCloud;
+        }
+        
+
+        PointCloudType::Ptr get_odom_cloud()
         {
            std::lock_guard<std::mutex> lk(mtx_odom_cloud);
            return UndistortCloudInOdom;
         }
 
-        PointCloudXYZI::Ptr get_kdtree_cloud()
+        PointCloudType::Ptr get_kdtree_cloud()
         {
            return kdtreeCloud;
         }
@@ -297,8 +304,8 @@ class LidarSlam
         std::vector<ScInfo> getLoadKeyFrame(){
             return localization -> getLoadKeyFrame();
         }
-        PointCloudXYZI::Ptr getTestCloud(){
-            PointCloudXYZI::Ptr temp(new PointCloudXYZI());
+        PointCloudType::Ptr getTestCloud(){
+            PointCloudType::Ptr temp(new PointCloudType());
             // if (param.localization_mode)
             if (working_mode_==LOCALIZATION)
                 return localization -> getTestCloud();
@@ -307,7 +314,7 @@ class LidarSlam
             else
                 return temp;
         }
-        PointCloudXYZI::Ptr getCurrentMap()
+        PointCloudType::Ptr getCurrentMap()
         {
             return back_end->getCurrentMap(getOdomToMap());
         }
@@ -315,11 +322,11 @@ class LidarSlam
         {
             return back_end->getCurrentRGBMap();
         }
-        // PointCloudXYZI::Ptr getObstacleCloud()
+        // PointCloudType::Ptr getObstacleCloud()
         // {
         //     return ObstacleCloud;
         // }
-        // PointCloudXYZI::Ptr getFilteredObstacleCloud()
+        // PointCloudType::Ptr getFilteredObstacleCloud()
         // {
         //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
         //     return FilteredObstacleCloud;
@@ -424,7 +431,7 @@ class LidarSlam
 
 
         deque<double> time_buffer;               // 记录lidar时间
-        deque<PointCloudXYZI::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
+        deque<PointCloudType::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
         bool lidar_pushed = false;
         // atomic<double> lidar_end_time = 0;
@@ -483,13 +490,14 @@ class LidarSlam
 
         std::shared_ptr<localization_module::LidarPreprocParent> lidar_pre_ptr_;
 
-        PointCloudXYZI::Ptr UndistortCloudInOdom;
-        PointCloudXYZI::Ptr undistortCloud;  // lidar 系
-        PointCloudXYZI::Ptr FilteredUndistortCloud;
+        PointCloudType::Ptr UndistortCloudInOdom;
+        PointCloudType::Ptr undistortCloud;  // lidar 系
+        PointCloudType::Ptr FilteredUndistortCloud;
         pcl::VoxelGrid<PointType> downSizeFilterCloud;
-        PointCloudXYZI::Ptr kdtreeCloud;
-        // PointCloudXYZI::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
-        PointCloudXYZI::Ptr FilteredObstacleCloud;
+        pcl::VoxelGrid<PointType> downSizeFilterCloud_test;
+        PointCloudType::Ptr kdtreeCloud;
+        // PointCloudType::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
+        PointCloudType::Ptr FilteredObstacleCloud;
         
         SlamWorkMode working_mode_ = UNKNOWN;
         // LocalizationStatus l_status_ = L_INACTIVE;

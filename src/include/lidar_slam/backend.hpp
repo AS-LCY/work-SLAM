@@ -64,16 +64,16 @@ public:
     BackEnd(float dist, float angle,float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
     ~BackEnd();
 
-    void saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose);
-    PointCloudXYZI::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
+    void saveCurrentCloud(PointCloudType::Ptr points,Eigen::Isometry3d pose);
+    PointCloudType::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
-    bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped,PointCloudXYZI::Ptr lidar_cloud,double time);
+    bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped,PointCloudType::Ptr lidar_cloud,double time);
     void performLoopClosure(double time);
     // if start_index == end_index == 0; save all;
     bool saveMap(std::string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index);
     bool correctPoses();
     void recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconstructRadius,float kdTreeReconstructKeyFrameLeafSize,double kdTreeReconstructPointLeafSize);
-    // PointCloudXYZI::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
+    // PointCloudType::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
     KeyPose getCurrentPose()
     {
         return KeyPoses.back();
@@ -92,7 +92,7 @@ public:
     {
         return loopIndexContainer;
     }
-    PointCloudXYZI::Ptr getTestCloud(){
+    PointCloudType::Ptr getTestCloud(){
       return gravityAlignedCLoud;
     }
     
@@ -100,7 +100,7 @@ public:
         return loaded_key_clouds_ready_;
     }
 
-    bool set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, 
+    bool set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds, std::vector<ScInfo> input_vec_sc_info, 
                                 std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d trans_map_odom);
 
 private:
@@ -110,8 +110,8 @@ private:
     std::vector<KeyPose> KeyPoses;
     pcl::PointCloud<PointType>::Ptr CopyKeyPoint;
     std::vector<KeyPose> CopyKeyPoses;
-    std::vector<PointCloudXYZI::Ptr> KeyFrameCloud;
-    PointCloudXYZI::Ptr show_map;
+    std::vector<PointCloudType::Ptr> KeyFrameCloud;
+    PointCloudType::Ptr show_map;
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map;
 
     float keyframeDistThreshold;  //  判断是否为关键帧的距离阈值
@@ -133,7 +133,7 @@ private:
     int show_index = 0;
     SCManager scManager;
     pcl::VoxelGrid<PointType> downSizeFilterICP;
-    PointCloudXYZI::Ptr gravityAlignedCLoud;
+    PointCloudType::Ptr gravityAlignedCLoud;
     // cv::Mat image;
    
 
@@ -146,8 +146,8 @@ private:
     
     
     bool detectLoopClosureDistance(int *latestID, int *closestID, double time);
-    void loopFindNearKeyframes(PointCloudXYZI::Ptr &nearKeyframes, const int &key, const int &searchNum);
-    void loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key);
+    void loopFindNearKeyframes(PointCloudType::Ptr &nearKeyframes, const int &key, const int &searchNum);
+    void loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key);
     std::mutex mtxPose;
     std::mutex mtxCloud;
     std::mutex mtxLoopInfo;

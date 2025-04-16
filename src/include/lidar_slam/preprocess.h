@@ -157,16 +157,16 @@ class Preprocess
   Preprocess();
   ~Preprocess();
   
-  void process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr &pcl_out);
- // void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudXYZI::Ptr &pcl_out);
+  void process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr &pcl_out);
+ // void process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
   // void set(bool feat_en, bool voxel_en, int lid_type, double bld, int pfilt_num,int line,double obstacle);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num,int line,double obstacle);
   void set(lidar_slam::LidarPreprocParam param_in);
 
   // sensor_msgs::PointCloud2::ConstPtr pointcloud;
-  PointCloudXYZI pl_full, pl_corn, pl_surf;
-  PointCloudXYZI::Ptr pl_obstacle;
-  PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
+  PointCloudType pl_full, pl_corn, pl_surf;
+  PointCloudType::Ptr pl_obstacle;
+  PointCloudType pl_buff[128]; //maximum 128 line lidar
   vector<orgtype> typess[128]; //maximum 128 line lidar
   float time_unit_scale;
   int lidar_type, point_filter_num, N_SCANS, time_unit;
@@ -187,11 +187,11 @@ class Preprocess
   void extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg);
   void extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg);
 
-  void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
-  //void pub_func(PointCloudXYZI &pl, const ros::Time &ct);
-  int  plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
-  bool small_plane(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct);
-  bool edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir);
+  void give_feature(PointCloudType &pl, vector<orgtype> &types);
+  //void pub_func(PointCloudType &pl, const ros::Time &ct);
+  int  plane_judge(const PointCloudType &pl, vector<orgtype> &types, uint i, uint &i_nex, Eigen::Vector3d &curr_direct);
+  bool small_plane(const PointCloudType &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct);
+  bool edge_jump_judge(const PointCloudType &pl, vector<orgtype> &types, uint i, Surround nor_dir);
   
   int group_size;
   double disA, disB, inf_bound;

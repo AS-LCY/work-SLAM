@@ -116,16 +116,28 @@ public:
         // loaded_param_.extrinsic.R_baselink_IMU = rpy2R(Eigen::Vector3d{roll1,pitch1, yaw1});
 
         // IMU in base_link
-        double yaw2   = extrinsic_euler_IMU_in_lidar[0]/180 * M_PI;
-        double pitch2 = extrinsic_euler_IMU_in_lidar[1]/180 * M_PI;
-        double roll2  = extrinsic_euler_IMU_in_lidar[2]/180 * M_PI;
-        auto R_imu_in_lidar = rpy2R(Eigen::Vector3d{roll2,pitch2, yaw2});
+        Eigen::Matrix3d R_imu_in_lidar = Eigen::Matrix3d::Identity();
+        if(extrinsic_euler_IMU_in_lidar.size() == 3){
+            double yaw2   = extrinsic_euler_IMU_in_lidar[0]/180 * M_PI;
+            double pitch2 = extrinsic_euler_IMU_in_lidar[1]/180 * M_PI;
+            double roll2  = extrinsic_euler_IMU_in_lidar[2]/180 * M_PI;
+            R_imu_in_lidar = rpy2R(Eigen::Vector3d{roll2,pitch2, yaw2});
+        }else if(extrinsic_euler_IMU_in_lidar.size() == 4){
+            double qx = extrinsic_euler_IMU_in_lidar[0];
+            double qy = extrinsic_euler_IMU_in_lidar[1];
+            double qz = extrinsic_euler_IMU_in_lidar[2];
+            double qw = extrinsic_euler_IMU_in_lidar[3];
+            Eigen::Quaterniond eigen_quat = Eigen::Quaterniond(qw, qx, qy, qz);
+            R_imu_in_lidar = eigen_quat.toRotationMatrix();
+
+        }
+
         double yaw3   = extrinsic_euler_lidar_in_baselink[0]/180 * M_PI;
         double pitch3 = extrinsic_euler_lidar_in_baselink[1]/180 * M_PI;
         double roll3  = extrinsic_euler_lidar_in_baselink[2]/180 * M_PI;
         auto R_lidar_in_base = rpy2R(Eigen::Vector3d{roll3,pitch3, yaw3});
         loaded_param_.extrinsic.R_baselink_IMU = R_lidar_in_base * R_imu_in_lidar;
-
+        loaded_param_.extrinsic.yaw_pitch_roll_deg = extrinsic_euler_lidar_in_baselink;
 
         // T_wheel_lidar & T_lidar_wheel
         Eigen::Matrix4d T_wheel_lidar;
@@ -142,7 +154,8 @@ public:
         get_param(ns+ "lidar_preproc/sub_imu_topic", loaded_param_.lidar_preproc.sub_imu_topic, &success);
         get_param(ns+ "lidar_preproc/line_count", loaded_param_.lidar_preproc.line_count, &success);
         get_param(ns+ "lidar_preproc/blind_distance", loaded_param_.lidar_preproc.blind_distance, &success);
-        get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", loaded_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
+        // get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", loaded_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
+        get_param(ns+ "lidar_preproc/keep_lidar_num_before_curr", loaded_param_.lidar_preproc.keep_lidar_num_before_curr, &success);
         get_param(ns+ "lidar_preproc/point_filter_num", loaded_param_.lidar_preproc.point_filter_num, &success);
         get_param(ns+ "lidar_preproc/ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num, &success);
         get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);

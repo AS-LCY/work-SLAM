@@ -6,7 +6,12 @@
 
 
 namespace localization_module{
-    
+struct DetectSlipParam{
+    double detect_window_time_range = 2;
+    int slipping_count_thr = 5;
+    double slipping_dist_thr = 0.2;
+
+};
 
 struct FusionTopicParams {
     std::string sub_imu_topic = "/livox/imu";
@@ -41,6 +46,7 @@ struct LocalizationFusionParams {
     double time_lost_thr = 3.0;
     EkfGatingParams gating_params;
     FusionTopicParams topic_params;
+    DetectSlipParam slip_params;
 };
 
 
@@ -82,35 +88,69 @@ public:
         get_param(title + "use_ekf_yaw", localization_fusion_params_.use_ekf_yaw, &success);
         get_param(title + "baselink_in_lidar", localization_fusion_params_.baselink_in_lidar, &success);
         get_param(title + "time_lost_thr", localization_fusion_params_.time_lost_thr, &success);
-        success &= load_ekf_gating_params();
-        success &= load_fusion_topics_params();
+
+        ///  fusion topics params *******************************************
+        get_param(title + "fusion_topics/sub_imu_topic", localization_fusion_params_.topic_params.sub_imu_topic, &success);
+        get_param(title + "fusion_topics/sub_chassis_topic", localization_fusion_params_.topic_params.sub_chassis_topic, &success);
+        get_param(title + "fusion_topics/sub_slam_odom_topic", localization_fusion_params_.topic_params.sub_slam_odom_topic, &success);
+        get_param(title + "fusion_topics/pub_localization_topic", localization_fusion_params_.topic_params.pub_localization_topic, &success);
+        get_param(title + "fusion_topics/pub_slipping_topic", localization_fusion_params_.topic_params.pub_slipping_topic, &success);
+
+        ///  gating params *******************************************
+        get_param(title + "gating/mah_drift_thresh", localization_fusion_params_.gating_params.mah_drift_thresh, &success);
+        get_param(title + "gating/mah_warn_thresh", localization_fusion_params_.gating_params.mah_warn_thresh, &success);
+        get_param(title + "gating/mah_drift_lateral_thresh", localization_fusion_params_.gating_params.mah_drift_lateral_thresh, &success);
+        get_param(title + "gating/mah_warn_lateral_thresh", localization_fusion_params_.gating_params.mah_warn_lateral_thresh, &success);
+        get_param(title + "gating/dis_drift_lateral_thresh", localization_fusion_params_.gating_params.dis_drift_lateral_thresh, &success);
+        get_param(title + "gating/turn_angular_thresh", localization_fusion_params_.gating_params.turn_angular_thresh, &success);
+
+        ///  detect slip params *******************************************
+        get_param(title+ "detect_slip/detect_window_time_range", localization_fusion_params_.slip_params.detect_window_time_range, &success);
+        get_param(title+ "detect_slip/slipping_count_thr", localization_fusion_params_.slip_params.slipping_count_thr, &success);
+        get_param(title+ "detect_slip/slipping_dist_thr", localization_fusion_params_.slip_params.slipping_dist_thr, &success);
+
+        // success &= load_ekf_gating_params();
+        // success &= load_fusion_topics_params();
+        // success &= load_detect_slip_params();
         return success;
     }
     
-    bool load_ekf_gating_params(){
-        bool success = true;
-        const std::string title = "/flbot/localization/localization_fusion/gating/";
-        EkfGatingParams& gating_params = localization_fusion_params_.gating_params;
-        get_param(title + "mah_drift_thresh", gating_params.mah_drift_thresh, &success);
-        get_param(title + "mah_warn_thresh", gating_params.mah_warn_thresh, &success);
-        get_param(title + "mah_drift_lateral_thresh", gating_params.mah_drift_lateral_thresh, &success);
-        get_param(title + "mah_warn_lateral_thresh", gating_params.mah_warn_lateral_thresh, &success);
-        get_param(title + "dis_drift_lateral_thresh", gating_params.dis_drift_lateral_thresh, &success);
-        get_param(title + "turn_angular_thresh", gating_params.turn_angular_thresh, &success);
-        return success;
-    }
+    // bool load_ekf_gating_params(){
+    //     bool success = true;
+    //     const std::string title = "/flbot/localization/localization_fusion/gating/";
+    //     EkfGatingParams& gating_params = localization_fusion_params_.gating_params;
+    //     get_param(title + "mah_drift_thresh", gating_params.mah_drift_thresh, &success);
+    //     get_param(title + "mah_warn_thresh", gating_params.mah_warn_thresh, &success);
+    //     get_param(title + "mah_drift_lateral_thresh", gating_params.mah_drift_lateral_thresh, &success);
+    //     get_param(title + "mah_warn_lateral_thresh", gating_params.mah_warn_lateral_thresh, &success);
+    //     get_param(title + "dis_drift_lateral_thresh", gating_params.dis_drift_lateral_thresh, &success);
+    //     get_param(title + "turn_angular_thresh", gating_params.turn_angular_thresh, &success);
+    //     return success;
+    // }
 
-    bool load_fusion_topics_params() {
-        bool success = true;
-        const std::string title = "/flbot/localization/localization_fusion/fusion_topics/";
-        FusionTopicParams& topic_params = localization_fusion_params_.topic_params;
-        get_param(title + "sub_imu_topic", topic_params.sub_imu_topic, &success);
-        get_param(title + "sub_chassis_topic", topic_params.sub_chassis_topic, &success);
-        get_param(title + "sub_slam_odom_topic", topic_params.sub_slam_odom_topic, &success);
-        get_param(title + "pub_localization_topic", topic_params.pub_localization_topic, &success);
-        get_param(title + "pub_slipping_topic", topic_params.pub_slipping_topic, &success);
-        return success;
-    }
+    // bool load_fusion_topics_params() {
+    //     bool success = true;
+    //     const std::string title = "/flbot/localization/localization_fusion/fusion_topics/";
+    //     FusionTopicParams& topic_params = localization_fusion_params_.topic_params;
+    //     get_param(title + "sub_imu_topic", topic_params.sub_imu_topic, &success);
+    //     get_param(title + "sub_chassis_topic", topic_params.sub_chassis_topic, &success);
+    //     get_param(title + "sub_slam_odom_topic", topic_params.sub_slam_odom_topic, &success);
+    //     get_param(title + "pub_localization_topic", topic_params.pub_localization_topic, &success);
+    //     get_param(title + "pub_slipping_topic", topic_params.pub_slipping_topic, &success);
+    //     return success;
+    // }
+
+
+    // bool load_detect_slip_params() {
+    //     bool success = true;
+    //     const std::string title = "/flbot/localization/localization_fusion/detect_slip/";
+    //     DetectSlipParams& slip_params = localization_fusion_params_.slip_params;
+    //     ///  detect slip params *******************************************
+    //     get_param(title+ "detect_slip/detect_window_time_range", localization_fusion_params_.slip_params.detect_window_time_range, &success);
+    //     get_param(title+ "detect_slip/slipping_count_thr", localization_fusion_params_.slip_params.slipping_count_thr, &success);
+    //     get_param(title+ "detect_slip/slipping_dist_thr", localization_fusion_params_.slip_params.slipping_dist_thr, &success);
+    //     return success;
+    // }
 
 
 

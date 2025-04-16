@@ -34,7 +34,7 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
     ROS_INFO("Setting LidarSlam Param");
     config_param_ = yaml_param;
     feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
-    flag_keep_only_last_lidar_ = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    // flag_keep_only_last_lidar_ = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 
     // cout << "Reset LidarSlam"<<endl;
     ROS_INFO("Reset LidarSlam");
@@ -49,10 +49,8 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
 void LidarSlam::reset(SlamWorkMode work_mode){
     // cout << "slam reset 0"<<endl;
     reseting = true;
-    // l_status_ = L_INACTIVE;
     log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
     log_info_manager_->reset_log_info();
-    log_info_manager_->reset_module_status();
     slam_run_status_.store(0);
 
     sleep(1);
@@ -81,12 +79,12 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     // cout << "slam reset 2"<<endl;
     /// 点云 reset *******************************************
-    UndistortCloudInOdom.reset(new PointCloudXYZI());
-    undistortCloud.reset(new PointCloudXYZI());  // lidar 系
-    FilteredUndistortCloud.reset(new PointCloudXYZI());
-    kdtreeCloud.reset(new PointCloudXYZI());
-    // ObstacleCloud.reset(new PointCloudXYZI());
-    // FilteredObstacleCloud.reset(new PointCloudXYZI());
+    UndistortCloudInOdom.reset(new PointCloudType());
+    undistortCloud.reset(new PointCloudType());  // lidar 系
+    FilteredUndistortCloud.reset(new PointCloudType());
+    kdtreeCloud.reset(new PointCloudType());
+    // ObstacleCloud.reset(new PointCloudType());
+    // FilteredObstacleCloud.reset(new PointCloudType());
 
     // cout << "slam reset 3"<<endl;
     /// mapping 相关 *******************************************
@@ -99,6 +97,11 @@ void LidarSlam::reset(SlamWorkMode work_mode){
 
     auto cloud_leaf_size = config_param_.mapping.cloud_leaf_size;
     downSizeFilterCloud.setLeafSize(cloud_leaf_size, cloud_leaf_size, cloud_leaf_size);
+    // ROS_INFO_STREAM(RED << "cloud_leaf_size: " << cloud_leaf_size << RESET);
+    auto cloud_leaf_size_test = config_param_.lidar_preproc.leafsize;
+    downSizeFilterCloud_test.setLeafSize(cloud_leaf_size_test, cloud_leaf_size_test, cloud_leaf_size_test);
+
+
 
     auto key_frame_distance = config_param_.mapping.key_frame_distance;
     auto key_frame_angle = config_param_.mapping.key_frame_angle;
@@ -287,12 +290,13 @@ void LidarSlam::sec_mapping_loopClosureThread()
         }else if(!back_end->get_loaded_key_cloud_status()){
             // cout<<"\033[1;32mSetting gtsam ... \033[0m"<<endl;
             ROS_INFO_STREAM(BOLDGREEN<< "Setting gtsam ... "<<RESET);
-            auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudXYZI::Ptr>
+            auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds(); // auto : std::vector<PointCloudType::Ptr>
             auto loaded_keyframe_poses  = cloud_map_manager_->get_loaded_keyframe_poses();  // auto : std::vector<KeyPose>
+            auto loaded_sc_info  = cloud_map_manager_->get_load_sc_info_();  // auto : std::vector<KeyPose>
             auto global_odom_to_map     = global_localization_->get_global_odom_to_map();    // auto : Eigen::Isometry3d
             //////// TODO bug here
             if(cloud_map_manager_->get_map_data_status()){
-                back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_keyframe_poses, global_odom_to_map);
+                back_end->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_sc_info, loaded_keyframe_poses, global_odom_to_map);
             }
         }else {
             // if (loop_closure_wait){
@@ -356,16 +360,24 @@ void LidarSlam::localizationThread()
 
     int gicp_fail_count = 0;
     int gicp_low_acc_count = 0;
+    pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+    PointCloudType::Ptr UndistortCloudInOdom_test(new PointCloudType()); 
 
     while (thread_run&&reseting == false)
     {
         hb_time_thread_localize_.store(ros::Time::now().toSec());
         auto start = std::chrono::steady_clock::now();
-        pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+        // pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
+        temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
+        UndistortCloudInOdom_test.reset(new PointCloudType());
         {
-        std::lock_guard<std::mutex> lk(mtx_odom_cloud);
-        pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);   
+            std::lock_guard<std::mutex> lk(mtx_odom_cloud);
+            downSizeFilterCloud_test.setInputCloud(UndistortCloudInOdom);
+            downSizeFilterCloud_test.filter(*UndistortCloudInOdom_test);
+            // pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);
+            pcl::copyPointCloud(*(UndistortCloudInOdom_test), *temp);   
         }
+
         if(local_thrd_status_.load() == 2){ // 重定位失败
             
             ROS_INFO("global Localization failed: time out ");
@@ -377,16 +389,23 @@ void LidarSlam::localizationThread()
                 // check 
                 if(!getLoadMap()){
                     ROS_WARN_STREAM( YELLOW << "globalLocalization failed: map not ready ... "<< RESET);
-                }else if(!UndistortCloudInOdom || UndistortCloudInOdom->points.size()==0){
+                }else if(!temp || temp->points.size()==0){
                     ROS_WARN_STREAM(YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET);
                 // check end
                 }else{
-                    ROS_INFO_STREAM("point(in use) count: "<<UndistortCloudInOdom->points.size());
+                    ROS_INFO_STREAM("point(in use) count: "<<temp->points.size());
                     ROS_INFO_STREAM("start globalLocalization ... ");
 
                     //state.state("lost");
-                    mutex mtx_lidar_cloud;
-                    globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
+                    PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType()); 
+                    {
+                        std::lock_guard<std::mutex> lk(mtx_lidar_cloud); 
+                        downSizeFilterCloud_test.setInputCloud(undistortCloud);
+                        downSizeFilterCloud_test.filter(*FilteredUndistortCloud_test);
+                    }
+
+                    // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
+                    globalLocalizationSuccess = localization->globalLocalization(FilteredUndistortCloud_test,T_odom_lidar,p_imu->initial_rotate,score_thr); 
                     ROS_INFO_STREAM("globalLocalizationSuccess: "<<globalLocalizationSuccess);
 
                     global_localize_count_++;
@@ -407,9 +426,10 @@ void LidarSlam::localizationThread()
                 // ROS_INFO_STREAM("localizing ... ");
                 // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 // if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                double fit_score = 0.0;
+                double fit_score = 0.0; // gicp_fit_score
                 if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
+                    log_info_manager_->slam_info.data[3]=1; // if converge
                     if (fit_score < fgicp_score_low_accuracy_thr){
                         local_thrd_status_.store(3);
                         gicp_fail_count = 0;
@@ -424,6 +444,7 @@ void LidarSlam::localizationThread()
                         ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                     }
                 }else{ // 未收敛
+                    log_info_manager_->slam_info.data[3]=0; // if converge
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
                     gicp_fail_count++;
                     gicp_low_acc_count++;
@@ -437,9 +458,9 @@ void LidarSlam::localizationThread()
                     local_thrd_status_.store(4);
                 }
 
-                log_info_manager_->log_info.gicp_fit_score=fit_score;
-                log_info_manager_->log_info.gicp_fail_count=gicp_fail_count;
-                log_info_manager_->log_info.gicp_low_acc_count=gicp_low_acc_count;
+                log_info_manager_->slam_info.data[4]=fit_score;
+                log_info_manager_->slam_info.data[5]=gicp_fail_count;
+                log_info_manager_->slam_info.data[6]=gicp_low_acc_count;
 
                 //state.state("normal");
             }
@@ -579,9 +600,10 @@ void LidarSlam::showThread()
 // }
         
 
-void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
+void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     // param
-    static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    // static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+    static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
     if (reseting) { return; }
 
     double t0 = omp_get_wtime();
@@ -599,7 +621,8 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     }*/ 
 
     if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
-        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+        ROS_WARN_STREAM(YELLOW << setprecision(15)<<  "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+        ROS_WARN_STREAM(YELLOW << setprecision(15)<<  "IMU and LiDAR not Synced, imu - lidar time diff: "<< last_timestamp_imu - curr_time << RESET);
     }
 
     if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
@@ -609,9 +632,13 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     }
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (flag_keep_only_last_lidar){
-        lidar_buffer.clear();
-        time_buffer.clear();
+    // if (flag_keep_only_last_lidar){
+    //     lidar_buffer.clear();
+    //     time_buffer.clear();
+    // }
+    while(lidar_buffer.size() > keep_lidar_num_before_curr){
+        lidar_buffer.pop_front();
+        time_buffer.pop_front();
     }
     lidar_buffer.push_back(cloud); //储存处理后的lidar特征
     time_buffer.push_back(curr_time);
@@ -623,119 +650,119 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
     return ;
 }
 
-void LidarSlam::robosense_pcl_cbk(const PointCloudXYZI::Ptr &cloud){
-    const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
-    double t0 = omp_get_wtime();
-    if (reseting)
-        return;
+// void LidarSlam::robosense_pcl_cbk(const PointCloudType::Ptr &cloud){
+//     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+//     double t0 = omp_get_wtime();
+//     if (reseting)
+//         return;
 
-    double curr_time = cloud->header.stamp * 1.0 * 1e-6;
+//     double curr_time = cloud->header.stamp * 1.0 * 1e-6;
 
-    if ( curr_time < last_timestamp_lidar){
-        // printf("lidar loop back, clear buffer");
-        ROS_INFO("lidar loop back, clear buffer");
-        lidar_buffer.clear();
-        // cout<<"************************* lidar_buffer clear *********"<<endl;
-        ROS_INFO("************************* lidar_buffer clear *********");
-    }
+//     if ( curr_time < last_timestamp_lidar){
+//         // printf("lidar loop back, clear buffer");
+//         ROS_INFO("lidar loop back, clear buffer");
+//         lidar_buffer.clear();
+//         // cout<<"************************* lidar_buffer clear *********"<<endl;
+//         ROS_INFO("************************* lidar_buffer clear *********");
+//     }
 
-    /*  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
-        // printf("lidar lose rate");
-        ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
-    }*/ 
+//     /*  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
+//         // printf("lidar lose rate");
+//         ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
+//     }*/ 
 
-    if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
-        // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, curr_time);
-        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
-    }
+//     if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
+//         // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, curr_time);
+//         ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<< last_timestamp_imu << ", lidar header time: " << curr_time << RESET);
+//     }
 
-    if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
-        timediff_set_flg = true;
-        timediff_lidar_wrt_imu = curr_time + 0.1 - last_timestamp_imu; //????
-        // printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-        ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-    }
+//     if (time_sync_en && !timediff_set_flg && abs(curr_time - last_timestamp_imu) > 1 && !imu_buffer.empty()){
+//         timediff_set_flg = true;
+//         timediff_lidar_wrt_imu = curr_time + 0.1 - last_timestamp_imu; //????
+//         // printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+//         ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+//     }
 
-    std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (flag_keep_only_last_lidar){
-        lidar_buffer.clear();
-        time_buffer.clear();
-    }
-    lidar_buffer.push_back(cloud); //储存处理后的lidar特征
-    time_buffer.push_back(curr_time);
-   // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
+//     std::lock_guard<std::mutex> lk(mtx_buffer);
+//     if (flag_keep_only_last_lidar){
+//         lidar_buffer.clear();
+//         time_buffer.clear();
+//     }
+//     lidar_buffer.push_back(cloud); //储存处理后的lidar特征
+//     time_buffer.push_back(curr_time);
+//    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
-    last_timestamp_lidar = curr_time;
-    double t1 = omp_get_wtime();
-    // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
+//     last_timestamp_lidar = curr_time;
+//     double t1 = omp_get_wtime();
+//     // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
 
-    return;
-}
+//     return;
+// }
 
-void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in){
-    // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
-    double t0 = omp_get_wtime();
-    if (reseting)
-        return;
+// void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in){
+//     // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
+//     double t0 = omp_get_wtime();
+//     if (reseting)
+//         return;
     
-    // double preprocess_start_time = omp_get_wtime();
-    // scan_count++;
-    std::shared_ptr<livox_ros::LidarMsg> msg(new livox_ros::LidarMsg(*msg_in));
-    if (msg->time_stamp < last_timestamp_lidar)
-    {
-        // printf("lidar loop back, clear buffer");
-        ROS_WARN_STREAM(YELLOW << "lidar loop back, clear buffer"<< RESET);
-        lidar_buffer.clear();
-        // cout<<"************************* lidar_buffer clear *********"<<endl;
-        ROS_WARN_STREAM(YELLOW<<"************************* lidar_buffer clear *********"<<RESET);
-    }
-    /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
-        // printf("lidar lose rate");
-        ROS_ERROR_STREAM(RED << "lidar lose rate" << RESET);
-    }*/ 
-    last_timestamp_lidar = msg->time_stamp;
+//     // double preprocess_start_time = omp_get_wtime();
+//     // scan_count++;
+//     std::shared_ptr<livox_ros::LidarMsg> msg(new livox_ros::LidarMsg(*msg_in));
+//     if (msg->time_stamp < last_timestamp_lidar)
+//     {
+//         // printf("lidar loop back, clear buffer");
+//         ROS_WARN_STREAM(YELLOW << "lidar loop back, clear buffer"<< RESET);
+//         lidar_buffer.clear();
+//         // cout<<"************************* lidar_buffer clear *********"<<endl;
+//         ROS_WARN_STREAM(YELLOW<<"************************* lidar_buffer clear *********"<<RESET);
+//     }
+//     /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
+//         // printf("lidar lose rate");
+//         ROS_ERROR_STREAM(RED << "lidar lose rate" << RESET);
+//     }*/ 
+//     last_timestamp_lidar = msg->time_stamp;
 
-    if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
-    {
-        // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
-        ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<<last_timestamp_imu <<", lidar header time: "<< last_timestamp_lidar<<RESET);
-    }
+//     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
+//     {
+//         // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, last_timestamp_lidar);
+//         ROS_WARN_STREAM(YELLOW << "IMU and LiDAR not Synced, IMU time: "<<last_timestamp_imu <<", lidar header time: "<< last_timestamp_lidar<<RESET);
+//     }
 
-    if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
-    {
-        timediff_set_flg = true;
-        timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu; //????
-        // printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
-        ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf ", timediff_lidar_wrt_imu);
-    }
+//     if (time_sync_en && !timediff_set_flg && abs(last_timestamp_lidar - last_timestamp_imu) > 1 && !imu_buffer.empty())
+//     {
+//         timediff_set_flg = true;
+//         timediff_lidar_wrt_imu = last_timestamp_lidar + 0.1 - last_timestamp_imu; //????
+//         // printf("Self sync IMU and LiDAR, time diff is %.10lf \n", timediff_lidar_wrt_imu);
+//         ROS_INFO("Self sync IMU and LiDAR, time diff is %.10lf ", timediff_lidar_wrt_imu);
+//     }
 
-    PointCloudXYZI::Ptr ptr(new PointCloudXYZI());
+//     PointCloudType::Ptr ptr(new PointCloudType());
 
-    // 特征提取或间隔采样
-    // p_lidar_pre->process(msg, ptr);
-    lidar_pre_ptr_->pre_process(msg, ptr);
+//     // 特征提取或间隔采样
+//     // p_lidar_pre->process(msg, ptr);
+//     lidar_pre_ptr_->pre_process(msg, ptr);
 
-    // {
-    //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
-    //     ObstacleCloud->points.clear();
-    //     FilteredObstacleCloud->points.clear();
-    //     // ObstacleCloud = transformPointCloud(p_lidar_pre->pl_obstacle, param.T_wheel_lidar);
-    //     int size = p_lidar_pre->pl_obstacle->points.size();
-    // }
+//     // {
+//     //     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
+//     //     ObstacleCloud->points.clear();
+//     //     FilteredObstacleCloud->points.clear();
+//     //     // ObstacleCloud = transformPointCloud(p_lidar_pre->pl_obstacle, param.T_wheel_lidar);
+//     //     int size = p_lidar_pre->pl_obstacle->points.size();
+//     // }
 
-    std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (flag_keep_only_last_lidar_){
-        lidar_buffer.clear();
-        time_buffer.clear();
-    }
-    lidar_buffer.push_back(ptr); //储存处理后的lidar特征
-    // cout<<"********************* lidar_buffer push back *********"<<endl;
-    time_buffer.push_back(last_timestamp_lidar);
-   // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
+//     std::lock_guard<std::mutex> lk(mtx_buffer);
+//     if (flag_keep_only_last_lidar_){
+//         lidar_buffer.clear();
+//         time_buffer.clear();
+//     }
+//     lidar_buffer.push_back(ptr); //储存处理后的lidar特征
+//     // cout<<"********************* lidar_buffer push back *********"<<endl;
+//     time_buffer.push_back(last_timestamp_lidar);
+//    // s_plot11[scan_count] = omp_get_wtime() - preprocess_start_time;
     
-    double t1 = omp_get_wtime();
-    // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
-}
+//     double t1 = omp_get_wtime();
+//     // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
+// }
 
 void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
 {
@@ -861,6 +888,7 @@ void LidarSlam::delete_log_file(double keep_time){//about 100MB pr 60s
 
 bool LidarSlam::run()
 {
+    static const int prm_lidar_no_point_count_thr = config_param_.common.lidar_no_point_count_thr;
 
     // std::thread::id thisId = std::this_thread::get_id();
     // std::cout << "debug: lidar slam main     Thread ID: " << thisId << std::endl;
@@ -874,23 +902,21 @@ bool LidarSlam::run()
 
     if (sync_packages(Measures))
     {
-        // ROS_INFO_STREAM("---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
+        // ROS_INFO_STREAM(setprecision(15) << ros::Time::now().toSec() << ": ---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
         if (flg_first_scan)
         {
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
             p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
             flg_first_scan = false;
-            // cout<<"***************** flg_first_scan ********"<<endl;
             ROS_INFO("***************** flg_first_scan ********");
             return false;
         }
+
+        // log_info_manager_->slam_info.data[13]= -100; // 
+        // log_info_manager_->slam_info.data[15]= -100; // 
         
         t0 = omp_get_wtime();
-        // ROS_INFO("Measures lidar count: %ld", Measures.lidar->points.size());
-        // ROS_INFO_STREAM("lidar_beg_time: "<< Measures.lidar_beg_time);
-        // ROS_INFO_STREAM("lidar_end_time: "<< Measures.lidar_end_time);
-        // ROS_INFO_STREAM("imu size: "<< Measures.imu.size());
         
         // 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
         {
@@ -911,11 +937,13 @@ bool LidarSlam::run()
         if (undistortCloud->empty() || (undistortCloud == NULL))
         {
             lidar_no_point_count_++;
-            if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
+            if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
             }
             // std::cout << "No point, skip this scan!\n"<< std::endl;
             ROS_WARN_STREAM(YELLOW << "No point, skip this scan!" << RESET);
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
+            log_info_manager_->slam_info.data[13]=0; // 
             return false;
         }
 
@@ -932,8 +960,8 @@ bool LidarSlam::run()
         downSizeFilterCloud.filter(*FilteredUndistortCloud);
 
         int feats_down_size = FilteredUndistortCloud->points.size(); //当前帧降采样后点数
-        // ROS_INFO("deskew-down lidar count: %d", feats_down_size);
-        PointCloudXYZI::Ptr FilteredUndistortCloudInOdom(new PointCloudXYZI()); 
+        log_info_manager_->slam_info.data[13]=feats_down_size; // 
+        PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/
         if (ikdtree->Root_Node == nullptr)
@@ -967,18 +995,15 @@ bool LidarSlam::run()
         // if (feats_down_size < 5)
         if (feats_down_size < feats_down_size_thr_){
             lidar_no_point_count_++;
-            if(lidar_no_point_count_ > config_param_.common.lidar_no_point_count_thr){
+            if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
-                // if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
-                //     // m_status_ = M_FAILED;
-                // }else if(working_mode_==LOCALIZATION){
-                //     // l_status_ = L_FAILED;
-                // }
             }
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             ROS_WARN_STREAM(YELLOW << "No point after filter, skip this scan!" << RESET);
             return false;
         }else{
             lidar_no_point_count_ = 0;
+            log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             slam_run_status_.store(1);
         }
         
@@ -1120,6 +1145,7 @@ bool LidarSlam::run()
         // printf("lidar slam main process         , time cost: %f ms\n", (t3-t2)*1000);
         // printf("main: lidar slam backend        , time cost: %f ms\n", (t1_backend-t0_backend)*1000);
         // printf("main: transform undistortCloud  , time cost: %f ms\n", (t1_transform-t0_transform)*1000);
+        // ROS_INFO_STREAM("main: transform undistortCloud  , time cost: "<< (t1_transform-t0_transform)*1000 << " ms");
         // printf("transform FilteredUndistortCloud, time cost: %f ms\n", (t4-t3)*1000);
         // printf("ikdtree->map_incremental        , time cost: %f ms\n", (t5-t4)*1000);
         // printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);

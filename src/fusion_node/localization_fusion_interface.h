@@ -55,6 +55,7 @@ private:
     void compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg, fairland_msgs::chassic_data chassis_msg, 
                         fairland_msgs::LocalizationPoseData* status_msg);
     void pub_localiztion(fairland_msgs::LocalizationPoseData cur_status);
+    void pub_fusion_info(double time_last);
 
     // slipping detect
     int detect_slipping(nav_msgs::Odometry curr_odom);
@@ -97,6 +98,7 @@ private:
     ros::Subscriber sub_slam_odom_;
     ros::Publisher pub_fusion_odom_;
     ros::Publisher pub_slip_;  
+    ros::Publisher pub_info_;  
     std::string sub_imu_topic_;
     std::string sub_chassis_topic_;
     std::string sub_slam_odom_topic_;

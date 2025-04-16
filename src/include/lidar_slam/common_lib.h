@@ -36,7 +36,8 @@ using namespace Eigen;
 #define DEBUG_FILE_DIR(name)     (string(string(ROOT_DIR) + "Log/"+ name))
 
 typedef pcl::PointXYZINormal PointType;
-typedef pcl::PointCloud<PointType> PointCloudXYZI;
+// typedef pcl::PointCloud<PointType> PointCloudXYZI;
+typedef pcl::PointCloud<PointType> PointCloudType;
 typedef vector<PointType, Eigen::aligned_allocator<PointType>>  PointVector;
 typedef Vector3d V3D;
 typedef Matrix3d M3D;
@@ -330,9 +331,9 @@ static Eigen::Matrix3d g2R(const Eigen::Vector3d &g)
     return R0;
 }
 
-static PointCloudXYZI::Ptr transformPointCloud(PointCloudXYZI::Ptr cloudIn, const Eigen::Isometry3d& transCur)
+static PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur)
 {
-    PointCloudXYZI::Ptr cloudOut(new PointCloudXYZI());
+    PointCloudType::Ptr cloudOut(new PointCloudType());
 
     int cloudSize = cloudIn->size();
     cloudOut->resize(cloudSize);

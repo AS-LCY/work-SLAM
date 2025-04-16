@@ -18,12 +18,13 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
      * enum SlamCtrlCmd{
      *     START_MAPPING           = 1000,  // 开始建图
      *     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
-     *     EXIT_MAPPING            = 3000,  // 退出建图
+     *     CANCLE_MAPPING          = 5000,  // 不保存地图， 直接取消建图
+     *     SAVE_AND_END_MAPPING    = 6000,  // 退出建图
      *     START_LOCALIZATION      = 7000,  // localization, 重定位->定位
      *     EXIT_LOCALIZATION       = 8000,  // exit localization, 退出定位
      *     START_RELOCALIZATION    = 9000,  // relocalization, 重定位，定位过程中，重新进行重定位
      *     RESTART_SEC_MAPPING     = 9100,  // restart sec-mapping, 重启二次建图（一般是二次建图重定位失败的情况）
-     *     CMD_MAX
+     *     CMD_MAX                 = 9999
      *     [MAPPING_POINT_BEGIN]     = 3000,  // invalid, 设置起点
      *     [MAPPING_ELE_DELETE ]     = 4000,  // invalid, 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
      *     [MAPPING_POINT_END  ]     = 5000,  // invalid, 设置终点，带子地图ID，5001，ID=1
@@ -65,7 +66,15 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             }
             break;
         }
-        case EXIT_MAPPING:{// 退出建图           
+        case CANCLE_MAPPING:{// 不保存地图， 直接退出建图           
+            if(stop_mapping_without_saving_map()){
+                ROS_INFO_STREAM(GREEN << "stop_mapping(not saving map) success!" <<RESET);
+            }else{
+                ROS_ERROR_STREAM(RED << "stop_mapping failed!" <<RESET);
+            }
+            break;
+        }
+        case SAVE_AND_END_MAPPING:{// 保存地图，并结束建图           
             if(stop_mapping()){
                 ROS_INFO_STREAM(GREEN << "stop_mapping success!" <<RESET);
             }else{
@@ -259,6 +268,11 @@ bool LocalizationModule::stop_mapping(){
                 ROS_INFO("\033[1;32msave map data success!\033[0m");
             }
 
+            save_extrinsic_to_file();
+
+            map_saved_.store(1);
+            ROS_WARN_STREAM(YELLOW << "[Slam ctrl]: map_saved_: " << map_saved_.load() << RESET);
+
             ROS_INFO("start stop mapping");
             // mapping_status_ = M_INACTIVE;
             sleep(1);
@@ -300,6 +314,24 @@ bool LocalizationModule::stop_mapping(){
     // return;
 }
 
+bool LocalizationModule::save_extrinsic_to_file(){
+
+    std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
+    std::ofstream extrinsic_file(extrinsic_file_name);
+    if(!extrinsic_file.is_open()){
+        ROS_ERROR_STREAM("open extrinsic file failed!");
+        return false;
+    }
+
+    extrinsic_file << "extrinsic_euler_lidar_in_baselink: \n";
+    extrinsic_file << "  yaw:   "<< slam_param_.extrinsic.yaw_pitch_roll_deg[0] << " degree, \n";
+    extrinsic_file << "  pitch: "<< slam_param_.extrinsic.yaw_pitch_roll_deg[1] << " degree, \n";
+    extrinsic_file << "  roll:  "<< slam_param_.extrinsic.yaw_pitch_roll_deg[2] << " degree, \n";
+
+    extrinsic_file.close();
+
+    return true;
+}
 
 bool LocalizationModule::start_localization(int map_id){
     ModuleStatus running_module_status_now = running_module_status_.load();
@@ -473,7 +505,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
     slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode);
     ROS_INFO("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
 
-    slipping_ptr_->reset();
+    // slipping_ptr_->reset();
     return true;
 }
 
@@ -503,7 +535,7 @@ void LocalizationModule::release_slam_obj(){
     ROS_INFO("\033[1;32mlidar_slam stopped !\033[0m");
     releasing_slam_flag_ = false;
 
-    slipping_ptr_->reset();
+    // slipping_ptr_->reset();
 }
 
 bool LocalizationModule::make_map_directory_name(int map_id){

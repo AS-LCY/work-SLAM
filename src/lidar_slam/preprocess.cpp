@@ -27,7 +27,7 @@ Preprocess::Preprocess()
   jump_down_limit = cos(jump_down_limit / 180 * M_PI);
   cos160 = cos(cos160 / 180 * M_PI);
   smallp_intersect = cos(smallp_intersect / 180 * M_PI);
-  pl_obstacle.reset(new PointCloudXYZI());
+  pl_obstacle.reset(new PointCloudType());
 }
 
 Preprocess::~Preprocess() {}
@@ -57,7 +57,7 @@ void Preprocess::set(lidar_slam::LidarPreprocParam param_in){
 }
 
 
-void Preprocess::process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudXYZI::Ptr &pcl_out)
+void Preprocess::process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr &pcl_out)
 {
     avia_handler(msg);
     *pcl_out = pl_surf;
@@ -778,7 +778,7 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
   }
 }
 
-/*void Preprocess::pub_func(PointCloudXYZI &pl, const ros::Time &ct)
+/*void Preprocess::pub_func(PointCloudType &pl, const ros::Time &ct)
 {
   pl.height = 1;
   pl.width = pl.size();
@@ -788,7 +788,7 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
   output.header.stamp = ct;
 }*/
 
-int Preprocess::plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct)
+int Preprocess::plane_judge(const PointCloudType &pl, vector<orgtype> &types, uint i_cur, uint &i_nex, Eigen::Vector3d &curr_direct)
 {
   double group_dis = disA * types[i_cur].range + disB;
   group_dis = group_dis * group_dis;
@@ -903,7 +903,7 @@ int Preprocess::plane_judge(const PointCloudXYZI &pl, vector<orgtype> &types, ui
   return 1;
 }
 
-bool Preprocess::edge_jump_judge(const PointCloudXYZI &pl, vector<orgtype> &types, uint i, Surround nor_dir)
+bool Preprocess::edge_jump_judge(const PointCloudType &pl, vector<orgtype> &types, uint i, Surround nor_dir)
 {
   if (nor_dir == 0)
   {

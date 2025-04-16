@@ -27,7 +27,7 @@ BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, int l
    ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchTimeDiff: "<<loopKeyframeSearchTimeDiff<<RESET);
    ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchRadius: "<<loopKeyframeSearchRadius<<RESET);
 
-   gravityAlignedCLoud.reset(new PointCloudXYZI());
+   gravityAlignedCLoud.reset(new PointCloudType());
 
 }
 
@@ -103,7 +103,7 @@ void BackEnd::addLoopFactor()
  //   mtxLoopInfo.unlock();
 }
 
-bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,PointCloudXYZI::Ptr lidar_cloud,double time)
+bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,PointCloudType::Ptr lidar_cloud,double time)
 {
     // cout<<"debug: saveFrame: "<<endl;
 
@@ -198,7 +198,7 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
 
     // 当前帧激光角点、平面点，降采样集合
 
-    // PointCloudXYZI::Ptr thisSurfKeyFrame(new PointCloudXYZI()); // TODO see saveCurrentCloud
+    // PointCloudType::Ptr thisSurfKeyFrame(new PointCloudType()); // TODO see saveCurrentCloud
 
     // pcl::copyPointCloud(*feats_undistort, *thisSurfKeyFrame); // 存储关键帧,没有降采样的点云
 
@@ -214,9 +214,9 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
 
 
 
-void BackEnd::saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose)
+void BackEnd::saveCurrentCloud(PointCloudType::Ptr points,Eigen::Isometry3d pose)
 {
-    PointCloudXYZI::Ptr currentCLoud(new PointCloudXYZI());
+    PointCloudType::Ptr currentCLoud(new PointCloudType());
     pcl::copyPointCloud(*points, *currentCLoud);
     {
         std::lock_guard<std::mutex> lk(mtxCloud);
@@ -240,7 +240,7 @@ void BackEnd::saveCurrentCloud(PointCloudXYZI::Ptr points,Eigen::Isometry3d pose
     // newTransform.rotate(Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()));
     // newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,pitch,roll)); 
     // std::cout << "euler martrix "<< newTransform.matrix()<<std::endl;
-    gravityAlignedCLoud.reset(new PointCloudXYZI());
+    gravityAlignedCLoud.reset(new PointCloudType());
     *gravityAlignedCLoud = *transformPointCloud(currentCLoud, Transform);
     scManager.makeAndSaveScancontextAndKeys(*gravityAlignedCLoud);
 }
@@ -293,7 +293,7 @@ bool BackEnd::correctPoses()
     return false;
 
 }
-/*void BackEnd::updateMapRGB(PointCloudXYZI::Ptr last_cloud,Eigen::Isometry3d cupose)
+/*void BackEnd::updateMapRGB(PointCloudType::Ptr last_cloud,Eigen::Isometry3d cupose)
 {
 
 }*/
@@ -301,10 +301,10 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconst
 
 
     pcl::KdTreeFLANN<PointType>::Ptr kdtreeGlobalMapPoses(new pcl::KdTreeFLANN<PointType>());
-    PointCloudXYZI::Ptr subMapKeyPoses(new PointCloudXYZI());
-    PointCloudXYZI::Ptr subMapKeyPosesDS(new PointCloudXYZI());
-    PointCloudXYZI::Ptr subMapKeyFrames(new PointCloudXYZI());
-    PointCloudXYZI::Ptr subMapKeyFramesDS(new PointCloudXYZI());
+    PointCloudType::Ptr subMapKeyPoses(new PointCloudType());
+    PointCloudType::Ptr subMapKeyPosesDS(new PointCloudType());
+    PointCloudType::Ptr subMapKeyFrames(new PointCloudType());
+    PointCloudType::Ptr subMapKeyFramesDS(new PointCloudType());
 
     // kdtree查找最近一帧关键帧相邻的关键帧集合
     std::vector<int> pointSearchIndGlobalMap;
@@ -390,7 +390,7 @@ bool BackEnd::detectLoopClosureDistance(int *latestID, int *closestID, double ti
 /**
  * 提取key索引的关键帧前后相邻若干帧的关键帧特征点集合，降采样
  */
-void BackEnd::loopFindNearKeyframes(PointCloudXYZI::Ptr &nearKeyframes, const int &key, const int &searchNum)
+void BackEnd::loopFindNearKeyframes(PointCloudType::Ptr &nearKeyframes, const int &key, const int &searchNum)
 {
     // 提取key索引的关键帧前后相邻若干帧的关键帧特征点集合
     nearKeyframes->clear();
@@ -417,12 +417,12 @@ void BackEnd::loopFindNearKeyframes(PointCloudXYZI::Ptr &nearKeyframes, const in
         return;
 
     // 降采样
-    PointCloudXYZI::Ptr cloud_temp(new PointCloudXYZI());
+    PointCloudType::Ptr cloud_temp(new PointCloudType());
     downSizeFilterICP.setInputCloud(nearKeyframes);
     downSizeFilterICP.filter(*cloud_temp);
     *nearKeyframes = *cloud_temp;
 }
-void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key)
+void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum, const int _wrt_key)
 {
     // extract near keyframes
     nearKeyframes->clear();
@@ -439,14 +439,15 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudXYZI::Ptr& nearKeyfra
         return;
 
     // downsample near keyframes
-    PointCloudXYZI::Ptr cloud_temp(new PointCloudXYZI());
+    PointCloudType::Ptr cloud_temp(new PointCloudType());
     downSizeFilterICP.setInputCloud(nearKeyframes);
     downSizeFilterICP.filter(*cloud_temp);
     *nearKeyframes = *cloud_temp;
 }
 
 
-bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_key_clouds, std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
+bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,  std::vector<ScInfo> input_vec_sc_info, 
+                                    std::vector<KeyPose> input_vec_key_poses, Eigen::Isometry3d T_map_odom){
     
     KeyPoses.clear();
     KeyPoint.reset(new pcl::PointCloud<PointType>());
@@ -461,7 +462,6 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
     int i=0;
     for(auto & kp : input_vec_key_poses){
         // cout<<"***************** load old key frame --- "<< i++ << endl;
-        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         Eigen::Isometry3d T_map_lidar = kp.pose;
         Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
         Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
@@ -482,6 +482,10 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudXYZI::Ptr> input_vec_k
         temp_pnt.y = T_odom_lidar.translation().y();
         temp_pnt.z = T_odom_lidar.translation().z();
         KeyPoint->points.push_back(temp_pnt);
+
+        ////// saveCurrentCloud(KeyFrameCloud[i], T_map_lidar);
+        scManager.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
+        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         
     }
 
@@ -522,8 +526,8 @@ void BackEnd::performLoopClosure(double time)
         
 
     // 提取
-    PointCloudXYZI::Ptr cureKeyframeCloud(new PointCloudXYZI()); //  cue keyframe
-    PointCloudXYZI::Ptr prevKeyframeCloud(new PointCloudXYZI()); //   history keyframe submap
+    PointCloudType::Ptr cureKeyframeCloud(new PointCloudType()); //  cue keyframe
+    PointCloudType::Ptr prevKeyframeCloud(new PointCloudType()); //   history keyframe submap
     {
         // 提取当前关键帧特征点集合，降采样
         loopFindNearKeyframes(cureKeyframeCloud, loopKeyCur, 0); //  将cur keyframe 转换到world系下
@@ -543,7 +547,7 @@ void BackEnd::performLoopClosure(double time)
     // scan-to-map，调用icp匹配
     icp.setInputSource(cureKeyframeCloud);
     icp.setInputTarget(prevKeyframeCloud);
-    PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
+    PointCloudType::Ptr unused_result(new PointCloudType());
     icp.align(*unused_result);
 
     ROS_INFO_STREAM(YELLOW<<"icp.getFitnessScore(): "<<icp.getFitnessScore() <<RESET);
@@ -593,7 +597,7 @@ void BackEnd::performLoopClosure(double time)
 // void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
 // {
 //     // std::cout << "111111111"<<std::endl;
-//     PointCloudXYZI lidar_cloud_in_map;
+//     PointCloudType lidar_cloud_in_map;
 //     if (KeyPoses.size() == 0)
 //        return;
 //     {
@@ -713,8 +717,8 @@ void BackEnd::performLoopClosure(double time)
      //   std::cout << "SC loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
 
         // extract cloud
-        PointCloudXYZI::Ptr cureKeyframeCloud(new PointCloudXYZI());
-        PointCloudXYZI::Ptr prevKeyframeCloud(new PointCloudXYZI());
+        PointCloudType::Ptr cureKeyframeCloud(new PointCloudType());
+        PointCloudType::Ptr prevKeyframeCloud(new PointCloudType());
         {
             // loopFindNearKeyframesWithRespectTo(cureKeyframeCloud, loopKeyCur, 0, loopKeyPre); // giseop 
             // loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre, historyKeyframeSearchNum);
@@ -743,7 +747,7 @@ void BackEnd::performLoopClosure(double time)
         // Align clouds
         icp.setInputSource(cureKeyframeCloud);
         icp.setInputTarget(prevKeyframeCloud);
-        PointCloudXYZI::Ptr unused_result(new PointCloudXYZI());
+        PointCloudType::Ptr unused_result(new PointCloudType());
         icp.align(*unused_result);
         // giseop 
         // TODO icp align with initial 
@@ -758,7 +762,7 @@ void BackEnd::performLoopClosure(double time)
         // publish corrected cloud
         if (pubIcpKeyFrames.getNumSubscribers() != 0)
         {
-            PointCloudXYZI::Ptr closed_cloud(new PointCloudXYZI());
+            PointCloudType::Ptr closed_cloud(new PointCloudType());
             pcl::transformPointCloud(*cureKeyframeCloud, *closed_cloud, icp.getFinalTransformation());
             publishCloud(&pubIcpKeyFrames, closed_cloud, timeLaserInfoStamp, odometryFrame);
         }
@@ -813,10 +817,10 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr BackEnd::getCurrentRGBMap()
    std::lock_guard<std::mutex> lk(mtxCurrentRGBMap);
    return show_rgb_map;
 }
-PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
+PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
 {
     std::lock_guard<std::mutex> lk(mtxCurrentMap);
-   // PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
+   // PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
     if (KeyPoses.size() == 0)
        return show_map;
     {
@@ -837,10 +841,10 @@ PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
 }
 
 // /// 没用上
-// PointCloudXYZI::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height)
+// PointCloudType::Ptr BackEnd::getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height)
 // {
 //     std::lock_guard<std::mutex> lk(mtxCurrentMap);
-//    // PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
+//    // PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
 //     if (KeyPoses.size() == 0)
 //        return show_map;
 //     pcl::PassThrough<PointType> pass;
@@ -855,7 +859,7 @@ PointCloudXYZI::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
 //         int size = min((int)KeyPoses.size(),(int)KeyFrameCloud.size());
         
 //         for (int i = show_index; i < size; i++) {
-//             PointCloudXYZI::Ptr cloud_filtered;
+//             PointCloudType::Ptr cloud_filtered;
 //             pass.setInputCloud(KeyFrameCloud[i]); 
 //             pass.filter(*cloud_filtered);
 //             *show_map   += *transformPointCloud(cloud_filtered,T_map_odom *KeyPoses[i].pose);
@@ -901,8 +905,8 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
 
     std::string pcd_file_path = "";
 
-    PointCloudXYZI::Ptr globalMapCloud(new PointCloudXYZI());
-    PointCloudXYZI::Ptr globalSurfCloudDS(new PointCloudXYZI());
+    PointCloudType::Ptr globalMapCloud(new PointCloudType());
+    PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
     ScInfo infos[(int)KeyPoses.size()];
     // 注意：拼接地图时，keyframe是lidar系，而fastlio更新后的存到的cloudKeyPoses6D 关键帧位姿是body系下的，需要把
     //cloudKeyPoses6D  转换为T_world_lidar 。 T_world_lidar = T_world_body * T_body_lidar , T_body_lidar 是外参

@@ -4,7 +4,7 @@ namespace lidar_slam{
 
 CloudMap::CloudMap(){
     loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudXYZI());
+    loaded_global_map_.reset(new PointCloudType());
 
     loaded_keyframe_poses_.clear();
     loaded_keyframe_clouds_.clear();
@@ -13,7 +13,7 @@ CloudMap::CloudMap(){
 
 CloudMap::~CloudMap(){
     loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudXYZI());
+    loaded_global_map_.reset(new PointCloudType());
 
     loaded_keyframe_poses_.clear();
     loaded_keyframe_clouds_.clear();
@@ -124,7 +124,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
         // std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- ";
         ROS_INFO_STREAM("loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- " <<std::flush);
 
-        PointCloudXYZI::Ptr temp_cloud(new PointCloudXYZI());
+        PointCloudType::Ptr temp_cloud(new PointCloudType());
         // if (std::filesystem::exists(key_cloud_path)){
         if (0 == access(key_cloud_path.c_str(), 0)){
             pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
@@ -143,7 +143,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir){
 
 bool CloudMap::load_cloud_map(std::string map_dir){
     /// load cloud_map.pcd ***************************************************************************
-    loaded_global_map_.reset(new PointCloudXYZI());
+    loaded_global_map_.reset(new PointCloudType());
     std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
     // std::cout << "\033[1;32mloading cloud map\033[0m from : " << cloud_map_file_path<<" -- ";
     ROS_INFO_STREAM(BOLDGREEN<<"loading cloud map "<<RESET<<"from : " << cloud_map_file_path<<" -- "<<std::flush);

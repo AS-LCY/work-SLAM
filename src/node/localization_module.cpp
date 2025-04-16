@@ -149,8 +149,8 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
 
         if (abs(baselink_dy) > slam_param_.localization.baselink_dy_thr && abs(delta_yaw * 180 / PI_M)<slam_param_.localization.baselink_dyaw_thr){
             // delta_xy = delta_xy * cos(theta);
@@ -220,11 +220,12 @@ void LocalizationModule::lidar_position_filter_window(Eigen::Isometry3d pose_tem
         double baselink_dy = delta_xy * sin(theta);// 相对前进方向的横向位移
         double baselink_dx = delta_xy * cos(theta);// 
 
-        log_info_manager_->log_info.map_frame_dx = dx; 
-        log_info_manager_->log_info.map_frame_dy = dy; 
-        log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-        log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-        log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
+        // 暂时注释， pose filter timer 中
+        // log_info_manager_->log_info.map_frame_dx = dx; 
+        // log_info_manager_->log_info.map_frame_dy = dy; 
+        // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+        // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+        // log_info_manager_->log_info.base_frame_dyaw = rad2deg(delta_yaw); 
 
     }
 
@@ -272,12 +273,13 @@ void LocalizationModule::lidar_position_filter_fst_order(Eigen::Isometry3d last_
     double baselink_dx = delta_xy * cos(theta);// 
     double baselink_dyaw = rad2deg(delta_yaw);// 
 
-    log_info_manager_->log_info.base_frame_dx = baselink_dx; 
-    log_info_manager_->log_info.base_frame_dy = baselink_dy; 
-    log_info_manager_->log_info.base_frame_dyaw = baselink_dyaw; 
+    // 暂时注释， pose filter timer 中
+    // log_info_manager_->log_info.base_frame_dx = baselink_dx; 
+    // log_info_manager_->log_info.base_frame_dy = baselink_dy; 
+    // log_info_manager_->log_info.base_frame_dyaw = baselink_dyaw; 
 
-    log_info_manager_->log_info.map_frame_dx = dx; 
-    log_info_manager_->log_info.map_frame_dy = dy; 
+    // log_info_manager_->log_info.map_frame_dx = dx; 
+    // log_info_manager_->log_info.map_frame_dy = dy; 
 
 }
 
@@ -301,12 +303,12 @@ bool LocalizationModule::create_ROS_IO(){
     pub_localization_module_status_ = nh_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
     pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
-    pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    // pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    pub_log_ = nh_.advertise<std_msgs::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo, 100); 
     // pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
 
     // both 建图 & 定位
 	pubLidarInMap = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map", 100);
-	pub_heartbeat_ = nh_.advertise<std_msgs::Header>("/flbot/localization_module/heartbeat", 2);
 
     // only 建图 
 
@@ -339,6 +341,7 @@ bool LocalizationModule::create_ROS_IO(){
     // publish TODO: 还需要区分哪些是建图或定位发布的
     pubOdomCloud = nh_.advertise<sensor_msgs::PointCloud2>("/odom_cloud", 10);  
 	pubBodyCloud = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/body_cloud", 20);
+	pub_body_cloud_filter_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/body_cloud_filter", 20);
 	pub_key_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("/flbot/localization/key_body_cloud", 20);
     pubObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/obstacle_cloud", 10);
     pubFilteredObstacleCloud = nh_.advertise<sensor_msgs::PointCloud2>("/filtered_obstacle_cloud", 10);
@@ -462,58 +465,56 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     if (just_show_mode_){
         return;
     } 
-    /********************************- run slam -********************************/    
-    std_msgs::Header msg_hb;
-    msg_hb.stamp = ros::Time().now();
-    msg_hb.frame_id = "lio heart beat";
-    pub_heartbeat_.publish(msg_hb);
+    /********************************- run slam -********************************/ 
 
     // thisId = std::this_thread::get_id();
     // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
+    // running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
     bool running_slam_flag = slam_->run();
+    ros::Time ros_time_now = ros::Time().now();
 
-    if (running_slam_flag && show_rviz_){
-        // if (!localization_mode_ || slam_->isGloalLocalizationSuccess()){
+    if(running_slam_flag){
         if ((is_mapping_status(curr_running_module_status))|| slam_->isGloalLocalizationSuccess()){
-            pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
+            publish_cloud(slam_->get_odom_cloud(), "odom", ros_time_now, pubOdomCloud);
         }
-        pub_test_cloud(slam_->getTestCloud(), localization_mode_, pubTestCloud);
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
-        // pub_obstacle_cloud(slam_->getObstacleCloud(), pubObstacleCloud);// disable ObstacleCloud
-        // pub_filtered_obstacle_cloud(slam_->getFilteredObstacleCloud(), pubFilteredObstacleCloud);
-        publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
-        publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
-        visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
-        publish_transform(slam_->getOdomToMap(),string("map"),string("odom"));
-        // pub_kdtree_cloud(slam_->get_kdtree_cloud());		//not used yet
+        // pub body cloud
+        publish_cloud(slam_->get_lidar_cloud(), "lidar", ros_time_now,  pubBodyCloud);
+        // publish_cloud(slam_->get_filter_lidar_cloud(), "lidar", ros_time_now,  pub_body_cloud_filter_);
+
+        // publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
+        // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
+        // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
     }
-    // if(!localization_mode_){
+
     auto localization_status_now = localization_status_.load();
     if(is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3){
-        // pub_rgb_map(slam->getCurrentRGBMap());
-        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", pubLidarInMap);
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_,slam_->get_current_pose(),  "map", "base_link", curr_running_module_status, pubLidarInMap);
+        // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
         if(slam_->get_new_key_cloud_arrived()){
-            pub_lidar_cloud(slam_->get_lidar_cloud(), pub_key_cloud_);
+            publish_cloud(slam_->get_lidar_cloud(), "lidar", ros_time_now, pub_key_cloud_);
             slam_->set_new_key_cloud_arrived(false);
         }
+        // pub kdtree cloud
+        publish_cloud(slam_->get_kdtree_cloud(), "odom", ros_time_now, pubKdtreeCloud);
+        // pub odom cloud
+        publish_cloud(slam_->get_odom_cloud(), "odom", ros_time_now, pubOdomCloud);
+
         visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
-        // pub_odom_cloud(slam_->get_odom_cloud(), pubOdomCloud);
         publish_unoptimized_path(slam_->get_unoptimized_path(),string("map"),pubUnoptimizedPath);
         // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
         publish_optimized_path(slam_->get_optimized_path(),string("map"), pubOptimizedPath);
-    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (localization_status_now == 3 || localization_status_now == 4)){
+    }else if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_now)){
         if (slam_->isGloalLocalizationSuccess()){
-            publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", pubLidarInMap);
-            publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+            // publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
+            // publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
         }
-        pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+        // pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
 
     }
-    if (show_rviz_){
-        publish_static_transform(slam_->getWheelInLidar());
-        publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
-    }
+    // if (show_rviz_){
+    //     publish_static_transform(slam_->getWheelInLidar());
+    //     publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+    // }
 }
 
 
@@ -653,14 +654,16 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
             //////////////////////////////////////////////////////////////////////////////////////////////////
             // slipping detect 
-            int slip_flag = 0;
-            slip_flag = detect_slipping(baselink_in_map_to_pub);
-            log_info_manager_->log_info.slip_flag = slip_flag;
+            // // 暂时注释， pose filter timer 中
+            // int slip_flag = 0;
+            // slip_flag = detect_slipping(baselink_in_map_to_pub);
+            // log_info_manager_->log_info.slip_flag = slip_flag;
             //////////////////////////////////////////////////////////////////////////////////////////////////
 
+            // // 暂时注释， pose filter timer 中
             // pub log
-            log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
-            pub_log_.publish(log_info_manager_->log_info);
+            // log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
+            // pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
             // fairland_msgs::NameValues slip_msg;
@@ -725,15 +728,16 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
         // slipping detect 
-        int slip_flag = 0;
-        slip_flag = detect_slipping(curr_pose_filtered);
+        // // // 暂时注释， pose filter timer 中
+        // int slip_flag = 0;
+        // slip_flag = detect_slipping(curr_pose_filtered);
 
-        log_info_manager_->log_info.slip_flag = slip_flag;
+        // log_info_manager_->log_info.slip_flag = slip_flag;
 
         double k_chassis = 1 - slam_param_.localization.lidar_ratio;
-        if(slip_flag){
-            k_chassis = 0;
-        }
+        // if(slip_flag){
+        //     k_chassis = 0;
+        // }
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
         lidar_x_ = curr_pose_filtered.translation().x();
@@ -770,10 +774,11 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
             ROS_INFO_STREAM("pub tf: x=" << odometry_to_pub.pose.pose.position.x << ", y=" << odometry_to_pub.pose.pose.position.y);
 
-            // pub log info
-            fill_log(last_pose_filtered, curr_pose_filtered);
-            log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
-            pub_log_.publish(log_info_manager_->log_info);
+            // // // 暂时注释， pose filter timer 中
+            // // pub log info
+            // fill_log(last_pose_filtered, curr_pose_filtered);
+            // log_info_manager_->log_info.header.stamp = odometry_to_pub.header.stamp;
+            // pub_log_.publish(log_info_manager_->log_info);
 
             // pub slipping
             // fairland_msgs::NameValues slip_msg;
@@ -794,15 +799,15 @@ void LocalizationModule::pose_filter_timer(const ros::TimerEvent &event){
 
 }
 
-void LocalizationModule::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg){
-    fairland_msgs::NameValue slip_val;
-    slip_val.name = "slipping";
-    slip_val.value = log_info_manager_->log_info.slip_flag;
+// void LocalizationModule::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg){
+//     fairland_msgs::NameValue slip_val;
+//     slip_val.name = "slipping";
+//     slip_val.value = log_info_manager_->log_info.slip_flag;
     
-    slipping_msg.header = log_info_manager_->log_info.header;
-    slipping_msg.values.push_back(slip_val);
+//     slipping_msg.header = log_info_manager_->log_info.header;
+//     slipping_msg.values.push_back(slip_val);
     
-}
+// }
 
 int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
 
@@ -810,14 +815,14 @@ int LocalizationModule::detect_slipping(Eigen::Isometry3d curr_pose){
     double slam_time_now = slam_->get_slam_time();
     pose_stamp.header.stamp = ros::Time().fromSec(slam_time_now);
     pose_stamp.pose = eigen_isometry_to_geo_pose(curr_pose);
-    // slipping_ptr_->update_lidar(pose_stamp);
-    slipping_ptr_->update_lidar_by_distance(pose_stamp);
+    // // slipping_ptr_->update_lidar(pose_stamp);
+    // slipping_ptr_->update_lidar_by_distance(pose_stamp);
 
     int slip_flag = 0;
-    slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
+    // slipping_ptr_->detect_by_chassis_and_lidar(slip_flag);
     
-    log_info_manager_->log_info.slip_flag = slip_flag;
-    log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
+    // log_info_manager_->log_info.slip_flag = slip_flag;
+    // log_info_manager_->log_info.slam_localization_base_time = slam_time_now;
 
     return slip_flag;
 }
@@ -862,21 +867,21 @@ void LocalizationModule::position_filter_chassis_lidar(double & filtered_x, doub
 
 }
 
-void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom){
+// void LocalizationModule::fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom){
 
-    double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-    pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
-    double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-    pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
+//     double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+//     pcl::getTranslationAndEulerAngles(last_lidar_in_odom, last_x, last_y, last_z, last_roll, last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+//     double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+//     pcl::getTranslationAndEulerAngles(curr_lidar_in_odom, curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 
-    // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
-    log_info_manager_->log_info.lidar2odom_dxyz.x = curr_x - last_x;
-    log_info_manager_->log_info.lidar2odom_dxyz.y = curr_y - last_y;
-    log_info_manager_->log_info.lidar2odom_dxyz.z = curr_z - last_z;
-    log_info_manager_->log_info.lidar2odom_drpy.x = rad2deg (curr_roll  - last_roll);
-    log_info_manager_->log_info.lidar2odom_drpy.y = rad2deg (curr_pitch - last_pitch);
-    log_info_manager_->log_info.lidar2odom_drpy.z = rad2deg (curr_yaw   - last_yaw);
-}
+//     // log_info_manager_->log_info.lidar2odom_dtime  = curr_time_ - lastUpdateTime;
+//     log_info_manager_->log_info.lidar2odom_dxyz.x = curr_x - last_x;
+//     log_info_manager_->log_info.lidar2odom_dxyz.y = curr_y - last_y;
+//     log_info_manager_->log_info.lidar2odom_dxyz.z = curr_z - last_z;
+//     log_info_manager_->log_info.lidar2odom_drpy.x = rad2deg (curr_roll  - last_roll);
+//     log_info_manager_->log_info.lidar2odom_drpy.y = rad2deg (curr_pitch - last_pitch);
+//     log_info_manager_->log_info.lidar2odom_drpy.z = rad2deg (curr_yaw   - last_yaw);
+// }
 
 void LocalizationModule::reset_pose_filter(){
     position_initialized_ = false;
@@ -926,7 +931,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     static const int localize_ratio = 3;
     static const int loop_closure_ratio = 3;
     static const int secmap_relocalize_ratio = 3;
-    static const int point_cloud_size_thr = 150;
+    static const int point_cloud_size_thr = 600;
 
     // check ROS IO status **********************************************************************
     int health_status_now = 0;
@@ -988,8 +993,10 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     }
     // check lidar driver **************************************************************
     int orig_point_cloud_size = 0;
+    int sample_point_cloud_size = 0;
     if(hb_cbk_lidar){
-        orig_point_cloud_size = cloud_size_.load();
+        orig_point_cloud_size = cloud_size_orig_.load();
+        sample_point_cloud_size = cloud_size_sample_.load();
         if(orig_point_cloud_size < point_cloud_size_thr){
             error_lidar_point_too_few = true;
         }
@@ -1003,6 +1010,9 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 
     // fill health msg *************************************************************************
     health_msg.cloud_size = orig_point_cloud_size;
+
+    log_info_manager_->slam_info.data[12]=orig_point_cloud_size; // 
+    log_info_manager_->slam_info.data[14]=sample_point_cloud_size; // 
     
     health_msg.delay_cbk_lidar =  delay_lidar;  // unit: s
     health_msg.delay_cbk_imu = delay_imu;       // unit: s
@@ -1044,7 +1054,6 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     health_status_.store(health_status_now);
     // make status msg *************************************************************************
     // fill header
-    log_info_manager_->module_status = running_module_status_.load();
 
     fairland_msgs::LocalizationModuleStatus status_msg;
 
@@ -1058,7 +1067,7 @@ void LocalizationModule::pub_module_status_timer(const ros::TimerEvent &event){
     pub_localization_module_health_.publish(health_msg);
     // ROS_INFO("pub: time: %lf ", status_msg.header.stamp.toSec());
 
-    pub_log_.publish(log_info_manager_->log_info);
+    pub_log_.publish(log_info_manager_->slam_info);
 
 }
 
@@ -1086,11 +1095,29 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     // fill status_msg.mapping_status
     fill_module_m_status(curr_running_module_status, status_msg);
 
+    status_msg.map_saved = 0;
+    if(curr_running_module_status == ModuleStatus::MODULE_IDLE && map_saved_.load() == 1){
+        status_msg.map_saved = 1;
+        ROS_WARN_STREAM(YELLOW << "[Status Timer]: status_msg.map_saved: " << int(status_msg.map_saved) << RESET);
+
+        map_saved_.store(0);
+    }
+
     if(localization_status_.load() != 0 && localization_status_.load() != 3){
         ROS_WARN_STREAM(YELLOW << "[Status Timer]: localization_status: " << localization_status_ << RESET);
     }
     if(mapping_status_.load() != 0 && mapping_status_.load() != 3){
         ROS_WARN_STREAM(RED << "[Status Timer]: mapping_status: " << mapping_status_ << RESET);
+    }
+
+    if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
+        // publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
+    }
+
+    if(is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())){
+        publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "map", "base_link",curr_running_module_status, pubLidarInMap);
+        // publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
     }
 }
 
@@ -1098,6 +1125,13 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
     if(curr_running_module_status != ModuleStatus::MODULE_LOCALIZATION){
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_INACTIVE;
         localization_status_.store(0); // inactive
+        return;
+    }
+
+    auto last_local_status = localization_status_.load();
+    if(last_local_status == 2 || last_local_status == 5){
+        status_msg.localization_status = last_local_status;
+        log_info_manager_->slam_info.data[2]= last_local_status; // 
         return;
     }
 
@@ -1146,6 +1180,8 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
         status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
         localization_status_.store(5); // 定位失败
     }
+
+    log_info_manager_->slam_info.data[2]= localization_status_.load(); // 
 }
 
 void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg){
@@ -1157,6 +1193,12 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
     }
 
 
+    auto last_mapping_status = mapping_status_.load();
+    if(last_mapping_status == 2 || last_mapping_status == 5){
+        status_msg.mapping_status = last_mapping_status;
+        // log_info_manager_->slam_info.data[2]= last_mapping_status; // 
+        return;
+    }
     //////////////////////////////////////////////////////////////////////////////////////////////
     int node_status = mapping_node_status_.load();
     int slam_run_status = slam_ -> get_slam_run_status();
@@ -1229,18 +1271,18 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
         }
     }
 
-    cloud_size_.store(ros_msg->width * ros_msg->height);
+    // cloud_size_orig_.store(ros_msg->width * ros_msg->height);
     
 
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
     ROS_INFO_ONCE("received lidar -------------- lidar cbk");
 
-    ModuleStatus curr_running_module_status = running_module_status_.load();
-    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
-        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
-        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        return;
-    }
+    // ModuleStatus curr_running_module_status = running_module_status_.load();
+    // if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+    //     return;
+    // }
 
     double t0 = omp_get_wtime();
     auto start = std::chrono::system_clock::now();
@@ -1249,71 +1291,32 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
 
-    PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
+    PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
     double t1 = omp_get_wtime();
 
-    PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
+    PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
     int sample_cld_size = sample_cld_ptr->points.size();
-    if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
-        ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
-    }
+    // if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
+    //     ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
+    // }
     double t2 = omp_get_wtime();
 
+    cloud_size_orig_.store(pcl_xyzin_cld->points.size());
+    cloud_size_sample_.store(sample_cld_size);
+
+    ModuleStatus curr_running_module_status = running_module_status_.load();
+    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        return;
+    }
 
     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
     // fill status_msg.localization_status
     double t3 = omp_get_wtime();
-
-    // if(slam_param_.lidar_preproc.lidar_type == 1){
-    //     // ROS_INFO_ONCE("livox cbk");
-    //     // std::shared_ptr<livox_ros::LidarMsg> lvx_msg(new livox_ros::LidarMsg);
-    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, lvx_msg);
-    //     // // printf("clip lidar count: %d\n", lvx_msg->point_num);
-    //     // ROS_INFO("clip lidar count: %d", lvx_msg->point_num);
-
-    //     // slam_ -> livox_pcl_cbk(lvx_msg);
-
-
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-
-    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
-    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
-
-    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
-
-    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
-
-    // }else if(slam_param_.lidar_preproc.lidar_type == 2){
-    //     // pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_cld(new pcl::PointCloud<RsPointXYZIRT>());
-    //     // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_rs_cld);
-    //     // printf("clip lidar count: %ld\n", pcl_rs_cld->points.size());
-    //     // slam_ -> robosense_pcl_cbk(pcl_rs_cld);
-
-    //     ROS_INFO_ONCE("robosense cbk");
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-
-    //     PointCloudXYZI::Ptr sample_cld_ptr(new PointCloudXYZI());
-    //     lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
-    //     ROS_INFO_STREAM("valid lidar num: " <<pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_ptr->points.size());
-    //     // slam_ -> lidar_pcl_cbk(pcl_xyzin_cld);
-    //     slam_ -> lidar_pcl_cbk(sample_cld_ptr);
-
-    // }else if(slam_param_.lidar_preproc.lidar_type == 3){
-    //     ROS_INFO_ONCE("vanjee cbk");
-    //     PointCloudXYZI::Ptr pcl_xyzin_cld(new PointCloudXYZI());
-    //     lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    //     ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-    //     slam_ -> robosense_pcl_cbk(pcl_xyzin_cld);
-
-    // }
-
 
     double t100 = omp_get_wtime();
     auto end = std::chrono::system_clock::now();
@@ -1340,6 +1343,7 @@ void LocalizationModule::imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in){
 
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg);
 	msg->time_stamp = msg_in->header.stamp.toSec();
+	// msg->time_stamp = msg_in->header.stamp.toSec() + 28799.8614; temp, 测试万集雷达时用到
     
     if (slam_param_.lidar_preproc.lidar_type == 3) {
         // acc_after = acc_after / G_m_s2;
@@ -1389,7 +1393,8 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
     chassis_linear_velocity = cur_chassis_msg.ac_linear_velocity;
     chassis_linear_velocity_ = chassis_linear_velocity;
     chassis_angular_velocity_ = chassis_angular_velocity;
-    log_info_manager_->log_info.chassis_vel = chassis_linear_velocity;
+    // log_info_manager_->log_info.chassis_vel = chassis_linear_velocity;
+    log_info_manager_->slam_info.data[8] = chassis_linear_velocity; // 8: chassis_vel
 
     ROS_INFO_ONCE("received chassis -------------- chassis cbk");
 
@@ -1415,15 +1420,15 @@ void LocalizationModule::chassis_callback(const fairland_msgs::chassic_data::Con
         
         return;
     }else{
-        if(slipping_ptr_->get_lidar_queue_init()){
-            slipping_ptr_->update_chassis(cur_chassis_msg);
-        }else{
-            slipping_ptr_->reset();
-        }
+        // if(slipping_ptr_->get_lidar_queue_init()){
+        //     slipping_ptr_->update_chassis(cur_chassis_msg);
+        // }else{
+        //     slipping_ptr_->reset();
+        // }
 
-        // pose_filter_ptr_->update_chassis(cur_chassis_msg);
+        // // pose_filter_ptr_->update_chassis(cur_chassis_msg);
 
-        return;
+        // return;
     }
     
     
@@ -1485,11 +1490,11 @@ void LocalizationModule::publish_optimized_path(const std::vector<Eigen::Isometr
 
 bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
     // set_module_status_ = set_status;
-
+    int map_id = 1;/////////////// TODO
     if(set_status == ModuleStatus::MODULE_IDLE){
         // ROS_INFO("init module status: %s", print_ModuleStatus(set_module_status_).c_str());
     }else if (set_status == ModuleStatus::MODULE_MAPPING){
-        int map_id = 0;/////////////// TODO
+        // int map_id = 0;/////////////// TODO
         if(start_mapping(map_id)){
             // mapping_status_ = M_STANDBY;
         }else{
@@ -1497,7 +1502,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         }
     }else if (set_status == ModuleStatus::MODULE_SEC_MAPPING){
         // TODO
-        int map_id = 0;/////////////// TODO
+        // int map_id = 0;/////////////// TODO
         if(start_second_mapping(map_id)){
             // running_module_status_ = ModuleStatus::MODULE_SEC_MAPPING;
             // running_module_status_.store(ModuleStatus::MODULE_SEC_MAPPING);
@@ -1509,7 +1514,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
         }
     }else if (set_status == ModuleStatus::MODULE_LOCALIZATION){
         // TODO
-        int map_id = 0;/////////////// TODO
+        // int map_id = 1;/////////////// TODO
         if(start_localization( map_id)){
             // running_module_status_ = ModuleStatus::MODULE_LOCALIZATION;
             // running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
@@ -1547,10 +1552,11 @@ bool LocalizationModule::module_member_init(){
 
 
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
+    log_info_manager_->reset_log_info();
 
     // lidar reset , after param load
     lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type);
-    slipping_ptr_.reset(new DetectSlipping());
+    // slipping_ptr_.reset(new DetectSlipping());
 
     return true;
 }

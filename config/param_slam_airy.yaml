@@ -1,6 +1,6 @@
 common:
   run_on_mower: false # true / false, default to: true
-  map_directory_on_mower: "/home/root/lds_mower/ws_flbot/maps/"
+  map_directory_on_mower: "/userdata/lds_mower/maps/"
   cpu_id_on_mower: []
   init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
   time_sync_en: false
@@ -16,7 +16,12 @@ common:
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
   # map_directory: "/home/pmm/data/2-rslidar/calib/0227-22f/"
   # map_directory: "/home/pmm/data/2-rslidar/calib/0227-ouzh/"
-  map_directory: "/home/pmm/data/2-rslidar/calib/0301-th/"
+  # map_directory: "/home/pmm/data/2-rslidar/calib/0301-th/"
+  # map_directory: "/home/pmm/data/2-rslidar/0402/1-22f"
+  # map_directory: "/home/pmm/data/2-rslidar/0402/2-ouzh"
+  # map_directory: "/home/pmm/data/2-rslidar/5-五个雷达-3576/0408/2-ouzh_5-2"
+  map_directory: "/home/pmm/data/2-rslidar/0411/5-3"
+  
   # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
   # map_directory: "/home/pmm/data/rslidar/1024/23f/3dmap"
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
@@ -44,10 +49,16 @@ extrinsic:
   # extrinsic_euler_IMU_in_baselink: [-1.769328, 14.696139, -0.537434] # imu in lidar  # unit(degree) yaw, pitch, roll    # airy
 
   # extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
-  extrinsic_euler_IMU_in_lidar: [-91.68546653377834, -1.010366382353748, -179.4784633670619] # unit(degree) yaw, pitch, roll  # airy-v4-2025-0226
+  # extrinsic_euler_IMU_in_lidar: [-91.68546653377834, -1.010366382353748, -179.4784633670619] # unit(degree) yaw, pitch, roll  # airy-v4-2025-0226
   # extrinsic_euler_IMU_in_lidar: [-88.199227, -0.332534, 179.751635] # unit(degree) yaw, pitch, roll  # airy-v2
+  extrinsic_euler_IMU_in_lidar: [-0.7059076, 0.7082608, -0.0009345, -0.0077585]  # airy: 5-1 # quaterion: qx, qy, qz, qw  # airy: 5-1
+  # extrinsic_euler_IMU_in_lidar: [-0.6991326, 0.7149883, -0.0021260, -0.0008865]  # airy: 5-2 # quaterion: qx, qy, qz, qw  # airy: 5-1
+  # extrinsic_euler_IMU_in_lidar: [-0.7059780, 0.7081977, -0.0021492, -0.0068142]  # airy: 5-3 # quaterion: qx, qy, qz, qw  # airy: 5-1
+  
+  
   # extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
-  extrinsic_euler_lidar_in_baselink: [-88.250826, 1.131189, -5.863650] # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [-88.250826, 1.131189, -5.863650] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0] # unit(degree) yaw, pitch, roll
 
      
 
@@ -61,6 +72,8 @@ localization:
   # fgicp_score_thr: 0.3 # 0.1
   fgicp_score_fail_thr: 0.3
   fgicp_score_low_accuracy_thr: 0.1
+  fgicp_fail_count_thr: 15
+  fgicp_low_accuracy_count_thr: 180
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7
@@ -76,8 +89,6 @@ localization:
   chassis_linear_velocity_thr: 0.02
   motionless_chassis_ratio: 0.98
   lidar_cbk_delay_thr: 2 # 
-  fgicp_fail_count_thr: 3
-  fgicp_low_accuracy_count_thr: 10
 
 lidar_preproc:
   lidar_type: 2 # 1: livox-mid360  # 2: robosense-Airy  # 
@@ -87,14 +98,15 @@ lidar_preproc:
   sub_imu_topic: "/robosense/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1
-  flag_keep_only_last_lidar: true
+  # flag_keep_only_last_lidar: true 
+  keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 3000
   feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 2 # 间隔采样所需参数
   ring_filter_num: 1
-  leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数 
+  leafsize: 0.3 # extract_cloud_method == 2 时, voxel 参数 
   leafsize_vec: [0.2, 0.8] # voxel 所需参数
   voxel_region_xyz: [-10, 10.0, -10.0, 10.0, -1, 15]  # order: xmin, xmax, ymin, ymax, zmin, zmax
   boundary_z: 3 # init: m

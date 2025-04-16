@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <atomic>
+#include <fstream>
 
 #include "boost/thread.hpp"
 
@@ -71,7 +72,7 @@
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
 #include "node/pose_filter.h"
-#include "slipping/detect_slipping.h"
+// #include "slipping/detect_slipping.h"
 
 
 // lidar
@@ -96,7 +97,8 @@ using namespace lidar_slam;
 enum SlamCtrlCmd{
     START_MAPPING           = 1000,  // 开始建图
     START_SEC_MAPPING       = 2000,  // 重定位->建图，二次建图
-    EXIT_MAPPING            = 6000,  // 退出建图
+    CANCLE_MAPPING          = 5000,  // 不保存地图， 直接取消建图
+    SAVE_AND_END_MAPPING    = 6000,  // 保存地图， 并结束建图
     START_LOCALIZATION      = 7000,  // 重定位->定位
     EXIT_LOCALIZATION       = 8000,  // 退出定位
     START_RELOCALIZATION    = 9000,  // 重定位，定位过程中，重新进行重定位
@@ -140,7 +142,7 @@ private:
     bool start_mapping(int map_id);
     bool start_second_mapping(int map_id);
     bool stop_mapping();
-
+    bool save_extrinsic_to_file();
     // bool start_localization(ModuleStatus set_status, int map_id);
     bool start_localization(int map_id);
 
@@ -177,21 +179,27 @@ private:
     void publish_optimized_path(const std::vector<Eigen::Isometry3d> path, std::string frame, ros::Publisher pubOptimizedPath);
     
     // publish common
-    void pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud);
-    void pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud);
-    // void pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud);
-    void pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
-    void pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
-    void pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud);
-    void publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped);
-    void publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped);
-    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, string frameid, string child_frameid, ros::Publisher publisher);
+    void publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id, ros::Time ros_time, ros::Publisher pub_cloud);
+    void publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string child_frameid, ros::Publisher pub);
+    void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, 
+                                        string frameid, string child_frameid, ModuleStatus curr_running_module_status, 
+                                        ros::Publisher pubOdomAftMapped);
+
+
+
+
+    // void pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud);
+    // void pub_lidar_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubBodyCloud);
+    // void pub_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubObstacleCloud);
+    // void pub_filtered_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud);
+    // void pub_kdtree_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubKdtreeCloud);
+    // void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
+    void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
     void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
     void publish_transform(const Eigen::Isometry3d& correction,string parent, string child);
     void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud);
     void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge);
     void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
-    void pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud);
 
     // position filter
     void lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
@@ -206,7 +214,7 @@ private:
 
     void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
 
-    void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
+    // void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
     
     int  check_fill_health_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleHealth &health_msg);
     void check_fill_module_status_msg(ModuleStatus curr_running_module_status, fairland_msgs::LocalizationModuleStatus &status_msg);
@@ -220,7 +228,8 @@ private:
         // CASE_STR(MAPPING_POINT_BEGIN);
         // CASE_STR(MAPPING_ELE_DELETE);
         // CASE_STR(MAPPING_POINT_END);
-        CASE_STR(EXIT_MAPPING);
+        CASE_STR(CANCLE_MAPPING);
+        CASE_STR(SAVE_AND_END_MAPPING);
         CASE_STR(START_LOCALIZATION);
         CASE_STR(EXIT_LOCALIZATION);
         CASE_STR(START_RELOCALIZATION);
@@ -268,7 +277,9 @@ private:
     // 2: error, reset slam to IDLE
     std::atomic<int>  health_status_;
     
-    std::atomic<int>  cloud_size_;
+    std::atomic<int>  cloud_size_orig_;
+    std::atomic<int>  cloud_size_sample_;
+    std::atomic<int>  cloud_size_feat_;
     // -----------------------------------------------------
     Eigen::Isometry3d T_lidar_baselink_;
 
@@ -299,7 +310,6 @@ private:
     ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
     ros::Publisher pub_slip_;    
-    ros::Publisher pub_heartbeat_;
 
 
     // slam node
@@ -331,6 +341,8 @@ private:
     std::atomic<int> localization_status_{0};
     int start_index_ = -1;
     int end_index_ = -1;
+    std::atomic<int> map_saved_{0};
+    
 
     // 定位 *******************************************
     // enum LocalizationStatus
@@ -369,6 +381,7 @@ private:
 
     ros::Publisher pub_base_imu_;
     ros::Publisher pub_key_cloud_;
+    ros::Publisher pub_body_cloud_filter_;
 
 
     /// params load from yaml
@@ -421,7 +434,7 @@ private:
 
     // lidar 
     std::shared_ptr<LidarPreprocParent> lidar_ptr_;
-    std::shared_ptr<DetectSlipping> slipping_ptr_;
+    // std::shared_ptr<DetectSlipping> slipping_ptr_;
     std::shared_ptr<PoseFilter> pose_filter_ptr_;
     
 };

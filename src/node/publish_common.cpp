@@ -3,44 +3,17 @@
 
 namespace localization_module{
 
-void LocalizationModule::pub_odom_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubOdomCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "odom";
-	pubOdomCloud.publish(laserCloudmsg);
+void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id, ros::Time ros_time, ros::Publisher pub_cloud){
+
+	sensor_msgs::PointCloud2 ros_cloud_msg;
+	pcl::toROSMsg(*pcl_cloud_in, ros_cloud_msg);
+	ros_cloud_msg.header.stamp = ros_time;
+	ros_cloud_msg.header.frame_id = frame_id;
+	pub_cloud.publish(ros_cloud_msg);
 }
 
-void LocalizationModule::pub_lidar_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubBodyCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "lidar";
-	// laserCloudmsg.header.frame_id = "base_footprint";
-	pubBodyCloud.publish(laserCloudmsg);
-}
 
-// void LocalizationModule::pub_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubObstacleCloud)
-// {
-// 	sensor_msgs::PointCloud2 laserCloudmsg;
-// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
-// 	laserCloudmsg.header.stamp = ros::Time().now();
-// 	laserCloudmsg.header.frame_id = "wheel";
-// 	pubObstacleCloud.publish(laserCloudmsg);
-// }
-
-void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "wheel";
-	pubFilteredObstacleCloud.publish(laserCloudmsg);
-}
-
-void LocalizationModule::pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
+void LocalizationModule::pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
 {
 	sensor_msgs::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
@@ -50,15 +23,6 @@ void LocalizationModule::pub_test_cloud(PointCloudXYZI::Ptr msg_in, bool localiz
     else
        laserCloudmsg.header.frame_id = "wheel";
 	pubTestCloud.publish(laserCloudmsg);
-}
-
-void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publisher pubKdtreeCloud)
-{
-	sensor_msgs::PointCloud2 laserCloudmsg;
-	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
-	laserCloudmsg.header.frame_id = "odom";
-	pubKdtreeCloud.publish(laserCloudmsg);
 }
 
 
@@ -74,7 +38,7 @@ void LocalizationModule::pub_kdtree_cloud(PointCloudXYZI::Ptr msg_in, ros::Publi
 //     globalPath.poses.push_back(pose_stamped);
 // }
 
-void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ModuleStatus curr_running_module_status, ros::Publisher pubOdomAftMapped)
 {
 	nav_msgs::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
@@ -90,6 +54,12 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     odomAftMapped.pose.pose.orientation.z = quaternion.z();
     odomAftMapped.pose.pose.orientation.w = quaternion.w();
 
+    if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
+        odomAftMapped.pose.covariance[1] = 3;
+    }else if(is_mapping_status(curr_running_module_status)){
+        odomAftMapped.pose.covariance[1] = 2;
+    }
+
     Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
     iso_transform.linear() = mat;
@@ -102,7 +72,8 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     odomAftMapped.twist.twist.linear.y = vel[1];
     odomAftMapped.twist.twist.linear.z = vel[2];
 
-    log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
+    // log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
+    log_info_manager_->slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
 
     pubOdomAftMapped.publish(odomAftMapped);
 
@@ -121,37 +92,37 @@ void LocalizationModule::publish_odometry_lidar_in_map(Eigen::Isometry3d lidar_i
     // q.setY(odom_for_tf.pose.pose.orientation.y);
     // q.setZ(odom_for_tf.pose.pose.orientation.z);
     // transform.setRotation(q);
-    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, "base_link"));
+    // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, child_frameid));
 }
 
-void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
+void LocalizationModule::publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string child_frameid, ros::Publisher pub_odom)
 {
     // cout<<"********************* pub odometry "<<endl;
-	nav_msgs::Odometry odomAftMapped;
-    odomAftMapped.header.frame_id = "odom";
-    odomAftMapped.child_frame_id = "lidar";
-    odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
-	odomAftMapped.pose.pose.position.x = lidar_in_odom.translation().x();
-    odomAftMapped.pose.pose.position.y = lidar_in_odom.translation().y();
-    odomAftMapped.pose.pose.position.z = lidar_in_odom.translation().z();
-	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_odom.rotation());
-    odomAftMapped.pose.pose.orientation.x = quaternion.x();
-    odomAftMapped.pose.pose.orientation.y = quaternion.y();
-    odomAftMapped.pose.pose.orientation.z = quaternion.z();
-    odomAftMapped.pose.pose.orientation.w = quaternion.w();
-    pubOdomAftMapped.publish(odomAftMapped);
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    tf::Quaternion q;
-    transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
-                                    odomAftMapped.pose.pose.position.y,
-                                    odomAftMapped.pose.pose.position.z));
-    q.setW(odomAftMapped.pose.pose.orientation.w);
-    q.setX(odomAftMapped.pose.pose.orientation.x);
-    q.setY(odomAftMapped.pose.pose.orientation.y);
-    q.setZ(odomAftMapped.pose.pose.orientation.z);
-    transform.setRotation(q);
-    // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
+	nav_msgs::Odometry odom;
+    odom.header.frame_id = frameid;
+    odom.child_frame_id = child_frameid;
+    odom.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+	odom.pose.pose.position.x = isometry_3d.translation().x();
+    odom.pose.pose.position.y = isometry_3d.translation().y();
+    odom.pose.pose.position.z = isometry_3d.translation().z();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(isometry_3d.rotation());
+    odom.pose.pose.orientation.x = quaternion.x();
+    odom.pose.pose.orientation.y = quaternion.y();
+    odom.pose.pose.orientation.z = quaternion.z();
+    odom.pose.pose.orientation.w = quaternion.w();
+    pub_odom.publish(odom);
+    // static tf::TransformBroadcaster br;
+    // tf::Transform transform;
+    // tf::Quaternion q;
+    // transform.setOrigin(tf::Vector3(odom.pose.pose.position.x,
+    //                                 odom.pose.pose.position.y,
+    //                                 odom.pose.pose.position.z));
+    // q.setW(odom.pose.pose.orientation.w);
+    // q.setX(odom.pose.pose.orientation.x);
+    // q.setY(odom.pose.pose.orientation.y);
+    // q.setZ(odom.pose.pose.orientation.z);
+    // transform.setRotation(q);
+    // br.sendTransform(tf::StampedTransform(transform, odom.header.stamp, frameid, child_frameid));
 }
 
 void LocalizationModule::publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
@@ -346,14 +317,93 @@ void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyfr
     pubKeyframePose.publish(MarkerArray);
 }
 
-void LocalizationModule::pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud){
-  sensor_msgs::PointCloud2 pub_cloud;
-  pcl::toROSMsg(*rgb_cloud, pub_cloud);
-  pub_cloud.header.frame_id = "odom";
-  pub_cloud.header.stamp = ros::Time().now();
-  pubRgbCloud.publish(pub_cloud);
-}
+// void LocalizationModule::pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "odom";
+// 	pubOdomCloud.publish(laserCloudmsg);
+// }
 
+// void LocalizationModule::pub_lidar_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubBodyCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "lidar";
+// 	// laserCloudmsg.header.frame_id = "base_footprint";
+// 	pubBodyCloud.publish(laserCloudmsg);
+// }
+
+// void LocalizationModule::pub_kdtree_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubKdtreeCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "odom";
+// 	pubKdtreeCloud.publish(laserCloudmsg);
+// }
+
+
+// void LocalizationModule::pub_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubObstacleCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "wheel";
+// 	pubObstacleCloud.publish(laserCloudmsg);
+// }
+
+// void LocalizationModule::pub_rgb_map(pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgb_cloud, ros::Publisher pubRgbCloud){
+//   sensor_msgs::PointCloud2 pub_cloud;
+//   pcl::toROSMsg(*rgb_cloud, pub_cloud);
+//   pub_cloud.header.frame_id = "odom";
+//   pub_cloud.header.stamp = ros::Time().now();
+//   pubRgbCloud.publish(pub_cloud);
+// }
+
+
+
+// void LocalizationModule::pub_filtered_obstacle_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubFilteredObstacleCloud)
+// {
+// 	sensor_msgs::PointCloud2 laserCloudmsg;
+// 	pcl::toROSMsg(*msg_in, laserCloudmsg);
+// 	laserCloudmsg.header.stamp = ros::Time().now();
+// 	laserCloudmsg.header.frame_id = "wheel";
+// 	pubFilteredObstacleCloud.publish(laserCloudmsg);
+// }
+
+
+// void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
+// {
+//     // cout<<"********************* pub odometry "<<endl;
+// 	nav_msgs::Odometry odomAftMapped;
+//     odomAftMapped.header.frame_id = "odom";
+//     odomAftMapped.child_frame_id = "lidar";
+//     odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+// 	odomAftMapped.pose.pose.position.x = lidar_in_odom.translation().x();
+//     odomAftMapped.pose.pose.position.y = lidar_in_odom.translation().y();
+//     odomAftMapped.pose.pose.position.z = lidar_in_odom.translation().z();
+// 	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_odom.rotation());
+//     odomAftMapped.pose.pose.orientation.x = quaternion.x();
+//     odomAftMapped.pose.pose.orientation.y = quaternion.y();
+//     odomAftMapped.pose.pose.orientation.z = quaternion.z();
+//     odomAftMapped.pose.pose.orientation.w = quaternion.w();
+//     pubOdomAftMapped.publish(odomAftMapped);
+//     static tf::TransformBroadcaster br;
+//     tf::Transform transform;
+//     tf::Quaternion q;
+//     transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
+//                                     odomAftMapped.pose.pose.position.y,
+//                                     odomAftMapped.pose.pose.position.z));
+//     q.setW(odomAftMapped.pose.pose.orientation.w);
+//     q.setX(odomAftMapped.pose.pose.orientation.x);
+//     q.setY(odomAftMapped.pose.pose.orientation.y);
+//     q.setZ(odomAftMapped.pose.pose.orientation.z);
+//     transform.setRotation(q);
+//     // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "odom", "lidar"));
+// }
 
 
 } // namespace localization_module

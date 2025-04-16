@@ -37,7 +37,7 @@ public:
    bool loadMap(std::string path);
    // bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_filter);
    bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double &score, double score_fail_thr, double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter);
-   bool globalLocalization(PointCloudXYZI::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score);
+   bool globalLocalization(PointCloudType::Ptr lidarCloud,Eigen::Isometry3d pose,Matrix3d initial_rotate, double score);
    Eigen::Isometry3d getOdomToMap(){
       //  Eigen::Isometry3d isometry3d; 
       //  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap.matrix().block<3, 3>(0, 0).cast<double>();
@@ -54,7 +54,7 @@ public:
       if (!map_ready_) return nullptr;
       return CloudGlobalMapIn;
    }
-   PointCloudXYZI::Ptr getTestCloud(){
+   PointCloudType::Ptr getTestCloud(){
       return testMatchcloud;
    }
    std::vector<Eigen::Vector3f>& getLoadMapPoints(){
@@ -64,10 +64,10 @@ public:
 private:
    KeyMat polarcontext_invkeys_mat_;
    std::vector<Eigen::MatrixXd> polarcontexts_;
-   PointCloudXYZI::Ptr CloudGlobalMap;
-   PointCloudXYZI::Ptr accumulateMap_;
+   PointCloudType::Ptr CloudGlobalMap;
+   PointCloudType::Ptr accumulateMap_;
    std::vector<Eigen::Isometry3d> accumulateKeypose_;
-   PointCloudXYZI::Ptr testMatchcloud;
+   PointCloudType::Ptr testMatchcloud;
    pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn;
    std::vector<ScInfo> LoadData;
    std::shared_ptr<SCManager> scManager;

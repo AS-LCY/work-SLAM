@@ -13,6 +13,7 @@
 
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
+#include "fusion_node/fusion_param.hpp"
 
 namespace localization_module{
     

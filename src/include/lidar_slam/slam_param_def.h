@@ -14,6 +14,8 @@ struct ExtrinsicParam{
     Eigen::Isometry3d  T_wheel_lidar = Eigen::Isometry3d::Identity();
     Eigen::Isometry3d  T_lidar_wheel = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d R_baselink_IMU = Eigen::Matrix3d::Identity();
+
+    std::vector<double> yaw_pitch_roll_deg;
 };
 
 struct LidarPreprocParam{
@@ -22,7 +24,8 @@ struct LidarPreprocParam{
     std::string sub_imu_topic="";
     int line_count;
     double blind_distance;
-    bool flag_keep_only_last_lidar=false;
+    // bool flag_keep_only_last_lidar=false;
+    int keep_lidar_num_before_curr = 1;
     int point_filter_num = 2;
     int ring_filter_num = 1;
     std::vector<double> point_filter_distance;

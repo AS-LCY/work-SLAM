@@ -230,7 +230,6 @@ MatrixXd SCManager::makeSectorkeyFromScancontext( Eigen::MatrixXd &_desc )
 const Eigen::MatrixXd SCManager::getSc( int i )
 {
     if (i > polarcontexts_.size() -1 ){
-        // cout <<"error sc index"<< endl;
         ROS_ERROR_STREAM(RED << "error sc index" << RESET);
         return Eigen::MatrixXd::Zero(1, 1);
     }
@@ -268,9 +267,9 @@ void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd & polarcontext )
     polarcontext_invkeys_mat_.push_back( polarcontext_invkey_vec );
 
     //  cout <<"load sc "<<polarcontext_vkeys_.size() << endl;
-     ROS_INFO_STREAM("load sc "<<polarcontext_vkeys_.size());
+    ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
 
-} // SCManager::makeAndSaveScancontextAndKeys
+} // SCManager::loadScancontextAndKeys
 
 void SCManager::buildRingKeyKDTree(KeyMat &polarcontext_invkeys_mat, std::vector<Eigen::MatrixXd>& polarcontexts) {
     polarcontexts_ = polarcontexts;
