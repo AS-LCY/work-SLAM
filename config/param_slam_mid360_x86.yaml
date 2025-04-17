@@ -22,7 +22,9 @@ common:
   # map_directory: "/home/pmm/data/1-livox/slipping/0219/"
   # map_directory: "/home/pmm/data/1-livox/0322/5-gym"
   # map_directory: "/home/pmm/data/1-livox/0409/"
-  map_directory: "/home/pmm/data/1-livox/0411/map1/"
+  map_directory: "/home/pmm/data/1-livox/0411/map2/"
+  map_directory: "/home/pmm/data/1-livox/0414/gym/"
+  
   # map_directory: "/home/pmm/data/1-livox/2025/0208-th-cover/maps/"
   
   sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
@@ -46,10 +48,10 @@ extrinsic:
 
   extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # 红色机器  # unit(degree) yaw, pitch, roll
-  extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
+  # extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # test-car   # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [0.0, 5.0, 0.0] # unit(degree) yaw, pitch, roll
-  # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
+  extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
   # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -13.119] # unit(degree) yaw, pitch, roll
 
   Lidar_In_Wheel: [1,  0,  0,  0.306,

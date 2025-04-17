@@ -184,7 +184,7 @@ private:
     void publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, 
                                         string frameid, string child_frameid, ModuleStatus curr_running_module_status, 
                                         ros::Publisher pubOdomAftMapped);
-
+    void process_loginfo();
 
 
 
