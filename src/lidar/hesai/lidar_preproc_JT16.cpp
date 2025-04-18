@@ -1,26 +1,26 @@
-#include "lidar/robosense/lidar_preproc_Airy.h"
+#include "lidar/hesai/lidar_preproc_JT16.h"
 
 
 namespace localization_module {
 
-LidarPreprocAiry::LidarPreprocAiry(){
+LidarPreprocJT16::LidarPreprocJT16(){
     if(!set_param()){
         ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
-        // ROS_INFO("\033[0;32mSet lidar-Airy param successfully!\033[0m");
-        ROS_INFO("Set lidar-Airy param successfully!");
+        // ROS_INFO("\033[0;32mSet lidar-M300 param successfully!\033[0m");
+        ROS_INFO("Set lidar-M300 param successfully!");
     }
-    // ROS_INFO("\033[1;32mReset to lidar_preproc_Airy successfully!\033[0m");
-    ROS_INFO("Reset to lidar_preproc_Airy successfully!");
+    // ROS_INFO("\033[1;32mReset to lidar_preproc_M300 successfully!\033[0m");
+    ROS_INFO("Reset to lidar_preproc_M300 successfully!");
 }
 
 
-LidarPreprocAiry::~LidarPreprocAiry(){
+LidarPreprocJT16::~LidarPreprocJT16(){
 
 }
 
 
-bool LidarPreprocAiry::set_param(){
+bool LidarPreprocJT16::set_param(){
 
     LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
     const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
@@ -49,78 +49,11 @@ bool LidarPreprocAiry::set_param(){
     }
 }
 
-// bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_out){
-
-//     ROS_INFO("Airy: ros_msg_in --> pcl_rs_out");
-//     int cloud_num = ros_msg_in->height * ros_msg_in->width;
-
-//     ///// MetaData --- header 
-//     pcl::PCLHeader pcl_header;
-//     pcl_header.seq = ros_msg_in->header.seq;
-//     pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
-//     pcl_header.frame_id = ros_msg_in->header.frame_id;
-//     ///// MetaData --- field
-//     std::vector<pcl::PCLPointField> pcl_fields;
-    
-//     pcl_fields.resize(ros_msg_in->fields.size());
-//     std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
-//     int i = 0;
-//     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
-//       pcl_fields[i].name = it->name;
-//       pcl_fields[i].offset = it->offset;
-//       pcl_fields[i].datatype = it->datatype;
-//       pcl_fields[i].count = it->count;
-//     }
-//     //// create Mapping
-//     pcl::MsgFieldMap field_map;
-//     pcl::createMapping<LvxPointXYZITLO> (pcl_fields, field_map);
-
-//     ///////////////////////////////////////////////////////////////////////////////////////////
-//     /// fill pcl_rs_out
-
-//     uint valid_num = 0;
-//     for (std::uint32_t row = 0; row < ros_msg_in->height; ++row){
-//         const std::uint8_t* row_data = &ros_msg_in->data[row * ros_msg_in->row_step];
-//         for (std::uint32_t col = 0; col < ros_msg_in->width; ++col){
-//             const std::uint8_t* msg_data = row_data + col * ros_msg_in->point_step;
-//             RsPointXYZIRT temp_point;
-//             RsPointXYZIRT* curpt = &temp_point;
-//             std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
-
-//             for (const pcl::detail::FieldMapping& mapping : field_map){
-//                 memcpy (curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
-//             }
-
-//             ///// make it dense
-//             if (lidar_common::is_nan_pt(*curpt)) { continue; } 
-            
-//             if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
-//                continue;
-//             }
-//             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-//             if(range_square < blind_square_){
-//                 continue;
-//             }
-
-//             if(col%point_filter_num_ == 0 && row%3 == 0){
-//                 pcl_rs_out->points.push_back(*curpt);
-//             }
-
-//         }
-//     }
-//     ///// Copy info fields
-//     pcl_rs_out->header   = pcl_header;
-//     pcl_rs_out->width    = pcl_rs_out->points.size();
-//     pcl_rs_out->height   = 1;
-//     pcl_rs_out->is_dense = 1;
-
-//     return true;
-// }
-
 // current used
-bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
+/// TODO: point-type
+bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
-    ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
+    ROS_INFO_ONCE("M300: ros_msg_in --> pcl_xyzin_out");
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
     double header_time = ros_msg_in->header.stamp.toSec();
@@ -145,7 +78,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
     }
     //// create Mapping
     pcl::MsgFieldMap field_map;
-    pcl::createMapping<RsPointXYZIRT> (pcl_fields, field_map);
+    pcl::createMapping<BsPointXYZI> (pcl_fields, field_map);
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     /// fill pcl_xyzin_out
@@ -159,8 +92,8 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
             const std::uint8_t* msg_data = h_data + w * ros_msg_in->point_step;
             auto col = h;
             auto row = w;
-            RsPointXYZIRT temp_point;
-            RsPointXYZIRT* curpt = &temp_point;
+            BsPointXYZI temp_point;
+            BsPointXYZI* curpt = &temp_point;
             std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
 
             for (const pcl::detail::FieldMapping& mapping : field_map){
@@ -194,9 +127,10 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
             xyzin_point.x = curpt->x;
             xyzin_point.y = curpt->y;
             xyzin_point.z = curpt->z;
-            xyzin_point.intensity = curpt->intensity;            
+            xyzin_point.intensity = curpt->intensities;            
             // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
-            xyzin_point.curvature = curpt->timestamp - header_time; // offset, unit = second
+            // xyzin_point.curvature = curpt->timestamp - header_time; // offset, unit = second
+            xyzin_point.curvature = 0; // offset, unit = second, 没有时间信息
 
             pcl_xyzin_out->points.push_back(xyzin_point);
 
@@ -212,10 +146,10 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
     return true;
 }
 
-// ///////////////// 入口函数 /////////////////                  
-// bool LidarPreprocAiry::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
+///////////////// 入口函数 /////////////////                  
+// bool LidarPreprocJT16::pre_process(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
-//     ROS_INFO("Airy: pcl_rs_in --> pcl_xyzin_out");
+//     ROS_INFO("M300: pcl_rs_in --> pcl_xyzin_out");
 //     const int extract_cloud_method = param_.extract_cloud_method;
 //     int plsize = pcl_rs_in->width;
 
@@ -239,7 +173,7 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 // // 间隔采样
-// void LidarPreprocAiry::extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
+// void LidarPreprocJT16::extract_cloud_by_interval_sampling(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
 // }
 

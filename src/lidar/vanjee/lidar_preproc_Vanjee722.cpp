@@ -143,36 +143,36 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
     return true;
 }
 
-///////////////// 入口函数 /////////////////                  
-bool LidarPreprocVanjee722::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
+// ///////////////// 入口函数 /////////////////                  
+// bool LidarPreprocVanjee722::pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
-    ROS_INFO("Airy: pcl_rs_in --> pcl_xyzin_out");
-    const int extract_cloud_method = param_.extract_cloud_method;
-    int plsize = pcl_rs_in->width;
+//     ROS_INFO("Airy: pcl_rs_in --> pcl_xyzin_out");
+//     const int extract_cloud_method = param_.extract_cloud_method;
+//     int plsize = pcl_rs_in->width;
 
-    pcl_xyzin_out->clear();
-    pcl_xyzin_out->reserve(plsize);
+//     pcl_xyzin_out->clear();
+//     pcl_xyzin_out->reserve(plsize);
 
 
-    if (extract_cloud_method == 0){
-        extract_cloud_by_interval_sampling(pcl_rs_in, pcl_xyzin_out);
-    } else{
-        // printf("extract_cloud_method set error!\n");
-        ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
-        exit(1);
-    }
+//     if (extract_cloud_method == 0){
+//         extract_cloud_by_interval_sampling(pcl_rs_in, pcl_xyzin_out);
+//     } else{
+//         // printf("extract_cloud_method set error!\n");
+//         ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
+//         exit(1);
+//     }
     
-    // printf("extract lidar count: %ld\n", pcl_xyzin_out->points.size());
-    ROS_INFO("extract lidar count: %ld", pcl_xyzin_out->points.size());
+//     // printf("extract lidar count: %ld\n", pcl_xyzin_out->points.size());
+//     ROS_INFO("extract lidar count: %ld", pcl_xyzin_out->points.size());
 
-    return true;
-}
+//     return true;
+// }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// 间隔采样
-void LidarPreprocVanjee722::extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
+// //////////////////////////////////////////////////////////////////////////////////////////////////
+// // 间隔采样
+// void LidarPreprocVanjee722::extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
 
-}
+// }
 
 
 } // namespace localization_module

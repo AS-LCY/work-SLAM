@@ -168,6 +168,8 @@ add_library(lidar_preproc SHARED
   src/lidar/livox/lidar_preproc_Mid360.cpp 
   src/lidar/robosense/lidar_preproc_Airy.cpp 
   src/lidar/vanjee/lidar_preproc_Vanjee722.cpp 
+  src/lidar/hesai/lidar_preproc_JT16.cpp 
+  src/lidar/lanhai/lidar_preproc_M300.cpp 
 )
 
 target_link_libraries(lidar_preproc 

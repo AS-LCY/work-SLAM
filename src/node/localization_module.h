@@ -80,8 +80,12 @@
 #include "lidar/lidar_preproc_parent.h"
 #include "lidar/livox/pcl_point_type_def_lvx.h"
 #include "lidar/livox/lidar_preproc_Mid360.h"
-#include "lidar/robosense/pcl_point_type_def_rbs.h"
+#include "lidar/robosense/pcl_point_type_def_rs.h"
 #include "lidar/robosense/lidar_preproc_Airy.h"
+#include "lidar/lanhai/pcl_point_type_def_bs.h"
+#include "lidar/lanhai/lidar_preproc_M300.h"
+#include "lidar/hesai/pcl_point_type_def_hs.h"
+#include "lidar/hesai/lidar_preproc_JT16.h"
 
 // #include "v4l2cam.h"
 
