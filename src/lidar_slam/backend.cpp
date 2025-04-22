@@ -22,10 +22,10 @@ BackEnd::BackEnd(float dist, float angle,float loop_dist, float loop_time, int l
    isam = new gtsam::ISAM2(parameters);
    downSizeFilterICP.setLeafSize(0.4, 0.4, 0.4);//TODO param?
    aLoopIsClosed = false;
-   ROS_INFO_STREAM(BOLDBLUE<<"loopIcpScore: "<<loopIcpScore<<RESET);
-   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchSkipKey: "<<loopKeyframeSearchSkipKey<<RESET);
-   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchTimeDiff: "<<loopKeyframeSearchTimeDiff<<RESET);
-   ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchRadius: "<<loopKeyframeSearchRadius<<RESET);
+//    ROS_INFO_STREAM(BOLDBLUE<<"loopIcpScore: "<<loopIcpScore<<RESET);
+//    ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchSkipKey: "<<loopKeyframeSearchSkipKey<<RESET);
+//    ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchTimeDiff: "<<loopKeyframeSearchTimeDiff<<RESET);
+//    ROS_INFO_STREAM(BOLDBLUE<<"loopKeyframeSearchRadius: "<<loopKeyframeSearchRadius<<RESET);
 
    gravityAlignedCLoud.reset(new PointCloudType());
 

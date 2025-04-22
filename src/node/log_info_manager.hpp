@@ -31,9 +31,9 @@ public:
 
     void reset_log_info(){
         slam_info.data.clear();
-        slam_info.data.resize(20);
+        slam_info.data.resize(30);
         fusion_info.data.clear();
-        fusion_info.data.resize(20);
+        fusion_info.data.resize(30);
     }
 }; // class LocalizationModuleLogInfoManager
 

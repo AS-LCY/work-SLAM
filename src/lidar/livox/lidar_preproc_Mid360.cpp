@@ -128,110 +128,110 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
 
 }
 
-//// 弃用
-bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){
+// //// 弃用
+// bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){
 
-    int cloud_num = ros_msg_in->height * ros_msg_in->width;
+//     int cloud_num = ros_msg_in->height * ros_msg_in->width;
 
-    ///// MetaData --- header 
-    pcl::PCLHeader pcl_header;
-    pcl_header.seq = ros_msg_in->header.seq;
-    pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
-    pcl_header.frame_id = ros_msg_in->header.frame_id;
-    ///// MetaData --- field
-    std::vector<pcl::PCLPointField> pcl_fields;
+//     ///// MetaData --- header 
+//     pcl::PCLHeader pcl_header;
+//     pcl_header.seq = ros_msg_in->header.seq;
+//     pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+//     pcl_header.frame_id = ros_msg_in->header.frame_id;
+//     ///// MetaData --- field
+//     std::vector<pcl::PCLPointField> pcl_fields;
     
-    pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
-    int i = 0;
-    for(; it != ros_msg_in->fields.end(); ++it, ++i) {
-      pcl_fields[i].name = it->name;
-      pcl_fields[i].offset = it->offset;
-      pcl_fields[i].datatype = it->datatype;
-      pcl_fields[i].count = it->count;
-    }
-    //// create Mapping
-    pcl::MsgFieldMap field_map;
-    pcl::createMapping<LvxPointXYZITLO> (pcl_fields, field_map);
+//     pcl_fields.resize(ros_msg_in->fields.size());
+//     std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
+//     int i = 0;
+//     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
+//       pcl_fields[i].name = it->name;
+//       pcl_fields[i].offset = it->offset;
+//       pcl_fields[i].datatype = it->datatype;
+//       pcl_fields[i].count = it->count;
+//     }
+//     //// create Mapping
+//     pcl::MsgFieldMap field_map;
+//     pcl::createMapping<LvxPointXYZITLO> (pcl_fields, field_map);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    /// fill lvx_msg_out
-    lvx_msg_out->time_stamp = ros_msg_in->header.stamp.toSec();
+//     ///////////////////////////////////////////////////////////////////////////////////////////
+//     /// fill lvx_msg_out
+//     lvx_msg_out->time_stamp = ros_msg_in->header.stamp.toSec();
 
-    for (std::uint32_t row = 0; row < ros_msg_in->height; ++row){
-        const std::uint8_t* row_data = &ros_msg_in->data[row * ros_msg_in->row_step];
-        for (std::uint32_t col = 0; col < ros_msg_in->width; ++col){
-            const std::uint8_t* msg_data = row_data + col * ros_msg_in->point_step;
-            LvxPointXYZITLO temp_point;
-            LvxPointXYZITLO* curpt = &temp_point;
-            std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
+//     for (std::uint32_t row = 0; row < ros_msg_in->height; ++row){
+//         const std::uint8_t* row_data = &ros_msg_in->data[row * ros_msg_in->row_step];
+//         for (std::uint32_t col = 0; col < ros_msg_in->width; ++col){
+//             const std::uint8_t* msg_data = row_data + col * ros_msg_in->point_step;
+//             LvxPointXYZITLO temp_point;
+//             LvxPointXYZITLO* curpt = &temp_point;
+//             std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
 
-            for (const pcl::detail::FieldMapping& mapping : field_map){
-                memcpy (curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
-            }
+//             for (const pcl::detail::FieldMapping& mapping : field_map){
+//                 memcpy (curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
+//             }
 
-            livox_ros::LidarPoint livox_point;
-            livox_point.x = curpt->x;
-            livox_point.y = curpt->y;
-            livox_point.z = curpt->z;
-            livox_point.reflectivity = curpt->intensity;
-            livox_point.tag = curpt->tag;
-            livox_point.line = curpt->line;
-            if(abs(livox_point.x) > thr_region_x_ || abs(livox_point.y) > thr_region_y_ || livox_point.z > thr_region_z_){
-               continue;
-            }
+//             livox_ros::LidarPoint livox_point;
+//             livox_point.x = curpt->x;
+//             livox_point.y = curpt->y;
+//             livox_point.z = curpt->z;
+//             livox_point.reflectivity = curpt->intensity;
+//             livox_point.tag = curpt->tag;
+//             livox_point.line = curpt->line;
+//             if(abs(livox_point.x) > thr_region_x_ || abs(livox_point.y) > thr_region_y_ || livox_point.z > thr_region_z_){
+//                continue;
+//             }
 
-            if ((livox_point.tag & 0x30) == 0x20 || (livox_point.tag & 0x30) == 0x30
-                || (livox_point.tag & 0x03) == 0x02 || (livox_point.tag & 0x03) == 0x03){
-                continue;
-            }
-            double range = livox_point.x * livox_point.x + livox_point.y * livox_point.y + livox_point.z * livox_point.z;
-            if (range < blind_square_){
-                continue;
-            }
+//             if ((livox_point.tag & 0x30) == 0x20 || (livox_point.tag & 0x30) == 0x30
+//                 || (livox_point.tag & 0x03) == 0x02 || (livox_point.tag & 0x03) == 0x03){
+//                 continue;
+//             }
+//             double range = livox_point.x * livox_point.x + livox_point.y * livox_point.y + livox_point.z * livox_point.z;
+//             if (range < blind_square_){
+//                 continue;
+//             }
 
-            // livox_point.offset_time = curpt->offset_time;
-            // 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒
-            // livox_point.offset_time = (curpt->timestamp / double(1000000000.0) - msg->time_stamp);
-            livox_point.offset_time = (curpt->timestamp  * 1e-9 - lvx_msg_out->time_stamp);
-            lvx_msg_out->points.push_back(livox_point);
-        }
-    }
-    lvx_msg_out->point_num = lvx_msg_out->points.size();
+//             // livox_point.offset_time = curpt->offset_time;
+//             // 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒
+//             // livox_point.offset_time = (curpt->timestamp / double(1000000000.0) - msg->time_stamp);
+//             livox_point.offset_time = (curpt->timestamp  * 1e-9 - lvx_msg_out->time_stamp);
+//             lvx_msg_out->points.push_back(livox_point);
+//         }
+//     }
+//     lvx_msg_out->point_num = lvx_msg_out->points.size();
 
-    return true;
+//     return true;
 
-}
-
-
-///////////////// 入口函数 /////////////////
-bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
-    const int extract_cloud_method = param_.extract_cloud_method;
-    int plsize = msg->point_num;
-
-    pcl_cld_out->clear();
-    pcl_cld_out->reserve(plsize);
+// }
 
 
-    if (extract_cloud_method == 0){
-        extract_cloud_by_interval_sampling(msg, pcl_cld_out);
-    }else if(extract_cloud_method == 1){
-        extract_cloud_by_simple_voxel(msg, pcl_cld_out);
-    }else if(extract_cloud_method == 2){
-        extract_cloud_by_interval_and_voxel(msg, pcl_cld_out);
-    }else if(extract_cloud_method == 3){
-        extract_cloud_by_feature(msg, pcl_cld_out);
-    } else{
-        // printf("extract_cloud_method set error!\n");
-        ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
-        exit(1);
-    }
+// ///////////////// 入口函数 /////////////////
+// bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){
+//     const int extract_cloud_method = param_.extract_cloud_method;
+//     int plsize = msg->point_num;
+
+//     pcl_cld_out->clear();
+//     pcl_cld_out->reserve(plsize);
+
+
+//     if (extract_cloud_method == 0){
+//         extract_cloud_by_interval_sampling(msg, pcl_cld_out);
+//     }else if(extract_cloud_method == 1){
+//         extract_cloud_by_simple_voxel(msg, pcl_cld_out);
+//     }else if(extract_cloud_method == 2){
+//         extract_cloud_by_interval_and_voxel(msg, pcl_cld_out);
+//     }else if(extract_cloud_method == 3){
+//         extract_cloud_by_feature(msg, pcl_cld_out);
+//     } else{
+//         // printf("extract_cloud_method set error!\n");
+//         ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
+//         exit(1);
+//     }
     
-    // printf("extract lidar count: %ld\n", pcl_cld_out->points.size());
-    ROS_INFO("extract lidar count: %ld", pcl_cld_out->points.size());
-    return true;
+//     // printf("extract lidar count: %ld\n", pcl_cld_out->points.size());
+//     ROS_INFO("extract lidar count: %ld", pcl_cld_out->points.size());
+//     return true;
     
-}
+// }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // 间隔采样

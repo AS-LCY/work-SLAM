@@ -458,6 +458,16 @@ void LidarSlam::localizationThread()
                     local_thrd_status_.store(4);
                 }
 
+
+                Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
+                Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
+                // Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
+                // Eigen::Isometry3d curr_odom_to_map_baselink = lidar_in_map_inv * curr_odom_to_map;
+                // log_info_manager_->slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
+                // log_info_manager_->slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
+                log_info_manager_->slam_info.data[17] = curr_odom_to_map.translation().x();
+                log_info_manager_->slam_info.data[18] = curr_odom_to_map.translation().y();
+
                 log_info_manager_->slam_info.data[4]=fit_score;
                 log_info_manager_->slam_info.data[5]=gicp_fail_count;
                 log_info_manager_->slam_info.data[6]=gicp_low_acc_count;
@@ -479,7 +489,7 @@ void LidarSlam::localizationThread()
 
 void LidarSlam::global_localization_for_sec_mapping_thread(){
     // const int frequency = 1.0; // 频率为1Hz
-    const int frequency = 2.0; // 频率为2Hz
+    const int frequency = 1.0; // 频率为2Hz
     const std::chrono::milliseconds period(1000 / frequency);
     const auto score_thr = config_param_.re_localization.score_thr;
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;

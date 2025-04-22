@@ -1,0 +1,35 @@
+localization_fusion:
+    status_num: 3
+    input_num: 2
+    measure_num: 3
+    localization_fusion_dt: 50 # unit: ms
+    status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta], for init
+    input_cov_mat_diag: [0.05, 0.0017]  # [v, w] 
+    measure_cov_mat_diag: [0.02, 0.02, 0.001] # [x, y, theta]
+    w_thr: 0.15 # unit: rad/s
+    ekf_use_chassis: true # defualt to true, if test without chassis then set to false
+    use_ekf_yaw: false
+    baselink_in_lidar: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    # baselink_in_lidar: [-0.2, 0.0, 0.0, 0.0, 0.0, 0.0] # x(m), x(m), x(m), roll(deg), pitch(deg), yaw(deg)
+    time_lost_thr: 2.0  # unit: second
+    reset_time_thr: 300 # unit: second
+    
+    gating:
+        mah_drift_thresh : 100
+        mah_drift_lateral_thresh: 10
+        mah_warn_thresh: 5
+        mah_warn_lateral_thresh: 5
+        dis_drift_lateral_thresh: 0.3 # meter
+        turn_angular_thresh: 0.01
+    fusion_topics:
+        sub_imu_topic: "/livox/imu"
+        sub_chassis_topic: "/flbot/hardware/chassic_data"
+        sub_slam_odom_topic: "/Odometry_lidar_in_map"
+        # pub_localization_topic: "/flbot/localiztion/odometry"
+        pub_localization_topic: "/Odometry_lidar_in_map_filter"
+        pub_slipping_topic: "/flbot/localization/slipping"
+
+    detect_slip: 
+        detect_window_time_range: 2 # unit: second
+        slipping_count_thr: 5 # 连续帧数超过距离阈值，即为打滑, 20hz 前提下
+        slipping_dist_thr: 0.15 # unit: m

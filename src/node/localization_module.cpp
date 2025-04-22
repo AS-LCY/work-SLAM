@@ -446,7 +446,8 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
     // if (show_load_map_==0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
-    if (show_load_map_%200==0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
+    if (show_load_map_%200==0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && 
+        (slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0){
         // ROS_INFO("load map");
         // sleep(1);
         sensor_msgs::PointCloud2 loadMap;
@@ -468,7 +469,6 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     /********************************- run slam -********************************/ 
 
     // thisId = std::this_thread::get_id();
-    // std::cout << "debug: slam_->run()        Thread ID: " << thisId << std::endl;
     // running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
     bool running_slam_flag = slam_->run();
     ros::Time ros_time_now = ros::Time().now();
@@ -484,6 +484,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         // publish_unoptimized_path(slam_->get_unoptimized_path(),string("odom"),pubUnoptimizedPath);
         // publish_optimized_path(slam_->get_optimized_path(),string("odom"), pubOptimizedPath);
         // visualizeLoopClosure(slam_->getloopIndex(),optimized_path_msg, pubLoopConstraintEdge);
+        process_loginfo();
     }
 
     auto localization_status_now = localization_status_.load();
@@ -517,6 +518,49 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     // }
 }
 
+void LocalizationModule::process_loginfo(){
+    static Eigen::Isometry3d last_lidar_in_map = slam_->getLidarInMap();
+    static Eigen::Isometry3d last_lidar_in_odom = slam_->getLidarInOdom();
+
+    Eigen::Isometry3d curr_lidar_in_map = slam_->getLidarInMap();
+    Eigen::Isometry3d curr_lidar_in_odom = slam_->getLidarInOdom();
+
+    Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
+    Eigen::Isometry3d lidar_in_odom_inv = curr_lidar_in_odom.inverse();
+
+    Eigen::Isometry3d last_lidar_in_map_baselink = lidar_in_map_inv * last_lidar_in_map;
+    Eigen::Isometry3d curr_lidar_in_map_baselink = lidar_in_map_inv * curr_lidar_in_map;
+
+    Eigen::Isometry3d last_lidar_in_odom_baselink = lidar_in_odom_inv * last_lidar_in_odom;
+    Eigen::Isometry3d curr_lidar_in_odom_baselink = lidar_in_odom_inv * curr_lidar_in_odom;
+
+    // log_info_manager_->slam_info.data[19] = curr_lidar_in_odom_baselink.translation().x() - last_lidar_in_odom_baselink.translation().x() ;
+    // log_info_manager_->slam_info.data[20] = curr_lidar_in_odom_baselink.translation().y() - last_lidar_in_odom_baselink.translation().y() ;
+    // log_info_manager_->slam_info.data[21] = curr_lidar_in_map_baselink.translation().x() - last_lidar_in_map_baselink.translation().x() ;
+    // log_info_manager_->slam_info.data[22] = curr_lidar_in_map_baselink.translation().y() - last_lidar_in_map_baselink.translation().y() ;
+    
+    log_info_manager_->slam_info.data[19] = curr_lidar_in_odom.translation().x() - last_lidar_in_odom.translation().x() ;
+    log_info_manager_->slam_info.data[20] = curr_lidar_in_odom.translation().y() - last_lidar_in_odom.translation().y() ;
+
+    log_info_manager_->slam_info.data[21] = curr_lidar_in_map.translation().x() - last_lidar_in_map.translation().x() ;
+    log_info_manager_->slam_info.data[22] = curr_lidar_in_map.translation().y() - last_lidar_in_map.translation().y() ;
+    
+    // # 19: baseframe_slam_dx   # 车身 坐标系下, dx
+    // # 20: baseframe_slam_dy   # 车身 坐标系下, dy
+    // # 21: baseframe_res_dx   # 车身 坐标系下, dx
+    // # 22: baseframe_res_dy   # 车身 坐标系下, dy
+
+    // // Eigen::Isometry3d curr_lidar_in_map = slam_->getLidarInMap();
+    // // Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
+    // Eigen::Isometry3d curr_odom_to_map = slam_->getOdomToMap();
+    // Eigen::Isometry3d curr_odom_to_map_baselink = lidar_in_map_inv * curr_odom_to_map;
+    // log_info_manager_->slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
+    // log_info_manager_->slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
+
+    // update
+    last_lidar_in_odom = curr_lidar_in_odom;
+    last_lidar_in_map  = curr_lidar_in_map;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 // 以下为 pose filter timer 
@@ -1109,7 +1153,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     if(mapping_status_.load() != 0 && mapping_status_.load() != 3){
         ROS_WARN_STREAM(RED << "[Status Timer]: mapping_status: " << mapping_status_ << RESET);
     }
-
+    // if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_.load()>2){
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
         publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map", "base_link", curr_running_module_status, pubLidarInMap);
         // publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
