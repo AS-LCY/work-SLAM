@@ -273,15 +273,22 @@ add_executable(localization_fusion_node
 #############
 
 
-# file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
-file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.10.0/lib/libpcl*")
-file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
-file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
-#file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
-file(GLOB YAML_CPP_LIBS "${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/lib*")
-file(GLOB fast_gicp_LIBS "${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/lib*")
+# # file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
+# file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.10.0/lib/libpcl*")
+# file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
+# file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
+# #file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
+# file(GLOB YAML_CPP_LIBS "${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/lib*")
+# file(GLOB fast_gicp_LIBS "${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/lib*")
 
-install(TARGETS lidar_slam_node lidar_slam #ikd_Tree Scancontext backend sensor_data_preproc
+install(TARGETS lidar_slam_node lidar_slam lidar_preproc 
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
+install(TARGETS localization_fusion_node  mango_common
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -291,17 +298,17 @@ install(DIRECTORY launch config rviz_cfg
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 
-install(FILES 
-  ${cv_bridge_LIBRARIES}
-  # ${OPENCV_LIBS} 
-  ${PCL_LIBS} 
-  ${GTSAM_LIBS} 
-  ${fmt_LIBS} 
-  #${Pangolin_LIBS} 
-  ${YAML_CPP_LIBS} 
-  ${fast_gicp_LIBS} 
-  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-)
+# install(FILES 
+#   ${cv_bridge_LIBRARIES}
+#   # ${OPENCV_LIBS} 
+#   ${PCL_LIBS} 
+#   ${GTSAM_LIBS} 
+#   ${fmt_LIBS} 
+#   #${Pangolin_LIBS} 
+#   ${YAML_CPP_LIBS} 
+#   ${fast_gicp_LIBS} 
+#   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# )
 
 
 # all install targets should use catkin DESTINATION variables
