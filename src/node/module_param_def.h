@@ -50,7 +50,6 @@ struct LidarSlamParam{
     ReLocalizationParam re_localization;
     MappingParam mapping;
     LocalizationParam localization;
-    SecondMappingParam sec_mapping;
     IkdTreeParam ikdtree;
     DetectSlipParam detect_slip;
 };

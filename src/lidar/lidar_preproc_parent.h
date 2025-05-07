@@ -26,20 +26,6 @@ public:
     virtual ~LidarPreprocParent();
 
 
-    // for lanhai
-    // virtual bool pre_process(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_cld_in, PointCloudType::Ptr pcl_cld_out){return true;}
-
-    // for livox
-    // virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){return true;}
-    // virtual bool pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr pcl_cld_out){return true;}
-    
-    // for robosense
-    // virtual bool pre_process(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_in, PointCloudType::Ptr pcl_cld_out){return true;}
-    // virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_cld_out){return true;} // not used for now
-    
-    // for vanjee 
-    // virtual bool pre_process(const pcl::PointCloud<VjPointXYZIRT>::Ptr pcl_cld_in, PointCloudType::Ptr pcl_cld_out){return true;}
-    
     // for robosense & vanjee
     virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){return true;}
     
@@ -58,6 +44,8 @@ private:
 
 protected:
     int cloud_size_to_keep_ = 2000;
+    double blind_range_square_ = 0.0;
+    double max_range_square_ = 0.0;
 
 private:
 

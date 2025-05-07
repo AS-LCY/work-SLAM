@@ -34,7 +34,6 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode){
     ROS_INFO("Setting LidarSlam Param");
     config_param_ = yaml_param;
     feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
-    // flag_keep_only_last_lidar_ = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 
     // cout << "Reset LidarSlam"<<endl;
     ROS_INFO("Reset LidarSlam");
@@ -125,11 +124,9 @@ void LidarSlam::reset(SlamWorkMode work_mode){
     const auto blind_distance = config_param_.lidar_preproc.blind_distance;
     const auto point_filter_num = config_param_.lidar_preproc.point_filter_num;
     const auto line_count = config_param_.lidar_preproc.line_count;
-    const auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
-    const auto feature_enabled = config_param_.lidar_preproc.feature_enabled;
-    // const auto simple_voxel_enabled = config_param_.lidar_preproc.simple_voxel_enabled;
+    // const auto obstacle_max_range = config_param_.lidar_preproc.obstacle_max_range;
+    // const auto feature_enabled = config_param_.lidar_preproc.feature_enabled;
     // p_lidar_pre.reset(new Preprocess());
-    // // p_lidar_pre->set(feature_enabled, simple_voxel_enabled, AVIA, blind_distance,point_filter_num,line_count,obstacle_max_range);
     // p_lidar_pre->set(config_param_.lidar_preproc);
 
     // lidar reset 
@@ -424,8 +421,6 @@ void LidarSlam::localizationThread()
             }
             else{
                 // ROS_INFO_STREAM("localizing ... ");
-                // if (localization->localize(temp, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                // if (localization->localize(temp, fgicp_score_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                 double fit_score = 0.0; // gicp_fit_score
                 if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
                     // ROS_INFO_STREAM("fit_score: " << fit_score);
@@ -603,7 +598,6 @@ void LidarSlam::showThread()
 }
 
 // void LidarSlam::robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud){
-//     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 //     double t0 = omp_get_wtime();
 //     if (reseting)
 //         return;
@@ -612,7 +606,6 @@ void LidarSlam::showThread()
 
 void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     // param
-    // static const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
     static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
     if (reseting) { return; }
 
@@ -642,10 +635,6 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     }
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    // if (flag_keep_only_last_lidar){
-    //     lidar_buffer.clear();
-    //     time_buffer.clear();
-    // }
     while(lidar_buffer.size() > keep_lidar_num_before_curr){
         lidar_buffer.pop_front();
         time_buffer.pop_front();

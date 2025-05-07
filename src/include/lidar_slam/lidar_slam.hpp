@@ -161,7 +161,6 @@ class LidarSlam
                 if(!cloud_map_manager_->load_map_data(directory))
                 return false;
             }else{
-                // cout<<"error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) << endl;
                 ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return false;
             }
@@ -220,7 +219,6 @@ class LidarSlam
                 return global_localization_->get_global_odom_to_map();
                 // return localization->getOdomToMap();
             }else{
-                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
                 ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
@@ -240,7 +238,6 @@ class LidarSlam
             if (working_mode_ == LOCALIZATION){
                return localization->getLastOdomToMap();
             }else{
-                // cout << "working_mode: "<<print_SlamWorkMode(working_mode_)<<", error mode"<<endl;
                 ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
@@ -336,15 +333,6 @@ class LidarSlam
         //     return FilteredObstacleCloud;
         // }
 
-        // LocalizationStatus get_l_status(){
-        //     return l_status_;
-        // }
-
-        // void reset_globalLocalizationSuccess(bool global_success_flag){
-        //     globalLocalizationSuccess = global_success_flag;
-        //     global_localize_count_ = 0;
-        //     // l_status_ = L_RELOCALIZING;
-        // }
 
         double get_lidar_time(){
             return lidar_end_time;

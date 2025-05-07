@@ -32,11 +32,9 @@ Preprocess::Preprocess()
 
 Preprocess::~Preprocess() {}
 
-// void Preprocess::set(bool feat_en,bool voxel_en, int lid_type, double bld, int pfilt_num,int line,double obstacle)
 void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num,int line,double obstacle)
 {
   feature_enabled = feat_en;
-  // simple_voxel_enabled_ = voxel_en;
   lidar_type = lid_type;
   blind = bld;
   point_filter_num = pfilt_num;
@@ -46,7 +44,6 @@ void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num,int l
 
 void Preprocess::set(lidar_slam::LidarPreprocParam param_in){
     feature_enabled = param_in.feature_enabled;
-    // simple_voxel_enabled_ = param_in.simple_voxel_enabled;
     lidar_type = param_in.lidar_type;
     blind = param_in.blind_distance;
     point_filter_num = param_in.point_filter_num;

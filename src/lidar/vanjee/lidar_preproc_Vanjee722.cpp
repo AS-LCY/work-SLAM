@@ -29,17 +29,18 @@ bool LidarPreprocVanjee722::set_param(){
     }else{
         param_ = loaded_param->lidar_preproc;
 
-        thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-        blind_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
         point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
         ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
         cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
         // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
         // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
-        // ROS_ERROR("blind_square_ : %lf", blind_square_);
+        // ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
         // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
 
         return true;
@@ -103,7 +104,7 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
             //    continue;
             // }
             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if(range_square < blind_square_){
+            if(range_square < blind_range_square_ || range_square > max_range_square_){
                 continue;
             }
 

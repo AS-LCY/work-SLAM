@@ -10,6 +10,7 @@
 #include "fairland_msgs/LocalizationModuleLogInfo.h"
 
 #include "lidar_slam/common_lib.h"
+#include "node/common_ros.hpp"
 
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"

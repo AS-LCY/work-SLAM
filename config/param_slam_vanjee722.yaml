@@ -16,7 +16,8 @@ common:
   # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
   # map_directory: "/home/pmm/data/3-vanjee/0103/2vj/3dmap/"
   # map_directory: "/home/pmm/data/3-vanjee/0319-tianhe/"
-  map_directory: "/home/pmm/data/3-vanjee/0109/天和草场/0109/nopeople/"
+  # map_directory: "/home/pmm/data/3-vanjee/0109/天和草场/0109/nopeople/"
+  map_directory: "/home/pmm/data/3-vanjee/0420/lidar-2/1-gym/maps-1"
   
   # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
 
@@ -55,7 +56,7 @@ extrinsic:
   
   # 0.210 -0.01
   Lidar_In_Wheel: [1,  0,  0,  0.0,
-                    0,  1,  0,  -0.0,
+                    0,  1,  0,  0.21,
                     0,  0,  1,  0.1,
                     0,  0,  0,  1]
 
@@ -84,17 +85,19 @@ localization:
 
 lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 
+  cloud_column_count: 1200
+  cloud_ring_count: 16
   sub_lidar_topic: "/vanjee/lidar"
   sub_imu_topic: "/vanjee/imu"
   # sub_imu_topic: "/trans/imu"
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 1.5 
-  flag_keep_only_last_lidar: true
+  max_distance: 70
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
-  point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+  # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 2000
-  feature_enabled: false  # default to false
-  extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
+  # feature_enabled: false  # default to false
+  # extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 6 # 间隔采样所需参数
   ring_filter_num: 1
   leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
@@ -102,10 +105,10 @@ lidar_preproc:
   voxel_region_xyz: [-10, 10.0, -10.0, 10.0, -1, 15]  # order: xmin, xmax, ymin, ymax, zmin, zmax
   boundary_z: 3 # init: m
   # 
-  obstacle_max_range:  2.5
-  obstacle_max_height: 0.5
-  obstacle_min_height: -0.1 # above wheel center
-  obstacle_filter_size: 20
+  # obstacle_max_range:  2.5
+  # obstacle_max_height: 0.5
+  # obstacle_min_height: -0.1 # above wheel center
+  # obstacle_filter_size: 20
   grid_size: 0.05 # unit: m
   time_cost_thr_print: 10 # unit: ms, double
 
@@ -123,12 +126,7 @@ mapping:
   loopIcpScore: 1 # 原本代码中写死为 0.3
   # use_ele_pcd_flag: false   # 是否使用单区域pcd
   # save_ele_pcd_flag: false  # 是否保存单区域pcd
-  # save_map_dir: "/home/panmiaomiao/catkin_ws/data/test-save-map" # 可以填空字符，但不能不赋值
   save_map_resolution: 0.1 # unit: m
-
-# sec_mapping:
-#   load_map_dir: " " # 可以填空字符，但不能不赋值
-    
 
 re_localization:
   score_thr: 0.05

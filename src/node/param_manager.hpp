@@ -150,28 +150,32 @@ public:
 
         /// lidar_preproc params *******************************************
         get_param(ns+ "lidar_preproc/lidar_type", loaded_param_.lidar_preproc.lidar_type, &success);
+        if(loaded_param_.lidar_preproc.lidar_type == 2 || loaded_param_.lidar_preproc.lidar_type == 3){
+            get_param(ns+ "lidar_preproc/cloud_column_count", loaded_param_.lidar_preproc.cloud_column_count, &success);
+            get_param(ns+ "lidar_preproc/cloud_ring_count", loaded_param_.lidar_preproc.cloud_ring_count, &success);
+        }else if(loaded_param_.lidar_preproc.lidar_type == 1){
+            get_param(ns+ "lidar_preproc/line_count", loaded_param_.lidar_preproc.line_count, &success);
+        }
         get_param(ns+ "lidar_preproc/sub_lidar_topic", loaded_param_.lidar_preproc.sub_lidar_topic, &success);
         get_param(ns+ "lidar_preproc/sub_imu_topic", loaded_param_.lidar_preproc.sub_imu_topic, &success);
-        get_param(ns+ "lidar_preproc/line_count", loaded_param_.lidar_preproc.line_count, &success);
         get_param(ns+ "lidar_preproc/blind_distance", loaded_param_.lidar_preproc.blind_distance, &success);
-        // get_param(ns+ "lidar_preproc/flag_keep_only_last_lidar", loaded_param_.lidar_preproc.flag_keep_only_last_lidar, &success);
+        get_param(ns+ "lidar_preproc/max_distance", loaded_param_.lidar_preproc.max_distance, &success);
         get_param(ns+ "lidar_preproc/keep_lidar_num_before_curr", loaded_param_.lidar_preproc.keep_lidar_num_before_curr, &success);
         get_param(ns+ "lidar_preproc/point_filter_num", loaded_param_.lidar_preproc.point_filter_num, &success);
         get_param(ns+ "lidar_preproc/ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num, &success);
-        get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);
+        // get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);
         get_param(ns+ "lidar_preproc/cloud_size_to_keep", loaded_param_.lidar_preproc.cloud_size_to_keep, &success);
-        get_param(ns+ "lidar_preproc/feature_enabled", loaded_param_.lidar_preproc.feature_enabled, &success);
-        // get_param(ns+ "lidar_preproc/simple_voxel_enabled", loaded_param_.lidar_preproc.simple_voxel_enabled, &success);
-        get_param(ns+ "lidar_preproc/extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method, &success);
+        // get_param(ns+ "lidar_preproc/feature_enabled", loaded_param_.lidar_preproc.feature_enabled, &success);
+        // get_param(ns+ "lidar_preproc/extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method, &success);
         get_param(ns+ "lidar_preproc/leafsize", loaded_param_.lidar_preproc.leafsize, &success);
         get_param(ns+ "lidar_preproc/leafsize_vec", loaded_param_.lidar_preproc.leafsize_vec, &success);
         get_param(ns+ "lidar_preproc/voxel_region_xyz", loaded_param_.lidar_preproc.voxel_region_xyz, &success);
         get_param(ns+ "lidar_preproc/boundary_z", loaded_param_.lidar_preproc.boundary_z, &success);
-        get_param(ns+ "lidar_preproc/obstacle_max_range", loaded_param_.lidar_preproc.obstacle_max_range, &success);
-        // 
-        get_param(ns+ "lidar_preproc/obstacle_max_height", loaded_param_.lidar_preproc.obstacle_max_height, &success);
-        get_param(ns+ "lidar_preproc/obstacle_min_height", loaded_param_.lidar_preproc.obstacle_min_height, &success);
-        get_param(ns+ "lidar_preproc/obstacle_filter_size", loaded_param_.lidar_preproc.obstacle_filter_size, &success);
+
+        // get_param(ns+ "lidar_preproc/obstacle_max_range", loaded_param_.lidar_preproc.obstacle_max_range, &success);
+        // get_param(ns+ "lidar_preproc/obstacle_max_height", loaded_param_.lidar_preproc.obstacle_max_height, &success);
+        // get_param(ns+ "lidar_preproc/obstacle_min_height", loaded_param_.lidar_preproc.obstacle_min_height, &success);
+        // get_param(ns+ "lidar_preproc/obstacle_filter_size", loaded_param_.lidar_preproc.obstacle_filter_size, &success);
         get_param(ns+ "lidar_preproc/grid_size", loaded_param_.lidar_preproc.grid_size, &success);
         get_param(ns+ "lidar_preproc/time_cost_thr_print", loaded_param_.lidar_preproc.time_cost_thr_print, &success);
         
@@ -190,14 +194,9 @@ public:
         get_param(ns+ "mapping/loopIcpScore", loaded_param_.mapping.loopIcpScore, &success);
         // get_param(ns+ "mapping/use_ele_pcd_flag", loaded_param_.mapping.use_ele_pcd_flag, &success);
         // get_param(ns+ "mapping/save_ele_pcd_flag", loaded_param_.mapping.save_ele_pcd_flag, &success);
-        // get_param(ns+ "mapping/save_map_dir", loaded_param_.mapping.save_map_dir, &success);
         get_param(ns+ "mapping/save_map_resolution", loaded_param_.mapping.save_map_resolution, &success);
         
-        /// sec_mapping params *******************************************
-        // get_param(ns+ "sec_mapping/load_map_dir", loaded_param_.sec_mapping.load_map_dir, &success);
-
         /// localization params *******************************************
-        // get_param(ns+ "localization/load_map_dir", loaded_param_.localization.load_map_dir, &success);
         get_param(ns+ "localization/fgicp_freq", loaded_param_.localization.fgicp_freq, &success);
         // get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
         get_param(ns+ "localization/fgicp_score_fail_thr", loaded_param_.localization.fgicp_score_fail_thr, &success);

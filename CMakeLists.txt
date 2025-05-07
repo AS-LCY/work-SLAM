@@ -178,6 +178,7 @@ target_link_libraries(lidar_preproc
 
 # build: slam core
 add_library(lidar_slam SHARED
+  src/lidar_slam/common_lib.cpp 
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
@@ -227,8 +228,7 @@ add_executable(lidar_slam_node
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
   # src/node/detect_slipping.cpp
-  src/node/pose_filter.cpp
-  # src/slipping/detect_slipping.cpp
+  # src/node/pose_filter.cpp
 )
 
 # add_dependencies(lidar_slam_node )
@@ -242,8 +242,6 @@ target_link_libraries(lidar_slam_node
   # ${cv_bridge_LIBRARIES}
   lidar_slam
   lidar_preproc
-  # gtsam
-  # fmt::fmt 
   # yaml-cpp 
   ) 
 
@@ -259,6 +257,7 @@ add_executable(localization_fusion_node
   src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
   src/fusion_node/ekf_fusion/pose_ekf.cpp 
   src/slipping/detect_slipping.cpp
+  src/lidar_slam/common_lib.cpp 
 )
 
 

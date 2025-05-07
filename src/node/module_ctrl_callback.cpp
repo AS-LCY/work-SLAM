@@ -137,9 +137,7 @@ bool LocalizationModule::start_mapping(int map_id){
     }
     if (running_module_status_now == ModuleStatus::MODULE_IDLE){
         running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
-        make_slam_obj(slam_param_, set_status);
-        // mapping_status_ = M_STANDBY;
-        // running_module_status_ = ModuleStatus::MODULE_MAPPING;   
+        make_slam_obj(slam_param_, set_status);  
         running_module_status_.store(ModuleStatus::MODULE_MAPPING);
         mapping_node_status_.store(1);// 1: normal
         return true;
@@ -195,9 +193,6 @@ bool LocalizationModule::start_second_mapping(int map_id){
             mapping_node_status_.store(1);// 1: normal
             return true;
         }
-        // mapping_status_ = M_STANDBY;
-        // running_module_status_ = ModuleStatus::MODULE_SEC_MAPPING;
-        // return true;
     }else if(is_mapping_status(running_module_status_now)){
         ROS_INFO("skip, already running mapping now");
         return false;
@@ -249,13 +244,10 @@ bool LocalizationModule::stop_mapping_without_saving_map(){
 
 bool LocalizationModule::stop_mapping(){
     // TODO: 问题：当点云量为0时，程序挂掉
-    // if (last_running_module_status_ == ModuleStatus::MODULE_MAPPING || last_running_module_status_ == ModuleStatus::MODULE_SEC_MAPPING){
     auto running_module_status_now = running_module_status_.load();
     auto mapping_status_now = mapping_status_.load();
     ModuleStatus set_status = ModuleStatus::MODULE_IDLE;
-    // if (is_mapping_status(last_running_module_status_)){
     if (is_mapping_status(running_module_status_now)){
-        // if(mapping_status_ == M_STANDBY){
         if(mapping_status_now == 3){
             running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
             ROS_INFO("mapping_status: %d", mapping_status_.load());
@@ -274,7 +266,6 @@ bool LocalizationModule::stop_mapping(){
             ROS_WARN_STREAM(YELLOW << "[Slam ctrl]: map_saved_: " << map_saved_.load() << RESET);
 
             ROS_INFO("start stop mapping");
-            // mapping_status_ = M_INACTIVE;
             sleep(1);
             // set_module_status_ = ModuleStatus::MODULE_IDLE;
             release_slam_obj();
@@ -283,7 +274,7 @@ bool LocalizationModule::stop_mapping(){
             mapping_node_status_.store(0);// 0: inactive
 
             return true;
-        }else if(mapping_status_now == M_CREATING_ELE){
+        }else if(mapping_status_now == 4){
             ROS_INFO("mapping_status: %d", mapping_status_.load());
             ROS_INFO("skip, please finish current map-element, or delete it first !");
             return false;
@@ -309,9 +300,6 @@ bool LocalizationModule::stop_mapping(){
         return false;
     }
 
-    // running_module_status_ = ModuleStatus::MODULE_IDLE;
-
-    // return;
 }
 
 bool LocalizationModule::save_extrinsic_to_file(){
@@ -526,9 +514,8 @@ void LocalizationModule::release_slam_obj(){
     temp_slam = nullptr;
     // ROS_INFO("debug: set nullptr successfully");
 
-    start_index_ = -1;
-    end_index_ = -1;
-    // running_module_status_ = ModuleStatus::MODULE_IDLE;
+    // start_index_ = -1; // not used now, 目前不涉及创建元素的操作
+    // end_index_ = -1; // not used now, 目前不涉及创建元素的操作
     running_module_status_.store(ModuleStatus::MODULE_IDLE);  
     mapping_node_status_.store(0);// 0: inactive
     local_node_status_.store(0);// 0: inactive  

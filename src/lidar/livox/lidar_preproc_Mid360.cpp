@@ -29,12 +29,13 @@ bool LidarPreprocMid360::set_param(){
     }else{
         param_ = loaded_param->lidar_preproc;
 
-        thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-        blind_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        // obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
         point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
 
         cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
@@ -93,8 +94,8 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
                 || (curpt->tag & 0x03) == 0x02 || (curpt->tag & 0x03) == 0x03){
                 continue;
             }
-            double range = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if (range < blind_square_){
+            double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
+            if(range_square < blind_range_square_ || range_square > max_range_square_){
                 continue;
             }
 
@@ -186,7 +187,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
 //                 continue;
 //             }
 //             double range = livox_point.x * livox_point.x + livox_point.y * livox_point.y + livox_point.z * livox_point.z;
-//             if (range < blind_square_){
+//             if (range < blind_range_square_){
 //                 continue;
 //             }
 
@@ -243,8 +244,8 @@ void LidarPreprocMid360::extract_cloud_by_interval_sampling(const std::shared_pt
         if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) 
             && ((msg->points[i].tag & 0x03) == 0x01 || (msg->points[i].tag & 0x03) == 0x00)){
             valid_num++;
-            double range = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
-            // if (range < obstacle_square_ && range>blind_square_){
+            double range_square = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
+            // if (range < obstacle_square_ && range>blind_range_square_){
             //     PointType point;
             //     point.x = msg->points[i].x;
             //     point.y = msg->points[i].y;
@@ -277,7 +278,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_sampling(const std::shared_pt
                 static PointType last_pt = temp_pt;
                 if ((abs(curr_pt.x - last_pt.x) > 0.15) || (abs(curr_pt.y - last_pt.y) > 0.15) || (abs(curr_pt.z - last_pt.z) > 0.15))
                 {
-                    if (range > (blind_square_)){
+                    if (range_square > blind_range_square_ && range_square < max_range_square_){
                         // pcl_cld_out->push_back(pl_full[i]);
                         pcl_cld_out->push_back(curr_pt);
                     }
@@ -326,7 +327,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
         {
             valid_num++;
             double range_square = msg->points[i].x * msg->points[i].x + msg->points[i].y * msg->points[i].y + msg->points[i].z * msg->points[i].z;
-            // if (range_square < obstacle_square_ && range_square>blind_square_){
+            // if (range_square < obstacle_square_ && range_square>blind_range_square_){
             //     PointType point;
             //     point.x = msg->points[i].x;
             //     point.y = msg->points[i].y;
@@ -357,7 +358,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
                 Zindex = int((curr_pt.z - extent_zmin) *extent_leafsize_inv);
                 size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
 
-                if(range_square > blind_square_){
+                if (range_square > blind_range_square_ && range_square < max_range_square_){
                     if(index>=0 && index<vect_size){
                         if(!flag_if_fill[index]){
                             pcl_cld_out->push_back(curr_pt);
@@ -371,7 +372,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
                 // // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 1e-7) || (abs(pl_full[i].y - pl_full[i - 1].y) > 1e-7) || (abs(pl_full[i].z - pl_full[i - 1].z) > 1e-7))
                 // if ((abs(pl_full[i].x - pl_full[i - 1].x) > 0.15) || (abs(pl_full[i].y - pl_full[i - 1].y) > 0.15) || (abs(pl_full[i].z - pl_full[i - 1].z) > 0.15))
                 // {
-                //     if (range_square > (blind_square_)){
+                //     if (range > blind_range_square_ && range < max_range_square_){
                 //         pcl_cld_out->push_back(pl_full[i]);
                 //     }
                 // }//if
@@ -483,8 +484,8 @@ void LidarPreprocMid360::extract_cloud_by_simple_voxel(const std::shared_ptr<liv
                 // pl_full[cur_region_idx[j]].intensity = cur_pt->reflectivity;
                 // pl_full[cur_region_idx[j]].curvature = cur_pt->offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
 
-                double range = cur_pt->x * cur_pt->x + cur_pt->y * cur_pt->y + cur_pt->z * cur_pt->z;
-                if (range > (blind_square_)){
+                double range_square = cur_pt->x * cur_pt->x + cur_pt->y * cur_pt->y + cur_pt->z * cur_pt->z;
+                if (range_square > blind_range_square_ && range_square < max_range_square_){
                     pcl_cld_out->push_back(curr_point); 
                     flag_if_fill[index] = 1;   
                 }

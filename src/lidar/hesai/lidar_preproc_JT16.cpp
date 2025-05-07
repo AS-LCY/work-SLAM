@@ -31,18 +31,20 @@ bool LidarPreprocJT16::set_param(){
     }else{
         param_ = loaded_param->lidar_preproc;
 
-        thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-        blind_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+
         point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
         ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
 
         cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
         // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
         // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
-        // ROS_ERROR("blind_square_ : %lf", blind_square_);
+        // ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
         // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
 
         return true;
@@ -103,11 +105,11 @@ bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
             ///// make it dense
             if (lidar_common::is_nan_pt(*curpt)) { continue; } 
             
-            if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
-               continue;
-            }
+            // if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
+            //    continue;
+            // }
             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if(range_square < blind_square_){
+            if(range_square < blind_range_square_ || range_square > max_range_square_){
                 continue;
             }
 
@@ -146,30 +148,7 @@ bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
     return true;
 }
 
-///////////////// 入口函数 /////////////////                  
-// bool LidarPreprocJT16::pre_process(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
-
-//     ROS_INFO("M300: pcl_rs_in --> pcl_xyzin_out");
-//     const int extract_cloud_method = param_.extract_cloud_method;
-//     int plsize = pcl_rs_in->width;
-
-//     pcl_xyzin_out->clear();
-//     pcl_xyzin_out->reserve(plsize);
-
-
-//     if (extract_cloud_method == 0){
-//         extract_cloud_by_interval_sampling(pcl_rs_in, pcl_xyzin_out);
-//     } else{
-//         // printf("extract_cloud_method set error!\n");
-//         ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
-//         exit(1);
-//     }
-    
-//     // printf("extract lidar count: %ld\n", pcl_xyzin_out->points.size());
-//     ROS_INFO("extract lidar count: %ld", pcl_xyzin_out->points.size());
-
-//     return true;
-// }
+///////////////// 入口函数 /////////////////
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 // // 间隔采样

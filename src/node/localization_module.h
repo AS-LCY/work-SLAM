@@ -71,8 +71,7 @@
 #include "node/module_status_def.h"
 #include "node/log_info_manager.hpp"
 #include "node/param_manager.hpp"
-#include "node/pose_filter.h"
-// #include "slipping/detect_slipping.h"
+// #include "node/pose_filter.h"
 
 
 // lidar
@@ -147,10 +146,8 @@ private:
     bool start_second_mapping(int map_id);
     bool stop_mapping();
     bool save_extrinsic_to_file();
-    // bool start_localization(ModuleStatus set_status, int map_id);
     bool start_localization(int map_id);
 
-    // void start_localization(bool module_mode, int map_id);
     bool stop_localization();
 
     bool start_relocalization(int map_id); // = restart_localization;;
@@ -205,16 +202,6 @@ private:
     void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge);
     void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose);
 
-    // position filter
-    void lidar_position_filter_fst_order(Eigen::Isometry3d last_pose, const Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
-    void lidar_position_filter_window(Eigen::Isometry3d last_pose, Eigen::Isometry3d lidar_in_map, Eigen::Isometry3d & pose_filtered);
-    bool position_init(Eigen::Isometry3d init_pose);
-    void position_filter();
-    void detect_slipping();
-    int detect_slipping(Eigen::Isometry3d curr_pose);
-    void reset_pose_filter();
-
-    void position_filter_chassis_lidar(double & filtered_x, double & filtered_y, double & filtered_a, double k_chassis);
 
     void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
 
@@ -255,8 +242,9 @@ private:
      * 3: localize thread delay
      */
     std::atomic<int> local_node_status_{0};
+
     /*************************************************** */
-    /** @local_node_status_: 
+    /** @mapping_node_status_: 
      * 0: inactive
      * 1: normal
      * 2: lidar cbk delay
@@ -275,10 +263,12 @@ private:
     // std::atomic<double> hb_time_thread_localize_;
     std::atomic<double> hb_time_thread_loop_closure_;
     std::atomic<double> hb_time_thread_secmap_relocalize_;
-    // health_status_: -------------------------------------
-    // 0: all ok
-    // 1: error, stop pub tf & odom
-    // 2: error, reset slam to IDLE
+    // -------------------------------------
+    /** @health_status_: 
+     * 0: all ok
+     * 1: error, stop pub tf & odom
+     * 2: error, reset slam to IDLE
+     */
     std::atomic<int>  health_status_;
     
     std::atomic<int>  cloud_size_orig_;
@@ -311,7 +301,7 @@ private:
 
     ros::Publisher pub_localization_module_status_;
     ros::Publisher pub_localization_module_health_;    
-    ros::Publisher pub_filter_odometry_;
+    // ros::Publisher pub_filter_odometry_;
     ros::Publisher pub_log_;
     ros::Publisher pub_slip_;    
 
@@ -333,26 +323,39 @@ private:
     // lidar_slam::Control_status control_status_;
 
     // 模块 localization module
-    // bool running_slam_ = false;
-    // ModuleStatus last_running_module_status_ = ModuleStatus::MODULE_IDLE;
-    // ModuleStatus set_module_status_ = ModuleStatus::MODULE_IDLE;
-    // ModuleStatus running_module_status_ = ModuleStatus::MODULE_IDLE;
     static std::atomic<ModuleStatus> running_module_status_;
 
     // 建图 *******************************************
-    // MappingStatus mapping_status_ = M_INACTIVE;
+    /** @mapping_status_: 
+     * 0: m_inactive
+     * 1: m_relocalize ing
+     * 2: m_relocalize failed
+     * 3: m_standby
+     * 4: m_creating_ele (not used)
+     * 5: m_failed
+     */
     std::atomic<int> mapping_status_{0};
-    std::atomic<int> localization_status_{0};
-    int start_index_ = -1;
-    int end_index_ = -1;
+
+    /** @map_saved_: 
+     * 0: map not saved yet
+     * 1: map already saved (only set to 1 when stop mapping with saving map)
+     */
     std::atomic<int> map_saved_{0};
+
+    // int start_index_ = -1; // not used now, 目前不涉及创建元素的操作
+    // int end_index_ = -1; // not used now, 目前不涉及创建元素的操作
     
 
     // 定位 *******************************************
-    // enum LocalizationStatus
-    // localization_status_: 在localization_module.cpp(&.h)中只作初始化为 L_INACTIVE 的操作; 实际的全部状态来源:lidar_slam.cpp(&.h).
-    // lidar_slam::LocalizationStatus localization_status_ = L_INACTIVE;
-
+    /** @localization_status_: 
+     * 0: l_inactive
+     * 1: l_relocalize ing
+     * 2: l_relocalize failed
+     * 3: l_normal
+     * 4: l_low_accuracy 
+     * 5: l_failed
+     */
+    std::atomic<int> localization_status_{0};
 
     // other thread
     std::thread show_thread_;
@@ -390,56 +393,13 @@ private:
 
     /// params load from yaml
     lidar_slam::LidarSlamParam slam_param_;
-
-    /// odometry filter ****************************
-    // std::unique_ptr<std::thread> position_filter_thread_ = nullptr;
-    // std::thread position_filter_thread_;
-    // std::vector<Eigen::Vector3d> pose_vec_;
-    std::vector<Eigen::Isometry3d> pose_vec_;
-    // std::deque<Eigen::Vector3d> pose_vec_;
-    // int window_size = 5;
-
-    fairland_msgs::chassic_data cur_chassis_msg_;
     
-    bool position_initialized_ = false;
-    ros::Time last_chassis_time_;
-    double last_chassis_x_ = 0.0;
-    double last_chassis_y_ = 0.0;
-    double last_chassis_a_ = 0.0;
-    double chassis_x_ = 0.0;
-    double chassis_y_ = 0.0;
-    double chassis_a_ = 0.0;
-    double last_lidar_dx_ = 0.0f;
-    double last_lidar_dy_ = 0.0f;
-    double last_lidar_dz_ = 0.0f;
-    double last_lidar_x_ = 0.0f;
-    double last_lidar_y_ = 0.0f; 
-    double last_lidar_z_ = 0.0f; 
-    double last_lidar_a_ = 0.0f;
-    double lidar_x_ = 0.0f;      // 雷达给出位置（一阶滤波）
-    double lidar_y_ = 0.0f; 
-    double lidar_z_ = 0.0f; 
-    double lidar_a_ = 0.0f;       // 雷达给出角度 
-    double lidar_time_;
-
-    double k_pos_;
-    double chassis_linear_velocity_;
-    double chassis_angular_velocity_;
-
-    int slip_count_ = 0;
-    double filter_x_;
-    double filter_y_;
-    double filter_a_;
-    int filter_count_ = 0;
     static std::atomic<double> livox_cbk_update_time_;
     
-    // nav_msgs::Odometry filter_odometry_;
     LocalizationModuleLogInfoManager * log_info_manager_;
 
-    // lidar 
+    // lidar ptr
     std::shared_ptr<LidarPreprocParent> lidar_ptr_;
-    // std::shared_ptr<DetectSlipping> slipping_ptr_;
-    std::shared_ptr<PoseFilter> pose_filter_ptr_;
     
 };
 

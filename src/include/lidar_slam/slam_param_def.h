@@ -20,27 +20,28 @@ struct ExtrinsicParam{
 
 struct LidarPreprocParam{
     int lidar_type=1;
+    int cloud_column_count = 1200; // rs & vanjee
+    int cloud_ring_count = 48; // rs & vanjee
+    int line_count; // livox
     std::string sub_lidar_topic="";
     std::string sub_imu_topic="";
-    int line_count;
     double blind_distance;
-    // bool flag_keep_only_last_lidar=false;
+    double max_distance;
     int keep_lidar_num_before_curr = 1;
     int point_filter_num = 2;
     int ring_filter_num = 1;
-    std::vector<double> point_filter_distance;
+    // std::vector<double> point_filter_distance;
     int cloud_size_to_keep = 2000;
-    bool feature_enabled;
-    // bool simple_voxel_enabled;
-    int extract_cloud_method;
+    // bool feature_enabled;
+    // int extract_cloud_method;
     double leafsize;
     std::vector<double> leafsize_vec={0.2, 0.5};
     std::vector<double> voxel_region_xyz;
     double boundary_z = 2;
-    double obstacle_max_range;
-    double obstacle_max_height;
-    double obstacle_min_height; // above wheel center
-    double obstacle_filter_size;
+    // double obstacle_max_range;
+    // double obstacle_max_height;
+    // double obstacle_min_height; // above wheel center
+    // double obstacle_filter_size;
     double grid_size;
     double time_cost_thr_print=10;
 
@@ -66,12 +67,10 @@ struct MappingParam{
     double loopIcpScore;
     // bool use_ele_pcd_flag;
     // bool save_ele_pcd_flag;
-    // std::string save_map_dir;
     double save_map_resolution;
 };
 
 struct LocalizationParam{
-    // std::string load_map_dir;
     int fgicp_freq = 1;
     // double fgicp_score_thr = 0.1;
     double fgicp_score_fail_thr = 0.3;
@@ -95,9 +94,6 @@ struct LocalizationParam{
 
 };
 
-struct SecondMappingParam{
-    // std::string load_map_dir;
-};
 
 struct IkdTreeParam{
     double cube_len;
