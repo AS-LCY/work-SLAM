@@ -153,6 +153,8 @@ public:
         if(loaded_param_.lidar_preproc.lidar_type == 2 || loaded_param_.lidar_preproc.lidar_type == 3){
             get_param(ns+ "lidar_preproc/cloud_column_count", loaded_param_.lidar_preproc.cloud_column_count, &success);
             get_param(ns+ "lidar_preproc/cloud_ring_count", loaded_param_.lidar_preproc.cloud_ring_count, &success);
+            get_param(ns+ "lidar_preproc/edge_curvature_thr", loaded_param_.lidar_preproc.edge_curvature_thr, &success);
+            get_param(ns+ "lidar_preproc/surf_curvature_thr", loaded_param_.lidar_preproc.surf_curvature_thr, &success);
         }else if(loaded_param_.lidar_preproc.lidar_type == 1){
             get_param(ns+ "lidar_preproc/line_count", loaded_param_.lidar_preproc.line_count, &success);
         }
@@ -166,7 +168,7 @@ public:
         // get_param(ns+ "lidar_preproc/point_filter_distance", loaded_param_.lidar_preproc.point_filter_distance, &success);
         get_param(ns+ "lidar_preproc/cloud_size_to_keep", loaded_param_.lidar_preproc.cloud_size_to_keep, &success);
         // get_param(ns+ "lidar_preproc/feature_enabled", loaded_param_.lidar_preproc.feature_enabled, &success);
-        // get_param(ns+ "lidar_preproc/extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method, &success);
+        get_param(ns+ "lidar_preproc/extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method, &success);
         get_param(ns+ "lidar_preproc/leafsize", loaded_param_.lidar_preproc.leafsize, &success);
         get_param(ns+ "lidar_preproc/leafsize_vec", loaded_param_.lidar_preproc.leafsize_vec, &success);
         get_param(ns+ "lidar_preproc/voxel_region_xyz", loaded_param_.lidar_preproc.voxel_region_xyz, &success);
@@ -220,7 +222,6 @@ public:
         /// re-localization params *******************************************s
         get_param(ns+ "re_localization/score_thr", loaded_param_.re_localization.score_thr, &success);
         get_param(ns+ "re_localization/time_out_thr", loaded_param_.re_localization.time_out_thr, &success);
-
 
         /// ikdtree params *******************************************
         get_param(ns+ "ikdtree/cube_len", loaded_param_.ikdtree.cube_len, &success);

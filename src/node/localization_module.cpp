@@ -708,22 +708,31 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     double now_sec = now_as_ns * 1e-9;
     // ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
+    /////////////////////////////////////////////////////////////////////////////
+    cloud_preproc_ptr_->clear();
+    lidar_ptr_ -> pre_process(ros_msg, cloud_preproc_ptr_);
+    int cloud_preproc_size = cloud_preproc_ptr_->points.size();
 
-    PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
-    lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
-    // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
+    // PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
+    // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
+    // // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
     double t1 = omp_get_wtime();
+    // PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
+    // lidar_ptr_->sampling_cloud(pcl_xyzin_cld, cloud_preproc_ptr_);
+    // int cloud_preproc_size = cloud_preproc_ptr_->points.size();
+    /////////////////////////////////////////////////////////////////////////////
 
-    PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
-    lidar_ptr_->sampling_cloud(pcl_xyzin_cld, sample_cld_ptr);
-    int sample_cld_size = sample_cld_ptr->points.size();
     // if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){
     //     ROS_INFO_STREAM("valid lidar num: " << pcl_xyzin_cld->points.size() << ", sample lidar num: " << sample_cld_size);
     // }
     double t2 = omp_get_wtime();
 
-    cloud_size_orig_.store(pcl_xyzin_cld->points.size());
-    cloud_size_sample_.store(sample_cld_size);
+    // cloud_size_orig_.store(pcl_xyzin_cld->points.size());
+    cloud_size_orig_.store(lidar_ptr_->get_cloud_dense_size());
+    cloud_size_sample_.store(cloud_preproc_size);
+
+    // ROS_INFO_STREAM("cloud_size_orig: " << cloud_size_orig_.load());
+    // ROS_INFO_STREAM("cloud_size_sample: " << cloud_preproc_size);
 
     ModuleStatus curr_running_module_status = running_module_status_.load();
     if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
@@ -732,7 +741,8 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
         return;
     }
 
-    slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+    // slam_ -> lidar_pcl_cbk(sample_cld_ptr);
+    slam_ -> lidar_pcl_cbk(cloud_preproc_ptr_);
     // fill status_msg.localization_status
     double t3 = omp_get_wtime();
 
@@ -910,6 +920,11 @@ bool LocalizationModule::module_member_init(){
     mapping_status_.store(0);
     localization_status_.store(0);
     running_module_status_.store(ModuleStatus::MODULE_IDLE);
+
+    cloud_preproc_ptr_.reset(new PointCloudType());
+    auto ring_count = slam_param_.lidar_preproc.cloud_ring_count;
+    auto col_count = slam_param_.lidar_preproc.cloud_column_count;
+    cloud_preproc_ptr_->points.reserve(ring_count * col_count);
 
 
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();

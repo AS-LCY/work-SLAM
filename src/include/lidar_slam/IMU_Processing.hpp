@@ -7,6 +7,7 @@
 #include <thread>
 #include <fstream>
 #include <csignal>
+#include <omp.h>
 
 #include <Eigen/Eigen>
 // #include <pcl/common/io.h>

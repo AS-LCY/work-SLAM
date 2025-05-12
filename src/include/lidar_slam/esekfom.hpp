@@ -8,7 +8,7 @@
 // #include <Eigen/Geometry>
 // #include <Eigen/Dense>
 // #include <Eigen/Sparse>
-
+#include <omp.h>
 #include "lidar_slam/use-ikfom.hpp"
 #include "lidar_slam/ikd_Tree.h"
 
@@ -315,7 +315,7 @@ namespace esekfom
 				// ROS_INFO_STREAM("------ 计算卡尔曼增益, time cost    : " << (t_update_4-t_update_3)*1000 << " ms" );
 				// ROS_INFO_STREAM("------ 计算 K * H, time cost       : " << (t_update_5-t_update_4)*1000 << " ms" );
 				// ROS_INFO_STREAM("------ boxplus, time cost         : " << (t_update_6-t_update_5)*1000 << " ms" );
-				// ROS_INFO_STREAM("------ end  , time cost           : " << (t_update_7-t_update_6)*1000 << " ms" );
+				// ROS_INFO_STREAM("------ end  , time cost           : " << (t_update_7-t_update_0)*1000 << " ms" );
 				// ROS_INFO_STREAM("iter: "<< i << " -----------------------------------------" << RESET);
 
 				if (t > 1 || i == maximum_iter - 1)

@@ -19,18 +19,29 @@
 
 
 namespace localization_module{
+
+struct smoothness_t{ 
+    float value;
+    size_t idx;
+};
+
 class LidarPreprocParent{
 
 public:
     LidarPreprocParent();
     virtual ~LidarPreprocParent();
 
+    virtual bool pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){return true;};
 
     // for robosense & vanjee
     virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){return true;}
     
     // common
     void sampling_cloud(PointCloudType::Ptr in_cloud_ptr, PointCloudType::Ptr out_cloud_ptr);
+
+    int get_cloud_dense_size(){
+        return cloud_dense_->points.size();
+    }
 
 
 protected:
@@ -43,6 +54,14 @@ private:
 // member variable
 
 protected:
+    PointCloudType::Ptr cloud_dense_;
+
+    int extract_cloud_method_ = 0;
+    int col_cnt_ = 1200;
+    int ring_cnt_ = 48;
+    double edge_curv_thr_ = 1.0;
+    double surf_curv_thr_ = 0.1;
+
     int cloud_size_to_keep_ = 2000;
     double blind_range_square_ = 0.0;
     double max_range_square_ = 0.0;

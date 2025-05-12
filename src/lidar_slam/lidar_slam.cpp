@@ -190,8 +190,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
     return;
 }
 
-bool LidarSlam::sync_packages(MeasureGroup &meas) 
-{
+bool LidarSlam::sync_packages(MeasureGroup &meas) {
     
     if (lidar_buffer.empty() || imu_buffer.empty())
     {
@@ -214,24 +213,25 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
         meas.lidar = lidar_buffer.front();         // lidar指针指向最旧的lidar数据
         meas.lidar_beg_time = time_buffer.front(); //记录最早时间
 
-        //更新结束时刻的时间
-        if (meas.lidar->points.size() <= 1) // time too little 时间太短，点数不足
-        {
-            lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime; // 记录lidar结束时间为 起始时间 + 单帧扫描时间
-            // printf("Too few input point cloud!\n");
-            ROS_WARN_STREAM(YELLOW << "Too few input point cloud!" << RESET);
-        }
-        else if (meas.lidar->points.back().curvature / double(1000) < 0.5 * lidar_mean_scantime) //最后一个点的时间 小于 单帧扫描时间的一半
-        {
-            lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime; // 记录lidar结束时间为 起始时间 + 单帧扫描时间
-        }
-        else
-        {
-            scan_num++;
-            lidar_end_time = meas.lidar_beg_time + meas.lidar->points.back().curvature / double(1000); //结束时间设置为 起始时间 + 最后一个点的时间（相对） zx 排序了么？
-            // 动态更新每帧lidar数据平均扫描时间
-            lidar_mean_scantime += (meas.lidar->points.back().curvature / double(1000) - lidar_mean_scantime) / scan_num;
-        }
+        // //更新结束时刻的时间
+        // if (meas.lidar->points.size() <= 1) // time too little 时间太短，点数不足
+        // {
+        //     lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime; // 记录lidar结束时间为 起始时间 + 单帧扫描时间
+        //     ROS_WARN_STREAM(YELLOW << "Too few input point cloud!" << RESET);
+        // }
+        // else if (meas.lidar->points.back().curvature / double(1000) < 0.5 * lidar_mean_scantime) //最后一个点的时间 小于 单帧扫描时间的一半
+        // {
+        //     lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime; // 记录lidar结束时间为 起始时间 + 单帧扫描时间
+        // }
+        // else
+        // {
+        //     scan_num++;
+        //     lidar_end_time = meas.lidar_beg_time + meas.lidar->points.back().curvature / double(1000); //结束时间设置为 起始时间 + 最后一个点的时间（相对） zx 排序了么？
+        //     // 动态更新每帧lidar数据平均扫描时间
+        //     lidar_mean_scantime += (meas.lidar->points.back().curvature / double(1000) - lidar_mean_scantime) / scan_num;
+        // }
+        lidar_mean_scantime = 0.1;
+        lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime;
 
         meas.lidar_end_time = lidar_end_time;
 
@@ -243,8 +243,10 @@ bool LidarSlam::sync_packages(MeasureGroup &meas)
     // cout << std::fixed << std::setprecision(9)<< "meas.lidar_end_time: " <<meas.lidar_end_time<<endl; 
     // cout << std::fixed << std::setprecision(9)<< "last_timestamp_imu : " <<last_timestamp_imu<<endl; 
 
-    if (last_timestamp_imu < lidar_end_time)
-    {
+    if (last_timestamp_imu < lidar_end_time) {
+        ROS_WARN_STREAM(RED << "latest imu time < lidar time "<< RESET);
+        ROS_WARN_STREAM(YELLOW << "last_timestamp_imu: " << last_timestamp_imu << RESET);
+        ROS_WARN_STREAM(YELLOW << "lidar_end_time: " << lidar_end_time << RESET);
         return false;
     }
     /*** push imu data, and pop from imu buffer ***/
@@ -813,7 +815,6 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
         imu_buffer.clear();
     }
     else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
-        // printf("imu lose rate\n");
         ROS_WARN_STREAM(YELLOW << "imu lose rate" <<RESET);
     }
     imu_buffer.push_back(msg);
@@ -899,8 +900,7 @@ bool LidarSlam::run()
     // cout<<"lidar buffer size: "<<lidar_buffer.size()<<endl;
     // cout<<"imu   buffer size: "<<imu_buffer.size()<<endl;
 
-    if (sync_packages(Measures))
-    {
+    if (sync_packages(Measures)) {
         // ROS_INFO_STREAM(setprecision(15) << ros::Time::now().toSec() << ": ---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
         if (flg_first_scan)

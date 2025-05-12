@@ -20,20 +20,27 @@ struct ExtrinsicParam{
 
 struct LidarPreprocParam{
     int lidar_type=1;
-    int cloud_column_count = 1200; // rs & vanjee
-    int cloud_ring_count = 48; // rs & vanjee
-    int line_count; // livox
     std::string sub_lidar_topic="";
     std::string sub_imu_topic="";
-    double blind_distance;
-    double max_distance;
+    ///////////////////////////////////////////////////////
+    int extract_cloud_method;
+    ///// extract by ring_feature: vanjee & rs
+    int cloud_column_count = 1200; // rs & vanjee
+    int cloud_ring_count = 48; // rs & vanjee
+    float edge_curvature_thr = 1.0;
+    float surf_curvature_thr = 0.1;
+    float surf_leafsize = 0.4;
+    ///// extract by line_feature: livox
+    int line_count; 
+    ///////////////////////////////////////////////////////
+    float blind_distance;
+    float max_distance;
     int keep_lidar_num_before_curr = 1;
     int point_filter_num = 2;
     int ring_filter_num = 1;
     // std::vector<double> point_filter_distance;
     int cloud_size_to_keep = 2000;
     // bool feature_enabled;
-    // int extract_cloud_method;
     double leafsize;
     std::vector<double> leafsize_vec={0.2, 0.5};
     std::vector<double> voxel_region_xyz;

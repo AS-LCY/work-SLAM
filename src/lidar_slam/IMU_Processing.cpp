@@ -121,7 +121,11 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
   
   // 根据点云中每个点的时间戳对点云进行重排序
   pcl_out = *(meas.lidar);
+  // double before_sort = omp_get_wtime();
   sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);  //这里curvature中存放了时间戳（在preprocess.cpp中）
+  // double after_sort = omp_get_wtime();
+  // ROS_INFO_STREAM("cloud sort  , time cost           : " << (after_sort-before_sort)*1000 << " ms" );
+
   state_ikfom imu_state = kf_state.get_x();  // 获取上一次KF估计的后验状态作为本次IMU预测的初始状态
   IMUpose.clear();
   IMUpose.push_back(set_pose6d(0.0, acc_s_last, angvel_last, imu_state.vel, imu_state.pos, imu_state.rot.matrix()));

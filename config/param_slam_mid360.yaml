@@ -91,7 +91,7 @@ lidar_preproc:
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 2500
   # feature_enabled: false  # default to false
-  # extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
+  extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 6 # 间隔采样所需参数
   ring_filter_num: 1
   leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数

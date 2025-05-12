@@ -232,6 +232,7 @@ private:
         return "UNKNOW_SlamCtrlCmd!";
     }
     
+private:
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     /// module status    //
     /*************************************************** */
@@ -390,6 +391,7 @@ private:
     ros::Publisher pub_key_cloud_;
     ros::Publisher pub_body_cloud_filter_;
 
+    PointCloudType::Ptr cloud_preproc_ptr_;
 
     /// params load from yaml
     lidar_slam::LidarSlamParam slam_param_;

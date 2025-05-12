@@ -18,6 +18,8 @@ public:
     LidarPreprocJT16();
     ~LidarPreprocJT16();
 
+    bool pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out) override;
+    
     // bool pre_process(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_cld_out)  override ;
     bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out) override;
 

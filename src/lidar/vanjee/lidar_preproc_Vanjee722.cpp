@@ -9,6 +9,8 @@ LidarPreprocVanjee722::LidarPreprocVanjee722(){
     }else {
         ROS_INFO("Set lidar-Vanjee722 param successfully!");
     }
+
+    allocate_memory_init_variable();
     ROS_INFO("Reset to lidar_preproc_Vanjee722 successfully!");
 }
 
@@ -18,34 +20,23 @@ LidarPreprocVanjee722::~LidarPreprocVanjee722(){
 }
 
 
-bool LidarPreprocVanjee722::set_param(){
+bool LidarPreprocVanjee722::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
+    if(extract_cloud_method_ == 0){
+        cloud_dense_->clear();
+        msg2pcl_clip(ros_msg_in, cloud_dense_);
+    
+        pcl_xyzin_out->clear();
+        sampling_cloud(cloud_dense_, pcl_xyzin_out);
+    }else if (extract_cloud_method_ == 3){
 
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
-
-    if (loaded_param == NULL) {
-        ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
-        return false;
     }else{
-        param_ = loaded_param->lidar_preproc;
-
-        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
-
-        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
-        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
-        ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
-        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
-        // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
-        // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
-        // ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
-        // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
-
-        return true;
+        return false;
     }
+    
+    
+    return true;
 }
+
 
 // current used
 bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
@@ -175,5 +166,66 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
 
 // }
 
+void LidarPreprocVanjee722::allocate_memory_init_variable(){
+    cloud_dense_.reset(new PointCloudType());
+    cloud_dense_->points.reserve(ring_cnt_*col_cnt_);
+
+    downsize_filter_.setLeafSize(surf_leafsize_, surf_leafsize_, surf_leafsize_);
+
+    ring_index_start_.assign(ring_cnt_, 0);
+    ring_index_end_.assign(ring_cnt_, 0);
+    pnt_col_idx_.assign(ring_cnt_*col_cnt_, 0);
+    pnt_range_.assign(ring_cnt_*col_cnt_, 0);
+
+    cloud_smoothness_.resize(ring_cnt_*col_cnt_);
+    cloud_curvature_ = new float[ring_cnt_*col_cnt_];
+
+    cloud_neighbor_picked_ = new int[ring_cnt_*col_cnt_];
+    cloud_label_ = new int[ring_cnt_*col_cnt_];
+
+}
+
+
+
+bool LidarPreprocVanjee722::set_param(){
+
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
+    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+
+    if (loaded_param == NULL) {
+        ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
+        return false;
+    }else{
+        param_ = loaded_param->lidar_preproc;
+
+        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+        ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
+        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // extract cloud by ring_feature
+        extract_cloud_method_ = loaded_param->lidar_preproc.extract_cloud_method;
+        col_cnt_ = loaded_param->lidar_preproc.cloud_column_count;
+        ring_cnt_ = loaded_param->lidar_preproc.cloud_ring_count;
+        edge_curv_thr_ = loaded_param->lidar_preproc.edge_curvature_thr;
+        surf_curv_thr_ = loaded_param->lidar_preproc.surf_curvature_thr;
+        surf_leafsize_ = loaded_param->lidar_preproc.surf_leafsize;
+        ////////////////////////////////////////////////////////////////////////////////
+
+
+        // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
+        // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
+        // ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
+        // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
+
+        return true;
+    }
+}
 
 } // namespace localization_module

@@ -51,9 +51,9 @@ extrinsic:
   # extrinsic_euler_IMU_in_lidar: [-89.81716115535444, 0.2365335545965223, 179.7041440847162] # unit(degree) yaw, pitch, roll  # airy-v3
   # extrinsic_euler_IMU_in_lidar: [-91.68546653377834, -1.010366382353748, -179.4784633670619] # unit(degree) yaw, pitch, roll  # airy-v4-2025-0226
   # extrinsic_euler_IMU_in_lidar: [-88.199227, -0.332534, 179.751635] # unit(degree) yaw, pitch, roll  # airy-v2
-  extrinsic_euler_IMU_in_lidar: [-0.7059076, 0.7082608, -0.0009345, -0.0077585]  # airy: 5-1 # quaterion: qx, qy, qz, qw  # airy: 5-1
+  # extrinsic_euler_IMU_in_lidar: [-0.7059076, 0.7082608, -0.0009345, -0.0077585]  # airy: 5-1 # quaterion: qx, qy, qz, qw  # airy: 5-1
   # extrinsic_euler_IMU_in_lidar: [-0.6991326, 0.7149883, -0.0021260, -0.0008865]  # airy: 5-2 # quaterion: qx, qy, qz, qw  # airy: 5-1
-  # extrinsic_euler_IMU_in_lidar: [-0.7059780, 0.7081977, -0.0021492, -0.0068142]  # airy: 5-3 # quaterion: qx, qy, qz, qw  # airy: 5-1
+  extrinsic_euler_IMU_in_lidar: [-0.7059780, 0.7081977, -0.0021492, -0.0068142]  # airy: 5-3 # quaterion: qx, qy, qz, qw  # airy: 5-1
   
   
   # extrinsic_euler_lidar_in_baselink: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
@@ -92,20 +92,25 @@ localization:
 
 lidar_preproc:
   lidar_type: 2 # 1: livox-mid360  # 2: robosense-Airy  # 
-  cloud_column_count: 900
-  cloud_ring_count: 48
-  line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
-  # sub_lidar_topic: "/livox/lidar"
-  # sub_imu_topic: "/livox/imu"
   sub_lidar_topic: "/robosense/lidar"
   sub_imu_topic: "/robosense/imu"
-  blind_distance: 1
-  max_distance: 70
+  #######################################################
+  extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature, 效果不佳  
+  ### extract by ring_feature: vanjee & rs
+  cloud_column_count: 900
+  cloud_ring_count: 48
+  edge_curvature_thr: 1.0
+  surf_curvature_thr: 0.1
+  surf_leafsize: 0.4  # default: 0.4 - outdoor, 0.2 - indoor
+  ### extract by line_feature: livox
+  line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
+  #######################################################
+  blind_distance: 2
+  max_distance: 60
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 3000
   # feature_enabled: false  # default to false
-  # extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 2 # 间隔采样所需参数
   ring_filter_num: 1
   leafsize: 0.3 # extract_cloud_method == 2 时, voxel 参数 

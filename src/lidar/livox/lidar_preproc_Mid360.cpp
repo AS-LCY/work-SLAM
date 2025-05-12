@@ -19,28 +19,21 @@ LidarPreprocMid360::~LidarPreprocMid360(){
     
 }
 
-bool LidarPreprocMid360::set_param(){
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
 
-    if (loaded_param == NULL) {
-        ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
-        return false;
+bool LidarPreprocMid360::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
+    if(extract_cloud_method_ == 0){
+        cloud_dense_->clear();
+        msg2pcl_clip(ros_msg_in, cloud_dense_);
+    
+        pcl_xyzin_out->clear();
+        sampling_cloud(cloud_dense_, pcl_xyzin_out);
+    }else if (extract_cloud_method_ == 3){
+
     }else{
-        param_ = loaded_param->lidar_preproc;
-
-        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
-
-        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
-        // obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
-        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
-
-        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
-        return true;
+        return false;
     }
+    
+    return true;
 }
 
 bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
@@ -128,6 +121,32 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
     return true;
 
 }
+
+
+bool LidarPreprocMid360::set_param(){
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
+    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+
+    if (loaded_param == NULL) {
+        ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
+        return false;
+    }else{
+        param_ = loaded_param->lidar_preproc;
+
+        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        // obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
+        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+
+        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+        return true;
+    }
+}
+
 
 // //// 弃用
 // bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){

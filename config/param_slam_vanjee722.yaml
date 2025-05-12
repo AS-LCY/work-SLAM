@@ -85,19 +85,25 @@ localization:
 
 lidar_preproc:
   lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  # 3: vanjee-722  # 
-  cloud_column_count: 1200
-  cloud_ring_count: 16
   sub_lidar_topic: "/vanjee/lidar"
   sub_imu_topic: "/vanjee/imu"
-  # sub_imu_topic: "/trans/imu"
+  #######################################################
+  extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
+  ### extract by ring_feature: vanjee & rs
+  cloud_column_count: 1200
+  cloud_ring_count: 16
+  edge_curvature_thr: 1.0
+  surf_curvature_thr: 0.1
+  surf_leafsize: 
+  ### extract by line_feature: livox
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
+  #######################################################
   blind_distance: 1.5 
   max_distance: 70
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 2000
   # feature_enabled: false  # default to false
-  # extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 6 # 间隔采样所需参数
   ring_filter_num: 1
   leafsize: 0.15 # extract_cloud_method == 2 时, voxel 参数
