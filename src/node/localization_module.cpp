@@ -716,10 +716,11 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
     // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
     // // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
-    double t1 = omp_get_wtime();
     // PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
     // lidar_ptr_->sampling_cloud(pcl_xyzin_cld, cloud_preproc_ptr_);
     // int cloud_preproc_size = cloud_preproc_ptr_->points.size();
+
+    double t1 = omp_get_wtime();
     /////////////////////////////////////////////////////////////////////////////
 
     // if((sample_cld_size > cloud_size_to_keep + 500) || (sample_cld_size < cloud_size_to_keep - 500) ){

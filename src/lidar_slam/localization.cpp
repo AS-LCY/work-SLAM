@@ -280,6 +280,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn,Eigen::Isometr
     double min_dist = std::numeric_limits<double>::max();
     std::pair<int, float> best_match{-1, 0.0};
     std::pair<double, double> best_trans;
+    double t0 = omp_get_wtime();
     for (auto &t : search_trans) {
         Eigen::MatrixXd sc = scManager->makeScancontext(*(gravityAlignedCLoud), t.first, t.second);
         std::vector<float> ringkey = eig2stdvec(scManager->makeRingkeyFromScancontext(sc));
@@ -302,6 +303,9 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn,Eigen::Isometr
             best_trans = t;
         }
     }
+    double t1 = omp_get_wtime();
+    ROS_INFO_STREAM(GREEN << "search_trans cost time: " << (t1-t0) * 1000 << " ms" << RESET);
+
     int match_idx = best_match.first;
     
 
@@ -378,6 +382,8 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn,Eigen::Isometr
         // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
         // std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
         // std::cout << "-------------------------------------------"<<std::endl;
+        double t2 = omp_get_wtime();
+        ROS_INFO_STREAM(GREEN << "icp cost time: " << (t2-t1) * 1000 << " ms" << RESET);
         return true;
         // std::cout << "scancontext search success, score {} " <<match_idx<<" "<< min_dist<<std::endl;
     } else {

@@ -402,10 +402,13 @@ void LidarSlam::localizationThread()
                         downSizeFilterCloud_test.setInputCloud(undistortCloud);
                         downSizeFilterCloud_test.filter(*FilteredUndistortCloud_test);
                     }
-
+                    
+                    double t0 = omp_get_wtime();
                     // globalLocalizationSuccess = localization->globalLocalization(undistortCloud,T_odom_lidar,p_imu->initial_rotate,score_thr); 
                     globalLocalizationSuccess = localization->globalLocalization(FilteredUndistortCloud_test,T_odom_lidar,p_imu->initial_rotate,score_thr); 
                     ROS_INFO_STREAM("globalLocalizationSuccess: "<<globalLocalizationSuccess);
+                    double t1 = omp_get_wtime();
+                    ROS_INFO_STREAM("global Localization cost time: " << (t1-t0) * 1000 << " ms");
 
                     global_localize_count_++;
                 }
