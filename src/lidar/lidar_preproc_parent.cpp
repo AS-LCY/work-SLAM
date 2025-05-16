@@ -3,6 +3,7 @@
 namespace localization_module {
 
 LidarPreprocParent::LidarPreprocParent(){
+    cloud_dense_.reset(new PointCloudType());
 
 }
 
