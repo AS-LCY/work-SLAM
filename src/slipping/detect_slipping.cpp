@@ -43,12 +43,13 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
     double que_time_fst = chassis_que_.front().header.stamp.toSec();
     double que_time_snd = 0.0;
     double que_time_last = chassis_que_.back().header.stamp.toSec();
-    while(que_time_last - que_time_fst > lidar_que_time_range && chassis_que_.size() >=2){
+    while(que_time_last - que_time_fst > param_detect_window_time_range_ && chassis_que_.size() >=2){
         chassis_que_.pop();
         que_time_snd = chassis_que_.front().header.stamp.toSec();
 
         double pop_dt = que_time_snd - que_time_fst;
-        double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
+        // double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
+        double pop_vel = chassis_que_.front().ac_linear_velocity;
         double pop_dist = pop_vel * pop_dt;
 
         // update
@@ -60,7 +61,8 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
     ///////////////////////////////////////////////////////////////////////////////
     // detect 
     slip_flag = 0;
-    double slipping_dist = chassis_sum_dist_ - lidar_sum_dist_;
+    double curr_chassis_dist = std::abs(chassis_sum_dist_ / chassis_que_time_range * param_detect_window_time_range_);
+    double slipping_dist = curr_chassis_dist - lidar_sum_dist_;
 
     if(slipping_dist > param_slipping_dist_thr_){
         slipping_count_ ++;
@@ -82,7 +84,7 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int &slip_flag){
     log_info_manager_->fusion_info.data[3] = slipping_count_;// 3: slip_count
     log_info_manager_->fusion_info.data[4] = slipping_dist;// 4: slipping_dist
     log_info_manager_->fusion_info.data[5] = chassis_que_time_range;// 5: chassis_queue_time_range
-    log_info_manager_->fusion_info.data[6] = chassis_sum_dist_;// 6: chassis_queue_sum_dist
+    log_info_manager_->fusion_info.data[6] = curr_chassis_dist;// 6: chassis_queue_sum_dist
     log_info_manager_->fusion_info.data[7] = lidar_que_time_range;// 7: lidar_queue_time_range
     log_info_manager_->fusion_info.data[8] = lidar_sum_dist_;// 8: lidar_queue_sum_dist
     // // 2: slip_flag
@@ -122,7 +124,8 @@ void DetectSlipping::update_chassis(fairland_msgs::chassic_data cur_chassis_msg)
 
     double cur_time = cur_chassis_msg.header.stamp.toSec();
     double cur_dt = cur_time - last_time;
-    double cur_vel = std::abs(cur_chassis_msg.ac_linear_velocity);
+    // double cur_vel = std::abs(cur_chassis_msg.ac_linear_velocity);
+    double cur_vel = cur_chassis_msg.ac_linear_velocity;
     double cur_dist = cur_vel * cur_dt;
 
     // update
@@ -141,7 +144,8 @@ void DetectSlipping::update_chassis(fairland_msgs::chassic_data cur_chassis_msg)
         que_time_snd = chassis_que_.front().header.stamp.toSec();
 
         double pop_dt = que_time_snd - que_time_fst;
-        double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
+        // double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
+        double pop_vel = chassis_que_.front().ac_linear_velocity;
         double pop_dist = pop_vel * pop_dt;
 
         // update
@@ -165,18 +169,24 @@ void DetectSlipping::update_lidar_by_distance(geometry_msgs::PoseStamped pose){
     pose_que_.push(curr_pose);
 
     geometry_msgs::PoseStamped back_pose = pose_que_.back();
-    lidar_sum_dist_ = cal_dist(pose_que_.front(), pose_que_.back());
 
     ///////////////////////////////////
     // update: pose_que_, lidar_sum_dist_
     double curr_time = back_pose.header.stamp.toSec();
     while(curr_time - pose_que_.front().header.stamp.toSec() > param_detect_window_time_range_ && pose_que_.size() >=2){
-        lidar_sum_dist_ = cal_dist(pose_que_.front(), back_pose); // curr_dust > 0 恒成立， std::abs();
+        // lidar_sum_dist_ = cal_dist(pose_que_.front(), back_pose); // curr_dust > 0 恒成立， std::abs();
         pose_que_.pop();
     }
+
+    double distance = cal_dist(pose_que_.front(), pose_que_.back());
+    double time_interval = pose_que_.back().header.stamp.toSec() - pose_que_.front().header.stamp.toSec();
+    lidar_sum_dist_ = distance / time_interval * param_detect_window_time_range_;
+    // ROS_INFO_STREAM("lidar time range:" << time_interval);
+    // ROS_INFO_STREAM("lidar distance:" << distance);
+    // ROS_INFO_STREAM("lidar distance:" << lidar_sum_dist_);
 }
 
-
+/************************************************************************************************
 void DetectSlipping::update_lidar_by_segment(geometry_msgs::PoseStamped pose){
     static geometry_msgs::PoseStamped last_pose = pose;         // 初始化 仅执行一遍
     static bool first_lidar = true;
@@ -215,6 +225,7 @@ void DetectSlipping::update_lidar_by_segment(geometry_msgs::PoseStamped pose){
     last_pose = curr_pose;
 
 }
+************************************************************************************************/
 
 double DetectSlipping::cal_dist_along_heading(geometry_msgs::PoseStamped last_pose, geometry_msgs::PoseStamped curr_pose){
 
@@ -259,6 +270,8 @@ bool DetectSlipping::load_params(){
         param_detect_window_time_range_ = loaded_param->slip_params.detect_window_time_range;
         param_slipping_dist_thr_ = loaded_param->slip_params.slipping_dist_thr;
         param_slipping_count_thr_ = loaded_param->slip_params.slipping_count_thr;
+
+        ROS_INFO_STREAM("param_detect_window_time_range_: " << param_detect_window_time_range_);
         return true;
     }
 }

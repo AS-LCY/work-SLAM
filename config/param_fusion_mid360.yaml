@@ -30,6 +30,6 @@ localization_fusion:
         pub_slipping_topic: "/flbot/localization/slipping"
 
     detect_slip: 
-        detect_window_time_range: 2 # unit: second
+        detect_window_time_range: 2.0 # unit: second
         slipping_count_thr: 5 # 连续帧数超过距离阈值，即为打滑, 20hz 前提下
-        slipping_dist_thr: 0.15 # unit: m
+        slipping_dist_thr: 0.2 # unit: m
