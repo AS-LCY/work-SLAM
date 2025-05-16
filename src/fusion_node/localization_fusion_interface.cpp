@@ -83,10 +83,10 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     std::lock_guard<std::mutex> lock(mutex_);
     slam_odom_msg_ = *slam_odometry_in;
 
-    if (!is_imu_rcv_){
-        ROS_WARN_STREAM_ONCE(YELLOW<<"IMU data not received yet "<<RESET);
-        return;
-    }
+    // if (!is_imu_rcv_){
+    //     ROS_WARN_STREAM_ONCE(YELLOW<<"IMU data not received yet "<<RESET);
+    //     return;
+    // }
 
     if(ekf_use_chassis_ && !is_chassis_rcv_){
         ROS_WARN_STREAM_ONCE(YELLOW<<"Chassis data not received yet "<<RESET);
