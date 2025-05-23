@@ -192,8 +192,7 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
 
 bool LidarSlam::sync_packages(MeasureGroup &meas) {
     
-    if (lidar_buffer.empty() || imu_buffer.empty())
-    {
+    if (lidar_buffer.empty() || imu_buffer.empty()) {
         // bool flag1 = lidar_buffer.empty();
         // bool flag2 = imu_buffer.empty();
         // cout<<"lidar_buffer.empty(): "<< flag1<<endl;
@@ -208,8 +207,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         ROS_WARN_STREAM(RED << "lidar lose rate: " << omp_get_wtime()-time_buffer.front() << RESET);
     }
     /*** push a lidar scan ***/
-    if (!lidar_pushed)
-    {
+    if (!lidar_pushed) {
         meas.lidar = lidar_buffer.front();         // lidar指针指向最旧的lidar数据
         meas.lidar_beg_time = time_buffer.front(); //记录最早时间
 
@@ -254,8 +252,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
     meas.imu.clear();
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    while ((!imu_buffer.empty()) && (imu_time < lidar_end_time)) //记录imu数据，imu时间小于当前帧lidar结束时间
-    {
+    while ((!imu_buffer.empty()) && (imu_time < lidar_end_time)){ //记录imu数据，imu时间小于当前帧lidar结束时间
         imu_time = imu_buffer.front()->time_stamp;
         if (imu_time > lidar_end_time)
             break;
@@ -654,6 +651,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     return ;
 }
 
+/*****************************************************************************************************
 // void LidarSlam::robosense_pcl_cbk(const PointCloudType::Ptr &cloud){
 //     const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 //     double t0 = omp_get_wtime();
@@ -670,10 +668,10 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
 //         ROS_INFO("************************* lidar_buffer clear *********");
 //     }
 
-//     /*  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
-//         // printf("lidar lose rate");
-//         ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
-//     }*/ 
+//     //  else if (msg->time_stamp - curr_time > 1.5 * 0.05){
+//     //     // printf("lidar lose rate");
+//     //     ROS_WARN_STREAM(YELLOW << "lidar lose rate" << RESET);
+//     // }
 
 //     if (!time_sync_en && abs(last_timestamp_imu - curr_time) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty()){
 //         // printf("IMU and LiDAR not Synced, IMU time: %lf, lidar header time: %lf \n", last_timestamp_imu, curr_time);
@@ -702,7 +700,9 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
 
 //     return;
 // }
+*****************************************************************************************************/
 
+/*****************************************************************************************************
 // void LidarSlam::livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in){
 //     // const bool flag_keep_only_last_lidar = config_param_.lidar_preproc.flag_keep_only_last_lidar;
 //     double t0 = omp_get_wtime();
@@ -720,10 +720,10 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
 //         // cout<<"************************* lidar_buffer clear *********"<<endl;
 //         ROS_WARN_STREAM(YELLOW<<"************************* lidar_buffer clear *********"<<RESET);
 //     }
-//     /*  else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
-//         // printf("lidar lose rate");
-//         ROS_ERROR_STREAM(RED << "lidar lose rate" << RESET);
-//     }*/ 
+//     //   else if (msg->time_stamp - last_timestamp_lidar > 1.5 * 0.05){
+//     //     // printf("lidar lose rate");
+//     //     ROS_ERROR_STREAM(RED << "lidar lose rate" << RESET);
+//     // } 
 //     last_timestamp_lidar = msg->time_stamp;
 
 //     if (!time_sync_en && abs(last_timestamp_imu - last_timestamp_lidar) > 10.0 && !imu_buffer.empty() && !lidar_buffer.empty())
@@ -767,9 +767,9 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
 //     double t1 = omp_get_wtime();
 //     // printf("lidar-preproc , time cost: %f ms \033[0m \n", (t1 - t0)*1000);
 // }
+*****************************************************************************************************/
 
-void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
-{
+void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in){
     if (reseting)
         return;
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg(*msg_in));
@@ -800,8 +800,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
         }
     }
     // lidar 和 imu时间差过大，且开启 时间同步, 纠正当前输入imu的时间
-    if (abs(timediff_lidar_wrt_imu) > 0.1 && time_sync_en)
-    {
+    if (abs(timediff_lidar_wrt_imu) > 0.1 && time_sync_en) {
         // 对输入imu时间，纠正为 时间差 + 原始时间
         msg->time_stamp =
             (timediff_lidar_wrt_imu + msg_in->time_stamp);
@@ -811,13 +810,10 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in)
 
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (timestamp < last_timestamp_imu)
-    {
-        // printf("imu loop back, clear buffer\n");
+    if (timestamp < last_timestamp_imu) {
         ROS_WARN_STREAM(YELLOW << "imu loop back, clear buffer" <<RESET);
         imu_buffer.clear();
-    }
-    else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
+    } else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
         ROS_WARN_STREAM(YELLOW << "imu lose rate" <<RESET);
     }
     imu_buffer.push_back(msg);
@@ -906,8 +902,7 @@ bool LidarSlam::run()
     if (sync_packages(Measures)) {
         // ROS_INFO_STREAM(setprecision(15) << ros::Time::now().toSec() << ": ---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
-        if (flg_first_scan)
-        {
+        if (flg_first_scan) {
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
             p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
             flg_first_scan = false;
@@ -936,13 +931,11 @@ bool LidarSlam::run()
         }
         //  pos_lid = state_point.pos + state_point.rot * state_point.offset_T_L_I; // global系 lidar位置
         t1 = omp_get_wtime();
-        if (undistortCloud->empty() || (undistortCloud == NULL))
-        {
+        if (undistortCloud->empty() || (undistortCloud == NULL)){
             lidar_no_point_count_++;
             if(lidar_no_point_count_ > prm_lidar_no_point_count_thr){
                 slam_run_status_.store(2);
             }
-            // std::cout << "No point, skip this scan!\n"<< std::endl;
             ROS_WARN_STREAM(YELLOW << "No point, skip this scan!" << RESET);
             log_info_manager_->slam_info.data[15]=lidar_no_point_count_; // 
             log_info_manager_->slam_info.data[13]=0; // 
@@ -966,11 +959,9 @@ bool LidarSlam::run()
         PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType()); 
         double filter_time = omp_get_wtime();
         /*** initialize the map kdtree ***/
-        if (ikdtree->Root_Node == nullptr)
-        {
+        if (ikdtree->Root_Node == nullptr) {
             // if (feats_down_size > 5)
-            if (feats_down_size > feats_down_size_thr_)
-            {
+            if (feats_down_size > feats_down_size_thr_) {
                 ikdtree->set_downsample_param(config_param_.ikdtree.map_leaf_size);//0.5 默认0.2
                 ikdtree->set_cube_len(config_param_.ikdtree.cube_len);
                 ikdtree->set_det_range(config_param_.ikdtree.det_range);

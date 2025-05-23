@@ -272,9 +272,9 @@ private:
      */
     std::atomic<int>  health_status_;
     
-    std::atomic<int>  cloud_size_orig_;
-    std::atomic<int>  cloud_size_sample_;
-    std::atomic<int>  cloud_size_feat_;
+    std::atomic<int>  cloud_size_orig_{0};
+    std::atomic<int>  cloud_size_sample_{0};
+    std::atomic<int>  cloud_size_feat_{0};
     // -----------------------------------------------------
     Eigen::Isometry3d T_lidar_baselink_;
 

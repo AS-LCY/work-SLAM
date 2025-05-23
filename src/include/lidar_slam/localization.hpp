@@ -76,6 +76,7 @@ private:
    fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp; // TODO test gicp with normal
    pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
    bool map_ready_;
+   bool filter_init_ = false;
    Eigen::Isometry3d correctionOdomToMap = Eigen::Isometry3d::Identity();
    Eigen::Isometry3d lastCorrectionOdomToMap = Eigen::Isometry3d::Identity();
    

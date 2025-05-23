@@ -17,6 +17,7 @@ Localization::Localization(){
     testMatchcloud.reset(new PointCloudType());
     CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
     map_ready_ = false;
+    filter_init_ = false;
 
 }
 Localization::~Localization(){
@@ -175,6 +176,9 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 {
     // pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIn(new pcl::PointCloud<pcl::PointXYZI>());
     // pcl::copyPointCloud(*(odomCloud), *cloudIn);
+    static double odom2map_x_filter = 0.0;
+    static double odom2map_y_filter = 0.0;
+    static const double ratio = 0.1;
 
     if (!map_ready_) return false;
     gicp->setInputSource(odomCloud);
@@ -214,6 +218,17 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
             
             double abs_dx = std::abs(curr_x - last_x);
             double abs_dy = std::abs(curr_y - last_y);
+
+            if(!filter_init_){
+                odom2map_x_filter = correctionOdomToMap.translation().x();
+                odom2map_y_filter = correctionOdomToMap.translation().y();
+                filter_init_ = true;
+            }else{
+                odom2map_x_filter = ratio * correctionOdomToMap.translation().x() + (1-ratio) * odom2map_x_filter;
+                odom2map_y_filter = ratio * correctionOdomToMap.translation().y() + (1-ratio) * odom2map_y_filter;
+                correctionOdomToMap.translation().x() = odom2map_x_filter;
+                correctionOdomToMap.translation().y() = odom2map_y_filter;
+            }
             
             if(use_pose_filter){
                 if(abs_dx > odom2map_delta_thr){
