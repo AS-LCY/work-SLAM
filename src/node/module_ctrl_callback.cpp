@@ -335,6 +335,8 @@ bool LocalizationModule::start_localization(int map_id){
     }
     std::string load_map_dir = slam_param_.common.cloud_map_directory;
 
+    ROS_INFO_STREAM("load_map_dir: " << slam_param_.common.cloud_map_directory );
+
     // ModuleStatus curr_running_module_status = running_module_status_.load();
 
     // if (running_module_status_now == ModuleStatus::MODULE_IDLE){

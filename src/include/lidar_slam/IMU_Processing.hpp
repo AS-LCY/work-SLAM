@@ -117,7 +117,7 @@ class ImuProcess
   V3D angvel_last;                        //上一帧角速度
   V3D acc_s_last;                         //上一帧加速度
   double start_timestamp_;                //开始时间戳
-  double last_lidar_end_time_;            //上一帧结束时间戳
+  double last_lidar_end_time_;            //上一帧结束时间戳，update: UndistortPcl()
   int init_iter_num = 1;                  //初始化迭代次数
   bool b_first_frame_ = true;             //是否是第一帧
   bool imu_need_init_ = true;             //是否需要初始化imu

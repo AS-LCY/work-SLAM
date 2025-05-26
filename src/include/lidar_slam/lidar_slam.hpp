@@ -422,18 +422,18 @@ class LidarSlam
         bool new_key_cloud_arrived_ = false;
 
 
-        deque<double> time_buffer;               // 记录lidar时间
+        deque<double> time_buffer;               // 记录lidar时间, lidar header time
         deque<PointCloudType::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
         deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
         bool lidar_pushed = false;
         // atomic<double> lidar_end_time = 0;
-        atomic<double> lidar_end_time;
-        double lidar_mean_scantime = 0.0;
+        atomic<double> lidar_end_time; ///< 当前帧雷达，帧结束的时间，update: sync_packages()
+        double lidar_mean_scantime = 0.0; ///< 单帧点云的 time period
         double first_lidar_time = 0.0; // 第一帧点云的时间
         int scan_num = 0;
         bool flg_first_scan = true;
         double last_timestamp_lidar = 0;
-        double last_timestamp_imu = -1.0;
+        double last_timestamp_imu = -1.0; ///< 最新的 imu 时间， update: imu_cbk()
         double timediff_lidar_wrt_imu = 0.0;
         bool time_sync_en = false;
         bool timediff_set_flg = false; // 标记是否已经进行了时间补偿

@@ -193,17 +193,15 @@ void LidarSlam::reset(const std::string work_path,bool localization_mode,bool of
 bool LidarSlam::sync_packages(MeasureGroup &meas) {
     
     if (lidar_buffer.empty() || imu_buffer.empty()) {
-        // bool flag1 = lidar_buffer.empty();
-        // bool flag2 = imu_buffer.empty();
-        // cout<<"lidar_buffer.empty(): "<< flag1<<endl;
-        // cout<<"imu_buffer.empty(): "<<flag2 <<endl;
         // printf("wait lidar & imu data\n");
+        // ROS_INFO_STREAM("buffer empty, sync_packages failed !, lidar size: " << lidar_buffer.size() << ", imu size: " << imu_buffer.size());
         return false;
     }
-    if (reseting == true)
-       return false;
+    if (reseting == true){
+        ROS_INFO_STREAM("reseting, sync_packages return !");
+        return false;
+    }
     if (lidar_pushed && omp_get_wtime()-time_buffer.front() > 1.5*0.1){
-        // printf("lidar lose rate %f \n",omp_get_wtime()-time_buffer.front());
         ROS_WARN_STREAM(RED << "lidar lose rate: " << omp_get_wtime()-time_buffer.front() << RESET);
     }
     /*** push a lidar scan ***/
@@ -252,13 +250,16 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
 
     if (last_timestamp_imu < lidar_end_time) {
         ROS_WARN_STREAM(RED << "latest imu time < lidar time "<< RESET);
-        ROS_WARN_STREAM(YELLOW << "last_timestamp_imu: " << last_timestamp_imu << RESET);
-        ROS_WARN_STREAM(YELLOW << "lidar_end_time: " << lidar_end_time << RESET);
+        ROS_WARN_STREAM(YELLOW << "last_timestamp_imu: " << setprecision(15) << last_timestamp_imu << RESET);
+        ROS_WARN_STREAM(YELLOW << "lidar_end_time: " << setprecision(15)  << lidar_end_time << RESET);
         return false;
     }
     /*** push imu data, and pop from imu buffer ***/
     double imu_time = imu_buffer.front()->time_stamp; // 最旧IMU时间
     meas.imu.clear();
+    // ROS_INFO_STREAM("imu_buffer.front.time: " << setprecision(15) << imu_time);
+    // ROS_INFO_STREAM("lidar_beg_time.time: "<< setprecision(15)  << meas.lidar_beg_time);
+    // ROS_INFO_STREAM("lidar_end_time.time: "<< setprecision(15)  << lidar_end_time);
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
     while ((!imu_buffer.empty()) && (imu_time < lidar_end_time)){ //记录imu数据，imu时间小于当前帧lidar结束时间
@@ -268,9 +269,16 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         meas.imu.push_back(imu_buffer.front()); //记录当前lidar帧内的imu数据到meas.imu
         imu_buffer.pop_front();
     }
+    // ROS_INFO_STREAM(BOLDYELLOW << "Measures.imu.size(): "<< meas.imu.size() << RESET);
+
+    if(meas.imu.empty()){
+        ROS_WARN_STREAM(RED << "meas.imu.empty() "<< RESET);
+        lidar_pushed = false;
+        return false;
+    }
     lidar_buffer.pop_front();
-    // cout<<"********************* lidar pop ************"<<endl;
     time_buffer.pop_front();
+    // cout<<"********************* lidar pop ************"<<endl;
     lidar_pushed = false;
     return true;
 }
@@ -926,6 +934,8 @@ bool LidarSlam::run()
     if (sync_packages(Measures)) {
         // ROS_INFO_STREAM(setprecision(15) << ros::Time::now().toSec() << ": ---------sync_packages " << GREEN << "success" << RESET <<" --------------------------");
         // 第一帧lidar数据
+        static double last_lidar_time = Measures.lidar_beg_time;
+
         if (flg_first_scan) {
             first_lidar_time = Measures.lidar_beg_time; //记录第一帧绝对时间
             p_imu->first_lidar_time = first_lidar_time; //记录第一帧绝对时间
@@ -936,7 +946,12 @@ bool LidarSlam::run()
 
         // log_info_manager_->slam_info.data[13]= -100; // 
         // log_info_manager_->slam_info.data[15]= -100; // 
-        
+        log_info_manager_->slam_info.data[24]= Measures.lidar_beg_time - last_lidar_time;
+        log_info_manager_->slam_info.data[25]= Measures.lidar_beg_time;
+        log_info_manager_->slam_info.data[26]= Measures.lidar_end_time - Measures.lidar_beg_time;
+        log_info_manager_->slam_info.data[27]= Measures.imu.front()->time_stamp - Measures.lidar_beg_time;
+        log_info_manager_->slam_info.data[28]= Measures.imu.back()->time_stamp - Measures.lidar_beg_time;
+        last_lidar_time = Measures.lidar_beg_time;
         t0 = omp_get_wtime();
         
         // 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
@@ -944,6 +959,7 @@ bool LidarSlam::run()
             std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
             undistortCloud->clear();
             p_imu->Process(Measures, kf, undistortCloud);
+            log_info_manager_->slam_info.data[11]=undistortCloud->size(); //
         }
         state_ikfom state_point;
         state_point = kf.get_x();
