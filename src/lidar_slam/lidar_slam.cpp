@@ -228,8 +228,17 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         //     // 动态更新每帧lidar数据平均扫描时间
         //     lidar_mean_scantime += (meas.lidar->points.back().curvature / double(1000) - lidar_mean_scantime) / scan_num;
         // }
-        lidar_mean_scantime = 0.1;
+        static PointCloudType::Ptr pcl_temp(new PointCloudType());
+        pcl_temp = meas.lidar;// 指向同一个地址
+        sort(pcl_temp->points.begin(), pcl_temp->points.end(), time_list);  // 按由小到大排列，这里curvature中存放了时间戳（在preprocess.cpp中）
+
+        // lidar_mean_scantime = 0.1;
+        lidar_mean_scantime = pcl_temp->points.back().curvature * 0.001;
         lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime;
+
+        if(lidar_mean_scantime > 0.11) {
+            ROS_INFO_STREAM(RED << "lidar scan time: " << lidar_mean_scantime << RESET);
+        }
 
         meas.lidar_end_time = lidar_end_time;
 
