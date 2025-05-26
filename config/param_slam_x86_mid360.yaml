@@ -22,8 +22,12 @@ common:
   # map_directory: "/home/pmm/data/1-livox/slipping/0219/"
   # map_directory: "/home/pmm/data/1-livox/0322/5-gym"
   # map_directory: "/home/pmm/data/1-livox/0409/"
-  map_directory: "/home/pmm/data/1-livox/0411/map2/"
-  map_directory: "/home/pmm/data/1-livox/4月/0414/gym/"
+  # map_directory: "/home/pmm/data/1-livox/0411/map2/"
+  # map_directory: "/home/pmm/data/1-livox/4-April/0411/map2/"
+  map_directory: "/home/pmm/data/1-livox/5-May/0524/lougeceshi_4_big_map/maps"
+
+  # --topics /livox/lidar /livox/imu /flbot/hardware/chassic_data --pause
+  # --topics /Odometry_lidar_in_map /flbot/hardware/chassic_data --pause
   
   # map_directory: "/home/pmm/data/1-livox/2025/0208-th-cover/maps/"
   
@@ -60,7 +64,7 @@ extrinsic:
                     0,  0,  0,  1]
 
 localization:
-  fgicp_freq: 1 # hz
+  fgicp_peroid_sec: 5 # 时间周期，单位： 秒
   # fgicp_score_thr: 0.1
   fgicp_score_fail_thr: 0.3
   fgicp_score_low_accuracy_thr: 0.1

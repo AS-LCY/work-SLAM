@@ -78,7 +78,7 @@ struct MappingParam{
 };
 
 struct LocalizationParam{
-    int fgicp_freq = 1;
+    float fgicp_peroid_sec = 1;
     // double fgicp_score_thr = 0.1;
     double fgicp_score_fail_thr = 0.3;
     double fgicp_score_low_accuracy_thr = 0.1;

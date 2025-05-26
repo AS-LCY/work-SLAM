@@ -61,7 +61,7 @@ extrinsic:
                     0,  0,  0,  1]
 
 localization:
-  fgicp_freq: 1 # hz
+  fgicp_peroid_sec: 5 # 时间周期，单位： 秒
   # fgicp_score_thr: 0.1
   fgicp_score_fail_thr: 0.3
   fgicp_score_low_accuracy_thr: 0.1

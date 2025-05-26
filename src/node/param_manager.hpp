@@ -199,7 +199,7 @@ public:
         get_param(ns+ "mapping/save_map_resolution", loaded_param_.mapping.save_map_resolution, &success);
         
         /// localization params *******************************************
-        get_param(ns+ "localization/fgicp_freq", loaded_param_.localization.fgicp_freq, &success);
+        get_param(ns+ "localization/fgicp_peroid_sec", loaded_param_.localization.fgicp_peroid_sec, &success);
         // get_param(ns+ "localization/fgicp_score_thr", loaded_param_.localization.fgicp_score_thr, &success);
         get_param(ns+ "localization/fgicp_score_fail_thr", loaded_param_.localization.fgicp_score_fail_thr, &success);
         get_param(ns+ "localization/fgicp_score_low_accuracy_thr", loaded_param_.localization.fgicp_score_low_accuracy_thr, &success);

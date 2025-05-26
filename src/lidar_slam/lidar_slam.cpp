@@ -335,10 +335,13 @@ void LidarSlam::loopClosureThread()
 
 void LidarSlam::localizationThread()
 {
-    // const int frequency = 1.0; // 频率为1Hz
+    const int frequency = 1.0; // 频率为1Hz
+    auto period_relocal = std::chrono::milliseconds(1000);
     // const int frequency = 2.0; // 频率为2Hz
-    const int frequency = config_param_.localization.fgicp_freq; // 频率为2Hz
-    const std::chrono::milliseconds period(1000 / frequency);
+    const float period_local_sec = config_param_.localization.fgicp_peroid_sec; // 频率为2Hz
+    const int period_fgicp_ms = period_local_sec * 1000;
+    std::chrono::milliseconds period_local_ms(period_fgicp_ms);
+    // const std::chrono::milliseconds period(1000 / frequency);
     const auto score_thr = config_param_.re_localization.score_thr;
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
     const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
@@ -377,6 +380,12 @@ void LidarSlam::localizationThread()
         if(local_thrd_status_.load() == 2){ // 重定位失败
             
             ROS_INFO("global Localization failed: time out ");
+            auto end = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            if (elapsed < period_relocal) {
+                std::this_thread::sleep_for(period_relocal - elapsed);
+            }
+            continue;  
 
         }else{
             if (!globalLocalizationSuccess){
@@ -419,7 +428,12 @@ void LidarSlam::localizationThread()
                     global_localize_count_ = 0;
                     local_thrd_status_.store(3);
                 }
-                
+                auto end = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                if (elapsed < period_relocal) {
+                    std::this_thread::sleep_for(period_relocal - elapsed);
+                }
+                continue;          
             }
             else{
                 // ROS_INFO_STREAM("localizing ... ");
@@ -477,9 +491,8 @@ void LidarSlam::localizationThread()
 
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        if (elapsed < period)
-        {
-            std::this_thread::sleep_for(period - elapsed);
+        if (elapsed < period_local_ms) {
+            std::this_thread::sleep_for(period_local_ms - elapsed);
         }
     }
 }
@@ -640,6 +653,8 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
     while(lidar_buffer.size() > keep_lidar_num_before_curr){
         lidar_buffer.pop_front();
         time_buffer.pop_front();
+        ROS_INFO_STREAM("pop one scan! ");
+
     }
     lidar_buffer.push_back(cloud); //储存处理后的lidar特征
     time_buffer.push_back(curr_time);
@@ -1137,6 +1152,7 @@ bool LidarSlam::run()
         // printf("lidar slam main update  time    , time cost: %f ms\n", (t_update_end-t_update_start)*1000);
         // printf("lidar slam main process         , time cost: %f ms\n", (t3-t2)*1000);
         // printf("main: lidar slam backend        , time cost: %f ms\n", (t1_backend-t0_backend)*1000);
+        // ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << " ms");
         // printf("main: transform undistortCloud  , time cost: %f ms\n", (t1_transform-t0_transform)*1000);
         // ROS_INFO_STREAM("main: transform undistortCloud  , time cost: "<< (t1_transform-t0_transform)*1000 << " ms");
         // printf("transform FilteredUndistortCloud, time cost: %f ms\n", (t4-t3)*1000);
