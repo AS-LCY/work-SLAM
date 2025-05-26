@@ -126,10 +126,10 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped ,Poin
     // cout<<"debug: aLoopIsClosed: "<<endl;
     if (aLoopIsClosed) // 有回环因子，多update几次
     {
-        isam->update();
-        isam->update();
-        isam->update();
-        isam->update();
+        // isam->update();
+        // isam->update();
+        // isam->update();
+        // isam->update();
         
         isam->update();
         isam->update();
@@ -281,7 +281,6 @@ bool BackEnd::correctPoses()
         mtxPose.unlock();
         // 清空局部map， reconstruct  ikdtree submap
         // recontructIKdTree(ikdtree); 
-        // std::cout <<"ISMA2 Update"<< std::endl;
         ROS_INFO("ISMA2 Update");
         ROS_INFO_STREAM(BOLDYELLOW<<"correctPoses ********************************** "<<RESET);
         aLoopIsClosed = false;
