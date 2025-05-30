@@ -479,6 +479,11 @@ class LidarSlam
         std::unique_ptr<GlobalLocalization> global_localization_= nullptr;
         std::unique_ptr<CloudMap> cloud_map_manager_= nullptr;
 
+        // ///////// stop local thread 专用
+        // std::condition_variable cv_stop_local_;
+        // std::mutex mtx_stop_thread_;
+        // bool flag_stop_thread_ = false;
+
 
         std::shared_ptr<localization_module::LidarPreprocParent> lidar_pre_ptr_;
 

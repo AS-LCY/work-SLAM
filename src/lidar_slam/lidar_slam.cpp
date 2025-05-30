@@ -205,6 +205,7 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         ROS_WARN_STREAM(RED << "lidar lose rate: " << omp_get_wtime()-time_buffer.front() << RESET);
     }
     /*** push a lidar scan ***/
+    // static PointCloudType::Ptr pcl_temp(new PointCloudType());
     if (!lidar_pushed) {
         meas.lidar = lidar_buffer.front();         // lidar指针指向最旧的lidar数据
         meas.lidar_beg_time = time_buffer.front(); //记录最早时间
@@ -226,12 +227,12 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         //     // 动态更新每帧lidar数据平均扫描时间
         //     lidar_mean_scantime += (meas.lidar->points.back().curvature / double(1000) - lidar_mean_scantime) / scan_num;
         // }
-        static PointCloudType::Ptr pcl_temp(new PointCloudType());
-        pcl_temp = meas.lidar;// 指向同一个地址
-        sort(pcl_temp->points.begin(), pcl_temp->points.end(), time_list);  // 按由小到大排列，这里curvature中存放了时间戳（在preprocess.cpp中）
+        // pcl_temp = meas.lidar;// 指向同一个地址
+        // sort(pcl_temp->points.begin(), pcl_temp->points.end(), time_list);  // 按由小到大排列，这里curvature中存放了时间戳（在preprocess.cpp中）
 
         // lidar_mean_scantime = 0.1;
-        lidar_mean_scantime = pcl_temp->points.back().curvature * 0.001;
+        lidar_mean_scantime = meas.lidar->points.back().curvature * 0.001;
+        lidar_mean_scantime = lidar_mean_scantime < 0.1 ? 0.1 : lidar_mean_scantime;
         lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime;
 
         if(lidar_mean_scantime > 0.11) {

@@ -122,7 +122,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
   // 根据点云中每个点的时间戳对点云进行重排序, 改为在sync_packages 中进行排序
   pcl_out = *(meas.lidar);
   // // double before_sort = omp_get_wtime();
-  // sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);  // 放在sync_packages 中进行排序，这里curvature中存放了时间戳（在preprocess.cpp中）
+  sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);  // 放在sync_packages 中进行排序，这里curvature中存放了时间戳（在preprocess.cpp中）
   // // double after_sort = omp_get_wtime();
   // // ROS_INFO_STREAM("cloud sort  , time cost           : " << (after_sort-before_sort)*1000 << " ms" );
 
