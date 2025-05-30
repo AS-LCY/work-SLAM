@@ -258,9 +258,6 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
     /*** push imu data, and pop from imu buffer ***/
     double imu_time = imu_buffer.front()->time_stamp; // 最旧IMU时间
     meas.imu.clear();
-    // ROS_INFO_STREAM("imu_buffer.front.time: " << setprecision(15) << imu_time);
-    // ROS_INFO_STREAM("lidar_beg_time.time: "<< setprecision(15)  << meas.lidar_beg_time);
-    // ROS_INFO_STREAM("lidar_end_time.time: "<< setprecision(15)  << lidar_end_time);
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
     while ((!imu_buffer.empty()) && (imu_time < lidar_end_time)){ //记录imu数据，imu时间小于当前帧lidar结束时间
@@ -273,8 +270,17 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
     // ROS_INFO_STREAM(BOLDYELLOW << "Measures.imu.size(): "<< meas.imu.size() << RESET);
 
     if(meas.imu.empty()){
-        ROS_WARN_STREAM(RED << "meas.imu.empty() "<< RESET);
+        ROS_WARN_STREAM(RED << "Measure.imu is empty. "<< RESET);
         lidar_pushed = false;
+        ROS_INFO_STREAM("imu_buffer.front.time: " << setprecision(15) << imu_time);
+        ROS_INFO_STREAM("imu_buffer.back.time: " << setprecision(15) << imu_buffer.back()->time_stamp);
+        ROS_INFO_STREAM("lidar count: "  << meas.lidar->points.size());
+        ROS_INFO_STREAM("lidar first point: " << setprecision(5) << meas.lidar->points.front().curvature * 0.001);
+        ROS_INFO_STREAM("lidar end point: " << setprecision(5) << meas.lidar->points.back().curvature * 0.001);
+        ROS_INFO_STREAM("lidar_beg_time.time: "<< setprecision(15)  << meas.lidar_beg_time);
+        ROS_INFO_STREAM("lidar_end_time.time: "<< setprecision(15)  << lidar_end_time);
+        lidar_buffer.pop_front();
+        time_buffer.pop_front();
         return false;
     }
     lidar_buffer.pop_front();
