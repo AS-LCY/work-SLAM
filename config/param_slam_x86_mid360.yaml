@@ -64,12 +64,12 @@ extrinsic:
                     0,  0,  0,  1]
 
 localization:
-  fgicp_peroid_sec: 5 # 时间周期，单位： 秒
+  fgicp_peroid_sec: 3 # 时间周期，单位： 秒
   # fgicp_score_thr: 0.1
   fgicp_score_fail_thr: 0.3
-  fgicp_score_low_accuracy_thr: 0.1
+  fgicp_score_low_accuracy_thr: 0.05
   fgicp_fail_count_thr: 5
-  fgicp_low_accuracy_count_thr: 180
+  fgicp_low_accuracy_count_thr: 1800
   # pose filter
   filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
   fst_order_k: 0.7
@@ -97,7 +97,7 @@ lidar_preproc:
   max_distance: 70
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
-  cloud_size_to_keep: 2500
+  cloud_size_to_keep: 3500
   # feature_enabled: false  # default to false
   extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
   point_filter_num: 6 # 间隔采样所需参数
