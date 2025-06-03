@@ -5,7 +5,7 @@ localization_fusion:
     localization_fusion_dt: 50 # unit: ms
     status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta], for init
     input_cov_mat_diag: [0.05, 0.0017]  # [v, w] 
-    measure_cov_mat_diag: [0.02, 0.02, 0.001] # [x, y, theta]
+    measure_cov_mat_diag: [0.001, 0.001, 0.001] # [x, y, theta]
     w_thr: 0.15 # unit: rad/s
     ekf_use_chassis: true # defualt to true, if test without chassis then set to false
     use_ekf_yaw: false
@@ -31,5 +31,5 @@ localization_fusion:
 
     detect_slip: 
         detect_window_time_range: 2.0 # unit: second
-        slipping_count_thr: 5 # 连续帧数超过距离阈值，即为打滑, 20hz 前提下
+        slipping_count_thr: 30 # 连续帧数超过距离阈值，即为打滑, 20hz 前提下
         slipping_dist_thr: 0.2 # unit: m
