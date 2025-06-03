@@ -64,17 +64,17 @@ bool LocalizationModule::create_ROS_IO(){
     // subscriber ********************************************************************
 	// ros::Subscriber sub_pcl = nh_.subscribe<livox_ros_driver2::CustomMsg>("/livox/lidar", 200000, &LocalizationModule::livox_msg_cbk, this);
     // sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>("/livox/lidar", 10, &LocalizationModule::livox_ros_cbk, this);
-    sub_pointcloud2_ = nh_.subscribe<sensor_msgs::PointCloud2>(slam_param_.lidar_preproc.sub_lidar_topic, 10, &LocalizationModule::lidar_ros_callback, this);
+    sub_pointcloud2_ = nh5_.subscribe<sensor_msgs::PointCloud2>(slam_param_.lidar_preproc.sub_lidar_topic, 10, &LocalizationModule::lidar_ros_callback, this);
 
-    sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(slam_param_.lidar_preproc.sub_imu_topic, 2000, &LocalizationModule::imu_callback, this);
+    sub_imu_ = nh3_.subscribe<sensor_msgs::Imu>(slam_param_.lidar_preproc.sub_imu_topic, 2000, &LocalizationModule::imu_callback, this);
     // sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>("/flbot/hardware/chassic_data", 100, &LocalizationModule::chassis_callback, this);
     
     // publish ************************************************************************
-    pub_localization_module_status_ = nh_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
-    pub_localization_module_health_ = nh_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
+    pub_localization_module_status_ = nh5_.advertise<fairland_msgs::LocalizationModuleStatus>(slam_param_.common.pub_topic_module_status, 100); 
+    pub_localization_module_health_ = nh5_.advertise<fairland_msgs::LocalizationModuleHealth>(slam_param_.common.pub_topic_module_health, 100); 
     // pub_filter_odometry_ = nh_.advertise<nav_msgs::Odometry>("/Odometry_lidar_in_map_filter", 100); 
     // pub_log_ = nh_.advertise<fairland_msgs::LocalizationModuleLogInfo>(slam_param_.common.pub_topic_module_loginfo, 100); 
-    pub_log_ = nh_.advertise<std_msgs::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo, 100); 
+    pub_log_ = nh5_.advertise<std_msgs::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo, 100); 
     // pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100); 
 
     // both 建图 & 定位
@@ -704,12 +704,12 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     livox_cbk_update_time_.store(ros_msg->header.stamp.toSec());
     ROS_INFO_ONCE("received lidar -------------- lidar cbk");
 
-    // ModuleStatus curr_running_module_status = running_module_status_.load();
-    // if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
-    //     curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
-    //     curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-    //     return;
-    // }
+    ModuleStatus curr_running_module_status = running_module_status_.load();
+    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        return;
+    }
 
     double t0 = omp_get_wtime();
     auto start = std::chrono::system_clock::now();
@@ -718,16 +718,21 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // ROS_INFO("[lidar cbk]: lidar msg delay: %lf ms", (now_sec - ros_msg->header.stamp.toSec())*1000);
 
     /////////////////////////////////////////////////////////////////////////////
-    cloud_preproc_ptr_->clear();
-    lidar_ptr_ -> pre_process(ros_msg, cloud_preproc_ptr_);
-    int cloud_preproc_size = cloud_preproc_ptr_->points.size();
+
+    static const auto ring_count = slam_param_.lidar_preproc.cloud_ring_count;
+    static const auto col_count = slam_param_.lidar_preproc.cloud_column_count;
+    PointCloudType::Ptr cloud_preproc_ptr(new PointCloudType());
+    cloud_preproc_ptr->points.reserve(ring_count * col_count);
+    // cloud_preproc_ptr_->clear();
+    lidar_ptr_ -> pre_process(ros_msg, cloud_preproc_ptr);
+    int cloud_preproc_size = cloud_preproc_ptr->points.size();
 
     // PointCloudType::Ptr pcl_xyzin_cld(new PointCloudType());
     // lidar_ptr_ -> msg2pcl_clip(ros_msg, pcl_xyzin_cld);
     // // ROS_INFO_STREAM("clip lidar count: " << pcl_xyzin_cld->points.size());
     // PointCloudType::Ptr sample_cld_ptr(new PointCloudType());
-    // lidar_ptr_->sampling_cloud(pcl_xyzin_cld, cloud_preproc_ptr_);
-    // int cloud_preproc_size = cloud_preproc_ptr_->points.size();
+    // lidar_ptr_->sampling_cloud(pcl_xyzin_cld, cloud_preproc_ptr);
+    // int cloud_preproc_size = cloud_preproc_ptr->points.size();
 
     double t1 = omp_get_wtime();
     /////////////////////////////////////////////////////////////////////////////
@@ -744,15 +749,15 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     // ROS_INFO_STREAM("cloud_size_orig: " << cloud_size_orig_.load());
     // ROS_INFO_STREAM("cloud_size_sample: " << cloud_preproc_size);
 
-    ModuleStatus curr_running_module_status = running_module_status_.load();
-    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
-        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
-        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        return;
-    }
+    // ModuleStatus curr_running_module_status = running_module_status_.load();
+    // if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+    //     curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+    //     return;
+    // }
 
     // slam_ -> lidar_pcl_cbk(sample_cld_ptr);
-    slam_ -> lidar_pcl_cbk(cloud_preproc_ptr_);
+    slam_ -> lidar_pcl_cbk(cloud_preproc_ptr);
     // fill status_msg.localization_status
     double t3 = omp_get_wtime();
 
@@ -931,10 +936,10 @@ bool LocalizationModule::module_member_init(){
     localization_status_.store(0);
     running_module_status_.store(ModuleStatus::MODULE_IDLE);
 
-    cloud_preproc_ptr_.reset(new PointCloudType());
+    // cloud_preproc_ptr_.reset(new PointCloudType());
     auto ring_count = slam_param_.lidar_preproc.cloud_ring_count;
     auto col_count = slam_param_.lidar_preproc.cloud_column_count;
-    cloud_preproc_ptr_->points.reserve(ring_count * col_count);
+    // cloud_preproc_ptr_->points.reserve(ring_count * col_count);
 
 
     log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
