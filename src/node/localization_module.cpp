@@ -176,7 +176,11 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
             exit(EXIT_FAILURE);
         }
     }
+
+    static double last_slam_hb = hb_time_timer_slam_;
     hb_time_timer_slam_.store(ros::Time::now().toSec());
+    log_info_manager_->slam_info.data[29]=hb_time_timer_slam_ - last_slam_hb;
+    last_slam_hb = hb_time_timer_slam_;
     
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -679,7 +683,12 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
     static const int cloud_size_to_keep = slam_param_.lidar_preproc.cloud_size_to_keep;
     static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 
+    static double last_lidar_hb = hb_time_cbk_lidar_;
+
     hb_time_cbk_lidar_.store(ros::Time::now().toSec());
+
+    log_info_manager_->slam_info.data[23]=hb_time_cbk_lidar_ - last_lidar_hb;
+    last_lidar_hb = hb_time_cbk_lidar_;
 
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID

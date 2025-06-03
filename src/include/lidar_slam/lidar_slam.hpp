@@ -133,7 +133,7 @@ class LidarSlam
         bool run();
         void robosense_pcl_cbk(const pcl::PointCloud<RsPointXYZIRT>::Ptr &cloud);
         void robosense_pcl_cbk(const PointCloudType::Ptr &cloud);
-        void lidar_pcl_cbk(const PointCloudType::Ptr &cloud);
+        void lidar_pcl_cbk(const PointCloudType::Ptr cloud);
 
         void livox_pcl_cbk(const std::shared_ptr<livox_ros::LidarMsg> &msg_in);
         // void livox_pcl_offline_cbk(const PointCloudType::Ptr msg_in,double time_stamp);

@@ -24,6 +24,7 @@
 // #include "lddc.h"
 #include "lidar/livox/ros_livox_datatype_def.h"
 
+// #include "node/log_info_manager.hpp" // DEBUG
 /*
 这个hpp主要包含：
 IMU数据预处理：IMU初始化，IMU正向传播，反向传播补偿运动失真   
@@ -121,5 +122,6 @@ class ImuProcess
   int init_iter_num = 1;                  //初始化迭代次数
   bool b_first_frame_ = true;             //是否是第一帧
   bool imu_need_init_ = true;             //是否需要初始化imu
+  // localization_module::LocalizationModuleLogInfoManager * log_info_manager_; // DEBUG
 };
 #endif

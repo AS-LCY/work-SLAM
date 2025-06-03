@@ -31,7 +31,7 @@ public:
 
     void reset_log_info(){
         slam_info.data.clear();
-        slam_info.data.resize(30);
+        slam_info.data.resize(40);
         fusion_info.data.clear();
         fusion_info.data.resize(30);
     }

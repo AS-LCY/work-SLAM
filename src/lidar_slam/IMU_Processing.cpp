@@ -23,6 +23,10 @@ ImuProcess::ImuProcess()
   Lidar_T_wrt_IMU = Vector3d(0, 0, 0);                   // lidar到IMU的位置外参初始化
   Lidar_R_wrt_IMU = Matrix3d::Identity();                    // lidar到IMU的旋转外参初始化
   last_imu_.reset(new livox_ros::ImuMsg);    //上一帧imu初始化
+
+
+  // log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();// DEBUG
+  // log_info_manager_->reset_log_info();// DEBUG
 }
 
 ImuProcess::~ImuProcess() {}
@@ -120,7 +124,9 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
   const double &pcl_end_time = meas.lidar_end_time;
   
   // 根据点云中每个点的时间戳对点云进行重排序, 改为在sync_packages 中进行排序
+  // log_info_manager_->slam_info.data[32] = meas.lidar->points.size();// DEBUG
   pcl_out = *(meas.lidar);
+  // log_info_manager_->slam_info.data[33] = meas.lidar->points.size();// DEBUG
   // // double before_sort = omp_get_wtime();
   sort(pcl_out.points.begin(), pcl_out.points.end(), time_list);  // 放在sync_packages 中进行排序，这里curvature中存放了时间戳（在preprocess.cpp中）
   // // double after_sort = omp_get_wtime();
@@ -197,7 +203,12 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
   last_lidar_end_time_ = pcl_end_time;      //保存这一帧最后一个雷达测量的结束时间，以便于下一帧使用
 
    /***消除每个激光雷达点的失真（反向传播）***/
-  if (pcl_out.points.begin() == pcl_out.points.end()) return;
+  // log_info_manager_->slam_info.data[34] = pcl_out.points.size();// DEBUG
+  if (pcl_out.points.begin() == pcl_out.points.end()) {
+    // log_info_manager_->slam_info.data[35] = 0;// DEBUG
+    // log_info_manager_->slam_info.data[36] = pcl_out.points.size();// DEBUG
+    return;
+  }
   auto it_pcl = pcl_out.points.end() - 1;
 
   //遍历每个IMU帧
@@ -233,6 +244,8 @@ void ImuProcess::UndistortPcl(const MeasureGroup &meas, esekfom::esekf &kf_state
       if (it_pcl == pcl_out.points.begin()) break;
     }
   }
+  // log_info_manager_->slam_info.data[36] = pcl_out.points.size();// DEBUG
+
 }
 
 

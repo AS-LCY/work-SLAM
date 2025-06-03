@@ -283,6 +283,8 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         time_buffer.pop_front();
         return false;
     }
+    log_info_manager_->slam_info.data[30] = meas.lidar->points.size();
+    log_info_manager_->slam_info.data[31] = lidar_buffer.front()->points.size();
     lidar_buffer.pop_front();
     time_buffer.pop_front();
     // cout<<"********************* lidar pop ************"<<endl;
@@ -643,7 +645,7 @@ void LidarSlam::showThread()
 // }
         
 
-void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr &cloud){
+void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud){
     // param
     static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
     if (reseting) { return; }
