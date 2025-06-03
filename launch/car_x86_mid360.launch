@@ -5,6 +5,7 @@
 	<arg name="rviz" default="true" />
 	<arg name="use_gdb" default="false" />
 	<arg name="lidar_name" default="x86_mid360" />
+	<!-- <arg name="lidar_name" default="x86_E1R" /> -->
 
 	<!-- <param name="localization_mode" type="bool" value="0"/>
 	<param name="offline_mode" type="bool" value="0"/>
