@@ -37,7 +37,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
     auto msg = msg_in;
     int ctrl_type = msg.data/100 * 100;
     auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
-    ROS_INFO_STREAM(BOLDGREEN << "Received Ctrl Msg: " << msg << RESET;);
+    ROS_INFO_STREAM(BOLDGREEN << "Received Ctrl Msg: " << msg.data << RESET);
     ROS_INFO_STREAM(BOLDGREEN << "Received Ctrl Cmd: " << print_SlamCtrlCmd(curr_cmd) << RESET);
     // ROS_INFO_STREAM(" CMD_MAX: " << CMD_MAX);
 

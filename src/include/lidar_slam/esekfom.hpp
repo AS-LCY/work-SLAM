@@ -167,7 +167,6 @@ namespace esekfom
 			if (effct_feat_num < 1)
 			{
 				ekfom_data.valid = false;
-				// printf("No Effective Points! \n");
 				ROS_WARN_STREAM(YELLOW<<"No Effective Points!"<<RESET);
 				return;
 			}
@@ -299,15 +298,6 @@ namespace esekfom
 					dyn_share.converge = true;
 				}
 				double t_update_7 = omp_get_wtime();//计算矩阵 K * H
-				// // printf("iter: %d-----------------------------------------\n", i);
-				// // printf("------ 计算雅克比矩阵, time cost    : %f ms\n", (t_update_1-t_update_0)*1000);
-				// // printf("------ 计算矩阵 x^k - x^, time cost: %f ms\n", (t_update_2-t_update_1)*1000);
-				// // printf("------ 计算矩阵 H^T * H, time cost : %f ms\n", (t_update_3-t_update_2)*1000);
-				// // printf("------ 计算卡尔曼增益, time cost    : %f ms\n", (t_update_4-t_update_3)*1000);
-				// // printf("------ 计算 K * H, time cost       : %f ms\n", (t_update_5-t_update_4)*1000);
-				// // printf("------ boxplus, time cost         : %f ms\n", (t_update_6-t_update_5)*1000);
-				// // printf("------ end  , time cost           : %f ms\n", (t_update_7-t_update_6)*1000);
-				// // printf("iter: %d-----------------------------------------\n", i);
 				// ROS_INFO_STREAM("iter: "<< i << " -----------------------------------------" << RESET);
 				// ROS_INFO_STREAM("------ 计算雅克比矩阵, time cost    : " << (t_update_1-t_update_0)*1000 << " ms" );
 				// ROS_INFO_STREAM("------ 计算矩阵 x^k - x^, time cost: " << (t_update_2-t_update_1)*1000 << " ms" );

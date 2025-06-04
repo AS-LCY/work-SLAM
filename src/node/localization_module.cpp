@@ -177,44 +177,56 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
         }
     }
 
-    static double last_slam_hb = hb_time_timer_slam_;
+    static double last_slam_hb = hb_time_timer_slam_.load();
     hb_time_timer_slam_.store(ros::Time::now().toSec());
-    log_info_manager_->slam_info.data[29]=hb_time_timer_slam_ - last_slam_hb;
-    last_slam_hb = hb_time_timer_slam_;
+    double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
+
+    log_info_manager_->slam_info.data[29] = slam_timer_interval;
+    last_slam_hb = hb_time_timer_slam_.load();
+
+    if(slam_timer_interval < 0){
+        ROS_ERROR_STREAM(RED << "slam main thread time jump back, this_time - last_time = " << slam_timer_interval << " seconds" << RESET);
+    }
     
+    // cout<<" *********************************************** "<<endl;
+    // cout<<" ----------------------------------------------- "<<endl;
     ModuleStatus curr_running_module_status = running_module_status_.load();
 
-    static int print_idle_cnt = 0;
-    if (curr_running_module_status == ModuleStatus::MODULE_IDLE || 
-        curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
-        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
-        if (print_idle_cnt % 20 == 0  && print_idle_cnt < 40){
-            ROS_INFO("slam dealt : running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
-            // print_idle_cnt = 0;
-        }
-        print_idle_cnt++;
+    static unsigned int print_idle_cnt = 0;
+    static unsigned int print_reset_slam_cnt = 0;
+    static unsigned int print_running_slam_cnt = 0;
+    if (curr_running_module_status == ModuleStatus::MODULE_IDLE){
+        bool condition = (print_idle_cnt++ == 10);
+        ROS_INFO_COND(condition , "*************************************************");
+        ROS_INFO_COND(condition , "slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+        ROS_INFO_COND(condition , "-------------------------------------------------");
+        print_reset_slam_cnt = 0; // if not STARTING or STOPPING slam, reset to 0
+        print_running_slam_cnt = 0;// if not RUNNING slam, reset to 0
         return;
     }
-    print_idle_cnt = 0; // if not IDLE, reset to 0
 
-    // ROS_INFO_STREAM("***********************start*****************************");
-
-    // cout<<"-----------------------------------------------"<<endl;
-    // cout<<"***********************************************"<<endl;
+    if (curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM || 
+        curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM){
+        bool condition = (print_reset_slam_cnt++ == 0);
+        ROS_INFO_COND(condition , "*************************************************");
+        ROS_INFO_COND(condition , "slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+        ROS_INFO_COND(condition , "-------------------------------------------------");
+        print_idle_cnt = 0; // if not IDLE, reset to 0
+        print_running_slam_cnt = 0;// if not RUNNING slam, reset to 0
+        return;
+    }
 
     if (curr_running_module_status == ModuleStatus::MODULE_MAPPING || 
         curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING || 
         curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION){
-        static int print_running_cnt = 0;
-        if (print_running_cnt % 20 ==0){
-        // if (print_running_cnt % 20 ==0 && print_running_cnt < 100){
-            ROS_INFO_ONCE("-------------------------------------------------");
-            ROS_INFO_ONCE("slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
-            print_running_cnt = 0;
-        }
-        print_running_cnt++;
+        bool condition = (print_running_slam_cnt++ == 10);
+        // ROS_INFO_STREAM("print_running_slam_cnt: " << print_running_slam_cnt);
+        ROS_INFO_COND(condition , "*************************************************");
+        ROS_INFO_COND(condition , "slam dealt: running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
+        ROS_INFO_COND(condition , "-------------------------------------------------");
+        print_idle_cnt = 0; // if not IDLE, reset to 0
+        print_reset_slam_cnt = 0; // if not STARTING or STOPPING SLAM, reset to 0
     }
-
 
    
     // if (show_load_map_==0 && localization_mode_ && (slam_->getLoadMap())->points.size() > 0){
