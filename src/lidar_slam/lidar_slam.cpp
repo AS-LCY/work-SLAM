@@ -231,8 +231,10 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
         // sort(pcl_temp->points.begin(), pcl_temp->points.end(), time_list);  // 按由小到大排列，这里curvature中存放了时间戳（在preprocess.cpp中）
 
         // lidar_mean_scantime = 0.1;
+        // TODO: 当时间发生跳变，一帧内的时间，可能是跳变前后的，这一帧点云需要删掉
         lidar_mean_scantime = meas.lidar->points.back().curvature * 0.001;
         lidar_mean_scantime = lidar_mean_scantime < 0.1 ? 0.1 : lidar_mean_scantime;
+        lidar_mean_scantime = lidar_mean_scantime > 0.15 ? 0.1 : lidar_mean_scantime;
         lidar_end_time = meas.lidar_beg_time + lidar_mean_scantime;
 
         if(lidar_mean_scantime > 0.11) {
