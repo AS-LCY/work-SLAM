@@ -178,7 +178,7 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     }
 
     static double last_slam_hb = hb_time_timer_slam_.load();
-    hb_time_timer_slam_.store(ros::Time::now().toSec());
+    hb_time_timer_slam_.store(ros::WallTime::now().toSec());
     double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
 
     log_info_manager_->slam_info.data[29] = slam_timer_interval;
@@ -186,6 +186,10 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
 
     if(slam_timer_interval < 0){
         ROS_ERROR_STREAM(RED << "slam main thread time jump back, this_time - last_time = " << slam_timer_interval << " seconds" << RESET);
+    }
+
+    if(slam_timer_interval > 0.5){
+        ROS_ERROR_STREAM(RED << "slam main thread time jump to future, this_time - last_time = " << slam_timer_interval << " seconds" << RESET);
     }
     
     // cout<<" *********************************************** "<<endl;
@@ -371,7 +375,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
     int health_status_now = 0;
     // health_status_.store(0); // reset to status ok
     
-    auto curr_ros_time = ros::Time::now();
+    auto curr_ros_time = ros::WallTime::now();
     double curr_time = curr_ros_time.toSec();
     double delay_imu = curr_time - hb_time_cbk_imu_.load();
     double delay_lidar = curr_time - hb_time_cbk_lidar_.load();
@@ -697,7 +701,7 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
 
     static double last_lidar_hb = hb_time_cbk_lidar_;
 
-    hb_time_cbk_lidar_.store(ros::Time::now().toSec());
+    hb_time_cbk_lidar_.store(ros::WallTime::now().toSec());
 
     log_info_manager_->slam_info.data[23]=hb_time_cbk_lidar_ - last_lidar_hb;
     last_lidar_hb = hb_time_cbk_lidar_;
@@ -787,7 +791,7 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
 
 
 void LocalizationModule::imu_callback(const sensor_msgs::Imu::ConstPtr &msg_in){
-    hb_time_cbk_imu_.store(ros::Time::now().toSec());
+    hb_time_cbk_imu_.store(ros::WallTime::now().toSec());
     ROS_INFO_ONCE("received imu -------------- imu cbk");
 
     // transfer IMU : IMU-frame to baselink-frame
@@ -929,7 +933,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status){
 //---------------------------------------------------------------------------------------------------------
 
 bool LocalizationModule::module_member_init(){
-    double curr_time = ros::Time::now().toSec();
+    double curr_time = ros::WallTime::now().toSec();
     hb_time_cbk_lidar_.store(curr_time);
     hb_time_cbk_imu_.store(curr_time);
     hb_time_cbk_module_ctrl_.store(curr_time);

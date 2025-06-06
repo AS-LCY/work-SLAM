@@ -245,11 +245,6 @@ bool LidarSlam::sync_packages(MeasureGroup &meas) {
 
         lidar_pushed = true;
     }
-    // cout << std::fixed << std::setprecision(9)<< "meas.lidar.headertm: " <<meas.lidar->header.stamp * 1e-6<<endl; 
-    // cout << std::fixed << std::setprecision(9)<< "lidar.offset-time: " <<meas.lidar->points[0].curvature <<" ms"<<endl; 
-    // cout << std::fixed << std::setprecision(9)<< "meas.lidar_beg_time: " <<meas.lidar_beg_time<<endl; 
-    // cout << std::fixed << std::setprecision(9)<< "meas.lidar_end_time: " <<meas.lidar_end_time<<endl; 
-    // cout << std::fixed << std::setprecision(9)<< "last_timestamp_imu : " <<last_timestamp_imu<<endl; 
 
     if (last_timestamp_imu < lidar_end_time) {
         ROS_WARN_STREAM(RED << "latest imu time < lidar time "<< RESET);
@@ -394,7 +389,6 @@ void LidarSlam::localizationThread()
     {
         hb_time_thread_localize_.store(ros::Time::now().toSec());
         auto start = std::chrono::steady_clock::now();
-        // pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
         temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
         UndistortCloudInOdom_test.reset(new PointCloudType());
         {
@@ -424,7 +418,7 @@ void LidarSlam::localizationThread()
                     ROS_WARN_STREAM( YELLOW << "globalLocalization failed: map not ready ... "<< RESET);
                 }else if(!temp || temp->points.size()==0){
                     ROS_WARN_STREAM(YELLOW<< "globalLocalization failed: cloud empty ... "<<RESET);
-                // check end
+                    // check end
                 }else{
                     ROS_INFO_STREAM("point(in use) count: "<<temp->points.size());
                     ROS_INFO_STREAM("start globalLocalization ... ");
@@ -519,6 +513,8 @@ void LidarSlam::localizationThread()
 
         auto end = std::chrono::steady_clock::now();
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        // ROS_INFO_STREAM("elapsed: " << elapsed.count() << " ms");
         if (elapsed < period_local_ms) {
             std::this_thread::sleep_for(period_local_ms - elapsed);
         }
@@ -650,11 +646,23 @@ void LidarSlam::showThread()
 void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud){
     // param
     static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
+    static const double jump_back_time_thr = -1.0;
     if (reseting) { return; }
 
     double t0 = omp_get_wtime();
 
+    // 出现的bug: 系统时间跳变，往回跳零点几秒，程序出错，slam 显示定位正常，但是定位已经不对
+    // 处理： 当时间跳回过去，跳变间隔在1秒以内，则跳过这几帧数据
     double curr_time = cloud->header.stamp * 1.0 * 1e-6; // 转换为单位： second
+    // double delta_time = curr_time - last_timestamp_lidar;
+    // if(delta_time < 0 && delta_time > jump_back_time_thr){
+    //     ROS_ERROR_STREAM("lidar cbk: time jump back, curr_time - last_time = " << delta_time);
+    //     // last_timestamp_lidar 不更新，等待最新时间 到达 跳变前的时间
+    //     return;
+    // }
+    // if(delta_time < 0 && delta_time < jump_back_time_thr){
+    //     ROS_ERROR_STREAM("lidar cbk: time jump back(>1s), curr_time - last_time = " << delta_time);
+    // }
     if ( curr_time < last_timestamp_lidar){
         ROS_INFO("lidar loop back, clear buffer");
         lidar_buffer.clear();
@@ -813,6 +821,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud){
 *****************************************************************************************************/
 
 void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in){
+    static const double jump_back_time_thr = -1.0;
     if (reseting)
         return;
     std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg(*msg_in));
@@ -849,19 +858,25 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in){
             (timediff_lidar_wrt_imu + msg_in->time_stamp);
     }
 
-    double timestamp = msg->time_stamp;
+    double curr_timestamp_imu = msg->time_stamp;
 
 
     std::lock_guard<std::mutex> lk(mtx_buffer);
-    if (timestamp < last_timestamp_imu) {
+    // double delta_time = curr_timestamp_imu - last_timestamp_imu;
+    // if(delta_time < 0 && delta_time > jump_back_time_thr){
+    //     ROS_ERROR_STREAM("imu cbk: time jump back, curr_time - last_time = " << delta_time);
+    //     // last_timestamp_imu 不更新，等待最新时间 到达 跳变前的时间
+    //     return;
+    // }
+    if (curr_timestamp_imu < last_timestamp_imu) {
         ROS_WARN_STREAM(YELLOW << "imu loop back, clear buffer" <<RESET);
         imu_buffer.clear();
-    } else if (timestamp - last_timestamp_imu > 1.5 * 0.1){
+    } else if (curr_timestamp_imu - last_timestamp_imu > 1.5 * 0.1){
         ROS_WARN_STREAM(YELLOW << "imu lose rate" <<RESET);
     }
     imu_buffer.push_back(msg);
     // cout<<"************************* imu_buffer push back *********"<<endl;
-    last_timestamp_imu = timestamp; // update imu time
+    last_timestamp_imu = curr_timestamp_imu; // update imu time
     localization_wait = true;
     // if (globalLocalizationSuccess||!param.localization_mode){// TODO add lock
 
@@ -902,8 +917,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg> &msg_in){
                 }
         }
     }
-    // poses_buffer.push_back(std::pair(timestamp,getLidarInOdom())); // 此为c++17用法
-    poses_buffer.push_back(std::make_pair(timestamp,getLidarInOdom()));// 此为c++11用法
+    // poses_buffer.push_back(std::pair(curr_timestamp_imu,getLidarInOdom())); // 此为c++17用法
+    poses_buffer.push_back(std::make_pair(curr_timestamp_imu,getLidarInOdom()));// 此为c++11用法
     if (poses_buffer.size() > 200)
         poses_buffer.pop_front();
     localization_wait = false;

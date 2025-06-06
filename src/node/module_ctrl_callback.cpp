@@ -12,7 +12,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::UInt3
             exit(EXIT_FAILURE);
         }
     }
-    hb_time_cbk_module_ctrl_.store(ros::Time::now().toSec());
+    hb_time_cbk_module_ctrl_.store(ros::WallTime::now().toSec());
 
     /** msg_in *************************************************************************************
      * enum SlamCtrlCmd{
