@@ -61,6 +61,7 @@ void LocalizationFusion::chassis_msg_callback(const fairland_msgs::chassic_data:
     std::lock_guard<std::mutex> lock(mutex_);
     is_chassis_rcv_ = true;
     chassis_msg_ = *chassis_msg_in;
+    log_info_manager_->fusion_info.data[11] = chassis_msg_in->ac_linear_velocity;// 11: chassis_vel
 
     if(slipping_ptr_->get_lidar_queue_init()){
         slipping_ptr_->update_chassis(chassis_msg_);
@@ -82,6 +83,8 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     static double time_last = ros::Time::now().toSec();
     std::lock_guard<std::mutex> lock(mutex_);
     slam_odom_msg_ = *slam_odometry_in;
+    log_info_manager_->fusion_info.data[12] = slam_odometry_in->twist.twist.linear.x; // 12: slam_vel_x
+
 
     // if (!is_imu_rcv_){
     //     ROS_WARN_STREAM_ONCE(YELLOW<<"IMU data not received yet "<<RESET);

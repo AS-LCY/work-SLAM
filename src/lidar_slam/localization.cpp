@@ -178,7 +178,8 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
     // pcl::copyPointCloud(*(odomCloud), *cloudIn);
     static double odom2map_x_filter = 0.0;
     static double odom2map_y_filter = 0.0;
-    static const double ratio = 0.1;
+    // static const double ratio = 0.1;
+    static const double ratio = 1.0;
 
     if (!map_ready_) return false;
     gicp->setInputSource(odomCloud);

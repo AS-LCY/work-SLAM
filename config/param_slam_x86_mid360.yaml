@@ -24,9 +24,10 @@ common:
   # map_directory: "/home/pmm/data/1-livox/0409/"
   # map_directory: "/home/pmm/data/1-livox/0411/map2/"
   # map_directory: "/home/pmm/data/1-livox/4-April/0411/map2/"
-  map_directory: "/home/pmm/data/1-livox/5-May/0524/lougeceshi_4_big_map/maps"
+  # map_directory: "/home/pmm/data/1-livox/5-May/0524/lougeceshi_4_big_map/maps"
   # map_directory: "/home/pmm/data/1-livox/5-May/0530/1-/"
   # map_directory: "/home/pmm/data/1-livox/5-May/0529/1458/maps/"
+  map_directory: "/home/pmm/data/1-livox/6-June/0606/sxingwaiwainiuniu3/map/"
 
   # --topics /livox/lidar /livox/imu /flbot/hardware/chassic_data --pause
   # --topics /Odometry_lidar_in_map /flbot/hardware/chassic_data --pause

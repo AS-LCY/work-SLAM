@@ -181,6 +181,18 @@ void LocalizationModule::slam_dealt_timer(const ros::TimerEvent &event){
     hb_time_timer_slam_.store(ros::WallTime::now().toSec());
     double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
 
+    // ///////////////////////////////////////////////////////////
+    // // DEBUG
+    // static double hb_time_timer_slam_rostime = ros::Time::now().toSec();
+    // static double last_slam_rostime = hb_time_timer_slam_rostime;
+
+    // hb_time_timer_slam_rostime = ros::Time::now().toSec();
+    // double slam_timer_interval_rostime = hb_time_timer_slam_rostime - last_slam_rostime;
+    // last_slam_rostime = hb_time_timer_slam_rostime;
+    // // ROS_INFO_STREAM("ROS time now     : " << setprecision(15) << hb_time_timer_slam_rostime);
+    // // ROS_INFO_STREAM("ROS time interval: " << slam_timer_interval_rostime);
+    // ///////////////////////////////////////////////////////////
+
     log_info_manager_->slam_info.data[29] = slam_timer_interval;
     last_slam_hb = hb_time_timer_slam_.load();
 
@@ -541,11 +553,11 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
         map_saved_.store(0);
     }
 
-    if(localization_status_.load() != 0 && localization_status_.load() != 3){
-        ROS_WARN_STREAM(YELLOW << "[Status Timer]: localization_status: " << localization_status_ << RESET);
+    if(status_msg.localization_status != 0 && status_msg.localization_status != 3){
+        ROS_WARN_STREAM_THROTTLE(1.0, YELLOW << "[Status Timer]: localization_status: " << status_msg.localization_status << RESET);
     }
-    if(mapping_status_.load() != 0 && mapping_status_.load() != 3){
-        ROS_WARN_STREAM(RED << "[Status Timer]: mapping_status: " << mapping_status_ << RESET);
+    if(status_msg.mapping_status != 0 && status_msg.mapping_status != 3){
+        ROS_WARN_STREAM_THROTTLE(1.0, RED << "[Status Timer]: mapping_status: " << status_msg.mapping_status  << RESET);
     }
     // if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_.load()>2){
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){
@@ -705,6 +717,18 @@ void LocalizationModule::lidar_ros_callback(const sensor_msgs::PointCloud2::Cons
 
     log_info_manager_->slam_info.data[23]=hb_time_cbk_lidar_ - last_lidar_hb;
     last_lidar_hb = hb_time_cbk_lidar_;
+
+    // ///////////////////////////////////////////////////////////
+    // // DEBUG
+    // static double hb_time_timer_slam_rostime = ros_msg->header.stamp.toSec();
+    // static double last_slam_rostime = hb_time_timer_slam_rostime;
+
+    // hb_time_timer_slam_rostime = ros_msg->header.stamp.toSec();
+    // double slam_timer_interval_rostime = hb_time_timer_slam_rostime - last_slam_rostime;
+    // last_slam_rostime = hb_time_timer_slam_rostime;
+    // // ROS_INFO_STREAM("ROS time now     : " << setprecision(15) << hb_time_timer_slam_rostime);
+    // ROS_INFO_STREAM("lidar cbk time interval: " << slam_timer_interval_rostime);
+    // ///////////////////////////////////////////////////////////
 
     if(slam_param_.common.cpu_id.size()>0){
         pthread_t this_thread = pthread_self(); // 获取当前线程的 ID

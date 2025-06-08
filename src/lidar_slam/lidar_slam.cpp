@@ -390,13 +390,13 @@ void LidarSlam::localizationThread()
         hb_time_thread_localize_.store(ros::Time::now().toSec());
         auto start = std::chrono::steady_clock::now();
         temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
-        UndistortCloudInOdom_test.reset(new PointCloudType());
+        // UndistortCloudInOdom_test.reset(new PointCloudType());
         {
             std::lock_guard<std::mutex> lk(mtx_odom_cloud);
-            downSizeFilterCloud_test.setInputCloud(UndistortCloudInOdom);
-            downSizeFilterCloud_test.filter(*UndistortCloudInOdom_test);
-            // pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);
-            pcl::copyPointCloud(*(UndistortCloudInOdom_test), *temp);   
+            // downSizeFilterCloud_test.setInputCloud(UndistortCloudInOdom);
+            // downSizeFilterCloud_test.filter(*UndistortCloudInOdom_test);
+            pcl::copyPointCloud(*(UndistortCloudInOdom), *temp);
+            // pcl::copyPointCloud(*(UndistortCloudInOdom_test), *temp);   
         }
 
         if(local_thrd_status_.load() == 2){ // 重定位失败
@@ -1197,25 +1197,33 @@ bool LidarSlam::run()
             //   , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end, aver_time_icp, t5 - t4, aver_time_consu);
         }
         run_end =  omp_get_wtime();
-        // printf("p_imu->Process, cloud deskew    , time cost: %f ms\n", (t1-t0)*1000);
-        // printf("ikdtree->lasermap_fov_segment   , time cost: %f ms\n", (t2-t1)*1000);
-        // printf("lidar slam main process step1   , time cost: %f ms\n", (t0_backend-t2)*1000);
-        // printf("lidar slam main update  time    , time cost: %f ms\n", (t_update_end-t_update_start)*1000);
-        // printf("lidar slam main process         , time cost: %f ms\n", (t3-t2)*1000);
-        // printf("main: lidar slam backend        , time cost: %f ms\n", (t1_backend-t0_backend)*1000);
-        // ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << " ms");
-        // printf("main: transform undistortCloud  , time cost: %f ms\n", (t1_transform-t0_transform)*1000);
-        // ROS_INFO_STREAM("main: transform undistortCloud  , time cost: "<< (t1_transform-t0_transform)*1000 << " ms");
-        // printf("transform FilteredUndistortCloud, time cost: %f ms\n", (t4-t3)*1000);
-        // printf("ikdtree->map_incremental        , time cost: %f ms\n", (t5-t4)*1000);
-        // printf("\033[1;32mlidar-slam , time cost: %f ms \033[0m\n", (run_end - run_start)*1000);
-
-        // ROS_INFO("lidar slam main update  time    , time cost: %f ms", (t_update_end-t_update_start)*1000);
         
         if (run_end - run_start > config_param_.common.slam_lose_rate_time_thr){
             ROS_WARN_STREAM(RED    <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms, lose rate !!!!!!!"<<RESET);
+            // ROS_INFO_STREAM("p_imu->Process, cloud deskew    , time cost: " << (t1-t0)*1000 << " ms;");
+            // ROS_INFO_STREAM("ikdtree->lasermap_fov_segment   , time cost: " << (t2-t1)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main process step1   , time cost: " << (t0_backend-t2)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main update  time    , time cost: " << (t_update_end-t_update_start)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main process         , time cost: " << (t3-t2)*1000 << " ms;");
+            // ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << " ms;");
+            // ROS_INFO_STREAM("main: transform undistortCloud  , time cost: " << (t1_transform-t0_transform)*1000 << " ms;");
+            // ROS_INFO_STREAM("transform FilteredUndistortCloud, time cost: " << (t4-t3)*1000 << " ms;");
+            // ROS_INFO_STREAM("ikdtree->map_incremental        , time cost: " << (t5-t4)*1000 << " ms;");
+            // ROS_INFO_STREAM("feats_down_size: " << feats_down_size);
+            ROS_INFO_STREAM("-------------------------------------------------- " );
         }else if(run_end - run_start > 0.07){
             ROS_INFO_STREAM(YELLOW <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms -------------------"<<RESET);
+            // ROS_INFO_STREAM("p_imu->Process, cloud deskew    , time cost: " << (t1-t0)*1000 << " ms;");
+            // ROS_INFO_STREAM("ikdtree->lasermap_fov_segment   , time cost: " << (t2-t1)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main process step1   , time cost: " << (t0_backend-t2)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main update  time    , time cost: " << (t_update_end-t_update_start)*1000 << " ms;");
+            // ROS_INFO_STREAM("lidar slam main process         , time cost: " << (t3-t2)*1000 << " ms;");
+            // ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << " ms;");
+            // ROS_INFO_STREAM("main: transform undistortCloud  , time cost: " << (t1_transform-t0_transform)*1000 << " ms;");
+            // ROS_INFO_STREAM("transform FilteredUndistortCloud, time cost: " << (t4-t3)*1000 << " ms;");
+            // ROS_INFO_STREAM("ikdtree->map_incremental        , time cost: " << (t5-t4)*1000 << " ms;");
+            // ROS_INFO_STREAM("feats_down_size: " << feats_down_size);
+            // ROS_INFO_STREAM("-------------------------------------------------- " );
         }else{
             // ROS_INFO_STREAM(GREEN  <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms -------------------"<<RESET);
         }
