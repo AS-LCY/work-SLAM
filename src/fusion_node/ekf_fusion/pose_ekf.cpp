@@ -91,7 +91,8 @@ void PoseEKF::predict(const Matrix& input, const double& dt){
     vj_(2,1) = dt;
 
     // compute p, 先验
-    P_=fj_*P_*fj_.transpose()+vj_*M_*vj_.transpose();
+    // P_=fj_*P_*fj_.transpose()+vj_*M_*vj_.transpose();
+    P_=fj_*P_*fj_.transpose()+ M_ ;
 
     // copy
     status_prior_=status_*1.0;
@@ -118,10 +119,13 @@ void PoseEKF::update(const Matrix& measure, bool trust_measure){
     // 卡尔曼增益
     K_ = PHt * S_.inverse();
     status_ = status_ + K_*y;
+    // ROS_INFO_STREAM("K_: " );
+    // ROS_INFO_STREAM(K_);
 
     // numerically stable version
     Matrix IKH = ekf_eye_n_ - K_*H_;
     P_ = IKH*P_*IKH.transpose() + K_*R_*K_.transpose();
+    // P_ = IKH*P_;
 
     status_post_ = status_*1.0;
     // printf("Matrix copy is %s\n", (status_post_(1,0)==status_prior_(1,0)?"shallow copy":"deep copy"));

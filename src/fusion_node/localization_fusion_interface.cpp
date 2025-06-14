@@ -125,7 +125,7 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
     
     if(slam_odom_msg_.pose.covariance[1] == 2){ // 建图模式
         // empty, 不需要融合
-    }else if(slam_odom_msg_.pose.covariance[1] == 3){ // 定位模式
+    }else if(use_fusion_ && slam_odom_msg_.pose.covariance[1] == 3){ // 定位模式
         if (ekf_fusion_ptr_->is_init()) {
             // ROS_INFO_STREAM(GREEN<<"localization fusion start ----------------"<<RESET);
             ekf_fusion_ptr_->localization_fusion_core(status_tmp_, &status_lf_);
@@ -319,6 +319,8 @@ bool LocalizationFusion::load_params(){
     pub_localization_topic_ = lf_params->topic_params.pub_localization_topic;
     pub_slipping_topic_ = lf_params->topic_params.pub_slipping_topic;
     std::vector<double> baselink_in_lidar = lf_params->baselink_in_lidar;
+
+    use_fusion_ = lf_params->use_fusion;
 
     double roll  = localization_module::common::Quaternion::deg2rad(baselink_in_lidar[3]);
     double pitch = localization_module::common::Quaternion::deg2rad(baselink_in_lidar[4]);

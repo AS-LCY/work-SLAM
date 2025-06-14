@@ -32,6 +32,7 @@ struct EkfGatingParams {
 
 
 struct LocalizationFusionParams {
+    bool use_fusion = true;
     int status_num = 0; ///< the status number
     int measure_num = 0; ///< the measurement number
     int input_num = 0; ///< the input command number
@@ -76,6 +77,7 @@ public:
     bool load_localization_fusion_params() {
         bool success = true;
         const std::string title = "/flbot/localization/localization_fusion/";
+        get_param(title + "use_fusion", localization_fusion_params_.use_fusion, &success);
         get_param(title + "status_num", localization_fusion_params_.status_num, &success);
         get_param(title + "measure_num", localization_fusion_params_.measure_num, &success);
         get_param(title + "input_num", localization_fusion_params_.input_num, &success);

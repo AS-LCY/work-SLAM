@@ -1,11 +1,15 @@
 localization_fusion:
+    use_fusion: true
     status_num: 3
-    input_num: 2
+    # input_num: 2
+    input_num: 3
     measure_num: 3
     localization_fusion_dt: 50 # unit: ms
     status_cov_mat_diag: [1.0, 1.0, 1.0] # [x, y, theta], for init
-    input_cov_mat_diag: [0.05, 0.0017]  # [v, w] 
-    measure_cov_mat_diag: [0.001, 0.001, 0.001] # [x, y, theta]
+    # input_cov_mat_diag: [0.05, 0.0017]  # [v, w] 
+    input_cov_mat_diag: [0.005, 0.005, 0.005]
+    measure_cov_mat_diag: [0.05, 0.05, 0.05] # [x, y, theta]
+    Q_mat_diag: [0.05, 0.05, 0.05]
     w_thr: 0.15 # unit: rad/s
     ekf_use_chassis: true # defualt to true, if test without chassis then set to false
     use_ekf_yaw: false

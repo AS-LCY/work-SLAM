@@ -76,6 +76,8 @@ private:
     bool is_imu_rcv_ = false;
     bool lf_need_init_ = true;
 
+    bool use_fusion_ = true;
+
     long seq_count_ = 0;
     Eigen::Isometry3d T_baselink2lidar_;
     Eigen::Isometry3d T_lidar2baselink_;
