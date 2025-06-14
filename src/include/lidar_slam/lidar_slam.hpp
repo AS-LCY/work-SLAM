@@ -421,6 +421,7 @@ class LidarSlam
         bool flag_keep_only_last_lidar_ = true;
         bool new_key_cloud_arrived_ = false;
 
+        bool need_localize_ = true;
 
         deque<double> time_buffer;               // 记录lidar时间, lidar header time
         deque<PointCloudType::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据

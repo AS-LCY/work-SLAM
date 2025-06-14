@@ -362,8 +362,8 @@ void LidarSlam::localizationThread()
     auto period_relocal = std::chrono::milliseconds(1000);
     // const int frequency = 2.0; // 频率为2Hz
     const float period_local_sec = config_param_.localization.fgicp_peroid_sec; // 频率为2Hz
-    const int period_fgicp_ms = period_local_sec * 1000;
-    std::chrono::milliseconds period_local_ms(period_fgicp_ms);
+    // const int period_fgicp_ms = period_local_sec * 1000;
+    // std::chrono::milliseconds period_local_ms(period_fgicp_ms);
     // const std::chrono::milliseconds period(1000 / frequency);
     const auto score_thr = config_param_.re_localization.score_thr;
     const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
@@ -378,12 +378,14 @@ void LidarSlam::localizationThread()
     const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
     const auto fgicp_fail_count_thr = config_param_.localization.fgicp_fail_count_thr;
     const auto fgicp_low_accuracy_count_thr = config_param_.localization.fgicp_low_accuracy_count_thr;
-    
 
+    
     int gicp_fail_count = 0;
     int gicp_low_acc_count = 0;
     pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
     PointCloudType::Ptr UndistortCloudInOdom_test(new PointCloudType()); 
+
+    static int wait_time = 0;
 
     while (thread_run&&reseting == false)
     {
@@ -402,12 +404,12 @@ void LidarSlam::localizationThread()
         if(local_thrd_status_.load() == 2){ // 重定位失败
             
             ROS_INFO("global Localization failed: time out ");
-            auto end = std::chrono::steady_clock::now();
-            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            if (elapsed < period_relocal) {
-                std::this_thread::sleep_for(period_relocal - elapsed);
-            }
-            continue;  
+            // auto end = std::chrono::steady_clock::now();
+            // auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            // if (elapsed < period_relocal) {
+            //     std::this_thread::sleep_for(period_relocal - elapsed);
+            // }
+            // continue;  
 
         }else{
             if (!globalLocalizationSuccess){
@@ -449,6 +451,9 @@ void LidarSlam::localizationThread()
                     ROS_INFO_STREAM(BOLDGREEN <<" ======= global Localization Success ======= " <<RESET);
                     global_localize_count_ = 0;
                     local_thrd_status_.store(3);
+
+                    need_localize_ = false;
+                    wait_time++;
                 }
                 auto end = std::chrono::steady_clock::now();
                 auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -458,54 +463,71 @@ void LidarSlam::localizationThread()
                 continue;          
             }
             else{
-                // ROS_INFO_STREAM("localizing ... ");
-                double fit_score = 0.0; // gicp_fit_score
-                if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
-                    // ROS_INFO_STREAM("fit_score: " << fit_score);
-                    log_info_manager_->slam_info.data[3]=1; // if converge
-                    if (fit_score < fgicp_score_low_accuracy_thr){
-                        local_thrd_status_.store(3);
-                        gicp_fail_count = 0;
-                        gicp_low_acc_count = 0;
-                    }else if(fit_score < fgicp_score_fail_thr){
-                        gicp_low_acc_count++;
-                        ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
-                    }else{
+
+                if(wait_time >= period_local_sec){
+                    need_localize_ = true;
+                    wait_time = 0;
+                }
+
+                if(need_localize_){                    
+                    ROS_INFO_STREAM("localizing ... ");
+                    double fit_score = 0.0; // gicp_fit_score
+                    if (localization->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr, odom2map_delta_thr, odom2map_delta_set, use_pose_filter)){
+                        // ROS_INFO_STREAM("fit_score: " << fit_score);
+                        log_info_manager_->slam_info.data[3]=1; // if converge
+                        if (fit_score < fgicp_score_low_accuracy_thr){
+                            local_thrd_status_.store(3);
+                            gicp_fail_count = 0;
+                            gicp_low_acc_count = 0;
+                                
+                            need_localize_ = false;
+                            wait_time++;
+                            ROS_INFO_STREAM("need_localize_ set to false, wait for next");
+
+                        }else if(fit_score < fgicp_score_fail_thr){
+                            gicp_low_acc_count++;
+                            ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
+                        }else{
+                            gicp_fail_count++;
+                            gicp_low_acc_count++;
+                            ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
+                            ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
+                        }
+                    }else{ // 未收敛
+                        log_info_manager_->slam_info.data[3]=0; // if converge
+                        // ROS_INFO_STREAM("fit_score: " << fit_score);
                         gicp_fail_count++;
                         gicp_low_acc_count++;
                         ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
                         ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
                     }
-                }else{ // 未收敛
-                    log_info_manager_->slam_info.data[3]=0; // if converge
-                    // ROS_INFO_STREAM("fit_score: " << fit_score);
-                    gicp_fail_count++;
-                    gicp_low_acc_count++;
-                    ROS_WARN_STREAM(RED << "fast gicp fail count: "<<gicp_fail_count << RESET);
-                    ROS_WARN_STREAM(YELLOW << "fast gicp low accuracy count: "<<gicp_low_acc_count << RESET);
+
+                    if (gicp_fail_count >= fgicp_fail_count_thr || gicp_low_acc_count >= fgicp_low_accuracy_count_thr ){// 连续多帧 fast-gicp 失败，则认为定位失败
+                        local_thrd_status_.store(5);
+                    }else if (gicp_fail_count >= 1 || gicp_low_acc_count >= 2){// 
+                        local_thrd_status_.store(4);
+                    }
+
+
+                    Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
+                    Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
+                    // Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
+                    // Eigen::Isometry3d curr_odom_to_map_baselink = lidar_in_map_inv * curr_odom_to_map;
+                    // log_info_manager_->slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
+                    // log_info_manager_->slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
+                    log_info_manager_->slam_info.data[17] = curr_odom_to_map.translation().x();
+                    log_info_manager_->slam_info.data[18] = curr_odom_to_map.translation().y();
+
+                    log_info_manager_->slam_info.data[4]=fit_score;
+                    log_info_manager_->slam_info.data[5]=gicp_fail_count;
+                    log_info_manager_->slam_info.data[6]=gicp_low_acc_count;
+
+                    //state.state("normal");
+                    
+                }else{
+                    wait_time++;
                 }
 
-                if (gicp_fail_count >= fgicp_fail_count_thr || gicp_low_acc_count >= fgicp_low_accuracy_count_thr ){// 连续多帧 fast-gicp 失败，则认为定位失败
-                    local_thrd_status_.store(5);
-                }else if (gicp_fail_count >= 1 || gicp_low_acc_count >= 2){// 
-                    local_thrd_status_.store(4);
-                }
-
-
-                Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
-                Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
-                // Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
-                // Eigen::Isometry3d curr_odom_to_map_baselink = lidar_in_map_inv * curr_odom_to_map;
-                // log_info_manager_->slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
-                // log_info_manager_->slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
-                log_info_manager_->slam_info.data[17] = curr_odom_to_map.translation().x();
-                log_info_manager_->slam_info.data[18] = curr_odom_to_map.translation().y();
-
-                log_info_manager_->slam_info.data[4]=fit_score;
-                log_info_manager_->slam_info.data[5]=gicp_fail_count;
-                log_info_manager_->slam_info.data[6]=gicp_low_acc_count;
-
-                //state.state("normal");
             }
             // state_pub_->publish(&state);
 
@@ -515,8 +537,8 @@ void LidarSlam::localizationThread()
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
         // ROS_INFO_STREAM("elapsed: " << elapsed.count() << " ms");
-        if (elapsed < period_local_ms) {
-            std::this_thread::sleep_for(period_local_ms - elapsed);
+        if (elapsed < period_relocal) {
+            std::this_thread::sleep_for(period_relocal - elapsed);
         }
     }
 }
