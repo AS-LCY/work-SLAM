@@ -162,6 +162,7 @@ public:
         get_param(ns+ "lidar_preproc/sub_imu_topic", loaded_param_.lidar_preproc.sub_imu_topic, &success);
         get_param(ns+ "lidar_preproc/blind_distance", loaded_param_.lidar_preproc.blind_distance, &success);
         get_param(ns+ "lidar_preproc/max_distance", loaded_param_.lidar_preproc.max_distance, &success);
+        get_param(ns+ "lidar_preproc/z_range", loaded_param_.lidar_preproc.z_range, &success);
         get_param(ns+ "lidar_preproc/keep_lidar_num_before_curr", loaded_param_.lidar_preproc.keep_lidar_num_before_curr, &success);
         get_param(ns+ "lidar_preproc/point_filter_num", loaded_param_.lidar_preproc.point_filter_num, &success);
         get_param(ns+ "lidar_preproc/ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num, &success);

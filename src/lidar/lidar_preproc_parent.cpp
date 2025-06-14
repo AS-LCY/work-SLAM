@@ -5,6 +5,8 @@ namespace localization_module {
 LidarPreprocParent::LidarPreprocParent(){
     cloud_dense_.reset(new PointCloudType());
 
+    set_common_params();
+
 }
 
 
@@ -34,8 +36,28 @@ void LidarPreprocParent::sampling_cloud(PointCloudType::Ptr in_cloud_ptr, PointC
     out_cloud_ptr->is_dense = 1;
 
     return ;
-}                                                       
+}        
 
+bool LidarPreprocParent::set_common_params(){
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
+    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+
+    if (loaded_param == NULL) {
+        ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
+        return false;
+    }else{
+
+        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+        ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
+        z_range_ = loaded_param->lidar_preproc.z_range;
+
+        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+
+        return true;
+    }
+}
 
 // bool LidarPreprocParent::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, std::shared_ptr<livox_ros::LidarMsg> &lvx_msg_out){return true;}
 // bool LidarPreprocParent::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr &ros_msg_in, pcl::PointCloud<RsPointXYZIRT>::Ptr &pcl_cld_out){return true;}

@@ -23,11 +23,11 @@ common:
   # map_directory: "/home/pmm/data/1-livox/0322/5-gym"
   # map_directory: "/home/pmm/data/1-livox/0409/"
   # map_directory: "/home/pmm/data/1-livox/0411/map2/"
-  # map_directory: "/home/pmm/data/1-livox/4-April/0411/map2/"
+  map_directory: "/home/pmm/data/1-livox/4-April/0411/map2/"
   # map_directory: "/home/pmm/data/1-livox/5-May/0524/lougeceshi_4_big_map/maps"
   # map_directory: "/home/pmm/data/1-livox/5-May/0530/1-/"
   # map_directory: "/home/pmm/data/1-livox/5-May/0529/1458/maps/"
-  map_directory: "/home/pmm/data/1-livox/6-June/0606/sxingwaiwainiuniu3/map/"
+  # map_directory: "/home/pmm/data/1-livox/6-June/0606/sxingwaiwainiuniu3/map/"
 
   # --topics /livox/lidar /livox/imu /flbot/hardware/chassic_data --pause
   # --topics /Odometry_lidar_in_map /flbot/hardware/chassic_data --pause
@@ -67,7 +67,7 @@ extrinsic:
                     0,  0,  0,  1]
 
 localization:
-  fgicp_peroid_sec: 3 # 时间周期，单位： 秒
+  fgicp_peroid_sec: 1 # 时间周期，单位： 秒
   # fgicp_score_thr: 0.1
   fgicp_score_fail_thr: 0.3
   fgicp_score_low_accuracy_thr: 0.05
@@ -98,6 +98,7 @@ lidar_preproc:
   line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
   blind_distance: 0.2
   max_distance: 70
+  z_range: [-5, 20]
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 3500

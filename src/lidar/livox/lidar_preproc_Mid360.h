@@ -37,7 +37,7 @@ private:
     double thr_region_z_ = 0.0;
 
     // double obstacle_square_ = 0.0;
-    int point_filter_num_ = 2;
+    // int point_filter_num_ = 2;
     // loaded param end /////
 
 

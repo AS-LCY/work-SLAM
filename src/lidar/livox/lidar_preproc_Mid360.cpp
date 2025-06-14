@@ -88,7 +88,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
                 continue;
             }
             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if(range_square < blind_range_square_ || range_square > max_range_square_){
+            if(range_square < blind_range_square_ || range_square > max_range_square_ || curpt->z < z_range_[0] || curpt->z > z_range_[1]){
                 continue;
             }
 
@@ -137,12 +137,13 @@ bool LidarPreprocMid360::set_param(){
         // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
         // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
-        // obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
-        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+        // blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        // max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        // // obstacle_square_ = loaded_param->lidar_preproc.obstacle_max_range * loaded_param->lidar_preproc.obstacle_max_range;
+        // point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
 
-        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+        // cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+
         return true;
     }
 }

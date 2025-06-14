@@ -95,7 +95,7 @@ bool LidarPreprocVanjee722::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPt
             //    continue;
             // }
             double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if(range_square < blind_range_square_ || range_square > max_range_square_){
+            if(range_square < blind_range_square_ || range_square > max_range_square_ || curpt->z < z_range_[0] || curpt->z > z_range_[1]){
                 continue;
             }
 
@@ -196,17 +196,17 @@ bool LidarPreprocVanjee722::set_param(){
         ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
         return false;
     }else{
-        param_ = loaded_param->lidar_preproc;
+        // param_ = loaded_param->lidar_preproc;
 
         // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
         // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
         // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-        blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
-        point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
-        ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
-        cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
+        // blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+        // max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+        // point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+        // ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
+        // cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
 
         ////////////////////////////////////////////////////////////////////////////////
         // extract cloud by ring_feature

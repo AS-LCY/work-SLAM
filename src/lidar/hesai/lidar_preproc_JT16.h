@@ -35,12 +35,12 @@ private:
     double thr_region_y_ = 0.0;
     double thr_region_z_ = 0.0;
 
-    int point_filter_num_ = 2;
-    int ring_filter_num_ = 1;
+    // int point_filter_num_ = 2;
+    // int ring_filter_num_ = 1;
     // loaded param end /////
 
 
-    lidar_slam::LidarPreprocParam param_;
+    // lidar_slam::LidarPreprocParam param_;
 
 
 

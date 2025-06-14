@@ -35,6 +35,7 @@ struct LidarPreprocParam{
     ///////////////////////////////////////////////////////
     float blind_distance;
     float max_distance;
+    std::vector<float> z_range = {-5.0, 20.0};
     int keep_lidar_num_before_curr = 1;
     int point_filter_num = 2;
     int ring_filter_num = 1;

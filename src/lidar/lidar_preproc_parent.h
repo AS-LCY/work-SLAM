@@ -43,6 +43,8 @@ public:
         return cloud_dense_->points.size();
     }
 
+    bool set_common_params();
+
 
 protected:
     // virtual bool set_param()=0;
@@ -65,6 +67,11 @@ protected:
     int cloud_size_to_keep_ = 2000;
     double blind_range_square_ = 0.0;
     double max_range_square_ = 0.0;
+
+
+    int point_filter_num_ = 2;
+    int ring_filter_num_ = 1;
+    std::vector<float> z_range_={-5.0, 20.0};
 
 private:
 

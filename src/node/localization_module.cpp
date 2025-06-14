@@ -554,10 +554,10 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
     }
 
     if(status_msg.localization_status != 0 && status_msg.localization_status != 3){
-        ROS_WARN_STREAM_THROTTLE(1.0, YELLOW << "[Status Timer]: localization_status: " << status_msg.localization_status << RESET);
+        ROS_WARN_STREAM_THROTTLE(1.0, YELLOW << "[Status Timer]: localization_status: " << int(status_msg.localization_status) << RESET);
     }
     if(status_msg.mapping_status != 0 && status_msg.mapping_status != 3){
-        ROS_WARN_STREAM_THROTTLE(1.0, RED << "[Status Timer]: mapping_status: " << status_msg.mapping_status  << RESET);
+        ROS_WARN_STREAM_THROTTLE(1.0, RED << "[Status Timer]: mapping_status: " << int(status_msg.mapping_status)  << RESET);
     }
     // if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_.load()>2){
     if(curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && localization_status_is_ok(localization_status_.load())){

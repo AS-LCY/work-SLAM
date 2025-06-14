@@ -42,8 +42,8 @@ private:
     double thr_region_y_ = 0.0;
     double thr_region_z_ = 0.0;
 
-    int point_filter_num_ = 2;
-    int ring_filter_num_ = 1;
+    // int point_filter_num_ = 2;
+    // int ring_filter_num_ = 1;
     // loaded param end /////
 
     // variable
@@ -64,7 +64,7 @@ private:
     PointCloudType::Ptr cloud_corner_;    // 保存有效点
     PointCloudType::Ptr cloud_surface_;   // 保存面点
 
-    lidar_slam::LidarPreprocParam param_;
+    // lidar_slam::LidarPreprocParam param_;
 
 
 

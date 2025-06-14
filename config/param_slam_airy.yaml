@@ -107,6 +107,7 @@ lidar_preproc:
   #######################################################
   blind_distance: 2
   max_distance: 60
+  z_range: [-5, 20]
   keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
   # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
   cloud_size_to_keep: 3000
