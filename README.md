@@ -28,7 +28,35 @@
   - 如果在低端平台上运行，无法带动rviz，可以启动roslaunch lidar_slam car_mid360.launch ，使用pangolin来显示，没有rviz好用，凑合可以看
 
 
+
+ colcon build --parallel-workers 2 --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=Yes
+
+
+ 
+板子上gtsam 安装：cd build
+cmake -DGTSAM_USE_SYSTEM_EIGEN=ON -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF ..
+make -j$(nproc)
+sudo make install
   
   
   ** $ source install/setup.bash
   ** $ roslaunch lidar_slam car_mid360.launch
+
+
+测试的数据包放在ros1 lds_localization_ws/data 下
+
+
+使用方法： 建图     ros2 topic pub -1 /flbot/localization_module/ctrl_cmd std_msgs/msg/UInt32 data:\ 1000\
+保存地图、停止建图： ros2 topic pub -1 /flbot/localization_module/ctrl_cmd std_msgs/msg/UInt32 data:\ 6000\
+        定位模式： ros2 topic pub -1 /flbot/localization_module/ctrl_cmd std_msgs/msg/UInt32 data:\ 7000\
+        停止定位模式： ros2 topic pub -1 /flbot/localization_module/ctrl_cmd std_msgs/msg/UInt32 data:\ 8000\
+
+
+
+
+
+
+
+
+
+

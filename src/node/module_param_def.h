@@ -32,7 +32,7 @@ struct CommonParam{
     bool check_delay = false;
     int feats_down_size_thr = 100;
     bool use_pose_filter = false;
-    std::vector<int> cpu_id;
+    std::vector<long int> cpu_id;
 };
 
 struct DetectSlipParam{

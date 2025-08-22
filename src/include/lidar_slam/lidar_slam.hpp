@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 // #define _GNU_SOURCE
 #include <pthread.h>
+#include <rclcpp/rclcpp.hpp>
 
 
 #include "boost/thread.hpp"
@@ -19,9 +20,10 @@
 
 #include <pcl/filters/voxel_grid.h>
 #include <sophus/se3.hpp>
+// #include <sophus/se3.h>
 #include <yaml-cpp/yaml.h>
 
-#include <fast_gicp/gicp/fast_gicp.hpp>
+// #include <fast_gicp/gicp/fast_gicp.hpp>
 
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/cloud_map.hpp"
@@ -103,12 +105,12 @@ string print_SlamWorkMode(SlamWorkMode e);
 class LidarSlam
 {
     public:
-        LidarSlam(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
-        LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode);// new added
+        LidarSlam(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping,rclcpp::Node::SharedPtr node);
+        LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode,rclcpp::Node::SharedPtr node);// new added
         LidarSlam() = delete;
         LidarSlam(const LidarSlam&) = delete; 
-        void reset(SlamWorkMode work_mode);// new added
-        void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping);
+        void reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node);// new added
+        void reset(const std::string work_path,bool localization_mode,bool offline, bool sec_mapping, rclcpp::Node::SharedPtr node);
         // void start_driver(const std::string work_path);// disable start_driver of lidar
         ~LidarSlam(){ 
             // cout<<"debug: destruct"<<endl;
@@ -154,14 +156,17 @@ class LidarSlam
        
         bool load_map(string directory){
             globalLocalizationSuccess = false;
+            std::cout << "00111111111" <<std::endl;
             // sleep(1); 只有 IDLE -> LOCALIZATION / SEC_MAPPING 时会加载地图， globalLocalization 相关为空，无需睡眠
             if(working_mode_ == LOCALIZATION){
+                std::cout << "001122222222222" <<std::endl;
                 localization->loadMap(directory);
+                std::cout << "001123333333333333" <<std::endl;
             }else if(working_mode_ == SEC_MAPPING){
                 if(!cloud_map_manager_->load_map_data(directory))
                 return false;
             }else{
-                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
+                // ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return false;
             }
             return true;
@@ -219,7 +224,7 @@ class LidarSlam
                 return global_localization_->get_global_odom_to_map();
                 // return localization->getOdomToMap();
             }else{
-                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) <<RESET);
+                // ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_) <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
             // if (param.localization_mode)
@@ -238,7 +243,7 @@ class LidarSlam
             if (working_mode_ == LOCALIZATION){
                return localization->getLastOdomToMap();
             }else{
-                ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
+                // ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)  <<RESET);
                 return Eigen::Isometry3d::Identity();
             }
         }
@@ -252,6 +257,8 @@ class LidarSlam
             else if(working_mode_==LOCALIZATION){
                 Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
                 Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
+                // Eigen::Isometry3d T_odom_b(Sophus::SE3(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
+                // Eigen::Isometry3d T_b_lidar(Sophus::SE3(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
                 Eigen::Isometry3d temp  =   T_odom_b * T_b_lidar;
                 return  temp;
             }else{
@@ -269,17 +276,22 @@ class LidarSlam
             if(working_mode_ == MAPPING || working_mode_==SEC_MAPPING || working_mode_==LOCALIZATION){
                 return localization_base.update_time;
             }else{
-                double temp = ros::Time::now().toSec();
+                // double temp = ros::Time::now().toSec();
+                double temp = rclcpp::Clock().now().seconds();
                 return temp;
             }
         }
 
         Eigen::Isometry3d getWheelInOdom(){
             return getLidarInOdom()* T_lidar_wheel;
-        }
+        }  
         pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap(){
             return localization->getLoadMap();
         }
+
+        // PointCloudType::Ptr  getLoadMap(){
+        //     return localization->getLoadMap();
+        // }
         std::vector<Eigen::Vector3f>& getLoadMapPoints(){
             return localization->getLoadMapPoints();
         }

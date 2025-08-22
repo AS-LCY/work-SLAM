@@ -3,9 +3,10 @@
 #define FLBOT_LIDAR_PREPROC_PARENT_H
 
 #include <string>
+#include <memory>
 
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include "lidar_slam/common_lib.h"
 #include "node/param_manager.hpp"
@@ -17,7 +18,6 @@
 #include "lidar/lanhai/pcl_point_type_def_bs.h"
 #include "lidar/hesai/pcl_point_type_def_hs.h"
 
-
 namespace localization_module{
 
 struct smoothness_t{ 
@@ -28,13 +28,13 @@ struct smoothness_t{
 class LidarPreprocParent{
 
 public:
-    LidarPreprocParent();
+    LidarPreprocParent(rclcpp::Node::SharedPtr node);
     virtual ~LidarPreprocParent();
 
-    virtual bool pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){return true;};
+    virtual bool pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){return true;};
 
     // for robosense & vanjee
-    virtual bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){return true;}
+    virtual bool msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){return true;}
     
     // common
     void sampling_cloud(PointCloudType::Ptr in_cloud_ptr, PointCloudType::Ptr out_cloud_ptr);
@@ -43,17 +43,7 @@ public:
         return cloud_dense_->points.size();
     }
 
-    bool set_common_params();
-
-
-protected:
-    // virtual bool set_param()=0;
-    // virtual void msg2pcl_clip()=0;
-
-private:
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// member variable
+    bool set_common_params(rclcpp::Node::SharedPtr node);
 
 protected:
     PointCloudType::Ptr cloud_dense_;
@@ -68,30 +58,19 @@ protected:
     double blind_range_square_ = 0.0;
     double max_range_square_ = 0.0;
 
-
     int point_filter_num_ = 2;
     int ring_filter_num_ = 1;
-    std::vector<float> z_range_={-5.0, 20.0};
-
-private:
-
-
-
+    // std::vector<float> z_range_={-5.0, 20.0};
+    std::vector<double> z_range_={-5.0, 20.0};
 };
 
 } // namespace localization_module
 
-
 namespace lidar_common {
-    
 template<typename T>
 bool is_nan_pt(T pt) {
-    if (std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z)) {
-        return true;
-    } else {
-        return false;
-    }
+    return std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z);
 }
 } // namespace lidar_common
 
-#endif 
+#endif

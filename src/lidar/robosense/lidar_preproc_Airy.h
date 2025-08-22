@@ -15,19 +15,19 @@ namespace localization_module{
 class LidarPreprocAiry: public LidarPreprocParent {
 
 public:
-    LidarPreprocAiry();
+    LidarPreprocAiry(rclcpp::Node::SharedPtr node);
     ~LidarPreprocAiry();
     
-    bool pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out) override;
+    bool pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out) override;
     
-    bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out) override;
+    bool msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out) override;
 
-    bool msg2pcl_feat_pre(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in);
+    bool msg2pcl_feat_pre(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in);
     bool extract_by_ring_feature(PointCloudType::Ptr pcl_xyzin_out);
     bool extract_by_ring_feature();
 
 private:
-    bool set_param();
+    bool set_param(rclcpp::Node::SharedPtr node);
     void allocate_memory_init_variable();
     void extract_cloud_by_interval_sampling(const pcl::PointCloud<RsPointXYZIRT>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out);
 

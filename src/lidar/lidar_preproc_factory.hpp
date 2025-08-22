@@ -4,7 +4,7 @@
 
 #include <memory>
 #include <string>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include "lidar/lidar_preproc_parent.h"
 #include "lidar/livox/lidar_preproc_Mid360.h"
@@ -13,56 +13,36 @@
 #include "lidar/lanhai/lidar_preproc_M300.h"
 #include "lidar/hesai/lidar_preproc_JT16.h"
 
-
 namespace localization_module {
 
 class LidarPreprocFactory{
 public:
-
-    static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type){
+    static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type, rclcpp::Node::SharedPtr node){
         std::shared_ptr<LidarPreprocParent> lidar_preproc_tmp;
-        ROS_INFO("---");
-        ROS_INFO("valid lidar_type in factory: 1-lvx-Mid360 | 2-RS-Airy | 3-Vanjee722 | 4-HS-JT16 | 5-BS-M300 ");
-        ROS_INFO_STREAM(BOLDGREEN<<"curr lidar_type: "<<lidar_type<<RESET);
+        auto logger = rclcpp::get_logger("lidar_preproc_factory");
+        
+        RCLCPP_INFO(logger, "---");
+        RCLCPP_INFO(logger, "valid lidar_type in factory: 1-lvx-Mid360 | 2-RS-Airy | 3-Vanjee722 | 4-HS-JT16 | 5-BS-M300");
+        RCLCPP_INFO(logger, "curr lidar_type: %d", lidar_type);
+        
         if (lidar_type == 1){
-            lidar_preproc_tmp.reset(new LidarPreprocMid360());
+            lidar_preproc_tmp.reset(new LidarPreprocMid360(node));
         }else if(lidar_type == 2){ 
-            lidar_preproc_tmp.reset(new LidarPreprocAiry());
-        }else if(lidar_type == 3){ // vanjee 数据类型与 rslidar 一样, 共用
-            lidar_preproc_tmp.reset(new LidarPreprocVanjee722());
-        }else if(lidar_type == 4){ // hesai
-            lidar_preproc_tmp.reset(new LidarPreprocJT16());
-        }else if(lidar_type == 5){ // lanhai
-            lidar_preproc_tmp.reset(new LidarPreprocM300());
+            lidar_preproc_tmp.reset(new LidarPreprocAiry(node));
+        }else if(lidar_type == 3){
+            lidar_preproc_tmp.reset(new LidarPreprocVanjee722(node));
+        }else if(lidar_type == 4){
+            lidar_preproc_tmp.reset(new LidarPreprocJT16(node));
+        }else if(lidar_type == 5){
+            lidar_preproc_tmp.reset(new LidarPreprocM300(node));
         }else {
             lidar_preproc_tmp.reset();
-            ROS_ERROR_STREAM(RED << "Unknown lidar type(==" << lidar_type <<") in lidar factory!" <<RESET);
+            RCLCPP_ERROR(logger, "Unknown lidar type(==%d) in lidar factory!", lidar_type);
             exit(0);
         }
 
         return std::move(lidar_preproc_tmp);
     }
-    
-
-    // static std::shared_ptr<LidarPreprocParent> new_lidar_preproc(const int lidar_type, std::string prefix){
-    //     std::shared_ptr<LidarPreprocParent> lidar_preproc_tmp;
-    //     ROS_INFO("---");
-    //     ROS_INFO("valid lidar_type in factory: 1-Mid360 | 2-Airy ");
-    //     ROS_INFO("curr  lidar_type: %s", lidar_type.c_str());
-    //     if (lidar_type == 1){
-    //         lidar_preproc_tmp.reset(new LidarPreprocMid360(prefix));
-    //     }else if(lidar_type == 2){ 
-    //         lidar_preproc_tmp.reset(new LidarPreprocAiry(prefix));
-    //     } else {
-    //         lidar_preproc_tmp.reset();
-    //         ROS_ERROR_STREAM(RED << "Unknown lidar type in lidar factory!" << RESET);
-    //         exit(0);
-    //     }
-
-    //     return std::move(lidar_preproc_tmp);
-    // }
-
-
 };
 
 } // namespace localization_module

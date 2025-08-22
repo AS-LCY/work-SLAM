@@ -93,7 +93,7 @@ void BackEnd::addLoopFactor()
         gtSAMgraph.add(gtsam::BetweenFactor<gtsam::Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
     }
 
-    ROS_INFO_STREAM(BOLDRED<<"addLoopFactor, loopIndexQueue size = " << loopIndexQueue.size() <<" *************************** "<<RESET);
+    // ROS_INFO_STREAM(BOLDRED<<"addLoopFactor, loopIndexQueue size = " << loopIndexQueue.size() <<" *************************** "<<RESET);
   //  mtxLoopInfo.lock(); // TODO this cause CPU high
     std::lock_guard<std::mutex> lk(mtxLoopInfo);
     loopIndexQueue.clear();
@@ -281,8 +281,8 @@ bool BackEnd::correctPoses()
         mtxPose.unlock();
         // 清空局部map， reconstruct  ikdtree submap
         // recontructIKdTree(ikdtree); 
-        ROS_INFO("ISMA2 Update");
-        ROS_INFO_STREAM(BOLDYELLOW<<"correctPoses ********************************** "<<RESET);
+        // ROS_INFO("ISMA2 Update");
+        // ROS_INFO_STREAM(BOLDYELLOW<<"correctPoses ********************************** "<<RESET);
         aLoopIsClosed = false;
         show_index = 0;
         std::lock_guard<std::mutex> lk(mtxCurrentMap);
@@ -336,16 +336,16 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType> &ikdtree,double kdTreeReconst
     downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
     downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
 
-    // std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
-    ROS_INFO_STREAM(YELLOW<<"subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()<<RESET);
+    std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
+    // ROS_INFO_STREAM(YELLOW<<"subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()<<RESET);
     
     ikdtree.reconstruct(subMapKeyFramesDS->points);
-    // std::cout << "Reconstructed  ikdtree " << std::endl;
-    ROS_INFO_STREAM( "Reconstructed  ikdtree ");
+    std::cout << "Reconstructed  ikdtree " << std::endl;
+    // ROS_INFO_STREAM( "Reconstructed  ikdtree ");
     int featsFromMapNum = ikdtree.validnum();
     int kdtree_size_st = ikdtree.size();
-    // std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
-    ROS_INFO_STREAM (YELLOW<< "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st << RESET);
+    std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
+    // ROS_INFO_STREAM (YELLOW<< "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st << RESET);
 
 }
 
@@ -456,8 +456,8 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
     // 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
     // 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
     // T_map_odom： 传入的这个值是重定位结果
-    // cout<<"loaded_key_poses size: "<<input_vec_key_poses.size()<<endl;
-    ROS_INFO_STREAM("loaded_key_poses size: "<<input_vec_key_poses.size());
+    cout<<"loaded_key_poses size: "<<input_vec_key_poses.size()<<endl;
+    // ROS_INFO_STREAM("loaded_key_poses size: "<<input_vec_key_poses.size());
     int i=0;
     for(auto & kp : input_vec_key_poses){
         // cout<<"***************** load old key frame --- "<< i++ << endl;
@@ -484,7 +484,7 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
 
         ////// saveCurrentCloud(KeyFrameCloud[i], T_map_lidar);
         scManager.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
-        ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
+        // ROS_INFO_STREAM("***************** load old key frame --- "<< i++ );
         
     }
 
@@ -519,9 +519,9 @@ void BackEnd::performLoopClosure(double time)
         return;
     }
 
-    ROS_INFO_STREAM(BLUE<<"loop closure found! KeyCur = "<<loopKeyCur<< ", KeyPre = " <<loopKeyPre<<RESET);
-    ROS_INFO_STREAM(BLUE<<"loopKeyCur time = "<<std::setprecision(15)<<KeyPoses[loopKeyCur].time<<RESET);
-    ROS_INFO_STREAM(BLUE<<"loopKeyPre time = "<<std::setprecision(15)<<KeyPoses[loopKeyPre].time<<RESET);
+    // ROS_INFO_STREAM(BLUE<<"loop closure found! KeyCur = "<<loopKeyCur<< ", KeyPre = " <<loopKeyPre<<RESET);
+    // ROS_INFO_STREAM(BLUE<<"loopKeyCur time = "<<std::setprecision(15)<<KeyPoses[loopKeyCur].time<<RESET);
+    // ROS_INFO_STREAM(BLUE<<"loopKeyPre time = "<<std::setprecision(15)<<KeyPoses[loopKeyPre].time<<RESET);
         
 
     // 提取
@@ -549,14 +549,14 @@ void BackEnd::performLoopClosure(double time)
     PointCloudType::Ptr unused_result(new PointCloudType());
     icp.align(*unused_result);
 
-    ROS_INFO_STREAM(YELLOW<<"icp.getFitnessScore(): "<<icp.getFitnessScore() <<RESET);
+    // ROS_INFO_STREAM(YELLOW<<"icp.getFitnessScore(): "<<icp.getFitnessScore() <<RESET);
 
     // 未收敛，或者匹配不够好
     if (icp.hasConverged() == false || icp.getFitnessScore() > loopIcpScore)
         return;
 
-    // std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop    
-    ROS_INFO_STREAM(YELLOW<<"RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "."  <<RESET);
+    std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop    
+    // ROS_INFO_STREAM(YELLOW<<"RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "."  <<RESET);
     // exit(1);
    // std::cout << "icp  success  " << std::endl;
 
@@ -566,7 +566,6 @@ void BackEnd::performLoopClosure(double time)
     float x, y, z, roll, pitch, yaw;
     Eigen::Affine3f correctionLidarFrame;
     correctionLidarFrame = icp.getFinalTransformation();
-
     // 闭环优化前当前帧位姿
     Eigen::Affine3f tWrong = CopyKeyPoses[loopKeyCur].pose.cast<float>();
     // 闭环优化后当前帧位姿
@@ -579,7 +578,6 @@ void BackEnd::performLoopClosure(double time)
     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
     gtsam::noiseModel::Diagonal::shared_ptr constraintNoise = gtsam::noiseModel::Diagonal::Variances(Vector6);
     // std::cout << "loopNoiseQueue   =   " << noiseScore << std::endl;
-
     // 添加闭环因子需要的数据
     // mtxLoopInfo.lock(); // TODO 
     std::lock_guard<std::mutex> lk(mtxLoopInfo);
@@ -587,9 +585,8 @@ void BackEnd::performLoopClosure(double time)
     loopPoseQueue.push_back(poseFrom.between(poseTo));
     loopNoiseQueue.push_back(constraintNoise);
     loopIndexContainer[loopKeyCur] = loopKeyPre; //   使用hash map 存储回环对
-    ROS_INFO_STREAM(BLUE<<"loopIndexContainer size: "<<loopIndexContainer.size()<<RESET);
+    // ROS_INFO_STREAM(BLUE<<"loopIndexContainer size: "<<loopIndexContainer.size()<<RESET);
     // mtxLoopInfo.unlock();
-
     
 }
 
@@ -875,30 +872,30 @@ PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom)
 
 bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3d T_map_odom, int start_index, int end_index)
 {
-    // cout << "****************************************************" << endl;
-    ROS_INFO( "****************************************************");
+    cout << "****************************************************" << endl;
+    // ROS_INFO( "****************************************************");
     if (KeyPoses.empty() || KeyPoses.size()==0){
-        // cout<<"key frame empty"<<endl;
-        ROS_WARN_STREAM(YELLOW << "key frame empty" << RESET);
+        cout<<"key frame empty"<<endl;
+        // ROS_WARN_STREAM(YELLOW << "key frame empty" << RESET);
         return false;
     }
     // 检查并创建 yaml 中的地图路径
     if (create_directory_if_not_exists(saveMapDirectory)) {
-        // std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
-        ROS_INFO_STREAM("Directory created or already exists: " << saveMapDirectory);
+        std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
+        // ROS_INFO_STREAM("Directory created or already exists: " << saveMapDirectory);
     } else {
-        // std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
-        ROS_ERROR_STREAM(RED << "Failed to create directory: " << saveMapDirectory  <<RESET);
+        std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
+        // ROS_ERROR_STREAM(RED << "Failed to create directory: " << saveMapDirectory  <<RESET);
         return false;
     }
     // 创建关键帧点云保存路径
     std::string save_key_frame_cloud_dir = saveMapDirectory + "/key_frame_cloud/";
     if (create_directory_if_not_exists(save_key_frame_cloud_dir)) {
-        // std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
-        ROS_INFO_STREAM("Directory created or already exists: " << save_key_frame_cloud_dir);
+        std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
+        // ROS_INFO_STREAM("Directory created or already exists: " << save_key_frame_cloud_dir);
     } else {
-        // std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
-        ROS_ERROR_STREAM(RED << "Failed to create directory: " << save_key_frame_cloud_dir <<RESET);
+        std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
+        // ROS_ERROR_STREAM(RED << "Failed to create directory: " << save_key_frame_cloud_dir <<RESET);
         return false;
     }
 
@@ -917,8 +914,8 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         end = KeyPosesSize -1;
         // pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
     }else if(start_index == -1 || end_index == -1){
-        // cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
-        ROS_WARN_STREAM(YELLOW << "start-point or end-point not set, save all to cloud_map.pcd "<< RESET);
+        cout << "start-point or end-point not set, save all to cloud_map.pcd "<<endl;
+        // ROS_WARN_STREAM(YELLOW << "start-point or end-point not set, save all to cloud_map.pcd "<< RESET);
         start = 0;
         end = KeyPosesSize -1;
     }else{
@@ -944,17 +941,18 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
         key_frame_cloud_path = save_key_frame_cloud_dir  + std::to_string(i) + ".pcd";
         int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud[i]);
     }
-    // cout << "\nSave resolution: " << resolution << endl;
-    ROS_INFO_STREAM("Save resolution: " << resolution);
+    cout << "\nSave resolution: " << resolution << endl;
+    // ROS_INFO_STREAM("Save resolution: " << resolution);
+
     pcl::VoxelGrid<PointType> downSizeFilter;
     downSizeFilter.setInputCloud(globalMapCloud);
     downSizeFilter.setLeafSize(resolution, resolution, resolution);
     downSizeFilter.filter(*globalSurfCloudDS);
-    // cout<<"cloud_map size: "<<globalSurfCloudDS->points.size()<<endl;
-    ROS_INFO_STREAM("cloud_map size: "<<globalSurfCloudDS->points.size());
+    cout<<"cloud_map size: "<<globalSurfCloudDS->points.size()<<endl;
+    // ROS_INFO_STREAM("cloud_map size: "<<globalSurfCloudDS->points.size());
 
-    // cout << "Saving map to pcd file: "<<pcd_file_path << endl;
-    ROS_INFO_STREAM("Saving map to pcd file: "<<pcd_file_path);
+    cout << "Saving map to pcd file: "<<pcd_file_path << endl;
+    // ROS_INFO_STREAM("Saving map to pcd file: "<<pcd_file_path);
 
     /** savePCDFileBinary 返回值：
      *  0 --- 保存成功
@@ -962,28 +960,28 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
      */
     int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
     if(ret == -1){
-        // cout << "save cloud-map failed" << endl; 
-        ROS_ERROR_STREAM(RED << "save cloud-map failed" << RESET); 
+        cout << "save cloud-map failed" << endl; 
+        // ROS_ERROR_STREAM(RED << "save cloud-map failed" << RESET); 
         return false;
     }else if(ret ==0){
-        // cout << "Saving map to pcd files completed" << endl;
-        ROS_INFO_STREAM(GREEN << "Saving map to pcd files completed"<< RESET);
+        cout << "Saving map to pcd files completed" << endl;
+        // ROS_INFO_STREAM(GREEN << "Saving map to pcd files completed"<< RESET);
     }
     // int ret = pcl::io::savePCDFileASCII(pcd_file_path, *globalSurfCloudDS);       //  稠密地图  
     // cout<<"savePCDFileBinary result: "<<ret<<endl;
 
-    // cout << "Saving loop data" << endl; 
-    ROS_INFO("Saving loop data"); 
+    cout << "Saving loop data" << endl; 
+    // ROS_INFO("Saving loop data"); 
     std::ofstream file(saveMapDirectory + "/data");
     std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
     if (!file.is_open()){
-        // cout << "sc data file open failed" << endl; 
-        ROS_ERROR_STREAM(RED << "sc data file open failed" << RESET); 
+        cout << "sc data file open failed" << endl; 
+        // ROS_ERROR_STREAM(RED << "sc data file open failed" << RESET); 
         return false;
     }
     if(!file_pose.is_open()){
-        // cout << "key_frame_pose file open failed" << endl; 
-        ROS_ERROR_STREAM(RED << "key_frame_pose file open failed" << RESET);
+        cout << "key_frame_pose file open failed" << endl; 
+        // ROS_ERROR_STREAM(RED << "key_frame_pose file open failed" << RESET);
         return false;
     }
     // for (int i = 0; i < (int)KeyPoses.size(); i++) {
@@ -1001,10 +999,10 @@ bool BackEnd::saveMap(string saveMapDirectory,double resolution,Eigen::Isometry3
     }
     file.close();
     file_pose.close();
-    // cout << "Saving loop data completed" << endl;
-    // cout << "****************************************************" << endl;
-    ROS_INFO_STREAM(GREEN << "Saving loop data completed" << RESET);
-    ROS_INFO("****************************************************");
+    cout << "Saving loop data completed" << endl;
+    cout << "****************************************************" << endl;
+    // ROS_INFO_STREAM(GREEN << "Saving loop data completed" << RESET);
+    // ROS_INFO("****************************************************");
 
     return true;
 }

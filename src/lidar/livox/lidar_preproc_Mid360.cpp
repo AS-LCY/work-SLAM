@@ -3,14 +3,14 @@
 
 namespace localization_module {
 
-LidarPreprocMid360::LidarPreprocMid360(){
-    if(!set_param()){
-        ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
+LidarPreprocMid360::LidarPreprocMid360(rclcpp::Node::SharedPtr node): LidarPreprocParent(node){
+    if(!set_param(node)){
+        // ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
-        ROS_INFO("Set lidar-Mid360 param successfully!");
+        // ROS_INFO("Set lidar-Mid360 param successfully!");
     }
 
-    ROS_INFO("Reset to LidarPreproc-Mid360 successfully!");
+    // ROS_INFO("Reset to LidarPreproc-Mid360 successfully!");
 
 }
 
@@ -20,7 +20,7 @@ LidarPreprocMid360::~LidarPreprocMid360(){
 }
 
 
-bool LidarPreprocMid360::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
+bool LidarPreprocMid360::pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
     if(extract_cloud_method_ == 0){
         cloud_dense_->clear();
         msg2pcl_clip(ros_msg_in, cloud_dense_);
@@ -36,21 +36,24 @@ bool LidarPreprocMid360::pre_process(const sensor_msgs::PointCloud2::ConstPtr ro
     return true;
 }
 
-bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
+bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
-    double header_time = ros_msg_in->header.stamp.toSec();
+    // double header_time = ros_msg_in->header.stamp.toSec();
+    double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
 
     ///// MetaData --- header 
     pcl::PCLHeader pcl_header;
-    pcl_header.seq = ros_msg_in->header.seq;
-    pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    // pcl_header.seq = ros_msg_in->header.seq;
+    // pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;rclcpp::Time stamp(ros_msg_in->header.stamp);
+// int64_t timestamp_ns = stamp.nanoseconds();
+    pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
     pcl_header.frame_id = ros_msg_in->header.frame_id;
     ///// MetaData --- field
     std::vector<pcl::PCLPointField> pcl_fields;
     
     pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
+    std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
     int i = 0;
     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
       pcl_fields[i].name = it->name;
@@ -123,15 +126,18 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr r
 }
 
 
-bool LidarPreprocMid360::set_param(){
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+bool LidarPreprocMid360::set_param(rclcpp::Node::SharedPtr node){
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance(node);
+    // const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+    // std::shared_ptr<const lidar_slam::LidarSlamParam> loaded_param = param_manager->get_loaded_param();
+    const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
+    param_ = loaded_param.lidar_preproc;
 
-    if (loaded_param == NULL) {
-        ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
-        return false;
-    }else{
-        param_ = loaded_param->lidar_preproc;
+    // if (loaded_param == NULL) {
+    //     // ROS_ERROR_STREAM(RED << "loaded_param is NULL" <<RESET);
+    //     return false;
+    // }else{
+        // param_ = loaded_param->lidar_preproc;
 
         // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
         // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
@@ -145,7 +151,7 @@ bool LidarPreprocMid360::set_param(){
         // cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
 
         return true;
-    }
+    // }
 }
 
 
@@ -323,7 +329,7 @@ void LidarPreprocMid360::extract_cloud_by_interval_and_voxel(const std::shared_p
     const double extent_zmin = param_.voxel_region_xyz[4];
     const double extent_zmax = param_.voxel_region_xyz[5];
     // std::cout<<"leafsize: "<<leafsize<<endl;
-    ROS_INFO_STREAM("leafsize: "<<leafsize);
+    // ROS_INFO_STREAM("leafsize: "<<leafsize);
 
     int plsize = msg->point_num;
     uint valid_num = 0;

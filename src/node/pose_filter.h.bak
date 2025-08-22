@@ -62,7 +62,8 @@ public:
     
 private:
     /// params load from yaml
-    lidar_slam::LidarSlamParam slam_param_;
+    // lidar_slam::LidarSlamParam slam_param_;
+    lidar_slam::LidarSlamParam& slam_param_;
 
     std::atomic<bool> update_lidar_init_;
     std::atomic<bool> update_chassis_init_;

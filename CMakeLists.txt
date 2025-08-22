@@ -1,169 +1,129 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.16)
 project(lidar_slam)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+# 默认构建类型
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+endif()
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
-
-# SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# ADD_COMPILE_OPTIONS(-std=c++14 )
-# ADD_COMPILE_OPTIONS(-std=c++14 )
-# set( CMAKE_CXX_FLAGS "-std=c++14 -O3" )
-
-add_compile_options(-fPIC)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions" )
-set(CMAKE_CXX_STANDARD 14)
+# C++17 标准设置
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -std=c++0x -std=c++14 -fexceptions")
-#set( CMAKE_CXX_FLAGS "-std=c++17 -O3" )
-#set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wl, -rpath=./:./lib/")
-#set(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wl -rpath=${CMAKE_SOURCE_DIR}/../install/lib")
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# 调试模式设置
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -march=native") #
 
-#get_filename_component(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
-#add_compile_definitions(CURRENT_DIR="${CURRENT_DIR}")
-
-message("Current CPU archtecture: ${CMAKE_SYSTEM_PROCESSOR}")
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)|(aarch64)|(AARCH64)" )
-  include(ProcessorCount)
-  ProcessorCount(N)
-  message("Processer number:  ${N}")
-  if(N GREATER 6)
-    add_definitions(-DMP_EN)
-    add_definitions(-DMP_PROC_NUM=5)
-    message("core for MP: 5")
-  elseif(N GREATER 4)
-    add_definitions(-DMP_EN)
-    add_definitions(-DMP_PROC_NUM=3)
-    message("core for MP: 3")
-  elseif(N GREATER 3)
-    add_definitions(-DMP_EN)
-    add_definitions(-DMP_PROC_NUM=2)
-    message("core for MP: 2")
+# CPU 架构优化
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|aarch64|ARM|AARCH64)")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -mcpu=native -mtune=native -ffast-math")
   else()
-    add_definitions(-DMP_PROC_NUM=1)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -mcpu=native -mtune=native -mfpu=neon -ffast-math")
   endif()
+  add_compile_definitions(ARM_ARCH)
 else()
-  add_definitions(-DMP_PROC_NUM=1)
+  # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mtune=native -funroll-loops")
+  # add_compile_definitions(X86_ARCH)
+   # 修改X86架构优化部分，添加AVX支持
+   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mtune=native -funroll-loops -mavx")
+   add_compile_definitions(X86_ARCH)
+   
+   # 显式检查AVX支持
+   include(CheckCXXCompilerFlag)
+   check_cxx_compiler_flag("-mavx" COMPILER_SUPPORTS_AVX)
+   if(COMPILER_SUPPORTS_AVX)
+     message(STATUS "AVX指令集支持已启用")
+   else()
+     message(WARNING "当前编译器不支持AVX指令集")
+   endif()
 endif()
 
+# 多核处理设置
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)|(aarch64)|(AARCH64)")
+  include(ProcessorCount)
+  ProcessorCount(N)
+  if(N GREATER 6)
+    add_compile_definitions(MP_EN MP_PROC_NUM=5)
+  elseif(N GREATER 4)
+    add_compile_definitions(MP_EN MP_PROC_NUM=3)
+  elseif(N GREATER 3)
+    add_compile_definitions(MP_EN MP_PROC_NUM=2)
+  else()
+    add_compile_definitions(MP_PROC_NUM=1)
+  endif()
+else()
+  add_compile_definitions(MP_PROC_NUM=1)
+endif()
 
+# OpenMP 支持
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
-################### find_package #####################
-find_package(OpenMP QUIET)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
+################### ROS2 依赖管理 #####################
+# 使用 ament_auto 简化构建
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
+# ament_auto_find_build_dependencies(
+#   rclcpp
+#   geometry_msgs
+#   nav_msgs
+#   sensor_msgs
+#   std_msgs
+#   tf2
+#   tf2_ros
+#   image_transport
+#   pcl_conversions
+#   fairland_msgs
+# )
+find_package(fairland_msgs REQUIRED)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  # cv_bridge
-  geometry_msgs
-  image_transport
-  nav_msgs
-  pcl_ros
-  roscpp
-  rospy
-  sensor_msgs
-  std_msgs
-  tf
-  message_generation
-  eigen_conversions
-  fairland_msgs
+# 第三方库依赖
+find_package(Boost REQUIRED COMPONENTS
+  system thread chrono serialization
+  filesystem date_time regex timer
 )
-
-find_package(Boost  REQUIRED COMPONENTS
-  system
-  thread
-  chrono
-  serialization
-  filesystem
-  date_time
-  regex
-  timer
-  date_time
-)
-
-find_package(PCL REQUIRED)
+# find_package(PCL 1.15 REQUIRED COMPONENTS common io filters)
+find_package(PCL REQUIRED COMPONENTS common io filters)
 find_package(yaml-cpp REQUIRED)
-find_package(PkgConfig)
-find_package(FMT REQUIRED)
+find_package(fmt REQUIRED)
 find_package(Sophus REQUIRED)
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED)   
+
+# set(GTSAM_DIR /usr/local/lib/cmake/GTSAM/GTSAMConfig.cmake)
 find_package(GTSAM REQUIRED)
+find_package(fast_gicp REQUIRED) 
+find_package(std_msgs REQUIRED) 
+find_package(pcl_conversions REQUIRED)
 
-# message("======= PCL_INCLUDE_DIRS: ${PCL_INCLUDE_DIRS} *********")
-# message("======= PCL_LIBRARIES: ${PCL_LIBRARIES} *********")
+message("GTSAM_INCLUDE_DIR:===========" ${GTSAM_INCLUDE_DIR} )
+message("GTSAM_LIBRARIES:==========="  ${GTSAM_LIBRARIES} )
 
-catkin_package(
-  CATKIN_DEPENDS 
-  # cv_bridge 
-  geometry_msgs 
-  image_transport 
-  nav_msgs 
-  pcl_ros 
-  roscpp 
-  rospy 
-  sensor_msgs 
-  std_msgs 
-  tf
-  fairland_msgs
+message("PCL_LIBRARIES:==========="  ${PCL_LIBRARIES} )
+message("PCL_INCLUDE_DIRS:==========="  ${PCL_INCLUDE_DIRS} )
 
-  DEPENDS 
-  # EIGEN3 
-  PCL  
-  # GTSAM 
-  INCLUDE_DIRS
-)
-
-
-set(flbot_msgs_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../devel/include)
-
-###########
-## Build ##
-###########
-
+# 包含目录
 include_directories(
   src/
   src/include
-  # src/include/lidar_slam
-  # src/include/node
-  # src/include/livox_datatype
-  ${flbot_msgs_INCLUDE_DIR}
-  ${catkin_INCLUDE_DIRS}
-  # ${FAST_GICP_INCLUDE_DIR}
-  ${LIVOX_SDK2_INCLUDE_DIR}
-  ${EIGEN3_INCLUDE_DIR}
+  ${fairland_msgs_INCLUDE_DIRS}
+    # ${FAST_GICP_INCLUDE_DIR}
+  ${Eigen3_INCLUDE_DIRS}
   ${Sophus_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
-  # ${OpenCV_INCLUDE_DIRS}
-  #${Pangolin_INCLUDE_DIRS}
   ${GTSAM_INCLUDE_DIR}
-  # below TODO
-  ${YAML_CPP_INCLUDE_DIR}
-  ${APR_INCLUDE_DIRS}
+  ${yaml-cpp_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${fmt_INCLUDE_DIRS}
   /usr/local/include
-  )
-
-
-# link directories
-link_directories(
-  ${FAST_GICP_LIBRARY_DIR}
-  ${LIVOX_SDK2_LIBRARY_DIR}
-  # ${OpenCV_LIBRARY_DIRS}
-  #${Pangolin_LIBRARY_DIRS}
 )
- 
-set(CURRENT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(lidar_preproc SHARED
+# 使用 ament_auto_add_library 添加库
+ament_auto_add_library(lidar_preproc SHARED
   src/lidar/lidar_preproc_parent.cpp 
   src/lidar/livox/lidar_preproc_Mid360.cpp 
   src/lidar/robosense/lidar_preproc_Airy.cpp 
@@ -172,34 +132,30 @@ add_library(lidar_preproc SHARED
   src/lidar/lanhai/lidar_preproc_M300.cpp 
 )
 
-target_link_libraries(lidar_preproc 
-  ${PCL_LIBRARIES} 
+target_link_libraries(lidar_preproc
+  ${PCL_LIBRARIES}
+  Boost::boost
 ) 
 
-# build: slam core
-add_library(lidar_slam SHARED
+# SLAM核心库
+ament_auto_add_library(lidar_slam SHARED
   src/lidar_slam/common_lib.cpp 
   src/lidar_slam/lidar_slam.cpp 
   src/lidar_slam/localization.cpp
   src/lidar_slam/backend.cpp
-  # src/lidar_slam/preprocess.cpp
   src/lidar_slam/IMU_Processing.cpp
   src/lidar_slam/ikd_Tree.cpp
   src/lidar_slam/Scancontext.cpp
   src/lidar_slam/cloud_map.cpp
   src/lidar_slam/global_localization.cpp
 )
+
 target_link_libraries(lidar_slam 
-  ${Sophus_LIBRARIES} 
-  ${PCL_LIBRARIES} 
-  #${Pangolin_LIBRARIES} 
-  ${FAST_GICP_LIBRARY}
-  ${OpenCV_LIBS}
+  ${Sophus_LIBRARIES}
+  ${PCL_LIBRARIES}
   ${fmt_LIBRARIES}
-  ${Boost_LIBRARIES}
-  gtsam  
-  fmt::fmt 
-  yaml-cpp 
+  ${yaml-cpp_LIBRARIES}
+  ${GTSAM_LIBRARIES}
   lidar_preproc
   Boost::system
   Boost::thread
@@ -208,144 +164,63 @@ target_link_libraries(lidar_slam
   Boost::date_time
   Boost::regex
   Boost::timer
-  Boost::date_time
   Boost::serialization
-  /usr/local/lib/libfast_gicp.so
-#   ikd_Tree 
-#   Scancontext
-#   backend
-#   sensor_data_preproc
-) 
+  # /usr/local/lib/libfast_gicp.so
+  gtsam
+)
 
-  
-  
-  
-
-# build: ros-node
-add_executable(lidar_slam_node
+# SLAM主节点 - 使用 ament_auto_add_executable
+ament_auto_add_executable(lidar_slam_node
   src/slam_main.cpp
   src/node/localization_module.cpp
   src/node/module_ctrl_callback.cpp 
   src/node/publish_common.cpp 
-  # src/node/detect_slipping.cpp
-  # src/node/pose_filter.cpp
 )
-
-# add_dependencies(lidar_slam_node )
 
 target_link_libraries(lidar_slam_node 
-  ${catkin_LIBRARIES} 
-  ${PCL_LIBRARIES} 
-  # ${Pangolin_LIBRARIES} 
-  # ${FAST_GICP_LIBRARY}
-  # ${OpenCV_LIBS}
-  # ${cv_bridge_LIBRARIES}
   lidar_slam
   lidar_preproc
-  # yaml-cpp 
-  ) 
-
-  add_library(mango_common SHARED
-  src/fusion_node/common/numerical_process.cpp 
-  src/fusion_node/common/quaternion.cpp 
-  src/fusion_node/common/vector.cpp 
+  # fairland_msgs
 )
 
-add_executable(localization_fusion_node
-  src/fusion_node/fusion_main.cpp
-  src/fusion_node/localization_fusion_interface.cpp
-  src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
-  src/fusion_node/ekf_fusion/pose_ekf.cpp 
-  src/slipping/detect_slipping.cpp
-  src/lidar_slam/common_lib.cpp 
+# 通用数学库
+# ament_auto_add_library(mango_common SHARED
+#   src/fusion_node/common/numerical_process.cpp 
+#   src/fusion_node/common/quaternion.cpp 
+#   src/fusion_node/common/vector.cpp 
+# )
+
+# 融合定位节点
+# ament_auto_add_executable(localization_fusion_node
+#   src/fusion_node/fusion_main.cpp
+#   src/fusion_node/localization_fusion_interface.cpp
+#   src/fusion_node/ekf_fusion/ekf_localization_fusion.cpp 
+#   src/fusion_node/ekf_fusion/pose_ekf.cpp 
+#   src/slipping/detect_slipping.cpp
+#   src/lidar_slam/common_lib.cpp 
+# )
+
+# target_link_libraries(localization_fusion_node 
+#   mango_common
+#   lidar_slam
+# )
+
+############# 安装配置 #############
+# 安装其他资源文件
+install(DIRECTORY 
+  launch config rviz_cfg params
+  DESTINATION share/${PROJECT_NAME}
 )
 
-
-  target_link_libraries(localization_fusion_node 
-  ${catkin_LIBRARIES} 
-  ${PCL_LIBRARIES} 
-  mango_common
-  ) 
-
-#############
-## Install ##
-#############
-
-
-# # file(GLOB OPENCV_LIBS "${THIRDPARTY_DIR}/opencv/${CPU_TYPE}/lib/libopencv*")
-# file(GLOB PCL_LIBS "${THIRDPARTY_DIR}/pcl/${CPU_TYPE}/pcl-1.10.0/lib/libpcl*")
-# file(GLOB GTSAM_LIBS "${THIRDPARTY_DIR}/gtsam/${CPU_TYPE}/lib/lib*")
-# file(GLOB fmt_LIBS "${THIRDPARTY_DIR}/fmt/${CPU_TYPE}/lib/lib*")
-# #file(GLOB Pangolin_LIBS "${THIRDPARTY_DIR}/Pangolin/${CPU_TYPE}/lib/lib*")
-# file(GLOB YAML_CPP_LIBS "${THIRDPARTY_DIR}/yaml-cpp/${CPU_TYPE}/lib/lib*")
-# file(GLOB fast_gicp_LIBS "${THIRDPARTY_DIR}/fast_gicp/${CPU_TYPE}/lib/lib*")
-
-install(TARGETS lidar_slam_node lidar_slam lidar_preproc 
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# 使用 ament_auto_package 自动处理安装和导出
+ament_auto_package(
+  # # 显式添加非自动检测的依赖
+  # DEPENDENCIES
+  # Eigen3
+  # PCL
+  # Sophus
+  # GTSAM
+  # yaml-cpp
+  # fmt
+  # Boost
 )
-
-
-install(TARGETS localization_fusion_node  mango_common
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY launch config rviz_cfg
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-
-# install(FILES 
-#   ${cv_bridge_LIBRARIES}
-#   # ${OPENCV_LIBS} 
-#   ${PCL_LIBS} 
-#   ${GTSAM_LIBS} 
-#   ${fmt_LIBS} 
-#   #${Pangolin_LIBS} 
-#   ${YAML_CPP_LIBS} 
-#   ${fast_gicp_LIBS} 
-#   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-# )
-
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark libraries for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATITestON}
-# )
-
-

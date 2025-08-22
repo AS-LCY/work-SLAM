@@ -167,8 +167,8 @@ if (0 != access(directory_path.c_str(), 0)){
         if (status){
             return true; // 创建目录成功
         }else{
-            // std::cerr << "Error creating directory: " << directory_path << std::endl;
-            ROS_ERROR_STREAM(RED << "Error creating directory: " << directory_path <<RESET);
+            std::cerr << "Error creating directory: " << directory_path << std::endl;
+            // ROS_ERROR_STREAM(RED << "Error creating directory: " << directory_path <<RESET);
             return false; // 创建目录失败
         }
     }else{
@@ -185,8 +185,8 @@ if (0 != access(directory_path.c_str(), 0)){
             std::filesystem::create_directories(path);
             return true; // 创建目录成功
         }catch (const std::filesystem::filesystem_error& ex){
-            // std::cerr << "Error creating directory: " << ex.what() << std::endl;
-            ROS_ERROR_STREAM(RED << "Error creating directory: " << ex.what()  <<RESET);
+            std::cerr << "Error creating directory: " << ex.what() << std::endl;
+            // ROS_ERROR_STREAM(RED << "Error creating directory: " << ex.what()  <<RESET);
             return false; // 创建目录失败
         }
     } else {

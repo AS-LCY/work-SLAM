@@ -3,15 +3,16 @@
 
 namespace localization_module {
 
-LidarPreprocJT16::LidarPreprocJT16(){
-    if(!set_param()){
-        ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
+LidarPreprocJT16::LidarPreprocJT16(rclcpp::Node::SharedPtr node): LidarPreprocParent(node){
+    
+    if(!set_param(node)){
+        // ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
         // ROS_INFO("\033[0;32mSet lidar-M300 param successfully!\033[0m");
-        ROS_INFO("Set lidar-M300 param successfully!");
+        // ROS_INFO("Set lidar-M300 param successfully!");
     }
     // ROS_INFO("\033[1;32mReset to lidar_preproc_M300 successfully!\033[0m");
-    ROS_INFO("Reset to lidar_preproc_M300 successfully!");
+    // ROS_INFO("Reset to lidar_preproc_M300 successfully!");
 }
 
 
@@ -20,7 +21,7 @@ LidarPreprocJT16::~LidarPreprocJT16(){
 }
 
 ///////////////// 入口函数 /////////////////
-bool LidarPreprocJT16::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
+bool LidarPreprocJT16::pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
     if(extract_cloud_method_ == 0){
         cloud_dense_->clear();
         msg2pcl_clip(ros_msg_in, cloud_dense_);
@@ -39,23 +40,25 @@ bool LidarPreprocJT16::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_
 
 // current used
 /// TODO: point-type
-bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
+bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
-    ROS_INFO_ONCE("M300: ros_msg_in --> pcl_xyzin_out");
+    // ROS_INFO_ONCE("M300: ros_msg_in --> pcl_xyzin_out");
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
-    double header_time = ros_msg_in->header.stamp.toSec();
+    // double header_time = ros_msg_in->header.stamp.toSec(); 
+    double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
 
     ///// MetaData --- header 
     pcl::PCLHeader pcl_header;
-    pcl_header.seq = ros_msg_in->header.seq;
-    pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    // pcl_header.seq = ros_msg_in->header.seq;
+    // pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
     pcl_header.frame_id = ros_msg_in->header.frame_id;
     ///// MetaData --- field
     std::vector<pcl::PCLPointField> pcl_fields;
     
     pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
+    std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
     int i = 0;
     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
       pcl_fields[i].name = it->name;
@@ -135,15 +138,16 @@ bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
 }
 
 
-bool LidarPreprocJT16::set_param(){
+bool LidarPreprocJT16::set_param(rclcpp::Node::SharedPtr node){
 
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
-
-    if (loaded_param == NULL) {
-        ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
-        return false;
-    }else{
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance(node);
+    // const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+    // std::shared_ptr<const lidar_slam::LidarSlamParam> loaded_param = param_manager->get_loaded_param();
+    const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
+    // if (loaded_param == NULL) {
+    //     // ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
+    //     return false;
+    // }else{
         // param_ = loaded_param->lidar_preproc;
 
         // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
@@ -164,7 +168,7 @@ bool LidarPreprocJT16::set_param(){
         // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
 
         return true;
-    }
+    // }
 }
 
 

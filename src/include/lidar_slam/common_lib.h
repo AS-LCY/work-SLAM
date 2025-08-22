@@ -2,7 +2,7 @@
 #define COMMON_LIB_H
 
 #include <sys/stat.h> // makedir
-#include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
+// #include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
 #include <Eigen/Eigen>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>

@@ -1,7 +1,7 @@
 #ifndef LIVOX_ROS_DATATYPE_DEF_H
 #define LIVOX_ROS_DATATYPE_DEF_H
 
-#include "fairland_msgs/LivoxCustomMsg.h"
+#include "fairland_msgs/msg/livox_custom_msg.hpp"
 #include <Eigen/Eigen>
 #include <Eigen/Dense>
 

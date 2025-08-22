@@ -15,17 +15,17 @@ namespace localization_module{
 class LidarPreprocM300: public LidarPreprocParent {
 
 public:
-    LidarPreprocM300();
+    LidarPreprocM300(rclcpp::Node::SharedPtr node);
     ~LidarPreprocM300();
     
-    bool pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out) override;
+    bool pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out) override;
     
     // bool pre_process(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_cld_out)  override ;
-    bool msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out) override;
+    bool msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out) override;
 
 
 private:
-    bool set_param();
+    bool set_param(rclcpp::Node::SharedPtr node);
     // void extract_cloud_by_interval_sampling(const pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out);
 
 

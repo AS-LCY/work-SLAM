@@ -3,26 +3,28 @@
 
 namespace localization_module{
 
-void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id, ros::Time ros_time, ros::Publisher pub_cloud){
+    void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,  rclcpp::Publisher<PointCloud2>::SharedPtr pub)
+// void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id,  rclcpp::Publisher<PointCloud2>::SharedPtr pub_cloud)
+{
 
-	sensor_msgs::PointCloud2 ros_cloud_msg;
+	sensor_msgs::msg::PointCloud2 ros_cloud_msg;
 	pcl::toROSMsg(*pcl_cloud_in, ros_cloud_msg);
-	ros_cloud_msg.header.stamp = ros_time;
+	ros_cloud_msg.header.stamp = node_->now();
 	ros_cloud_msg.header.frame_id = frame_id;
-	pub_cloud.publish(ros_cloud_msg);
+	pub->publish(ros_cloud_msg);
 }
 
 
-void LocalizationModule::pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud)
+void LocalizationModule::pub_test_cloud(PointCloudType::Ptr msg_in,  bool localization_mode)
 {
-	sensor_msgs::PointCloud2 laserCloudmsg;
+	sensor_msgs::msg::PointCloud2 laserCloudmsg;
 	pcl::toROSMsg(*msg_in, laserCloudmsg);
-	laserCloudmsg.header.stamp = ros::Time().now();
+	laserCloudmsg.header.stamp = node_->now();
     if (localization_mode)
 	   laserCloudmsg.header.frame_id = "map";
     else
        laserCloudmsg.header.frame_id = "wheel";
-	pubTestCloud.publish(laserCloudmsg);
+	pubTestCloud->publish(laserCloudmsg);
 }
 
 
@@ -38,12 +40,37 @@ void LocalizationModule::pub_test_cloud(PointCloudType::Ptr msg_in, bool localiz
 //     globalPath.poses.push_back(pose_stamped);
 // }
 
-void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d lidar_in_map, lidar_slam::Localization_base curr_pose, string frameid, string child_frameid, ModuleStatus curr_running_module_status, ros::Publisher pubOdomAftMapped)
+
+void LocalizationModule::publish_odometry_in_map(const Eigen::Isometry3d& odom_in_map, const std::string& frameid, 
+        const std::string& child_frameid)
 {
-	nav_msgs::Odometry odomAftMapped;
+
+    geometry_msgs::msg::TransformStamped transform;  
+
+    transform.header.stamp = node_->now();
+    transform.header.frame_id = frameid;  // 替换为实际的父坐标系
+    transform.child_frame_id = child_frameid;   // 替换为实际的子坐标系
+
+    transform.transform.translation.x = odom_in_map.translation().x();
+    transform.transform.translation.y = odom_in_map.translation().y();
+    transform.transform.translation.z = odom_in_map.translation().z();
+    Eigen::Quaterniond quaternion = Eigen::Quaterniond(odom_in_map.rotation());
+    transform.transform.rotation.w = quaternion.w();
+    transform.transform.rotation.x = quaternion.x();
+    transform.transform.rotation.y = quaternion.y();
+    transform.transform.rotation.z = quaternion.z();
+
+    br_.sendTransform(transform);
+}
+
+
+void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d& lidar_in_map,  lidar_slam::Localization_base curr_pose,  const std::string& frameid, 
+    const std::string& child_frameid,  ModuleStatus curr_running_module_status)
+{
+	nav_msgs::msg::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = frameid;
     odomAftMapped.child_frame_id = child_frameid;
-    odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+    odomAftMapped.header.stamp = node_->now(); // ros::Time().fromSec(lidar_end_time);
     // odomAftMapped.header.stamp = ros::Time().fromSec(lidar_time_);
 	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
     odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
@@ -75,8 +102,24 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d l
     // log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
     log_info_manager_->slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
 
-    pubOdomAftMapped.publish(odomAftMapped);
+    pubOdomAftMapped->publish(odomAftMapped);
 
+    geometry_msgs::msg::TransformStamped transform;  
+
+    transform.header.stamp = node_->now();
+    transform.header.frame_id = odomAftMapped.header.frame_id;  // 替换为实际的父坐标系
+    transform.child_frame_id = odomAftMapped.child_frame_id;   // 替换为实际的子坐标系
+
+    transform.transform.translation.x = odomAftMapped.pose.pose.position.x;
+    transform.transform.translation.y = odomAftMapped.pose.pose.position.y;
+    transform.transform.translation.z = odomAftMapped.pose.pose.position.z;
+
+    transform.transform.rotation.w = odomAftMapped.pose.pose.orientation.w;
+    transform.transform.rotation.x = odomAftMapped.pose.pose.orientation.x;
+    transform.transform.rotation.y = odomAftMapped.pose.pose.orientation.y;
+    transform.transform.rotation.z = odomAftMapped.pose.pose.orientation.z;
+
+     br_.sendTransform(transform);
 
     // auto odom_for_tf = odomAftMapped;
     // // auto odom_for_tf = filter_odometry_;
@@ -95,6 +138,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d l
     // br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, child_frameid));
 }
 
+/*
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string child_frameid, ros::Publisher pub_odom)
 {
     // cout<<"********************* pub odometry "<<endl;
@@ -124,13 +168,14 @@ void LocalizationModule::publish_odometry(const Eigen::Isometry3d isometry_3d, s
     // transform.setRotation(q);
     // br.sendTransform(tf::StampedTransform(transform, odom.header.stamp, frameid, child_frameid));
 }
+*/
 
-void LocalizationModule::publish_static_transform(const Eigen::Isometry3d wheel_in_lidar)
+void LocalizationModule::publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar)
 {
-	nav_msgs::Odometry odomAftMapped;
+	nav_msgs::msg::Odometry odomAftMapped;
     odomAftMapped.header.frame_id = "lidar";
     odomAftMapped.child_frame_id = "wheel";
-    odomAftMapped.header.stamp = ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+    odomAftMapped.header.stamp = node_->now();//ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
 	odomAftMapped.pose.pose.position.x = wheel_in_lidar.translation().x();
     odomAftMapped.pose.pose.position.y = wheel_in_lidar.translation().y();
     odomAftMapped.pose.pose.position.z = wheel_in_lidar.translation().z();
@@ -139,25 +184,44 @@ void LocalizationModule::publish_static_transform(const Eigen::Isometry3d wheel_
     odomAftMapped.pose.pose.orientation.y = quaternion.y();
     odomAftMapped.pose.pose.orientation.z = quaternion.z();
     odomAftMapped.pose.pose.orientation.w = quaternion.w();
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    tf::Quaternion q;
-    transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
-                                    odomAftMapped.pose.pose.position.y,
-                                    odomAftMapped.pose.pose.position.z));
-    q.setW(odomAftMapped.pose.pose.orientation.w);
-    q.setX(odomAftMapped.pose.pose.orientation.x);
-    q.setY(odomAftMapped.pose.pose.orientation.y);
-    q.setZ(odomAftMapped.pose.pose.orientation.z);
-    transform.setRotation(q);
+    // static tf::TransformBroadcaster br;
+    // tf::Transform transform;
+    // tf::Quaternion q;
+    // transform.setOrigin(tf::Vector3(odomAftMapped.pose.pose.position.x,
+    //                                 odomAftMapped.pose.pose.position.y,
+    //                                 odomAftMapped.pose.pose.position.z));
+    // q.setW(odomAftMapped.pose.pose.orientation.w);
+    // q.setX(odomAftMapped.pose.pose.orientation.x);
+    // q.setY(odomAftMapped.pose.pose.orientation.y);
+    // q.setZ(odomAftMapped.pose.pose.orientation.z);
+    // transform.setRotation(q);
+
+
+    geometry_msgs::msg::TransformStamped transform;
+
+    transform.header.stamp = node_->now();
+    transform.header.frame_id = odomAftMapped.header.frame_id;  // 替换为实际的父坐标系
+    transform.child_frame_id = odomAftMapped.child_frame_id;   // 替换为实际的子坐标系
+
+    transform.transform.translation.x = odomAftMapped.pose.pose.position.x;
+    transform.transform.translation.y = odomAftMapped.pose.pose.position.y;
+    transform.transform.translation.z = odomAftMapped.pose.pose.position.z;
+
+    transform.transform.rotation.w = odomAftMapped.pose.pose.orientation.w;
+    transform.transform.rotation.x = odomAftMapped.pose.pose.orientation.x;
+    transform.transform.rotation.y = odomAftMapped.pose.pose.orientation.y;
+    transform.transform.rotation.z = odomAftMapped.pose.pose.orientation.z;
+
+    // br_.sendTransform(transform);
     // br.sendTransform(tf::StampedTransform(transform, odomAftMapped.header.stamp, "lidar", "wheel"));
 }
 
-void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
+void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,const std::string& parent, const std::string& child)
+// void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
 {
     Eigen::Vector3d pos = correction.translation();
     Eigen::Quaterniond quaternion = Eigen::Quaterniond(correction.matrix().block<3, 3>(0, 0));
-    nav_msgs::Odometry transformToPub;
+    nav_msgs::msg::Odometry transformToPub;
     transformToPub.pose.pose.position.x = pos(0);
     transformToPub.pose.pose.position.y = pos(1);
     transformToPub.pose.pose.position.z = pos(2);
@@ -165,26 +229,43 @@ void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,s
     transformToPub.pose.pose.orientation.y = quaternion.y();
     transformToPub.pose.pose.orientation.z = quaternion.z();
     transformToPub.pose.pose.orientation.w = quaternion.w();
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    tf::Quaternion q;
-    transform.setOrigin(tf::Vector3(transformToPub.pose.pose.position.x,
-                                    transformToPub.pose.pose.position.y,
-                                    transformToPub.pose.pose.position.z));
-    q.setW(transformToPub.pose.pose.orientation.w);
-    q.setX(transformToPub.pose.pose.orientation.x);
-    q.setY(transformToPub.pose.pose.orientation.y);
-    q.setZ(transformToPub.pose.pose.orientation.z);
-    transform.setRotation(q);
+    // static tf::TransformBroadcaster br;
+    // tf::Transform transform;
+    // tf::Quaternion q;
+    // transform.setOrigin(tf::Vector3(transformToPub.pose.pose.position.x,
+    //                                 transformToPub.pose.pose.position.y,
+    //                                 transformToPub.pose.pose.position.z));
+    // q.setW(transformToPub.pose.pose.orientation.w);
+    // q.setX(transformToPub.pose.pose.orientation.x);
+    // q.setY(transformToPub.pose.pose.orientation.y);
+    // q.setZ(transformToPub.pose.pose.orientation.z);
+    // transform.setRotation(q);
+
+    geometry_msgs::msg::TransformStamped transform;
+
+    transform.header.stamp = node_->now();
+    transform.header.frame_id = parent;  // 替换为实际的父坐标系
+    transform.child_frame_id = child;   // 替换为实际的子坐标系
+
+    transform.transform.translation.x = transformToPub.pose.pose.position.x;
+    transform.transform.translation.y = transformToPub.pose.pose.position.y;
+    transform.transform.translation.z = transformToPub.pose.pose.position.z;
+
+    transform.transform.rotation.w = transformToPub.pose.pose.orientation.w;
+    transform.transform.rotation.x = transformToPub.pose.pose.orientation.x;
+    transform.transform.rotation.y = transformToPub.pose.pose.orientation.y;
+    transform.transform.rotation.z = transformToPub.pose.pose.orientation.z;
+
+    // br_.sendTransform(transform);
     // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), parent, child));
 }
-
-void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud)
+/*
+void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map)
 {
   //  std::cout << lidar_in_map.translation().transpose()<<std::endl;
     Eigen::Vector3d pos = lidar_in_map.translation();
     Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.matrix().block<3, 3>(0, 0));
-    nav_msgs::Odometry transformToPub;
+    nav_msgs::msg::Odometry transformToPub;
     transformToPub.pose.pose.position.x = pos(0);
     transformToPub.pose.pose.position.y = pos(1);
     transformToPub.pose.pose.position.z = pos(2);
@@ -192,37 +273,40 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
     transformToPub.pose.pose.orientation.y = quaternion.y();
     transformToPub.pose.pose.orientation.z = quaternion.z();
     transformToPub.pose.pose.orientation.w = quaternion.w();
-    static tf::TransformBroadcaster br;
-    tf::Transform transform;
-    tf::Quaternion q;
-    transform.setOrigin(tf::Vector3(transformToPub.pose.pose.position.x,
-                                    transformToPub.pose.pose.position.y,
-                                    transformToPub.pose.pose.position.z));
-    q.setW(transformToPub.pose.pose.orientation.w);
-    q.setX(transformToPub.pose.pose.orientation.x);
-    q.setY(transformToPub.pose.pose.orientation.y);
-    q.setZ(transformToPub.pose.pose.orientation.z);
-    transform.setRotation(q);
+    // static tf::TransformBroadcaster br;
+    // tf::Transform transform;
+    // tf::Quaternion q;
+    // transform.setOrigin(tf::Vector3(transformToPub.pose.pose.position.x,
+    //                                 transformToPub.pose.pose.position.y,
+    //                                 transformToPub.pose.pose.position.z));
+    // q.setW(transformToPub.pose.pose.orientation.w);
+    // q.setX(transformToPub.pose.pose.orientation.x);
+    // q.setY(transformToPub.pose.pose.orientation.y);
+    // q.setZ(transformToPub.pose.pose.orientation.z);
+    // transform.setRotation(q);
+    
     // br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), "map", "lidar"));
 }
+*/
 
-void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
+void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopIndexContainer,  Path &optimized_path_msg)
+// void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher pubLoopConstraintEdge)
 {
     // ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
-    ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
+    // ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
     string odometryFrame = "odom";
 
     if (loopIndexContainer.empty())
         return;
 
     // ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
-    visualization_msgs::MarkerArray markerArray;
+    visualization_msgs::msg::MarkerArray markerArray;
     // 闭环顶点
-    visualization_msgs::Marker markerNode;
+    visualization_msgs::msg::Marker markerNode;
     markerNode.header.frame_id = odometryFrame;
-    markerNode.header.stamp = timeLaserInfoStamp;
-    markerNode.action = visualization_msgs::Marker::ADD;
-    markerNode.type = visualization_msgs::Marker::SPHERE_LIST;
+    markerNode.header.stamp = node_->now();//timeLaserInfoStamp;
+    markerNode.action = visualization_msgs::msg::Marker::ADD;
+    markerNode.type = visualization_msgs::msg::Marker::SPHERE_LIST;
     markerNode.ns = "loop_nodes";
     markerNode.id = 0;
     markerNode.pose.orientation.w = 1;
@@ -234,11 +318,11 @@ void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, 
     markerNode.color.b = 1;
     markerNode.color.a = 1;
     // 闭环边
-    visualization_msgs::Marker markerEdge;
+    visualization_msgs::msg::Marker markerEdge;
     markerEdge.header.frame_id = odometryFrame;
-    markerEdge.header.stamp = timeLaserInfoStamp;
-    markerEdge.action = visualization_msgs::Marker::ADD;
-    markerEdge.type = visualization_msgs::Marker::LINE_LIST;
+    markerEdge.header.stamp = node_->now();//timeLaserInfoStamp;;
+    markerEdge.action = visualization_msgs::msg::Marker::ADD;
+    markerEdge.type = visualization_msgs::msg::Marker::LINE_LIST;
     markerEdge.ns = "loop_edges";
     markerEdge.id = 1;
     markerEdge.pose.orientation.w = 1;
@@ -258,10 +342,12 @@ void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, 
         int key_cur = it->first;
         int key_pre = it->second;
         // ROS_ERROR_STREAM(RED << "loop_i == %d --- 2", loop_i << RESET);
-        geometry_msgs::Point p;
+        geometry_msgs::msg::Point p;
+        // std::cout << "[visualizeLoopClosure]: optimized_path_msg.poses.size(): " << optimized_path_msg.poses.size()  << "key_cur: " << key_cur<< std::endl;
         p.x = optimized_path_msg.poses[key_cur].pose.position.x;
         p.y = optimized_path_msg.poses[key_cur].pose.position.y;
         p.z = optimized_path_msg.poses[key_cur].pose.position.z;
+
         // ROS_ERROR_STREAM(RED << "loop_i == %d --- 3", loop_i << RESET);
         markerNode.points.push_back(p);
         markerEdge.points.push_back(p);
@@ -277,22 +363,23 @@ void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, 
 
     markerArray.markers.push_back(markerNode);
     markerArray.markers.push_back(markerEdge);
-    pubLoopConstraintEdge.publish(markerArray);
+    pubLoopConstraintEdge->publish(markerArray);
 
     // ROS_ERROR_STREAM(RED << "visualizeLoopClosure success "<< RESET);
 }
 
-void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher pubKeyframePose){
-    visualization_msgs::MarkerArray MarkerArray;//定义MarkerArray对象
+
+void LocalizationModule::show_keyframe(const std::vector<lidar_slam::ScInfo>& loadKeyframe){
+    visualization_msgs::msg::MarkerArray MarkerArray;//定义MarkerArray对象
     int number = loadKeyframe.size();//object_in为输入的目标个数
 	for(int i = 0; i < number; i++)
 	{
         if (i%10 != 0)
             continue;
-		visualization_msgs::Marker Marker;//定义Marker对象
+		visualization_msgs::msg::Marker Marker;//定义Marker对象
         Marker.header.frame_id = "map";
-        Marker.header.stamp = ros::Time().now();
-		Marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;//选用文本类型
+        Marker.header.stamp = node_->now();
+		Marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;//选用文本类型
 		Marker.ns = "basic_shapes";//必写，否则rviz无法显示
 		Marker.pose.orientation.w = 1.0;//文字的方向
 		Marker.id =i;//用来标记同一帧不同的对象，如果后面的帧的对象少于前面帧的对象，那么少的id将在rviz中残留，所以需要后续的实时更新程序
@@ -303,7 +390,7 @@ void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyfr
 		Marker.color.g = 0;
 		Marker.color.r = 25;//文字的颜色
 		Marker.color.a = 1;//必写，否则rviz无法显示
-        geometry_msgs::Pose pose;
+        geometry_msgs::msg::Pose pose;
         pose.position.x = loadKeyframe[i].pose.translation().x();
         pose.position.y = loadKeyframe[i].pose.translation().y();
         pose.position.z = loadKeyframe[i].pose.translation().z();
@@ -314,7 +401,7 @@ void LocalizationModule::show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyfr
         Marker.pose=pose;//文字的位置
         MarkerArray.markers.push_back(Marker);
 	}
-    pubKeyframePose.publish(MarkerArray);
+    pubKeyframePose->publish(MarkerArray);
 }
 
 // void LocalizationModule::pub_odom_cloud(PointCloudType::Ptr msg_in, ros::Publisher pubOdomCloud)

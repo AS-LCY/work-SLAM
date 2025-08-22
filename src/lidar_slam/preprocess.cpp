@@ -58,8 +58,8 @@ void Preprocess::process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCl
 {
     avia_handler(msg);
     *pcl_out = pl_surf;
-    // printf("extract lidar count: %ld\n", pcl_out->points.size());
-    ROS_INFO("extract lidar count: %ld", pcl_out->points.size());
+    printf("extract lidar count: %ld\n", pcl_out->points.size());
+    // ROS_INFO("extract lidar count: %ld", pcl_out->points.size());
 }
 
 
@@ -94,8 +94,8 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg)
     }else if(extract_cloud_method == 3){
         extract_cloud_by_feature(msg);
     } else{
-        // printf("extract_cloud_method set error!\n");
-        ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
+        printf("extract_cloud_method set error!\n");
+        // ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
         exit(1);
     }
     // printf("test %d %d \n",pl_full.size(),pl_obstacle.size());
@@ -116,8 +116,8 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
     const double extent_zmax = param_.voxel_region_xyz[5];
     const double blind_square = param_.blind_distance * param_.blind_distance;
     const double obstacle_square = obstacle_range * obstacle_range;
-    // std::cout<<"leafsize: "<<leafsize<<endl;
-    ROS_INFO_STREAM("leafsize: "<<leafsize);
+    std::cout<<"leafsize: "<<leafsize<<endl;
+    // ROS_INFO_STREAM("leafsize: "<<leafsize);
 
     int plsize = msg->point_num;
     uint valid_num = 0;
@@ -456,8 +456,9 @@ void Preprocess::extract_cloud_by_feature(const std::shared_ptr<livox_ros::Lidar
         // pl_surf += pl;
     }
     time += omp_get_wtime() - t0;
-    // printf("Feature extraction time: %lf \n", time / count);
-    ROS_INFO("Feature extraction time: %lf ", time / count);
+    printf("Feature extraction time: %lf \n", time / count);
+    // ROS_INFO("Feature extraction time: %lf ", time / count);
+
 }
 
 void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &types)
@@ -466,8 +467,8 @@ void Preprocess::give_feature(pcl::PointCloud<PointType> &pl, vector<orgtype> &t
   int plsize2;
   if (plsize == 0)
   {
-    // printf("something wrong\n");
-    ROS_ERROR_STREAM(RED << "something wrong: cloud_ssize == 0" << RESET);
+    printf("something wrong\n");
+    // ROS_ERROR_STREAM(RED << "something wrong: cloud_ssize == 0" << RESET);
     return;
   }
   uint head = 0;

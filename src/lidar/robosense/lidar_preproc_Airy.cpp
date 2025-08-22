@@ -9,16 +9,16 @@ struct by_value{
     }
 };
 
-LidarPreprocAiry::LidarPreprocAiry(){
-    if(!set_param()){
-        ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
+LidarPreprocAiry::LidarPreprocAiry(rclcpp::Node::SharedPtr node): LidarPreprocParent(node){
+    if(!set_param(node)){
+        // ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
     }else {
-        ROS_INFO("Set lidar-Airy param successfully!");
+        // ROS_INFO("Set lidar-Airy param successfully!");
     }
     
     allocate_memory_init_variable();
 
-    ROS_INFO("Reset to lidar_preproc_Airy successfully!");
+    // ROS_INFO("Reset to lidar_preproc_Airy successfully!");
 
 }
 
@@ -29,7 +29,7 @@ LidarPreprocAiry::~LidarPreprocAiry(){
 
 
 // ///////////////// 入口函数 /////////////////  
-bool LidarPreprocAiry::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
+bool LidarPreprocAiry::pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
     if(extract_cloud_method_ == 0){
         // ROS_INFO_STREAM("use sampling ");
         cloud_dense_->clear();
@@ -64,23 +64,25 @@ bool LidarPreprocAiry::pre_process(const sensor_msgs::PointCloud2::ConstPtr ros_
 
 
 // current used
-bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
+bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
 
-    ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
+    // ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
-    double header_time = ros_msg_in->header.stamp.toSec();
+    // double header_time = ros_msg_in->header.stamp.toSec();
+    double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
 
     ///// MetaData --- header 
     pcl::PCLHeader pcl_header;
-    pcl_header.seq = ros_msg_in->header.seq;
-    pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    // pcl_header.seq = ros_msg_in->header.seq;
+    // pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
     pcl_header.frame_id = ros_msg_in->header.frame_id;
     ///// MetaData --- field
     std::vector<pcl::PCLPointField> pcl_fields;
     
     pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
+    std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
     int i = 0;
     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
       pcl_fields[i].name = it->name;
@@ -196,23 +198,25 @@ bool LidarPreprocAiry::msg2pcl_clip(const sensor_msgs::PointCloud2::ConstPtr ros
 // }
 
 //// used to prepare extracting feature points
-bool LidarPreprocAiry::msg2pcl_feat_pre(const sensor_msgs::PointCloud2::ConstPtr ros_msg_in){
+bool LidarPreprocAiry::msg2pcl_feat_pre(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in){
 
-    ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
+    // ROS_INFO_ONCE("Airy: ros_msg_in --> pcl_xyzin_out");
 
     int cloud_num = ros_msg_in->height * ros_msg_in->width;
-    double header_time = ros_msg_in->header.stamp.toSec();
+    // double header_time = ros_msg_in->header.stamp.toSec();
+    double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
 
     ///// MetaData --- header 
     pcl::PCLHeader pcl_header;
-    pcl_header.seq = ros_msg_in->header.seq;
-    pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    // pcl_header.seq = ros_msg_in->header.seq;
+    // pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+    pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
     pcl_header.frame_id = ros_msg_in->header.frame_id;
     ///// MetaData --- field
     std::vector<pcl::PCLPointField> pcl_fields;
     
     pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::PointField>::const_iterator it = ros_msg_in->fields.begin();
+    std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
     int i = 0;
     for(; it != ros_msg_in->fields.end(); ++it, ++i) {
       pcl_fields[i].name = it->name;
@@ -536,15 +540,16 @@ void LidarPreprocAiry::allocate_memory_init_variable(){
 }
 
 
-bool LidarPreprocAiry::set_param(){
+bool LidarPreprocAiry::set_param(rclcpp::Node::SharedPtr node){
 
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance();
-    const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
-
-    if (loaded_param == NULL) {
-        ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
-        return false;
-    }else{
+    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance(node);
+    // const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+    // std::shared_ptr<const lidar_slam::LidarSlamParam> loaded_param = param_manager->get_loaded_param();
+    const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
+    // if (loaded_param == NULL) {
+    //     // ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
+    //     return false;
+    // }else{
         // param_ = loaded_param->lidar_preproc;
 
         // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
@@ -559,12 +564,12 @@ bool LidarPreprocAiry::set_param(){
 
         ////////////////////////////////////////////////////////////////////////////////
         // extract cloud by ring_feature
-        extract_cloud_method_ = loaded_param->lidar_preproc.extract_cloud_method;
-        col_cnt_ = loaded_param->lidar_preproc.cloud_column_count;
-        ring_cnt_ = loaded_param->lidar_preproc.cloud_ring_count;
-        edge_curv_thr_ = loaded_param->lidar_preproc.edge_curvature_thr;
-        surf_curv_thr_ = loaded_param->lidar_preproc.surf_curvature_thr;
-        surf_leafsize_ = loaded_param->lidar_preproc.surf_leafsize;
+        extract_cloud_method_ = loaded_param.lidar_preproc.extract_cloud_method;
+        col_cnt_ = loaded_param.lidar_preproc.cloud_column_count;
+        ring_cnt_ = loaded_param.lidar_preproc.cloud_ring_count;
+        edge_curv_thr_ = loaded_param.lidar_preproc.edge_curvature_thr;
+        surf_curv_thr_ = loaded_param.lidar_preproc.surf_curvature_thr;
+        surf_leafsize_ = loaded_param.lidar_preproc.surf_leafsize;
 
 
         // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
@@ -573,7 +578,7 @@ bool LidarPreprocAiry::set_param(){
         // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
 
         return true;
-    }
+    // }
 }
 
 

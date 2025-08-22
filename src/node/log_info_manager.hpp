@@ -1,7 +1,8 @@
 #ifndef LOCALIZATION_MODULE_LOG_INFO_MANAGER_H
 #define LOCALIZATION_MODULE_LOG_INFO_MANAGER_H
 
-#include <std_msgs/Float64MultiArray.h>
+#include <std_msgs/msg/float64_multi_array.hpp>
+
 // #include "fairland_msgs/LocalizationModuleLogInfo.h"
 // #include "fairland_msgs/LocalizationModuleStatus.h"
 #include "node/module_status_def.h"
@@ -25,8 +26,8 @@ public:
         return instance; 
     };
 
-    std_msgs::Float64MultiArray slam_info;
-    std_msgs::Float64MultiArray fusion_info;
+    std_msgs::msg::Float64MultiArray slam_info;
+    std_msgs::msg::Float64MultiArray fusion_info;
 
 
     void reset_log_info(){

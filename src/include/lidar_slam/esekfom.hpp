@@ -71,6 +71,8 @@ namespace esekfom
 
 			x_r.rot = x.rot * Sophus::SO3d::exp(f_.block<3, 1>(3, 0));
 			x_r.offset_R_L_I = x.offset_R_L_I * Sophus::SO3d::exp(f_.block<3, 1>(6, 0));
+			// x_r.rot = x.rot * Sophus::SO3::exp(f_.block<3, 1>(3, 0));
+			// x_r.offset_R_L_I = x.offset_R_L_I * Sophus::SO3::exp(f_.block<3, 1>(6, 0));
 
 			x_r.offset_T_L_I = x.offset_T_L_I + f_.block<3, 1>(9, 0);
 			x_r.vel = x.vel + f_.block<3, 1>(12, 0);
@@ -167,7 +169,7 @@ namespace esekfom
 			if (effct_feat_num < 1)
 			{
 				ekfom_data.valid = false;
-				ROS_WARN_STREAM(YELLOW<<"No Effective Points!"<<RESET);
+				// ROS_WARN_STREAM(YELLOW<<"No Effective Points!"<<RESET);
 				return;
 			}
 
@@ -215,6 +217,9 @@ namespace esekfom
 
 			x_r.block<3, 1>(3, 0) = Sophus::SO3d(x2.rot.matrix().transpose() * x1.rot.matrix()).log();
 			x_r.block<3, 1>(6, 0) = Sophus::SO3d(x2.offset_R_L_I.matrix().transpose() * x1.offset_R_L_I.matrix()).log();
+
+			// x_r.block<3, 1>(3, 0) = Sophus::SO3(x2.rot.matrix().transpose() * x1.rot.matrix()).log();
+			// x_r.block<3, 1>(6, 0) = Sophus::SO3(x2.offset_R_L_I.matrix().transpose() * x1.offset_R_L_I.matrix()).log();
 
 			x_r.block<3, 1>(9, 0) = x1.offset_T_L_I - x2.offset_T_L_I;
 			x_r.block<3, 1>(12, 0) = x1.vel - x2.vel;

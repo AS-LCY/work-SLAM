@@ -1,3 +1,15 @@
 {
-    "ros.distro": "noetic"
+    "ros.distro": "noetic",
+    "files.associations": {
+        "eigen": "cpp",
+        "csignal": "cpp",
+        "vector": "cpp",
+        "memory": "cpp",
+        "mutex": "cpp",
+        "fstream": "cpp",
+        "core": "cpp",
+        "cstdlib": "cpp",
+        "sparse": "cpp",
+        "thread": "cpp"
+    }
 }

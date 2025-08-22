@@ -230,7 +230,8 @@ MatrixXd SCManager::makeSectorkeyFromScancontext( Eigen::MatrixXd &_desc )
 const Eigen::MatrixXd SCManager::getSc( int i )
 {
     if (i > polarcontexts_.size() -1 ){
-        ROS_ERROR_STREAM(RED << "error sc index" << RESET);
+        // ROS_ERROR_STREAM(RED << "error sc index" << RESET);
+        std::cout << RED << "error sc index" << RESET << std::endl;
         return Eigen::MatrixXd::Zero(1, 1);
     }
     return polarcontexts_[i];
@@ -266,8 +267,8 @@ void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd & polarcontext )
     polarcontext_vkeys_.push_back( sectorkey );
     polarcontext_invkeys_mat_.push_back( polarcontext_invkey_vec );
 
-    //  cout <<"load sc "<<polarcontext_vkeys_.size() << endl;
-    ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
+     cout <<"load sc "<<polarcontext_vkeys_.size() << endl;
+    // ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
 
 } // SCManager::loadScancontextAndKeys
 
@@ -348,8 +349,8 @@ std::pair<int, float> SCManager::detectClosestMatch(Eigen::MatrixXd &sc, std::ve
         loop_id = nn_idx;
 
         // std::cout.precision(3);
-        // std::cout << "[Success] index: " <<nn_idx<<" Nearest distance: "<< min_dist << " ";
-        ROS_INFO_STREAM("[Success] index: " <<nn_idx<<" Nearest distance: "<< min_dist << " ");
+        std::cout << "[Success] index: " <<nn_idx<<" Nearest distance: "<< min_dist << " ";
+        // ROS_INFO_STREAM("[Success] index: " <<nn_idx<<" Nearest distance: "<< min_dist << " ");
        //  std::cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
     }
     else
@@ -433,19 +434,19 @@ std::pair<int, float> SCManager::detectLoopClosureID ( void )
     {
         loop_id = nn_idx;
 
-        // // std::cout.precision(3);
-        // std::cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << std::endl;
-        // std::cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
-        ROS_INFO_STREAM("[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." );
-        ROS_INFO_STREAM("[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." );
+        // std::cout.precision(3);
+        std::cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << std::endl;
+        std::cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
+        // ROS_INFO_STREAM("[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." );
+        // ROS_INFO_STREAM("[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." );
     }
     else
     {
-        // std::cout.precision(3);
-        // std::cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << std::endl;
-        // std::cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
-        ROS_INFO_STREAM("[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << ".");
-        ROS_INFO_STREAM("[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg.");
+        std::cout.precision(3);
+        std::cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << "." << std::endl;
+        std::cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
+        // ROS_INFO_STREAM("[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and " << nn_idx << ".");
+        // ROS_INFO_STREAM("[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg.");
     }
 
     // To do: return also nn_align (i.e., yaw diff)
