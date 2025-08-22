@@ -1,26 +1,21 @@
 #include "lidar_slam/global_localization.hpp"
 
+namespace lidar_slam {
 
-namespace lidar_slam{
+GlobalLocalization::GlobalLocalization() {
+	loaded_sc_info_.clear();
+	loaded_global_map_.reset(new PointCloudType());
 
-
-GlobalLocalization::GlobalLocalization(){
-    loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudType());
-
-    loaded_keyframe_poses_.clear();
-    loaded_keyframe_clouds_.clear();
-    
+	loaded_keyframe_poses_.clear();
+	loaded_keyframe_clouds_.clear();
 }
 
-GlobalLocalization::~GlobalLocalization(){
-    
-    loaded_sc_info_.clear();
-    loaded_global_map_.reset(new PointCloudType());
+GlobalLocalization::~GlobalLocalization() {
+	loaded_sc_info_.clear();
+	loaded_global_map_.reset(new PointCloudType());
 
-    loaded_keyframe_poses_.clear();
-    loaded_keyframe_clouds_.clear();
-    
+	loaded_keyframe_poses_.clear();
+	loaded_keyframe_clouds_.clear();
 }
 
 // //////////////////////////////////// - load map - /////////////////////////////////////////////////////
@@ -57,7 +52,7 @@ GlobalLocalization::~GlobalLocalization(){
 //     loaded_key_point_.reset(new pcl::PointCloud<PointType>());
 //     loaded_keyframe_poses_.clear();
 //     std::string line;
-//     while (std::getline(pose_file, line)) { 
+//     while (std::getline(pose_file, line)) {
 //         std::stringstream ss(line);
 //         std::string token;
 //         std::vector<double> values;// 单行数据已经全部临时存于 values
@@ -79,7 +74,7 @@ GlobalLocalization::~GlobalLocalization(){
 //                 read_one_line.pose(row, col) = values[idx++];
 //             }
 //         }
-//         Eigen::Vector3d translation = read_one_line.pose.translation(); 
+//         Eigen::Vector3d translation = read_one_line.pose.translation();
 //         PointType point;
 //         point.x = translation.x(); // 将x坐标设置为平移向量的x分量
 //         point.y = translation.y(); // 将y坐标设置为平移向量的y分量
@@ -151,7 +146,7 @@ GlobalLocalization::~GlobalLocalization(){
 //     // accumulate_map_->points.clear(); // 没用上
 //     /// read data line by line, split one line by ","
 //     std::string line;
-//     while (std::getline(file, line)) {        
+//     while (std::getline(file, line)) {
 //         ScInfo read_one_line;
 //         std::stringstream ss(line);
 //         std::string token;
@@ -186,8 +181,8 @@ GlobalLocalization::~GlobalLocalization(){
 //             for (int col = 0; col < maxcol; ++col) {
 //                 read_one_line.polarcontext(row, col) = values[index++];// 数据保存 ------------------------
 //             }
-//         } 
-//         // loadScManager.loadScancontextAndKeys(read_one_line.polarcontext); 
+//         }
+//         // loadScManager.loadScancontextAndKeys(read_one_line.polarcontext);
 //         Eigen::MatrixXd sc = read_one_line.polarcontext; // v1
 //         Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext( sc );
 //         polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));  // 数据转换后保存 -----------------------
@@ -208,258 +203,256 @@ GlobalLocalization::~GlobalLocalization(){
 
 // //////////////////////////////////// - load map end - /////////////////////////////////////////////////
 
-
 //////////////////////////////////// - global_localize - /////////////////////////////////////////
-bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, 
-                                            Eigen::Isometry3d pose, 
-                                            Matrix3d initial_rotate, 
-                                            double score_thr){
-    /// check map data status *********************************************************************
-    /// make ScanContext using loaded_sc_info
-    if(!global_map_ready_){
-        std::cout<<"global map not ready!" <<std::endl;
-        // ROS_ERROR_STREAM(RED << "global map not ready!" << RESET);
-        return false;
-    }
-    if(!sc_manager_ready_){
-        std::cout<<"sc manager not ready!" <<std::endl;
-        // ROS_ERROR_STREAM(RED << "sc manager not ready!" << RESET);
-        return false;
-    }
-    
-    // /// check map data status
-    // if (!map_ready_) {
-    //     std::cout<<"map not ready, global localizzation stopped!"<<std::endl;
-    //     return false;
-    // }
+bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Isometry3d pose, Matrix3d initial_rotate,
+										 double score_thr) {
+	/// check map data status *********************************************************************
+	/// make ScanContext using loaded_sc_info
+	if (!global_map_ready_) {
+		std::cout << "global map not ready!" << std::endl;
+		// ROS_ERROR_STREAM(RED << "global map not ready!" << RESET);
+		return false;
+	}
+	if (!sc_manager_ready_) {
+		std::cout << "sc manager not ready!" << std::endl;
+		// ROS_ERROR_STREAM(RED << "sc manager not ready!" << RESET);
+		return false;
+	}
 
-    /// search best match of scancontex ***********************************************************
-    std::pair<int, float> best_match{-1, 0.0};
-    std::pair<double, double> best_trans;
-    if(!scancontex_search(cloud_in, initial_rotate, best_match, best_trans)){
-        std::cout<<"scancontex search failed!" <<std::endl;
-        // ROS_ERROR_STREAM(RED << "scancontex search failed!" << RESET);
-        return false;
-    }
-    int best_match_idx = best_match.first;
-    std::cout << "scancontext search success, use index "<< best_match_idx <<std::endl;
-    // ROS_ERROR_STREAM(RED << "scancontext search success, use index "<< best_match_idx <<RESET);
+	// /// check map data status
+	// if (!map_ready_) {
+	//     std::cout<<"map not ready, global localizzation stopped!"<<std::endl;
+	//     return false;
+	// }
 
-    /// get init transform ************************************************************************
-    Eigen::Matrix4d init_guess = cal_init_transform(initial_rotate, best_match, best_trans);     
-    Eigen::Isometry3d test_transform(init_guess);/// debug
-    test_match_cloud_ = transformPointCloud(cloud_in, test_transform);/// debug
+	/// search best match of scancontex ***********************************************************
+	std::pair<int, float>	  best_match{ -1, 0.0 };
+	std::pair<double, double> best_trans;
+	if (!scancontex_search(cloud_in, initial_rotate, best_match, best_trans)) {
+		std::cout << "scancontex search failed!" << std::endl;
+		// ROS_ERROR_STREAM(RED << "scancontex search failed!" << RESET);
+		return false;
+	}
+	int best_match_idx = best_match.first;
+	std::cout << "scancontext search success, use index " << best_match_idx << std::endl;
+	// ROS_ERROR_STREAM(RED << "scancontext search success, use index "<< best_match_idx <<RESET);
 
-    /// exec icp ******************************************************
-    // result of global localization: global_odom_to_map_
-    if(!registration_icp(cloud_in, pose, init_guess, score_thr, global_odom_to_map_)){
-        return false;
-    }else{
-        return true;
-    }
+	/// get init transform ************************************************************************
+	Eigen::Matrix4d	  init_guess = cal_init_transform(initial_rotate, best_match, best_trans);
+	Eigen::Isometry3d test_transform(init_guess);					   /// debug
+	test_match_cloud_ = transformPointCloud(cloud_in, test_transform); /// debug
+
+	/// exec icp ******************************************************
+	// result of global localization: global_odom_to_map_
+	if (!registration_icp(cloud_in, pose, init_guess, score_thr, global_odom_to_map_)) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
-/// @brief  
-/// @param cloud_in         : param in 
-/// @param initial_rotate   : param in 
-/// @param best_match       : result out 
-/// @param best_trans       : result out 
+/// @brief
+/// @param cloud_in         : param in
+/// @param initial_rotate   : param in
+/// @param best_match       : result out
+/// @param best_trans       : result out
 /// @return : if search success
-bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3d initial_rotate, 
-                                            std::pair<int, float>& best_match, std::pair<double, double>& best_trans){
+bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3d initial_rotate,
+										   std::pair<int, float>& best_match, std::pair<double, double>& best_trans) {
+	// transform (gravity_align) curr cloud
+	PointCloudType::Ptr gravity_aligned_cLoud(new PointCloudType());
+	Eigen::Isometry3d	transform		 = Eigen::Isometry3d::Identity();
+	transform.matrix().block<3, 3>(0, 0) = initial_rotate;
+	*gravity_aligned_cLoud				 = *transformPointCloud(cloud_in, transform);
 
-    // transform (gravity_align) curr cloud
-    PointCloudType::Ptr gravity_aligned_cLoud(new PointCloudType());
-    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-    transform.matrix().block<3, 3>(0, 0) = initial_rotate;
-    *gravity_aligned_cLoud = *transformPointCloud(cloud_in, transform);
+	// set search_trans
+	/// TODO: parameterize search_trans ?
+	std::vector<std::pair<double, double>> search_trans = { { 0, 0 },	{ -4, 0 }, { 4, 0 },  { 0, -4 },  { 0, 4 },
+															{ -4, -4 }, { -4, 4 }, { 4, -4 }, { 4, 4 },	  { -2, 0 },
+															{ 2, 0 },	{ 0, -2 }, { 0, 2 },  { -2, -2 }, { -2, 2 },
+															{ 2, -2 },	{ 2, 2 } };
 
-    // set search_trans 
-    /// TODO: parameterize search_trans ?
-    std::vector<std::pair<double, double>> search_trans = {
-        {0, 0}, {-4, 0}, {4, 0}, {0, -4}, {0, 4}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4},
-                {-2, 0}, {2, 0}, {0, -2}, {0, 2}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}
-    };
+	double min_dist = std::numeric_limits<double>::max();
+	// std::pair<int, float> best_match{-1, 0.0};
+	// std::pair<double, double> best_trans;
+	for (auto& t : search_trans) {
+		Eigen::MatrixXd sc =
+			sc_manager_->makeScancontext(*(gravity_aligned_cLoud), t.first, t.second); // get sc of curr cloud
+		std::vector<float> ringkey	 = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
+		Eigen::MatrixXd	   sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
 
-    double min_dist = std::numeric_limits<double>::max();
-    // std::pair<int, float> best_match{-1, 0.0};
-    // std::pair<double, double> best_trans;
-    for (auto &t : search_trans) {
-        Eigen::MatrixXd sc = sc_manager_->makeScancontext(*(gravity_aligned_cLoud), t.first, t.second);// get sc of curr cloud
-        std::vector<float> ringkey = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
-        Eigen::MatrixXd sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
-        
-        double sc_dist = 1.0;// 当前匹配的距离(这个仅仅是初始化)，不是阈值
-        auto match = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
-        if (match.first != -1){
-          std::cout <<"trans: "<< t.first << " " <<t.second;
-          std::cout <<"; score: "<<sc_dist<<std::endl;
-        //   ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<"; score: "<<sc_dist);
-        }
-        if (sc_dist < min_dist) {
-            min_dist = sc_dist;
-            best_match = match;
-            best_trans = t;
-        }
-    }
+		double sc_dist = 1.0; // 当前匹配的距离(这个仅仅是初始化)，不是阈值
+		auto   match   = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
+		if (match.first != -1) {
+			std::cout << "trans: " << t.first << " " << t.second;
+			std::cout << "; score: " << sc_dist << std::endl;
+			//   ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<"; score: "<<sc_dist);
+		}
+		if (sc_dist < min_dist) {
+			min_dist   = sc_dist;
+			best_match = match;
+			best_trans = t;
+		}
+	}
 
-    // check scancontext search
-    int match_idx = best_match.first;
+	// check scancontext search
+	int match_idx = best_match.first;
 
-    if(match_idx == -1){
-        std::cout << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist<<std::endl;
-        // ROS_ERROR_STREAM(RED << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist <<RESET);
-        return false;
-    }else{
-        return true;// match_idx != -1, (scancontext search success)
-    }
-
+	if (match_idx == -1) {
+		std::cout << "scancontext search fail, score {}: " << match_idx << " " << min_dist << std::endl;
+		// ROS_ERROR_STREAM(RED << "scancontext search fail, score {}: "<<match_idx<<" "<< min_dist <<RESET);
+		return false;
+	} else {
+		return true; // match_idx != -1, (scancontext search success)
+	}
 }
 
-/// @brief 
-/// @param initial_rotate   : param in 
-/// @param best_match       : param in 
-/// @param best_trans       : param in 
+/// @brief
+/// @param initial_rotate   : param in
+/// @param best_match       : param in
+/// @param best_trans       : param in
 /// @return Eigen::Matrix4d : init_transform (used in icp)
-Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, std::pair<int, float> best_match, std::pair<double, double> best_trans){
-    int match_idx = best_match.first;
+Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, std::pair<int, float> best_match,
+													   std::pair<double, double> best_trans) {
+	int match_idx = best_match.first;
 
-    Eigen::Matrix4d init_guess = loaded_sc_info_[match_idx].pose.matrix();// use loaded data
-    Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
+	Eigen::Matrix4d init_guess = loaded_sc_info_[match_idx].pose.matrix(); // use loaded data
+	Eigen::Vector3d euler	   = R2ypr(init_guess.block<3, 3>(0, 0));
 
-    // 初始值: 确定 yaw 角, 用搜索到的 sc-info
-    euler[0] += -best_match.second;
-    std::cout << "rotate yaw: "<<-best_match.second<<std::endl;
-    // ROS_INFO_STREAM("rotate yaw: "<<-best_match.second);
-    
-    // 初始值: 确定 pitch, roll, 用重力校正时的 initial_rotate, 
-    Eigen::Vector3d current_euler = R2ypr(initial_rotate);//R2ypr(pose.matrix().block<3, 3>(0, 0));
-    double current_pitch = current_euler[1];
-    double current_roll = current_euler[2];
+	// 初始值: 确定 yaw 角, 用搜索到的 sc-info
+	euler[0] += -best_match.second;
+	std::cout << "rotate yaw: " << -best_match.second << std::endl;
+	// ROS_INFO_STREAM("rotate yaw: "<<-best_match.second);
 
-    Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0],current_pitch,current_roll));                        
-    init_guess.block<3, 3>(0, 0) = rotate;
-    // std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        
-    euler = R2ypr(init_guess.block<3, 3>(0, 0));
-    // std::cout << "original yaw"<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
+	// 初始值: 确定 pitch, roll, 用重力校正时的 initial_rotate,
+	Eigen::Vector3d current_euler = R2ypr(initial_rotate); // R2ypr(pose.matrix().block<3, 3>(0, 0));
+	double			current_pitch = current_euler[1];
+	double			current_roll  = current_euler[2];
 
-    // ICP Settings zx gicp ?
-    Eigen::Vector2d offset_in_lidar{-best_trans.first,-best_trans.second};
-    Eigen::Rotation2D<double> rotation(euler[0]);
-    Eigen::Vector2d offset_in_map = rotation * offset_in_lidar; 
-    // std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl; 
-    // std::cout << "map offset " << offset_in_map.transpose() <<std::endl; 
-    init_guess.coeffRef(0, 3)= init_guess.coeffRef(0, 3)+ offset_in_map[0];
-    init_guess.coeffRef(1, 3)= init_guess.coeffRef(1, 3)+ offset_in_map[1];
-    // init_guess.coeffRef(2, 3) = 0;
-    // std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll "<<euler[2]*180/M_PI<<std::endl;
-    // std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;        //use the outcome of ndt as the initial guess for ICP
+	Eigen::Matrix3d rotate		 = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
+	init_guess.block<3, 3>(0, 0) = rotate;
+	// std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
+	euler = R2ypr(init_guess.block<3, 3>(0, 0));
+	// std::cout << "original yaw"<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll
+	// "<<euler[2]*180/M_PI<<std::endl;
 
+	// ICP Settings zx gicp ?
+	Eigen::Vector2d			  offset_in_lidar{ -best_trans.first, -best_trans.second };
+	Eigen::Rotation2D<double> rotation(euler[0]);
+	Eigen::Vector2d			  offset_in_map = rotation * offset_in_lidar;
+	// std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl;
+	// std::cout << "map offset " << offset_in_map.transpose() <<std::endl;
+	init_guess.coeffRef(0, 3) = init_guess.coeffRef(0, 3) + offset_in_map[0];
+	init_guess.coeffRef(1, 3) = init_guess.coeffRef(1, 3) + offset_in_map[1];
+	// init_guess.coeffRef(2, 3) = 0;
+	// std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll
+	// "<<euler[2]*180/M_PI<<std::endl; std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
+	// //use the outcome of ndt as the initial guess for ICP
 
-    return init_guess;
+	return init_guess;
 }
 
-/// @brief  
-/// @param cloud_in     : param in 
-/// @param pose         : param in 
-/// @param init_guess   : param in 
+/// @brief
+/// @param cloud_in     : param in
+/// @param pose         : param in
+/// @param init_guess   : param in
 /// @param res_global_odom_to_map    : param out  Eigen::Isometry3d result
-bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in, Eigen::Isometry3d pose, Eigen::Matrix4d init_guess, double score_thr, Eigen::Isometry3d& res_global_odom_to_map){
-    // set: icp-common
-    pcl::IterativeClosestPoint<PointType, PointType> icp;
-    icp.setMaxCorrespondenceDistance(100);
-    icp.setMaximumIterations(100);
-    icp.setTransformationEpsilon(1e-6);
-    icp.setEuclideanFitnessEpsilon(1e-6);
-    icp.setRANSACIterations(0);
-    // set: icp-cloud
-    icp.setInputSource(cloud_in);
-    icp.setInputTarget(loaded_global_map_);
+bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in, Eigen::Isometry3d pose,
+										  Eigen::Matrix4d init_guess, double score_thr,
+										  Eigen::Isometry3d& res_global_odom_to_map) {
+	// set: icp-common
+	pcl::IterativeClosestPoint<PointType, PointType> icp;
+	icp.setMaxCorrespondenceDistance(100);
+	icp.setMaximumIterations(100);
+	icp.setTransformationEpsilon(1e-6);
+	icp.setEuclideanFitnessEpsilon(1e-6);
+	icp.setRANSACIterations(0);
+	// set: icp-cloud
+	icp.setInputSource(cloud_in);
+	icp.setInputTarget(loaded_global_map_);
 
-    // exec icp
-    PointCloudType::Ptr unused_result(new PointCloudType());
-    icp.align(*unused_result, init_guess.cast<float>());
-    // 未收敛，或者匹配不够好
-    if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr){//TODO add number in getFitnessScore
-        std::cout << "globalLocalization icp fail with score: "<< icp.getFitnessScore()<<std::endl;
-        // ROS_ERROR_STREAM(RED << "globalLocalization icp fail with score: "<< icp.getFitnessScore() <<RESET);
-        return false;
-    }else{
-        std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
-        // ROS_INFO_STREAM("globalLocalization success with score: " << icp.getFitnessScore());
-    }   
-    Eigen::Isometry3d first_lidar_in_map;// first_lidar in_map: == odom
-    first_lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
+	// exec icp
+	PointCloudType::Ptr unused_result(new PointCloudType());
+	icp.align(*unused_result, init_guess.cast<float>());
+	// 未收敛，或者匹配不够好
+	if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr) { // TODO add number in getFitnessScore
+		std::cout << "globalLocalization icp fail with score: " << icp.getFitnessScore() << std::endl;
+		// ROS_ERROR_STREAM(RED << "globalLocalization icp fail with score: "<< icp.getFitnessScore() <<RESET);
+		return false;
+	} else {
+		std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
+		// ROS_INFO_STREAM("globalLocalization success with score: " << icp.getFitnessScore());
+	}
+	Eigen::Isometry3d first_lidar_in_map; // first_lidar in_map: == odom
+	first_lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
 
-    // 初始值的确定和当前的位置无关，但是获取最后的odom-2-map与当前的lidar-in-odom 有关
-    // ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
-    // 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
-    res_global_odom_to_map = first_lidar_in_map * pose.inverse();
-    // euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-    // std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
-    // std::cout << "x "<<first_lidar_in_map.translation().x()<<" y "<<first_lidar_in_map.translation().y()<< " z "<<first_lidar_in_map.translation().z()<<std::endl;
+	// 初始值的确定和当前的位置无关，但是获取最后的odom-2-map与当前的lidar-in-odom 有关
+	// ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
+	// 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
+	res_global_odom_to_map = first_lidar_in_map * pose.inverse();
+	// euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+	// std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
+	// std::cout << "x "<<first_lidar_in_map.translation().x()<<" y "<<first_lidar_in_map.translation().y()<< " z
+	// "<<first_lidar_in_map.translation().z()<<std::endl;
 
-    // float x, y, z, roll, pitch, yaw;
-    // pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的 位姿
-    // std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
-    // std::cout << "-------------------------------------------"<<std::endl;
+	// float x, y, z, roll, pitch, yaw;
+	// pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对 当前帧的
+	// 位姿 std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<< roll<<std::endl;
+	// std::cout << "-------------------------------------------"<<std::endl;
 
-    return true;
-
+	return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map){
-    if(input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size()==0){
-        std::cout <<" loaded global map empty!"<<std::endl;
-        // ROS_WARN_STREAM(" loaded global map empty!");
-        return false;
-    }
+bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
+	if (input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size() == 0) {
+		std::cout << " loaded global map empty!" << std::endl;
+		// ROS_WARN_STREAM(" loaded global map empty!");
+		return false;
+	}
 
-    *loaded_global_map_ = *input_global_map;
-    global_map_ready_ = true;
-    return true;
+	*loaded_global_map_ = *input_global_map;
+	global_map_ready_	= true;
+	return true;
 }
 
-/// @brief  
+/// @brief
 /// @param input_sc_info   : param in, loaded data
 /// @result : sc_manager_
 /// @return : if fill success
-bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info){
-    sc_manager_.reset(new SCManager());//// important
-    // std::cout <<"debug: start fill_sc_manager!"<<std::endl;
-    if(input_sc_info.empty() || input_sc_info.size()==0){
-        std::cout <<" loaded sc info empty!"<<std::endl;
-        // ROS_WARN_STREAM( YELLOW << " loaded sc info empty!"<< RESET);
-        return false;
-    }
+bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info) {
+	sc_manager_.reset(new SCManager()); //// important
+	// std::cout <<"debug: start fill_sc_manager!"<<std::endl;
+	if (input_sc_info.empty() || input_sc_info.size() == 0) {
+		std::cout << " loaded sc info empty!" << std::endl;
+		// ROS_WARN_STREAM( YELLOW << " loaded sc info empty!"<< RESET);
+		return false;
+	}
 
-    // std::cout <<"debug: set loaded_sc_info_!"<<std::endl;
-    loaded_sc_info_ = input_sc_info;
-    std::cout <<"global-localization: loaded_sc_info_ size = "<<loaded_sc_info_.size()<<std::endl;
-    // ROS_INFO_STREAM("global-localization: loaded_sc_info_ size = "<<loaded_sc_info_.size());
+	// std::cout <<"debug: set loaded_sc_info_!"<<std::endl;
+	loaded_sc_info_ = input_sc_info;
+	std::cout << "global-localization: loaded_sc_info_ size = " << loaded_sc_info_.size() << std::endl;
+	// ROS_INFO_STREAM("global-localization: loaded_sc_info_ size = "<<loaded_sc_info_.size());
 
-    // std::cout <<"debug: set polarcontext_invkeys_mat!"<<std::endl;
-    KeyMat polarcontext_invkeys_mat;
-    std::vector<Eigen::MatrixXd> polarcontexts;
-    int i=0;
-    for(ScInfo& scinfo : input_sc_info ){
-        // cout<<"debug: "<< i++ <<endl;
-        Eigen::MatrixXd sc = scinfo.polarcontext;
-        Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext( sc );
-        polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));
-        polarcontexts.push_back(sc);
-    }
-    // std::cout <<"debug: set polarcontext_invkeys_mat end!"<<std::endl;
-    sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);// save in sc_manager_
+	// std::cout <<"debug: set polarcontext_invkeys_mat!"<<std::endl;
+	KeyMat						 polarcontext_invkeys_mat;
+	std::vector<Eigen::MatrixXd> polarcontexts;
+	int							 i = 0;
+	for (ScInfo& scinfo : input_sc_info) {
+		// cout<<"debug: "<< i++ <<endl;
+		Eigen::MatrixXd sc		= scinfo.polarcontext;
+		Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext(sc);
+		polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));
+		polarcontexts.push_back(sc);
+	}
+	// std::cout <<"debug: set polarcontext_invkeys_mat end!"<<std::endl;
+	sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts); // save in sc_manager_
 
-    sc_manager_ready_ = true;
-    std::cout <<"fill_sc_manager success, sc_manager_ready_ = true"<<std::endl;
-    // ROS_INFO_STREAM("fill_sc_manager success, sc_manager_ready_ = true");
-    return true;
+	sc_manager_ready_ = true;
+	std::cout << "fill_sc_manager success, sc_manager_ready_ = true" << std::endl;
+	// ROS_INFO_STREAM("fill_sc_manager success, sc_manager_ready_ = true");
+	return true;
 }
 
-
-
-}// namespace lidar_slam
+} // namespace lidar_slam

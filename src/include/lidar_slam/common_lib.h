@@ -3,168 +3,162 @@
 
 #include <sys/stat.h> // makedir
 // #include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
-#include <Eigen/Eigen>
-#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+#include <Eigen/Eigen>
 
 using namespace std;
 using namespace Eigen;
 
 #define PI_M (3.14159265358)
-#define G_m_s2 (9.81)         // Gravaty const in GuangDong/China
+#define G_m_s2 (9.81) // Gravaty const in GuangDong/China
 // #define G_m_s2 (9.783)         // Gravaty const in GuangZhou/China
-#define DIM_STATE (18)        // Dimension of states (Let Dim(SO(3)) = 3)
-#define DIM_PROC_N (12)       // Dimension of process noise (Let Dim(SO(3)) = 3)
+#define DIM_STATE (18)	// Dimension of states (Let Dim(SO(3)) = 3)
+#define DIM_PROC_N (12) // Dimension of process noise (Let Dim(SO(3)) = 3)
 
-#define LIDAR_SP_LEN    (2)
-#define INIT_COV   (1)
-#define NUM_MATCH_POINTS    (5)
-#define MAX_MEAS_DIM        (10000)
+#define LIDAR_SP_LEN (2)
+#define INIT_COV (1)
+#define NUM_MATCH_POINTS (5)
+#define MAX_MEAS_DIM (10000)
 
-#define VEC_FROM_ARRAY(v)        v[0],v[1],v[2]
-#define MAT_FROM_ARRAY(v)        v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8]
-#define SKEW_SYM_MATRX(v)        0.0,-v[2],v[1],v[2],0.0,-v[0],-v[1],v[0],0.0
-#define CONSTRAIN(v,min,max)     ((v>min)?((v<max)?v:max):min)
-#define ARRAY_FROM_EIGEN(mat)    mat.data(), mat.data() + mat.rows() * mat.cols()
-#define STD_VEC_FROM_EIGEN(mat)  vector<decltype(mat)::Scalar> (mat.data(), mat.data() + mat.rows() * mat.cols())
-#define DEBUG_FILE_DIR(name)     (string(string(ROOT_DIR) + "Log/"+ name))
+#define VEC_FROM_ARRAY(v) v[0], v[1], v[2]
+#define MAT_FROM_ARRAY(v) v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]
+#define SKEW_SYM_MATRX(v) 0.0, -v[2], v[1], v[2], 0.0, -v[0], -v[1], v[0], 0.0
+#define CONSTRAIN(v, min, max) ((v > min) ? ((v < max) ? v : max) : min)
+#define ARRAY_FROM_EIGEN(mat) mat.data(), mat.data() + mat.rows() * mat.cols()
+#define STD_VEC_FROM_EIGEN(mat) vector<decltype(mat)::Scalar>(mat.data(), mat.data() + mat.rows() * mat.cols())
+#define DEBUG_FILE_DIR(name) (string(string(ROOT_DIR) + "Log/" + name))
 
 typedef pcl::PointXYZINormal PointType;
 // typedef pcl::PointCloud<PointType> PointCloudXYZI;
-typedef pcl::PointCloud<PointType> PointCloudType;
-typedef vector<PointType, Eigen::aligned_allocator<PointType>>  PointVector;
-typedef Vector3d V3D;
-typedef Matrix3d M3D;
-typedef Vector3f V3F;
-typedef Matrix3f M3F;
+typedef pcl::PointCloud<PointType>							   PointCloudType;
+typedef vector<PointType, Eigen::aligned_allocator<PointType>> PointVector;
+typedef Vector3d											   V3D;
+typedef Matrix3d											   M3D;
+typedef Vector3f											   V3F;
+typedef Matrix3f											   M3F;
 
+#define CASE_STR(x) \
+	case x:         \
+		return #x;  \
+		break;
 
-#define CASE_STR(x) case x : return #x; break; 
-
-
-
-#define RESET   "\033[0m"
-#define BLACK   "\033[30m"      /* Black */
-#define RED     "\033[31m"      /* Red */
-#define GREEN   "\033[32m"      /* Green */
-#define YELLOW  "\033[33m"      /* Yellow */
-#define BLUE    "\033[34m"      /* Blue */
-#define MAGENTA "\033[35m"      /* Magenta */
-#define CYAN    "\033[36m"      /* Cyan */
-#define WHITE   "\033[37m"      /* White */
-#define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
-#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
-#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
-#define BOLDYELLOW  "\033[1m\033[33m"      /* Bold Yellow */
-#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
-#define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
-#define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
-#define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
-
-
-
+#define RESET "\033[0m"
+#define BLACK "\033[30m"			  /* Black */
+#define RED "\033[31m"				  /* Red */
+#define GREEN "\033[32m"			  /* Green */
+#define YELLOW "\033[33m"			  /* Yellow */
+#define BLUE "\033[34m"				  /* Blue */
+#define MAGENTA "\033[35m"			  /* Magenta */
+#define CYAN "\033[36m"				  /* Cyan */
+#define WHITE "\033[37m"			  /* White */
+#define BOLDBLACK "\033[1m\033[30m"	  /* Bold Black */
+#define BOLDRED "\033[1m\033[31m"	  /* Bold Red */
+#define BOLDGREEN "\033[1m\033[32m"	  /* Bold Green */
+#define BOLDYELLOW "\033[1m\033[33m"  /* Bold Yellow */
+#define BOLDBLUE "\033[1m\033[34m"	  /* Bold Blue */
+#define BOLDMAGENTA "\033[1m\033[35m" /* Bold Magenta */
+#define BOLDCYAN "\033[1m\033[36m"	  /* Bold Cyan */
+#define BOLDWHITE "\033[1m\033[37m"	  /* Bold White */
 
 /*struct StatesGroup
 {
-    StatesGroup() {
+	StatesGroup() {
 		this->rot_end = M3D::Identity();
 		this->pos_end = Zero3d;
-        this->vel_end = Zero3d;
-        this->bias_g  = Zero3d;
-        this->bias_a  = Zero3d;
-        this->gravity = Zero3d;
-        this->cov     = MD(DIM_STATE,DIM_STATE)::Identity() * INIT_COV;
-        this->cov.block<9,9>(9,9) = MD(9,9)::Identity() * 0.00001;
+		this->vel_end = Zero3d;
+		this->bias_g  = Zero3d;
+		this->bias_a  = Zero3d;
+		this->gravity = Zero3d;
+		this->cov     = MD(DIM_STATE,DIM_STATE)::Identity() * INIT_COV;
+		this->cov.block<9,9>(9,9) = MD(9,9)::Identity() * 0.00001;
 	};
 
-    StatesGroup(const StatesGroup& b) {
+	StatesGroup(const StatesGroup& b) {
 		this->rot_end = b.rot_end;
 		this->pos_end = b.pos_end;
-        this->vel_end = b.vel_end;
-        this->bias_g  = b.bias_g;
-        this->bias_a  = b.bias_a;
-        this->gravity = b.gravity;
-        this->cov     = b.cov;
+		this->vel_end = b.vel_end;
+		this->bias_g  = b.bias_g;
+		this->bias_a  = b.bias_a;
+		this->gravity = b.gravity;
+		this->cov     = b.cov;
 	};
 
-    StatesGroup& operator=(const StatesGroup& b)
+	StatesGroup& operator=(const StatesGroup& b)
 	{
-        this->rot_end = b.rot_end;
+		this->rot_end = b.rot_end;
 		this->pos_end = b.pos_end;
-        this->vel_end = b.vel_end;
-        this->bias_g  = b.bias_g;
-        this->bias_a  = b.bias_a;
-        this->gravity = b.gravity;
-        this->cov     = b.cov;
-        return *this;
-	};
-
-    StatesGroup operator+(const Matrix<double, DIM_STATE, 1> &state_add)
-	{
-        StatesGroup a;
-		a.rot_end = this->rot_end * Exp(state_add(0,0), state_add(1,0), state_add(2,0));
-		a.pos_end = this->pos_end + state_add.block<3,1>(3,0);
-        a.vel_end = this->vel_end + state_add.block<3,1>(6,0);
-        a.bias_g  = this->bias_g  + state_add.block<3,1>(9,0);
-        a.bias_a  = this->bias_a  + state_add.block<3,1>(12,0);
-        a.gravity = this->gravity + state_add.block<3,1>(15,0);
-        a.cov     = this->cov;
-		return a;
-	};
-
-    StatesGroup& operator+=(const Matrix<double, DIM_STATE, 1> &state_add)
-	{
-        this->rot_end = this->rot_end * Exp(state_add(0,0), state_add(1,0), state_add(2,0));
-		this->pos_end += state_add.block<3,1>(3,0);
-        this->vel_end += state_add.block<3,1>(6,0);
-        this->bias_g  += state_add.block<3,1>(9,0);
-        this->bias_a  += state_add.block<3,1>(12,0);
-        this->gravity += state_add.block<3,1>(15,0);
+		this->vel_end = b.vel_end;
+		this->bias_g  = b.bias_g;
+		this->bias_a  = b.bias_a;
+		this->gravity = b.gravity;
+		this->cov     = b.cov;
 		return *this;
 	};
 
-    Matrix<double, DIM_STATE, 1> operator-(const StatesGroup& b)
+	StatesGroup operator+(const Matrix<double, DIM_STATE, 1> &state_add)
 	{
-        Matrix<double, DIM_STATE, 1> a;
-        M3D rotd(b.rot_end.transpose() * this->rot_end);
-        a.block<3,1>(0,0)  = Log(rotd);
-        a.block<3,1>(3,0)  = this->pos_end - b.pos_end;
-        a.block<3,1>(6,0)  = this->vel_end - b.vel_end;
-        a.block<3,1>(9,0)  = this->bias_g  - b.bias_g;
-        a.block<3,1>(12,0) = this->bias_a  - b.bias_a;
-        a.block<3,1>(15,0) = this->gravity - b.gravity;
+		StatesGroup a;
+		a.rot_end = this->rot_end * Exp(state_add(0,0), state_add(1,0), state_add(2,0));
+		a.pos_end = this->pos_end + state_add.block<3,1>(3,0);
+		a.vel_end = this->vel_end + state_add.block<3,1>(6,0);
+		a.bias_g  = this->bias_g  + state_add.block<3,1>(9,0);
+		a.bias_a  = this->bias_a  + state_add.block<3,1>(12,0);
+		a.gravity = this->gravity + state_add.block<3,1>(15,0);
+		a.cov     = this->cov;
 		return a;
 	};
 
-    void resetpose()
-    {
-        this->rot_end = M3D::Identity();
+	StatesGroup& operator+=(const Matrix<double, DIM_STATE, 1> &state_add)
+	{
+		this->rot_end = this->rot_end * Exp(state_add(0,0), state_add(1,0), state_add(2,0));
+		this->pos_end += state_add.block<3,1>(3,0);
+		this->vel_end += state_add.block<3,1>(6,0);
+		this->bias_g  += state_add.block<3,1>(9,0);
+		this->bias_a  += state_add.block<3,1>(12,0);
+		this->gravity += state_add.block<3,1>(15,0);
+		return *this;
+	};
+
+	Matrix<double, DIM_STATE, 1> operator-(const StatesGroup& b)
+	{
+		Matrix<double, DIM_STATE, 1> a;
+		M3D rotd(b.rot_end.transpose() * this->rot_end);
+		a.block<3,1>(0,0)  = Log(rotd);
+		a.block<3,1>(3,0)  = this->pos_end - b.pos_end;
+		a.block<3,1>(6,0)  = this->vel_end - b.vel_end;
+		a.block<3,1>(9,0)  = this->bias_g  - b.bias_g;
+		a.block<3,1>(12,0) = this->bias_a  - b.bias_a;
+		a.block<3,1>(15,0) = this->gravity - b.gravity;
+		return a;
+	};
+
+	void resetpose()
+	{
+		this->rot_end = M3D::Identity();
 		this->pos_end = Zero3d;
-        this->vel_end = Zero3d;
-    }
+		this->vel_end = Zero3d;
+	}
 
 	M3D rot_end;      // the estimated attitude (rotation matrix) at the end lidar point
-    V3D pos_end;      // the estimated position at the end lidar point (world frame)
-    V3D vel_end;      // the estimated velocity at the end lidar point (world frame)
-    V3D bias_g;       // gyroscope bias
-    V3D bias_a;       // accelerator bias
-    V3D gravity;      // the estimated gravity acceleration
-    Matrix<double, DIM_STATE, DIM_STATE>  cov;     // states covariance
+	V3D pos_end;      // the estimated position at the end lidar point (world frame)
+	V3D vel_end;      // the estimated velocity at the end lidar point (world frame)
+	V3D bias_g;       // gyroscope bias
+	V3D bias_a;       // accelerator bias
+	V3D gravity;      // the estimated gravity acceleration
+	Matrix<double, DIM_STATE, DIM_STATE>  cov;     // states covariance
 };*/
 
-template<typename T>
-T rad2deg(T radians)
-{
-  return radians * 180.0 / PI_M;
+template <typename T>
+T rad2deg(T radians) {
+	return radians * 180.0 / PI_M;
 }
 
-template<typename T>
-T deg2rad(T degrees)
-{
-  return degrees * PI_M / 180.0;
+template <typename T>
+T deg2rad(T degrees) {
+	return degrees * PI_M / 180.0;
 }
-
-
 
 /* comment
 plane equation: Ax + By + Cz + D = 0
@@ -176,98 +170,92 @@ normvec:  normalized x0
 
 /***************************************************************************************************
 template<typename T>
-static bool esti_normvector(Matrix<T, 3, 1> &normvec, const PointVector &point, const T &threshold, const int &point_num)
+static bool esti_normvector(Matrix<T, 3, 1> &normvec, const PointVector &point, const T &threshold, const int
+&point_num)
 {
-    MatrixXf A(point_num, 3);
-    MatrixXf b(point_num, 1);
-    b.setOnes();
-    b *= -1.0f;
+	MatrixXf A(point_num, 3);
+	MatrixXf b(point_num, 1);
+	b.setOnes();
+	b *= -1.0f;
 
-    for (int j = 0; j < point_num; j++)
-    {
-        A(j,0) = point[j].x;
-        A(j,1) = point[j].y;
-        A(j,2) = point[j].z;
-    }
-    normvec = A.colPivHouseholderQr().solve(b);
-    
-    for (int j = 0; j < point_num; j++)
-    {
-        if (fabs(normvec(0) * point[j].x + normvec(1) * point[j].y + normvec(2) * point[j].z + 1.0f) > threshold)
-        {
-            return false;
-        }
-    }
+	for (int j = 0; j < point_num; j++)
+	{
+		A(j,0) = point[j].x;
+		A(j,1) = point[j].y;
+		A(j,2) = point[j].z;
+	}
+	normvec = A.colPivHouseholderQr().solve(b);
 
-    normvec.normalize();
-    return true;
+	for (int j = 0; j < point_num; j++)
+	{
+		if (fabs(normvec(0) * point[j].x + normvec(1) * point[j].y + normvec(2) * point[j].z + 1.0f) > threshold)
+		{
+			return false;
+		}
+	}
+
+	normvec.normalize();
+	return true;
 }
 **************************************************************************************************/
 
-template<typename T>
-static bool esti_plane(Matrix<T, 4, 1> &pca_result, const PointVector &point, const T &threshold)
-{
-    Matrix<T, NUM_MATCH_POINTS, 3> A;
-    Matrix<T, NUM_MATCH_POINTS, 1> b;
-    A.setZero();
-    b.setOnes();
-    b *= -1.0f;
+template <typename T>
+static bool esti_plane(Matrix<T, 4, 1>& pca_result, const PointVector& point, const T& threshold) {
+	Matrix<T, NUM_MATCH_POINTS, 3> A;
+	Matrix<T, NUM_MATCH_POINTS, 1> b;
+	A.setZero();
+	b.setOnes();
+	b *= -1.0f;
 
-    for (int j = 0; j < NUM_MATCH_POINTS; j++)
-    {
-        A(j,0) = point[j].x;
-        A(j,1) = point[j].y;
-        A(j,2) = point[j].z;
-    }
+	for (int j = 0; j < NUM_MATCH_POINTS; j++) {
+		A(j, 0) = point[j].x;
+		A(j, 1) = point[j].y;
+		A(j, 2) = point[j].z;
+	}
 
-    Matrix<T, 3, 1> normvec = A.colPivHouseholderQr().solve(b);
+	Matrix<T, 3, 1> normvec = A.colPivHouseholderQr().solve(b);
 
-    T n = normvec.norm();
-    pca_result(0) = normvec(0) / n;
-    pca_result(1) = normvec(1) / n;
-    pca_result(2) = normvec(2) / n;
-    pca_result(3) = 1.0 / n;
+	T n			  = normvec.norm();
+	pca_result(0) = normvec(0) / n;
+	pca_result(1) = normvec(1) / n;
+	pca_result(2) = normvec(2) / n;
+	pca_result(3) = 1.0 / n;
 
-    for (int j = 0; j < NUM_MATCH_POINTS; j++)
-    {
-        if (fabs(pca_result(0) * point[j].x + pca_result(1) * point[j].y + pca_result(2) * point[j].z + pca_result(3)) > threshold)
-        {
-            return false;
-        }
-    }
-    return true;
+	for (int j = 0; j < NUM_MATCH_POINTS; j++) {
+		if (fabs(pca_result(0) * point[j].x + pca_result(1) * point[j].y + pca_result(2) * point[j].z + pca_result(3)) >
+			threshold) {
+			return false;
+		}
+	}
+	return true;
 }
 
-Eigen::Vector3d R2ypr(const Eigen::Matrix3d &R);
+Eigen::Vector3d R2ypr(const Eigen::Matrix3d& R);
 
-Eigen::Matrix3d ypr2R(const Eigen::Vector3d &ypr);
-
+Eigen::Matrix3d ypr2R(const Eigen::Vector3d& ypr);
 
 void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz, Eigen::Vector3d& ypr);
 
-Eigen::Matrix3d rpy2R(const Eigen::Vector3d &rpy);
+Eigen::Matrix3d rpy2R(const Eigen::Vector3d& rpy);
 
-Eigen::Matrix3d g2R(const Eigen::Vector3d &g);
+Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
 
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur);
 
-static float angle_norm(float a){
-    if (a < -PI_M){
-        return a + PI_M*2;
-    }
-    else if(a > PI_M){
-        return a - PI_M*2;
-    }
-    return a;
+static float angle_norm(float a) {
+	if (a < -PI_M) {
+		return a + PI_M * 2;
+	} else if (a > PI_M) {
+		return a - PI_M * 2;
+	}
+	return a;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////
-bool mkdir_p(const std::string& path, mode_t mode) ;
+bool mkdir_p(const std::string& path, mode_t mode);
 
 /////////////////////////////////////////////////////////////////////////////////
 // Used in: Backend & module_ctrl_callback
 bool create_directory_if_not_exists(const std::string& directory_path);
-
 
 #endif

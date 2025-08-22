@@ -4,25 +4,22 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-namespace lidar_slam{
+namespace lidar_slam {
 
-struct KeyPose
-{
-    Eigen::Isometry3d pose;
-    int  index;
-    double time;
-    double roll;
-    double pitch;
-    double yaw;
-};// defined in backend before
-
+struct KeyPose {
+	Eigen::Isometry3d pose;
+	int				  index;
+	double			  time;
+	double			  roll;
+	double			  pitch;
+	double			  yaw;
+}; // defined in backend before
 
 struct ScInfo {
-    int id;
-    Eigen::Isometry3d pose;
-    Eigen::MatrixXd polarcontext;
-};// defined in scanContext before
-
+	int				  id;
+	Eigen::Isometry3d pose;
+	Eigen::MatrixXd	  polarcontext;
+}; // defined in scanContext before
 
 } // namespace lidar_slam
 

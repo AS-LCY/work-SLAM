@@ -35,7 +35,7 @@
 //                 for (auto it = loopIndex.begin(); it != loopIndex.end(); ++it) {
 //                      test_view.DrawLine(optimized_poses[it->first],optimized_poses[it->second],Eigen::Vector3f(0,0,0));
 //                 }
-                
+
 //                 if (control_status.showMap)
 //                     test_view.DrawCloud(slam->getCurrentMap(),Eigen::Vector3f(0,0,1),1);
 //                 if (control_status.showLidar)
@@ -58,7 +58,7 @@
 
 //             if (control_status.saveMap && !localization_mode)
 //                 slam -> save_map(CURRENT_DIR+std::string("/map/"),0.1,0,0);
-//             test_view.Finish();  
+//             test_view.Finish();
 //         }
 //         auto end = std::chrono::steady_clock::now();
 //         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -89,7 +89,6 @@
 //   } while (status == std::future_status::timeout);
 // }*/
 
-
 // int main(int argc,char **argv)
 // {
 //   if (argc > 1){
@@ -108,17 +107,16 @@
 //       log_folder = argv[3];
 //   }
 
-     
 //   printf("create lidar_slam\n");
 //    std::cout << "Current directory: " << CURRENT_DIR << std::endl;
-//   slam = std::make_unique<lidar_slam::LidarSlam>(CURRENT_DIR+std::string("/"),localization_mode,offline_mode);	
+//   slam = std::make_unique<lidar_slam::LidarSlam>(CURRENT_DIR+std::string("/"),localization_mode,offline_mode);
 //   printf("create lidar_slam success\n");
 //   std::thread show_thread;
 //   show_thread = std::thread(&showThread);
 //   std::thread load_data_thread;
 //   if (offline_mode){
 //         // 读取文件夹中的文件名
-      
+
 //   }
 
 //     const int frequency = 100.0; // 频率为100Hz
@@ -133,7 +131,7 @@
 //             slam->reset(CURRENT_DIR+std::string("/"),localization_mode,false);
 //             sleep(1);
 //             control_status.reset = false;
-//         }      
+//         }
 //         slam->run();
 //         auto end = std::chrono::steady_clock::now();
 //         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -145,7 +143,7 @@
 // 	}
 //   //  stopRosbagRecord();
 //     show_thread.join();
-    
+
 //   //  log_thread.join();
 // 	return 0;
 // }

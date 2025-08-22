@@ -6,16 +6,17 @@
 // Eigen库
 #include <Eigen/Core>
 #include <Eigen/Dense>
- 
+
 //  std
+#include <unistd.h>
+
+#include <fstream>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <unistd.h>
 // lidar_slam
-#include "lidar_slam/common_lib.h"
 #include "lidar_slam/backend.hpp"
-namespace lidar_slam { 
+#include "lidar_slam/common_lib.h"
+namespace lidar_slam {
 #if 0
 /*std::string matrixToString(const pangolin::OpenGlMatrix& matrix) {
     std::stringstream ss;
@@ -312,9 +313,7 @@ class Viewer{
         std::unique_ptr<pangolin::Var<float>> MapMax;
         Control_status status;
 
-}; 
+};
 #endif
-}
+} // namespace lidar_slam
 #endif
-
-
