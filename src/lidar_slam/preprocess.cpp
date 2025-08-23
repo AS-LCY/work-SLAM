@@ -2,27 +2,27 @@
 
 Preprocess::Preprocess() : feature_enabled(0), lidar_type(AVIA), blind(0.01), point_filter_num(1) {
 	inf_bound = 10;
-	N_SCANS	  = 6;
+	N_SCANS = 6;
 
-	group_size		  = 8;
-	disA			  = 0.01;
-	disA			  = 0.1; // B?
-	p2l_ratio		  = 225;
-	limit_maxmid	  = 6.25;
-	limit_midmin	  = 6.25;
-	limit_maxmin	  = 3.24;
-	jump_up_limit	  = 170.0;
-	jump_down_limit	  = 8.0;
-	cos160			  = 160.0;
-	edgea			  = 2;
-	edgeb			  = 0.1;
-	smallp_intersect  = 172.5;
-	smallp_ratio	  = 1.2;
+	group_size = 8;
+	disA = 0.01;
+	disA = 0.1; // B?
+	p2l_ratio = 225;
+	limit_maxmid = 6.25;
+	limit_midmin = 6.25;
+	limit_maxmin = 3.24;
+	jump_up_limit = 170.0;
+	jump_down_limit = 8.0;
+	cos160 = 160.0;
+	edgea = 2;
+	edgeb = 0.1;
+	smallp_intersect = 172.5;
+	smallp_ratio = 1.2;
 	given_offset_time = false;
 
-	jump_up_limit	 = cos(jump_up_limit / 180 * M_PI);
-	jump_down_limit	 = cos(jump_down_limit / 180 * M_PI);
-	cos160			 = cos(cos160 / 180 * M_PI);
+	jump_up_limit = cos(jump_up_limit / 180 * M_PI);
+	jump_down_limit = cos(jump_down_limit / 180 * M_PI);
+	cos160 = cos(cos160 / 180 * M_PI);
 	smallp_intersect = cos(smallp_intersect / 180 * M_PI);
 	pl_obstacle.reset(new PointCloudType());
 }
@@ -30,21 +30,21 @@ Preprocess::Preprocess() : feature_enabled(0), lidar_type(AVIA), blind(0.01), po
 Preprocess::~Preprocess() {}
 
 void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num, int line, double obstacle) {
-	feature_enabled	 = feat_en;
-	lidar_type		 = lid_type;
-	blind			 = bld;
+	feature_enabled = feat_en;
+	lidar_type = lid_type;
+	blind = bld;
 	point_filter_num = pfilt_num;
-	N_SCANS			 = line;
-	obstacle_range	 = obstacle;
+	N_SCANS = line;
+	obstacle_range = obstacle;
 }
 
 void Preprocess::set(lidar_slam::LidarPreprocParam param_in) {
-	feature_enabled	 = param_in.feature_enabled;
-	lidar_type		 = param_in.lidar_type;
-	blind			 = param_in.blind_distance;
+	feature_enabled = param_in.feature_enabled;
+	lidar_type = param_in.lidar_type;
+	blind = param_in.blind_distance;
 	point_filter_num = param_in.point_filter_num;
-	N_SCANS			 = param_in.line_count;
-	obstacle_range	 = param_in.obstacle_max_range;
+	N_SCANS = param_in.line_count;
+	obstacle_range = param_in.obstacle_max_range;
 
 	param_ = param_in;
 }
@@ -52,8 +52,7 @@ void Preprocess::set(lidar_slam::LidarPreprocParam param_in) {
 void Preprocess::process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr& pcl_out) {
 	avia_handler(msg);
 	*pcl_out = pl_surf;
-	printf("extract lidar count: %ld\n", pcl_out->points.size());
-	// ROS_INFO("extract lidar count: %ld", pcl_out->points.size());
+	// printf("extract lidar count: %ld\n", pcl_out->points.size());
 }
 
 void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg) {
@@ -62,9 +61,8 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg) {
 	pl_corn.clear();
 	pl_full.clear();
 	pl_obstacle->clear();
-	double t1	  = omp_get_wtime();
-	int	   plsize = msg->point_num;
-	//  cout<<"plsie: "<<plsize<<endl;
+	double t1 = omp_get_wtime();
+	int plsize = msg->point_num;
 
 	pl_corn.reserve(plsize);
 	pl_surf.reserve(plsize);
@@ -85,30 +83,25 @@ void Preprocess::avia_handler(const std::shared_ptr<livox_ros::LidarMsg> msg) {
 	} else if (extract_cloud_method == 3) {
 		extract_cloud_by_feature(msg);
 	} else {
-		printf("extract_cloud_method set error!\n");
-		// ROS_ERROR_STREAM(RED << "extract_cloud_method set error!" << RESET);
+		// printf("extract_cloud_method set error!\n");
 		exit(1);
 	}
 	// printf("test %d %d \n",pl_full.size(),pl_obstacle.size());
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg) {
-	// std::cout<<"extract cloud by method: interval and voxel"<<std::endl;
-	const double leafsize		 = param_.leafsize;
-	const double extent_xmin	 = param_.voxel_region_xyz[0];
-	const double extent_xmax	 = param_.voxel_region_xyz[1];
-	const double extent_ymin	 = param_.voxel_region_xyz[2];
-	const double extent_ymax	 = param_.voxel_region_xyz[3];
-	const double extent_zmin	 = param_.voxel_region_xyz[4];
-	const double extent_zmax	 = param_.voxel_region_xyz[5];
-	const double blind_square	 = param_.blind_distance * param_.blind_distance;
+	const double leafsize = param_.leafsize;
+	const double extent_xmin = param_.voxel_region_xyz[0];
+	const double extent_xmax = param_.voxel_region_xyz[1];
+	const double extent_ymin = param_.voxel_region_xyz[2];
+	const double extent_ymax = param_.voxel_region_xyz[3];
+	const double extent_zmin = param_.voxel_region_xyz[4];
+	const double extent_zmax = param_.voxel_region_xyz[5];
+	const double blind_square = param_.blind_distance * param_.blind_distance;
 	const double obstacle_square = obstacle_range * obstacle_range;
 	std::cout << "leafsize: " << leafsize << endl;
-	// ROS_INFO_STREAM("leafsize: "<<leafsize);
 
-	int	 plsize	   = msg->point_num;
+	int plsize = msg->point_num;
 	uint valid_num = 0;
 
 	double extent_leafsize_inv = 1.0 / leafsize;
@@ -116,10 +109,10 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
 	int Xcnt_region = (extent_xmax - extent_xmin) * extent_leafsize_inv + 1;
 	int Ycnt_region = (extent_ymax - extent_ymin) * extent_leafsize_inv + 1;
 	int Zcnt_region = (extent_zmax - extent_zmin) * extent_leafsize_inv + 1;
-	int vect_size	= Xcnt_region * Ycnt_region * Zcnt_region;
+	int vect_size = Xcnt_region * Ycnt_region * Zcnt_region;
 
 	unsigned char* flag_if_fill = (unsigned char*)calloc(vect_size, sizeof(unsigned char));
-	int			   Xindex = 0, Yindex = 0, Zindex = 0;
+	int Xindex = 0, Yindex = 0, Zindex = 0;
 
 	// std::cout<<"interval and voxel - 1"<<std::endl;
 	for (uint i = 1; i < plsize; i++) { // zd delete (msg->points[i].line < N_SCANS)
@@ -137,9 +130,9 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
 			}
 
 			if (valid_num % point_filter_num == 0) {
-				pl_full[i].x		 = msg->points[i].x;
-				pl_full[i].y		 = msg->points[i].y;
-				pl_full[i].z		 = msg->points[i].z;
+				pl_full[i].x = msg->points[i].x;
+				pl_full[i].y = msg->points[i].y;
+				pl_full[i].z = msg->points[i].z;
 				pl_full[i].intensity = msg->points[i].reflectivity;
 				// pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each
 				// laser points, curvature unit: ms
@@ -147,9 +140,9 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
 									   float(1000); // use curvature as time of each laser points, curvature unit: ms
 				// std::cout << "pl_full[i].curvature: " << pl_full[i].curvature << std::endl;
 
-				Xindex		 = int((pl_full[i].x - extent_xmin) * extent_leafsize_inv);
-				Yindex		 = int((pl_full[i].y - extent_ymin) * extent_leafsize_inv);
-				Zindex		 = int((pl_full[i].z - extent_zmin) * extent_leafsize_inv);
+				Xindex = int((pl_full[i].x - extent_xmin) * extent_leafsize_inv);
+				Yindex = int((pl_full[i].y - extent_ymin) * extent_leafsize_inv);
+				Zindex = int((pl_full[i].z - extent_zmin) * extent_leafsize_inv);
 				size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
 
 				if (range_square > blind_square) {
@@ -181,15 +174,15 @@ void Preprocess::extract_cloud_by_interval_and_voxel(const std::shared_ptr<livox
 
 void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::LidarMsg> msg) {
 	// std::cout<<"extract cloud by method: simple voxel"<<std::endl;
-	const std::vector<double> leafsize	   = param_.leafsize_vec;
-	const double			  extent_xmin  = param_.voxel_region_xyz[0];
-	const double			  extent_xmax  = param_.voxel_region_xyz[1];
-	const double			  extent_ymin  = param_.voxel_region_xyz[2];
-	const double			  extent_ymax  = param_.voxel_region_xyz[3];
-	const double			  extent_zmin  = param_.voxel_region_xyz[4];
-	const double			  extent_zmax  = param_.voxel_region_xyz[5];
-	const double			  blind_square = param_.blind_distance * param_.blind_distance;
-	const double			  boundary_z   = param_.boundary_z;
+	const std::vector<double> leafsize = param_.leafsize_vec;
+	const double extent_xmin = param_.voxel_region_xyz[0];
+	const double extent_xmax = param_.voxel_region_xyz[1];
+	const double extent_ymin = param_.voxel_region_xyz[2];
+	const double extent_ymax = param_.voxel_region_xyz[3];
+	const double extent_zmin = param_.voxel_region_xyz[4];
+	const double extent_zmax = param_.voxel_region_xyz[5];
+	const double blind_square = param_.blind_distance * param_.blind_distance;
+	const double boundary_z = param_.boundary_z;
 
 	std::vector<double> region_zmin_vec, region_zmax_vec;
 	region_zmin_vec.push_back(extent_zmin);
@@ -201,7 +194,7 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 
 	int plsize = msg->point_num;
 
-	int							devision_cnt = 2;
+	int devision_cnt = 2;
 	std::vector<vector<size_t>> divided_clouds_index_vector(devision_cnt, std::vector<size_t>());
 
 	for (size_t i = 0; i < plsize; i++) {
@@ -229,12 +222,12 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 	const double region_xmax = extent_xmax;
 	const double region_ymin = extent_ymin;
 	const double region_ymax = extent_ymax;
-	double		 region_zmin = 0.0; // initialize
-	double		 region_zmax = 0.0;
+	double region_zmin = 0.0; // initialize
+	double region_zmax = 0.0;
 
 	for (int i = 0; i < devision_cnt; i++) {
 		std::vector<size_t> cur_region_idx = divided_clouds_index_vector.at(i);
-		size_t				cur_cloud_sz   = cur_region_idx.size();
+		size_t cur_cloud_sz = cur_region_idx.size();
 
 		region_zmin = region_zmin_vec[i];
 		region_zmax = region_zmax_vec[i];
@@ -245,7 +238,7 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 		int Xcnt_region = (region_xmax - region_xmin) * region_leafsize_inv + 1;
 		int Ycnt_region = (region_ymax - region_ymin) * region_leafsize_inv + 1;
 		int Zcnt_region = (region_zmax - region_zmin) * region_leafsize_inv + 1;
-		int vect_size	= Xcnt_region * Ycnt_region * Zcnt_region;
+		int vect_size = Xcnt_region * Ycnt_region * Zcnt_region;
 
 		unsigned char* flag_if_fill = (unsigned char*)calloc(vect_size, sizeof(unsigned char));
 
@@ -253,15 +246,15 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 
 		for (size_t j = 0; j < cur_cloud_sz; j++) {
 			auto* cur_pt = &msg->points[cur_region_idx[j]];
-			Xindex		 = int((cur_pt->x - region_xmin) * region_leafsize_inv);
-			Yindex		 = int((cur_pt->y - region_ymin) * region_leafsize_inv);
-			Zindex		 = int((cur_pt->z - region_zmin) * region_leafsize_inv);
+			Xindex = int((cur_pt->x - region_xmin) * region_leafsize_inv);
+			Yindex = int((cur_pt->y - region_ymin) * region_leafsize_inv);
+			Zindex = int((cur_pt->z - region_zmin) * region_leafsize_inv);
 			size_t index = Ycnt_region * Zcnt_region * Xindex + Zcnt_region * Yindex + Zindex;
 
 			if (!flag_if_fill[index]) {
-				pl_full[cur_region_idx[j]].x		 = cur_pt->x;
-				pl_full[cur_region_idx[j]].y		 = cur_pt->y;
-				pl_full[cur_region_idx[j]].z		 = cur_pt->z;
+				pl_full[cur_region_idx[j]].x = cur_pt->x;
+				pl_full[cur_region_idx[j]].y = cur_pt->y;
+				pl_full[cur_region_idx[j]].z = cur_pt->z;
 				pl_full[cur_region_idx[j]].intensity = cur_pt->reflectivity;
 				pl_full[cur_region_idx[j]].curvature =
 					cur_pt->offset_time * float(1000); // use curvature as time of each laser points, curvature unit: ms
@@ -337,9 +330,9 @@ void Preprocess::extract_cloud_by_simple_voxel(const std::shared_ptr<livox_ros::
 // 间隔采样
 void Preprocess::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_ros::LidarMsg> msg) {
 	// std::cout<<"extract cloud by method:  interval sampling"<<std::endl;
-	int	   plsize		   = msg->point_num;
-	uint   valid_num	   = 0;
-	double blind_square	   = blind * blind;
+	int plsize = msg->point_num;
+	uint valid_num = 0;
+	double blind_square = blind * blind;
 	double obstacle_square = obstacle_range * obstacle_range;
 	for (uint i = 1; i < plsize; i++) { // zd delete (msg->points[i].line < N_SCANS)
 		if (((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) &&
@@ -356,9 +349,9 @@ void Preprocess::extract_cloud_by_interval_sampling(const std::shared_ptr<livox_
 			}
 
 			if (valid_num % point_filter_num == 0) {
-				pl_full[i].x		 = msg->points[i].x;
-				pl_full[i].y		 = msg->points[i].y;
-				pl_full[i].z		 = msg->points[i].z;
+				pl_full[i].x = msg->points[i].x;
+				pl_full[i].y = msg->points[i].y;
+				pl_full[i].z = msg->points[i].z;
 				pl_full[i].intensity = msg->points[i].reflectivity;
 				// pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each
 				// laser points, curvature unit: ms
@@ -390,9 +383,9 @@ void Preprocess::extract_cloud_by_feature(const std::shared_ptr<livox_ros::Lidar
 	for (uint i = 1; i < plsize; i++) {
 		if ((msg->points[i].line < N_SCANS) &&
 			((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00)) {
-			pl_full[i].x		 = msg->points[i].x;
-			pl_full[i].y		 = msg->points[i].y;
-			pl_full[i].z		 = msg->points[i].z;
+			pl_full[i].x = msg->points[i].x;
+			pl_full[i].y = msg->points[i].y;
+			pl_full[i].z = msg->points[i].z;
 			pl_full[i].intensity = msg->points[i].reflectivity;
 			// pl_full[i].curvature = msg->points[i].offset_time / float(1000000); // use curvature as time of each
 			// laser points
@@ -406,23 +399,23 @@ void Preprocess::extract_cloud_by_feature(const std::shared_ptr<livox_ros::Lidar
 			}
 		}
 	}
-	static int	  count = 0;
-	static double time	= 0.0;
+	static int count = 0;
+	static double time = 0.0;
 	count++;
 	double t0 = omp_get_wtime();
 	for (int j = 0; j < N_SCANS; j++) {
 		if (pl_buff[j].size() <= 5) continue;
 		pcl::PointCloud<PointType>& pl = pl_buff[j];
-		plsize						   = pl.size();
-		vector<orgtype>& types		   = typess[j];
+		plsize = pl.size();
+		vector<orgtype>& types = typess[j];
 		types.clear();
 		types.resize(plsize);
 		plsize--;
 		for (uint i = 0; i < plsize; i++) {
 			types[i].range = sqrt(pl[i].x * pl[i].x + pl[i].y * pl[i].y);
-			vx			   = pl[i].x - pl[i + 1].x;
-			vy			   = pl[i].y - pl[i + 1].y;
-			vz			   = pl[i].z - pl[i + 1].z;
+			vx = pl[i].x - pl[i + 1].x;
+			vy = pl[i].y - pl[i + 1].y;
+			vz = pl[i].z - pl[i + 1].z;
 			types[i].dista = sqrt(vx * vx + vy * vy + vz * vz);
 		}
 		types[plsize].range = sqrt(pl[plsize].x * pl[plsize].x + pl[plsize].y * pl[plsize].y);
@@ -454,11 +447,11 @@ void Preprocess::give_feature(pcl::PointCloud<PointType>& pl, vector<orgtype>& t
 	Eigen::Vector3d curr_direct(Eigen::Vector3d::Zero());
 	Eigen::Vector3d last_direct(Eigen::Vector3d::Zero());
 
-	uint i_nex		= 0, i2;
-	uint last_i		= 0;
+	uint i_nex = 0, i2;
+	uint last_i = 0;
 	uint last_i_nex = 0;
-	int	 last_state = 0;
-	int	 plane_type;
+	int last_state = 0;
+	int plane_type;
 
 	for (uint i = head; i < plsize2; i++) {
 		if (types[i].range < blind) {
@@ -488,11 +481,11 @@ void Preprocess::give_feature(pcl::PointCloud<PointType>& pl, vector<orgtype>& t
 				}
 			}
 
-			i		   = i_nex - 1;
+			i = i_nex - 1;
 			last_state = 1;
 		} else // if(plane_type == 2)
 		{
-			i		   = i_nex;
+			i = i_nex;
 			last_state = 0;
 		}
 		// else if(plane_type == 0)
@@ -542,8 +535,8 @@ void Preprocess::give_feature(pcl::PointCloud<PointType>& pl, vector<orgtype>& t
 		//   }
 		// }
 
-		last_i		= i2;
-		last_i_nex	= i_nex;
+		last_i = i2;
+		last_i_nex = i_nex;
 		last_direct = curr_direct;
 	}
 
@@ -655,9 +648,9 @@ void Preprocess::give_feature(pcl::PointCloud<PointType>& pl, vector<orgtype>& t
 
 			if (j == uint(last_surface + point_filter_num - 1)) {
 				PointType ap;
-				ap.x		 = pl[j].x;
-				ap.y		 = pl[j].y;
-				ap.z		 = pl[j].z;
+				ap.x = pl[j].x;
+				ap.y = pl[j].y;
+				ap.z = pl[j].z;
 				ap.intensity = pl[j].intensity;
 				ap.curvature = pl[j].curvature;
 				pl_surf.push_back(ap);
@@ -702,10 +695,10 @@ void Preprocess::give_feature(pcl::PointCloud<PointType>& pl, vector<orgtype>& t
 int Preprocess::plane_judge(const PointCloudType& pl, vector<orgtype>& types, uint i_cur, uint& i_nex,
 							Eigen::Vector3d& curr_direct) {
 	double group_dis = disA * types[i_cur].range + disB;
-	group_dis		 = group_dis * group_dis;
+	group_dis = group_dis * group_dis;
 	// i_nex = i_cur;
 
-	double		   two_dis;
+	double two_dis;
 	vector<double> disarr;
 	disarr.reserve(20);
 
@@ -724,9 +717,9 @@ int Preprocess::plane_judge(const PointCloudType& pl, vector<orgtype>& types, ui
 			curr_direct.setZero();
 			return 2;
 		}
-		vx		= pl[i_nex].x - pl[i_cur].x;
-		vy		= pl[i_nex].y - pl[i_cur].y;
-		vz		= pl[i_nex].z - pl[i_cur].z;
+		vx = pl[i_nex].x - pl[i_cur].x;
+		vy = pl[i_nex].y - pl[i_cur].y;
+		vz = pl[i_nex].z - pl[i_cur].z;
 		two_dis = vx * vx + vy * vy + vz * vz;
 		if (two_dis >= group_dis) {
 			break;
@@ -762,7 +755,7 @@ int Preprocess::plane_judge(const PointCloudType& pl, vector<orgtype>& types, ui
 	for (uint j = 0; j < disarrsize - 1; j++) {
 		for (uint k = j + 1; k < disarrsize; k++) {
 			if (disarr[j] < disarr[k]) {
-				leng_wid  = disarr[j];
+				leng_wid = disarr[j];
 				disarr[j] = disarr[k];
 				disarr[k] = leng_wid;
 			}
@@ -810,7 +803,7 @@ bool Preprocess::edge_jump_judge(const PointCloudType& pl, vector<orgtype>& type
 	double d;
 
 	if (d1 < d2) {
-		d  = d1;
+		d = d1;
 		d1 = d2;
 		d2 = d;
 	}

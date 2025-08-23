@@ -76,29 +76,29 @@ using namespace sensor_msgs::msg;
 using namespace lidar_slam;
 using namespace fairland_msgs::msg;
 // ROS2 消息类型别名
-using PointCloud2		= sensor_msgs::msg::PointCloud2;
-using Odometry			= nav_msgs::msg::Odometry;
-using Path				= nav_msgs::msg::Path;
-using Imu				= sensor_msgs::msg::Imu;
-using UInt32			= std_msgs::msg::UInt32;
+using PointCloud2 = sensor_msgs::msg::PointCloud2;
+using Odometry = nav_msgs::msg::Odometry;
+using Path = nav_msgs::msg::Path;
+using Imu = sensor_msgs::msg::Imu;
+using UInt32 = std_msgs::msg::UInt32;
 using Float64MultiArray = std_msgs::msg::Float64MultiArray;
 
 // 自定义消息类型别名
-using LivoxCustomMsg		   = fairland_msgs::msg::LivoxCustomMsg;
+using LivoxCustomMsg = fairland_msgs::msg::LivoxCustomMsg;
 using LocalizationModuleStatus = fairland_msgs::msg::LocalizationModuleStatus;
 using LocalizationModuleHealth = fairland_msgs::msg::LocalizationModuleHealth;
-using NameValues			   = fairland_msgs::msg::NameValues;
-using ChassicData			   = fairland_msgs::msg::ChassicData;
+using NameValues = fairland_msgs::msg::NameValues;
+using ChassicData = fairland_msgs::msg::ChassicData;
 
 enum SlamCtrlCmd {
-	START_MAPPING		 = 1000,
-	START_SEC_MAPPING	 = 2000,
-	CANCLE_MAPPING		 = 5000,
+	START_MAPPING = 1000,
+	START_SEC_MAPPING = 2000,
+	CANCLE_MAPPING = 5000,
 	SAVE_AND_END_MAPPING = 6000,
-	START_LOCALIZATION	 = 7000,
-	EXIT_LOCALIZATION	 = 8000,
+	START_LOCALIZATION = 7000,
+	EXIT_LOCALIZATION = 8000,
 	START_RELOCALIZATION = 9000,
-	RESTART_SEC_MAPPING	 = 9100,
+	RESTART_SEC_MAPPING = 9100,
 	// MAPPING_POINT_BEGIN     = 3000,  // 设置起点
 	// MAPPING_ELE_DELETE      = 4000,  // 创建地图元素过程中，清除当前元素（当前元素还未完成创建）
 	// MAPPING_POINT_END       = 5000,  // 设置终点
@@ -148,17 +148,18 @@ class LocalizationModule {
 	bool stop_mapping_without_saving_map();
 
 	bool init_module_by_set_status(ModuleStatus set_status);
+
 	// void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
 	bool make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status);
-
 	// void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
+
 	void release_slam_obj();
 
 	// Updated callback signatures
-	// void localization_module_ctrl_callback(const UInt32::SharedPtr msg_in);
 	void localization_module_ctrl_callback(const std_msgs::msg::UInt32::SharedPtr msg_in);
+
 	void slam_dealt_timer();
-	// void pose_filter_timer();
+
 	void pub_module_status_timer();
 
 	void imu_callback(Imu::SharedPtr msg_in);
@@ -169,7 +170,6 @@ class LocalizationModule {
 
 	void publish_unoptimized_path(const std::deque<Eigen::Isometry3d>& path, const std::string& frame);
 	void publish_optimized_path(const std::vector<Eigen::Isometry3d>& path, const std::string& frame);
-	// publish common
 
 	// 发布点云
 	void publish_cloud(PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
@@ -197,25 +197,25 @@ class LocalizationModule {
 	// pubKeyframePose);
 
 	// void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
-	// 发布测试点云 //TODO:
+	// 发布测试点云
 	void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode);
 
-	// 发布静态变换
 	void publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar);
 	// 发布动态变换
 	void publish_transform(const Eigen::Isometry3d& correction, const std::string& parent, const std::string& child);
+
 	// 发布激光雷达到地图的变换
 	// void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map);
-	// 可视化闭环约束
+
 	void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
-	// 显示关键帧
+
 	void show_keyframe(const std::vector<lidar_slam::ScInfo>& loadKeyframe);
-	// 填充日志
+
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
 
 	// void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
 
-	// TODO:// 检查并填充健康消息
+	// 检查并填充健康消息
 	int check_fill_health_msg(ModuleStatus curr_running_module_status, LocalizationModuleHealth& health_msg);
 
 	// 检查并填充模块状态消息
@@ -273,7 +273,7 @@ class LocalizationModule {
 	std::atomic<int> mapping_node_status_{ 0 };
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 各 线程、callback、timer heartbeat
+	// 各线程、callback、timer heartbeat
 	std::atomic<double> hb_time_cbk_imu_;
 	std::atomic<double> hb_time_cbk_lidar_;
 	std::atomic<double> hb_time_cbk_module_ctrl_;
@@ -299,17 +299,15 @@ class LocalizationModule {
 	// ROS2 接口
 	rclcpp::Publisher<LocalizationModuleStatus>::SharedPtr pub_localization_module_status_;
 	rclcpp::Publisher<LocalizationModuleHealth>::SharedPtr pub_localization_module_health_;
-	rclcpp::Publisher<Float64MultiArray>::SharedPtr		   pub_log_;
+	rclcpp::Publisher<Float64MultiArray>::SharedPtr pub_log_;
 
 	rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_pointcloud2_;
-	rclcpp::Subscription<Imu>::SharedPtr						   sub_imu_;
-	rclcpp::Subscription<UInt32>::SharedPtr						   sub_mapping_ctrl_;
-	// ros::Subscriber sub_chassis_; // TODO::
+	rclcpp::Subscription<Imu>::SharedPtr sub_imu_;
+	rclcpp::Subscription<UInt32>::SharedPtr sub_mapping_ctrl_;
 
 	rclcpp::TimerBase::SharedPtr timer_slam_;
 	rclcpp::TimerBase::SharedPtr timer_module_status_;
 
-	// TF2 广播器
 	std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
 	// 其他发布者
@@ -320,45 +318,16 @@ class LocalizationModule {
 	rclcpp::CallbackGroup::SharedPtr slam_callback_group_;
 	rclcpp::CallbackGroup::SharedPtr ctrl_callback_group_;
 
-	// ros::NodeHandle nh_;
-	// ros::Timer timer_slam_;
-	// ros::Timer timer_module_status_;
-
-	// ros::NodeHandle nh2_;
-	// ros::CallbackQueue slam_queue_;
-	// ros::Timer timer_pose_filter_;
-
-	// ros::NodeHandle nh3_;
-	// ros::CallbackQueue slam_ctrl_queue_;
-
-	// ros::NodeHandle nh4_;
-	// ros::CallbackQueue pose_filter_queue_;
-
-	// ros::NodeHandle nh5_;
-	// ros::CallbackQueue health_queue_;
-
-	// ros::Subscriber sub_mapping_ctrl_;
-	// ros::Subscriber sub_pointcloud2_;
-	// ros::Subscriber sub_imu_;
-	// ros::Subscriber sub_chassis_;
-
-	// ros::Publisher pub_localization_module_status_;
-	// ros::Publisher pub_localization_module_health_;
-	// ros::Publisher pub_filter_odometry_;
-	// ros::Publisher pub_log_;
-	// ros::Publisher pub_slip_;
-
-	// slam node
 	std::unique_ptr<lidar_slam::LidarSlam> slam_;
-	bool								   releasing_slam_flag_ = false;
+	bool releasing_slam_flag_ = false;
 
 	// 通用
 	string curr_dir_; // localization_module CMake dir
-	bool   localization_mode_ = false;
-	bool   offline_mode_	  = false; // unused
-	bool   just_show_mode_	  = false;
-	bool   show_rviz_		  = false;
-	bool   fast_mode_		  = false; // unused, 只有参数读入
+	bool localization_mode_ = false;
+	bool offline_mode_ = false; // unused
+	bool just_show_mode_ = false;
+	bool show_rviz_ = false;
+	bool fast_mode_ = false; // unused, 只有参数读入
 	string log_folder_;
 
 	// show thread
@@ -400,7 +369,7 @@ class LocalizationModule {
 
 	// other thread
 	std::thread show_thread_;
-	int			show_load_map_ = 0;
+	int show_load_map_ = 0;
 
 	cpu_set_t cpu_mask_;
 
@@ -412,47 +381,27 @@ class LocalizationModule {
 	// nav_msgs::Path optimized_path_msg;
 
 	// 点云和里程计发布者
-	rclcpp::Publisher<Odometry>::SharedPtr							   pubLidarInMap;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubOdomCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubBodyCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubObstacleCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubFilteredObstacleCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubTestCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubKdtreeCloud;
-	rclcpp::Publisher<Path>::SharedPtr								   pubOptimizedPath;
-	rclcpp::Publisher<Path>::SharedPtr								   pubUnoptimizedPath;
+	rclcpp::Publisher<Odometry>::SharedPtr pubLidarInMap;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubOdomCloud;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubBodyCloud;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubObstacleCloud;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubFilteredObstacleCloud;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubTestCloud;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubKdtreeCloud;
+	rclcpp::Publisher<Path>::SharedPtr pubOptimizedPath;
+	rclcpp::Publisher<Path>::SharedPtr pubUnoptimizedPath;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge;
-	rclcpp::Publisher<Odometry>::SharedPtr							   pubOdomAftMapped;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubLoadMap;
+	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubKeyframePose;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pubRgbCloud;
-	rclcpp::Publisher<Imu>::SharedPtr								   pub_base_imu_;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pub_key_cloud_;
-	rclcpp::Publisher<PointCloud2>::SharedPtr						   pub_body_cloud_filter_;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubRgbCloud;
+	rclcpp::Publisher<Imu>::SharedPtr pub_base_imu_;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pub_key_cloud_;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pub_body_cloud_filter_;
+
 	// 路径消息
 	Path unoptimized_path_msg;
 	Path optimized_path_msg;
-	// ros::Publisher pubOdomCloud;
-	// ros::Publisher pubBodyCloud;
-	// ros::Publisher pubObstacleCloud;
-	// ros::Publisher pubFilteredObstacleCloud;
-	// ros::Publisher pubTestCloud;
-	// ros::Publisher pubKdtreeCloud;
-	// ros::Publisher pubOptimizedPath;
-	// ros::Publisher pubUnoptimizedPath;
-	// ros::Publisher pubLoopConstraintEdge;
-	// ros::Publisher pubOdomAftMapped;
-	// ros::Publisher pubLidarInMap;
-	// ros::Publisher pubLoadMap;
-	// ros::Publisher pubKeyframePose;
-	// ros::Publisher pubRgbCloud;
-	// ros::Publisher image_pub;
-
-	// ros::Publisher pub_base_imu_;
-	// ros::Publisher pub_key_cloud_;
-	// ros::Publisher pub_body_cloud_filter_;
-
-	// PointCloudType::Ptr cloud_preproc_ptr_;
 
 	/// params load from yaml
 	lidar_slam::LidarSlamParam slam_param_;
@@ -466,7 +415,7 @@ class LocalizationModule {
 
 	tf2_ros::TransformBroadcaster br_;
 
-	tf2_ros::Buffer			   tf_buffer_;
+	tf2_ros::Buffer tf_buffer_;
 	tf2_ros::TransformListener tf_listener_;
 };
 

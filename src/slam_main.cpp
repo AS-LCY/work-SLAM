@@ -16,7 +16,6 @@ int main(int argc, char** argv) {
 	rclcpp::NodeOptions options;
 	options.automatically_declare_parameters_from_overrides(false);
 	auto node = std::make_shared<rclcpp::Node>("localization_module", options);
-	// auto node = std::make_shared<rclcpp::Node>("localization_module");
 
 #ifdef SAVE_CORE_DUMP
 	RCLCPP_INFO(node->get_logger(), "save core dump is enable");
@@ -40,8 +39,6 @@ int main(int argc, char** argv) {
 
 	RCLCPP_INFO(node->get_logger(), "After set rlimit CORE dump current is:%d, max is:%d", (int)rlmt.rlim_cur,
 				(int)rlmt.rlim_max);
-#else
-	RCLCPP_INFO(node->get_logger(), "save core dump is disable");
 #endif
 
 	RCLCPP_INFO(node->get_logger(), "\033[1;32m----> ros init \033[0m");
@@ -50,12 +47,8 @@ int main(int argc, char** argv) {
 	setlocale(LC_ALL, "");
 
 	int init_module_status = 0;
-	// node->declare_parameter<int>("flbot.lidar_slam.common.init_module_status", 0);
-	// node->get_parameter("flbot.lidar_slam.common.init_module_status", init_module_status);
-
 	node->declare_parameter<int>("common.init_module_status", 0);
 	node->get_parameter("common.init_module_status", init_module_status);
-
 	localization_module::ModuleStatus init_status = static_cast<localization_module::ModuleStatus>(init_module_status);
 
 	RCLCPP_INFO(node->get_logger(), "\033[1;32m----> localization_module starting! \033[0m");
@@ -66,7 +59,5 @@ int main(int argc, char** argv) {
 	RCLCPP_INFO(rclcpp::get_logger("thread_number"), "number of threads: %ld", executor.get_number_of_threads());
 	executor.spin();
 	rclcpp::shutdown();
-	// rclcpp::spin(localization_node);
-	// rclcpp::shutdown();
 	return 0;
 }

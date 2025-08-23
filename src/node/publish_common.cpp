@@ -3,13 +3,10 @@
 namespace localization_module {
 
 void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
-									   rclcpp::Publisher<PointCloud2>::SharedPtr pub)
-// void LocalizationModule::publish_cloud(PointCloudType::Ptr pcl_cloud_in, std::string frame_id,
-// rclcpp::Publisher<PointCloud2>::SharedPtr pub_cloud)
-{
+									   rclcpp::Publisher<PointCloud2>::SharedPtr pub) {
 	sensor_msgs::msg::PointCloud2 ros_cloud_msg;
 	pcl::toROSMsg(*pcl_cloud_in, ros_cloud_msg);
-	ros_cloud_msg.header.stamp	  = node_->now();
+	ros_cloud_msg.header.stamp = node_->now();
 	ros_cloud_msg.header.frame_id = frame_id;
 	pub->publish(ros_cloud_msg);
 }
@@ -41,35 +38,35 @@ void LocalizationModule::publish_odometry_in_map(const Eigen::Isometry3d& odom_i
 												 const std::string& child_frameid) {
 	geometry_msgs::msg::TransformStamped transform;
 
-	transform.header.stamp	  = node_->now();
-	transform.header.frame_id = frameid;	   // 替换为实际的父坐标系
-	transform.child_frame_id  = child_frameid; // 替换为实际的子坐标系
+	transform.header.stamp = node_->now();
+	transform.header.frame_id = frameid;	  // 替换为实际的父坐标系
+	transform.child_frame_id = child_frameid; // 替换为实际的子坐标系
 
 	transform.transform.translation.x = odom_in_map.translation().x();
 	transform.transform.translation.y = odom_in_map.translation().y();
 	transform.transform.translation.z = odom_in_map.translation().z();
-	Eigen::Quaterniond quaternion	  = Eigen::Quaterniond(odom_in_map.rotation());
-	transform.transform.rotation.w	  = quaternion.w();
-	transform.transform.rotation.x	  = quaternion.x();
-	transform.transform.rotation.y	  = quaternion.y();
-	transform.transform.rotation.z	  = quaternion.z();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(odom_in_map.rotation());
+	transform.transform.rotation.w = quaternion.w();
+	transform.transform.rotation.x = quaternion.x();
+	transform.transform.rotation.y = quaternion.y();
+	transform.transform.rotation.z = quaternion.z();
 
 	br_.sendTransform(transform);
 }
 
-void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d&		 lidar_in_map,
+void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d& lidar_in_map,
 													   lidar_slam::Localization_base curr_pose,
 													   const std::string& frameid, const std::string& child_frameid,
 													   ModuleStatus curr_running_module_status) {
 	nav_msgs::msg::Odometry odomAftMapped;
 	odomAftMapped.header.frame_id = frameid;
-	odomAftMapped.child_frame_id  = child_frameid;
-	odomAftMapped.header.stamp	  = node_->now(); // ros::Time().fromSec(lidar_end_time);
-												  // odomAftMapped.header.stamp = ros::Time().fromSec(lidar_time_);
-	odomAftMapped.pose.pose.position.x	  = lidar_in_map.translation().x();
-	odomAftMapped.pose.pose.position.y	  = lidar_in_map.translation().y();
-	odomAftMapped.pose.pose.position.z	  = lidar_in_map.translation().z();
-	Eigen::Quaterniond quaternion		  = Eigen::Quaterniond(lidar_in_map.rotation());
+	odomAftMapped.child_frame_id = child_frameid;
+	odomAftMapped.header.stamp = node_->now(); // ros::Time().fromSec(lidar_end_time);
+											   // odomAftMapped.header.stamp = ros::Time().fromSec(lidar_time_);
+	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
+	odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
+	odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
 	odomAftMapped.pose.pose.orientation.x = quaternion.x();
 	odomAftMapped.pose.pose.orientation.y = quaternion.y();
 	odomAftMapped.pose.pose.orientation.z = quaternion.z();
@@ -81,11 +78,11 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d&	
 		odomAftMapped.pose.covariance[1] = 2;
 	}
 
-	Eigen::Isometry3d iso_transform		= Eigen::Isometry3d::Identity();
-	Eigen::Matrix3d	  mat				= curr_pose.imu_state.rot.matrix();
-	iso_transform.linear()				= mat;
+	Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
+	Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
+	iso_transform.linear() = mat;
 	Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
-	Eigen::Matrix3d	  rot				= iso_transform_inv.linear();
+	Eigen::Matrix3d rot = iso_transform_inv.linear();
 
 	auto vel = rot * curr_pose.imu_state.vel;
 
@@ -100,9 +97,9 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d&	
 
 	geometry_msgs::msg::TransformStamped transform;
 
-	transform.header.stamp	  = node_->now();
+	transform.header.stamp = node_->now();
 	transform.header.frame_id = odomAftMapped.header.frame_id; // 替换为实际的父坐标系
-	transform.child_frame_id  = odomAftMapped.child_frame_id;  // 替换为实际的子坐标系
+	transform.child_frame_id = odomAftMapped.child_frame_id;   // 替换为实际的子坐标系
 
 	transform.transform.translation.x = odomAftMapped.pose.pose.position.x;
 	transform.transform.translation.y = odomAftMapped.pose.pose.position.y;
@@ -167,13 +164,13 @@ child_frameid, ros::Publisher pub_odom)
 
 void LocalizationModule::publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar) {
 	nav_msgs::msg::Odometry odomAftMapped;
-	odomAftMapped.header.frame_id		  = "lidar";
-	odomAftMapped.child_frame_id		  = "wheel";
-	odomAftMapped.header.stamp			  = node_->now(); // ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
-	odomAftMapped.pose.pose.position.x	  = wheel_in_lidar.translation().x();
-	odomAftMapped.pose.pose.position.y	  = wheel_in_lidar.translation().y();
-	odomAftMapped.pose.pose.position.z	  = wheel_in_lidar.translation().z();
-	Eigen::Quaterniond quaternion		  = Eigen::Quaterniond(wheel_in_lidar.rotation());
+	odomAftMapped.header.frame_id = "lidar";
+	odomAftMapped.child_frame_id = "wheel";
+	odomAftMapped.header.stamp = node_->now(); // ros::Time().now(); // ros::Time().fromSec(lidar_end_time);
+	odomAftMapped.pose.pose.position.x = wheel_in_lidar.translation().x();
+	odomAftMapped.pose.pose.position.y = wheel_in_lidar.translation().y();
+	odomAftMapped.pose.pose.position.z = wheel_in_lidar.translation().z();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(wheel_in_lidar.rotation());
 	odomAftMapped.pose.pose.orientation.x = quaternion.x();
 	odomAftMapped.pose.pose.orientation.y = quaternion.y();
 	odomAftMapped.pose.pose.orientation.z = quaternion.z();
@@ -192,9 +189,9 @@ void LocalizationModule::publish_static_transform(const Eigen::Isometry3d& wheel
 
 	geometry_msgs::msg::TransformStamped transform;
 
-	transform.header.stamp	  = node_->now();
+	transform.header.stamp = node_->now();
 	transform.header.frame_id = odomAftMapped.header.frame_id; // 替换为实际的父坐标系
-	transform.child_frame_id  = odomAftMapped.child_frame_id;  // 替换为实际的子坐标系
+	transform.child_frame_id = odomAftMapped.child_frame_id;   // 替换为实际的子坐标系
 
 	transform.transform.translation.x = odomAftMapped.pose.pose.position.x;
 	transform.transform.translation.y = odomAftMapped.pose.pose.position.y;
@@ -210,15 +207,13 @@ void LocalizationModule::publish_static_transform(const Eigen::Isometry3d& wheel
 }
 
 void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction, const std::string& parent,
-										   const std::string& child)
-// void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction,string parent, string child)
-{
-	Eigen::Vector3d			pos		   = correction.translation();
-	Eigen::Quaterniond		quaternion = Eigen::Quaterniond(correction.matrix().block<3, 3>(0, 0));
+										   const std::string& child) {
+	Eigen::Vector3d pos = correction.translation();
+	Eigen::Quaterniond quaternion = Eigen::Quaterniond(correction.matrix().block<3, 3>(0, 0));
 	nav_msgs::msg::Odometry transformToPub;
-	transformToPub.pose.pose.position.x	   = pos(0);
-	transformToPub.pose.pose.position.y	   = pos(1);
-	transformToPub.pose.pose.position.z	   = pos(2);
+	transformToPub.pose.pose.position.x = pos(0);
+	transformToPub.pose.pose.position.y = pos(1);
+	transformToPub.pose.pose.position.z = pos(2);
 	transformToPub.pose.pose.orientation.x = quaternion.x();
 	transformToPub.pose.pose.orientation.y = quaternion.y();
 	transformToPub.pose.pose.orientation.z = quaternion.z();
@@ -237,9 +232,9 @@ void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction, 
 
 	geometry_msgs::msg::TransformStamped transform;
 
-	transform.header.stamp	  = node_->now();
+	transform.header.stamp = node_->now();
 	transform.header.frame_id = parent; // 替换为实际的父坐标系
-	transform.child_frame_id  = child;	// 替换为实际的子坐标系
+	transform.child_frame_id = child;	// 替换为实际的子坐标系
 
 	transform.transform.translation.x = transformToPub.pose.pose.position.x;
 	transform.transform.translation.y = transformToPub.pose.pose.position.y;
@@ -253,6 +248,7 @@ void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction, 
 	// br_.sendTransform(transform);
 	// br.sendTransform(tf::StampedTransform(transform, ros::Time().now(), parent, child));
 }
+
 /*
 void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map)
 {
@@ -283,48 +279,43 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
 }
 */
 
-void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg)
-// void LocalizationModule::visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg,
-// ros::Publisher pubLoopConstraintEdge)
-{
-	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
+void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg) {
 	// ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
 	string odometryFrame = "odom";
 
 	if (loopIndexContainer.empty()) return;
 
-	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure" << RESET);
 	visualization_msgs::msg::MarkerArray markerArray;
 	// 闭环顶点
 	visualization_msgs::msg::Marker markerNode;
-	markerNode.header.frame_id	  = odometryFrame;
-	markerNode.header.stamp		  = node_->now(); // timeLaserInfoStamp;
-	markerNode.action			  = visualization_msgs::msg::Marker::ADD;
-	markerNode.type				  = visualization_msgs::msg::Marker::SPHERE_LIST;
-	markerNode.ns				  = "loop_nodes";
-	markerNode.id				  = 0;
+	markerNode.header.frame_id = odometryFrame;
+	markerNode.header.stamp = node_->now(); // timeLaserInfoStamp;
+	markerNode.action = visualization_msgs::msg::Marker::ADD;
+	markerNode.type = visualization_msgs::msg::Marker::SPHERE_LIST;
+	markerNode.ns = "loop_nodes";
+	markerNode.id = 0;
 	markerNode.pose.orientation.w = 1;
-	markerNode.scale.x			  = 0.3;
-	markerNode.scale.y			  = 0.3;
-	markerNode.scale.z			  = 0.3;
-	markerNode.color.r			  = 0;
-	markerNode.color.g			  = 0.8;
-	markerNode.color.b			  = 1;
-	markerNode.color.a			  = 1;
+	markerNode.scale.x = 0.3;
+	markerNode.scale.y = 0.3;
+	markerNode.scale.z = 0.3;
+	markerNode.color.r = 0;
+	markerNode.color.g = 0.8;
+	markerNode.color.b = 1;
+	markerNode.color.a = 1;
 	// 闭环边
 	visualization_msgs::msg::Marker markerEdge;
-	markerEdge.header.frame_id	  = odometryFrame;
-	markerEdge.header.stamp		  = node_->now(); // timeLaserInfoStamp;;
-	markerEdge.action			  = visualization_msgs::msg::Marker::ADD;
-	markerEdge.type				  = visualization_msgs::msg::Marker::LINE_LIST;
-	markerEdge.ns				  = "loop_edges";
-	markerEdge.id				  = 1;
+	markerEdge.header.frame_id = odometryFrame;
+	markerEdge.header.stamp = node_->now(); // timeLaserInfoStamp;;
+	markerEdge.action = visualization_msgs::msg::Marker::ADD;
+	markerEdge.type = visualization_msgs::msg::Marker::LINE_LIST;
+	markerEdge.ns = "loop_edges";
+	markerEdge.id = 1;
 	markerEdge.pose.orientation.w = 1;
-	markerEdge.scale.x			  = 0.1;
-	markerEdge.color.r			  = 0.9;
-	markerEdge.color.g			  = 0.9;
-	markerEdge.color.b			  = 0;
-	markerEdge.color.a			  = 1;
+	markerEdge.scale.x = 0.1;
+	markerEdge.color.r = 0.9;
+	markerEdge.color.g = 0.9;
+	markerEdge.color.b = 0;
+	markerEdge.color.a = 1;
 
 	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure before for loop " << RESET);
 
@@ -363,16 +354,16 @@ void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopInde
 }
 
 void LocalizationModule::show_keyframe(const std::vector<lidar_slam::ScInfo>& loadKeyframe) {
-	visualization_msgs::msg::MarkerArray MarkerArray;				   //定义MarkerArray对象
-	int									 number = loadKeyframe.size(); // object_in为输入的目标个数
+	visualization_msgs::msg::MarkerArray MarkerArray; //定义MarkerArray对象
+	int number = loadKeyframe.size();				  // object_in为输入的目标个数
 	for (int i = 0; i < number; i++) {
 		if (i % 10 != 0) continue;
 		visualization_msgs::msg::Marker Marker; //定义Marker对象
-		Marker.header.frame_id	  = "map";
-		Marker.header.stamp		  = node_->now();
-		Marker.type				  = visualization_msgs::msg::Marker::TEXT_VIEW_FACING; //选用文本类型
-		Marker.ns				  = "basic_shapes";									   //必写，否则rviz无法显示
-		Marker.pose.orientation.w = 1.0;											   //文字的方向
+		Marker.header.frame_id = "map";
+		Marker.header.stamp = node_->now();
+		Marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING; //选用文本类型
+		Marker.ns = "basic_shapes";										 //必写，否则rviz无法显示
+		Marker.pose.orientation.w = 1.0;								 //文字的方向
 		Marker.id =
 			i; //用来标记同一帧不同的对象，如果后面的帧的对象少于前面帧的对象，那么少的id将在rviz中残留，所以需要后续的实时更新程序
 		Marker.scale.x = 1.5;

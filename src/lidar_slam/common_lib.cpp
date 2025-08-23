@@ -6,12 +6,12 @@ Eigen::Vector3d R2ypr(const Eigen::Matrix3d& R) {
 	Eigen::Vector3d a = R.col(2);
 
 	Eigen::Vector3d ypr(3);
-	double			y = atan2(n(1), n(0));
-	double			p = atan2(-n(2), n(0) * cos(y) + n(1) * sin(y));
-	double			r = atan2(a(0) * sin(y) - a(1) * cos(y), -o(0) * sin(y) + o(1) * cos(y));
-	ypr(0)			  = y;
-	ypr(1)			  = p;
-	ypr(2)			  = r;
+	double y = atan2(n(1), n(0));
+	double p = atan2(-n(2), n(0) * cos(y) + n(1) * sin(y));
+	double r = atan2(a(0) * sin(y) - a(1) * cos(y), -o(0) * sin(y) + o(1) * cos(y));
+	ypr(0) = y;
+	ypr(1) = p;
+	ypr(2) = r;
 
 	return ypr; // M_PI * 180.0;
 }
@@ -52,13 +52,13 @@ void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz,
 Eigen::Matrix3d rpy2R(const Eigen::Vector3d& rpy) {
 	// 初始化欧拉角(Z-Y-X，即RPY, 先绕x轴roll,再绕y轴pitch,最后绕z轴yaw)
 	// Eigen::Vector3d eu_ang(roll, pitch, yaw);
-	Eigen::Vector3d	  eu_ang(rpy(0), rpy(1), rpy(2));
+	Eigen::Vector3d eu_ang(rpy(0), rpy(1), rpy(2));
 	Eigen::AngleAxisd rol_vect(Eigen::AngleAxisd(eu_ang(0), Eigen::Vector3d::UnitX()));
 	Eigen::AngleAxisd pit_vect(Eigen::AngleAxisd(eu_ang(1), Eigen::Vector3d::UnitY()));
 	Eigen::AngleAxisd yaw_vect(Eigen::AngleAxisd(eu_ang(2), Eigen::Vector3d::UnitZ()));
 
 	Eigen::Matrix3d rot_matrix3d = Eigen::Matrix3d::Identity();
-	rot_matrix3d				 = yaw_vect * pit_vect * rol_vect;
+	rot_matrix3d = yaw_vect * pit_vect * rol_vect;
 
 	return rot_matrix3d;
 }
@@ -67,9 +67,9 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g) {
 	Eigen::Matrix3d R0;
 	Eigen::Vector3d ng1 = g.normalized();
 	Eigen::Vector3d ng2{ 0, 0, 1.0 };
-	R0		   = Eigen::Quaterniond::FromTwoVectors(ng1, ng2).toRotationMatrix();
+	R0 = Eigen::Quaterniond::FromTwoVectors(ng1, ng2).toRotationMatrix();
 	double yaw = R2ypr(R0).x();
-	R0		   = ypr2R(Eigen::Vector3d{ -yaw, 0, 0 }) * R0;
+	R0 = ypr2R(Eigen::Vector3d{ -yaw, 0, 0 }) * R0;
 	// R0 = Utility::ypr2R(Eigen::Vector3d{-90, 0, 0}) * R0;
 	return R0;
 }
@@ -98,18 +98,18 @@ PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen
 /////////////////////////////////////////////////////////////////////////////////////////////
 bool mkdir_p(const std::string& path, mode_t mode) {
 	// 替换路径中的 "//" 为 "/"
-	std::string path_temp	= path;
-	std::string to_replace	= "//";
+	std::string path_temp = path;
+	std::string to_replace = "//";
 	std::string replacement = "/";
-	std::size_t pos			= 0;
+	std::size_t pos = 0;
 
 	while ((pos = path_temp.find(to_replace, pos)) != std::string::npos) {
 		path_temp.replace(pos, to_replace.length(), replacement);
 		pos += replacement.length(); // 更新位置，继续查找
 	}
 
-	char   tmp[256];
-	char*  p = NULL;
+	char tmp[256];
+	char* p = NULL;
 	size_t len;
 
 	// Copy string so we can modify it.
@@ -134,7 +134,7 @@ bool mkdir_p(const std::string& path, mode_t mode) {
 
 	// Create the final directory.
 	// 由于末尾的'/'已被删除，最低一级目录，循环内不会被创建
-	// TODO: ？？？ 要是不删除最后的'/'，是不是就不用分两步了，待测
+	// TODO: 要是不删除最后的'/'，是不是就不用分两步了，待测
 	if (mkdir(tmp, mode) && errno != EEXIST) {
 		return false;
 	}
@@ -147,13 +147,11 @@ bool mkdir_p(const std::string& path, mode_t mode) {
 bool create_directory_if_not_exists(const std::string& directory_path) {
 #if 1
 	if (0 != access(directory_path.c_str(), 0)) {
-		// int status = mkdir(directory_path.c_str(),0777);
 		bool status = mkdir_p(directory_path.c_str(), 0777);
 		if (status) {
 			return true; // 创建目录成功
 		} else {
 			std::cerr << "Error creating directory: " << directory_path << std::endl;
-			// ROS_ERROR_STREAM(RED << "Error creating directory: " << directory_path <<RESET);
 			return false; // 创建目录失败
 		}
 	} else {

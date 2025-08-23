@@ -33,12 +33,11 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 	 */
 	//// topic-name: "/flbot/localization_module/ctrl_cmd" *****************************************
 
-	auto msg	   = msg_in;
-	int	 ctrl_type = msg->data / 100 * 100;
-	auto curr_cmd  = static_cast<SlamCtrlCmd>(ctrl_type);
+	auto msg = msg_in;
+	int ctrl_type = msg->data / 100 * 100;
+	auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
 	std::cout << BOLDGREEN << "Received Ctrl Msg: " << msg->data << RESET << std::endl;
 	std::cout << BOLDGREEN << "Received Ctrl Cmd: " << print_SlamCtrlCmd(curr_cmd) << RESET << std::endl;
-	// ROS_INFO_STREAM(" CMD_MAX: " << CMD_MAX);
 
 	int map_id = msg->data % 100;
 	if (map_id == 0) {
@@ -52,10 +51,9 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 			} else { //启动建图失败
 				std::cout << RED << "start_mapping failed!" << RESET << std::endl;
 			}
-
 			break;
 		}
-		case START_SEC_MAPPING: { // 重定位，并开始建图，/// TODO/////////////////////////////////////
+		case START_SEC_MAPPING: { // 重定位，并开始建图
 			if (start_second_mapping(map_id)) {
 				std::cout << GREEN << "start_second_mapping success!" << RESET << std::endl;
 			} else {
@@ -103,11 +101,9 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 			} else {
 				std::cout << RED << "start_relocalization failed!" << RESET << std::endl;
 			}
-
 			break;
 		}
 		case RESTART_SEC_MAPPING: { // 重新进行重定位
-			// int map_id = msg.data % 100;
 			if (restart_second_mapping(map_id)) {
 				RCLCPP_INFO(node_->get_logger(), "restart sec_mapping successfully!");
 			} else {
@@ -115,7 +111,6 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 			}
 			break;
 		}
-
 		default: {
 			RCLCPP_INFO(node_->get_logger(), "mapping ctrl msg: %u invalid!", msg->data);
 			break;
@@ -123,9 +118,8 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 	}
 }
 
-// bool LocalizationModule::start_mapping(ModuleStatus set_status){
 bool LocalizationModule::start_mapping(int map_id) {
-	auto set_status				   = ModuleStatus::MODULE_MAPPING;
+	auto set_status = ModuleStatus::MODULE_MAPPING;
 	auto running_module_status_now = running_module_status_.load();
 	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
 				print_ModuleStatus(running_module_status_now).c_str());
@@ -142,9 +136,7 @@ bool LocalizationModule::start_mapping(int map_id) {
 		mapping_node_status_.store(1); // 1: normal
 		return true;
 	} else if (is_mapping_status(running_module_status_now)) {
-		RCLCPP_INFO(
-			node_->get_logger(),
-			"skip, already running mapping now"); //////////////////// TODO 要不要重置 start_index_ end_index_ ？？？
+		RCLCPP_INFO(node_->get_logger(), "skip, already running mapping now");
 		return false;
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
 		RCLCPP_INFO(node_->get_logger(), "skip, running localizing now, please stop localizing first");
@@ -161,8 +153,8 @@ bool LocalizationModule::start_mapping(int map_id) {
 }
 
 bool LocalizationModule::start_second_mapping(int map_id) {
-	auto		 running_module_status_now = running_module_status_.load();
-	ModuleStatus set_status				   = ModuleStatus::MODULE_SEC_MAPPING;
+	auto running_module_status_now = running_module_status_.load();
+	ModuleStatus set_status = ModuleStatus::MODULE_SEC_MAPPING;
 
 	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
 				print_ModuleStatus(running_module_status_now).c_str());
@@ -177,10 +169,6 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 	if (running_module_status_now == ModuleStatus::MODULE_IDLE) {
 		running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 		make_slam_obj(slam_param_, set_status);
-		// 加载地图
-		// ROS_INFO("load map dir: %s", load_map_dir.c_str());// 这种方式打印中文字符会乱码，显示为一堆问号，std::cout
-		// 可以正常打印中文
-		std::cout << "0000000000000000000000" << std::endl;
 		if (!slam_->load_map(load_map_dir)) {
 			std::cout << RED << "load map failed!" << RESET << std::endl;
 
@@ -197,7 +185,6 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 			mapping_node_status_.store(1); // 1: normal
 			return true;
 		}
-		std::cout << "000000000111111111110" << std::endl;
 	} else if (is_mapping_status(running_module_status_now)) {
 		RCLCPP_INFO(node_->get_logger(), "skip, already running mapping now");
 		return false;
@@ -208,7 +195,7 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
 		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
 					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status_: %s", print_ModuleStatus(set_status).c_str());
+		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
 		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
 		RCLCPP_INFO(node_->get_logger(), "****************************");
 		return false;
@@ -217,10 +204,9 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 
 bool LocalizationModule::stop_mapping_without_saving_map() {
 	auto running_module_status_now = running_module_status_.load();
-	auto set_status				   = ModuleStatus::MODULE_IDLE;
+	auto set_status = ModuleStatus::MODULE_IDLE;
 	if (is_mapping_status(running_module_status_now)) {
 		running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
-		// sleep(1); // 暂停一秒
 		usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 		release_slam_obj();
 		RCLCPP_INFO(node_->get_logger(), "mapping stopped without saving map!");
@@ -229,9 +215,6 @@ bool LocalizationModule::stop_mapping_without_saving_map() {
 		mapping_node_status_.store(0); // 0: inactive
 
 		return true;
-
-		// }else if(last_running_module_status_ == ModuleStatus::MODULE_IDLE ||
-		//          last_running_module_status_ == ModuleStatus::MODULE_LOCALIZATION){
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
 		RCLCPP_INFO(node_->get_logger(), "skip, can not stop mapping, running_module_status_: %s",
@@ -251,16 +234,16 @@ bool LocalizationModule::stop_mapping_without_saving_map() {
 
 bool LocalizationModule::stop_mapping() {
 	// TODO: 问题：当点云量为0时，程序挂掉
-	auto		 running_module_status_now = running_module_status_.load();
-	auto		 mapping_status_now		   = mapping_status_.load();
-	ModuleStatus set_status				   = ModuleStatus::MODULE_IDLE;
+	auto running_module_status_now = running_module_status_.load();
+	auto mapping_status_now = mapping_status_.load();
+	ModuleStatus set_status = ModuleStatus::MODULE_IDLE;
 	if (is_mapping_status(running_module_status_now)) {
-		if (mapping_status_now == 3) {
+		if (mapping_status_now == 3) { // m_standby
 			running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
 			RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
 			RCLCPP_INFO(node_->get_logger(), "\033[1;32mstart saving map data\033[0m");
-			std::string pcd_dir	   = slam_param_.common.cloud_map_directory;
-			const auto	resolution = slam_param_.mapping.save_map_resolution;
+			std::string pcd_dir = slam_param_.common.cloud_map_directory;
+			const auto resolution = slam_param_.mapping.save_map_resolution;
 			if (!slam_->save_map(pcd_dir, resolution, 0, 0)) {
 				std::cout << RED << "save map data failed!" << RESET << std::endl;
 			} else {
@@ -281,7 +264,7 @@ bool LocalizationModule::stop_mapping() {
 			mapping_node_status_.store(0); // 0: inactive
 
 			return true;
-		} else if (mapping_status_now == 4) {
+		} else if (mapping_status_now == 4) { // m_creating_ele (not used)
 			RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
 			RCLCPP_INFO(node_->get_logger(), "skip, please finish current map-element, or delete it first !");
 			return false;
@@ -313,7 +296,7 @@ bool LocalizationModule::stop_mapping() {
 }
 
 bool LocalizationModule::save_extrinsic_to_file() {
-	std::string	  extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
+	std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
 	std::ofstream extrinsic_file(extrinsic_file_name);
 	if (!extrinsic_file.is_open()) {
 		std::cout << "open extrinsic file failed!" << std::endl;
@@ -324,16 +307,14 @@ bool LocalizationModule::save_extrinsic_to_file() {
 	extrinsic_file << "  yaw:   " << slam_param_.extrinsic.yaw_pitch_roll_deg[0] << " degree, \n";
 	extrinsic_file << "  pitch: " << slam_param_.extrinsic.yaw_pitch_roll_deg[1] << " degree, \n";
 	extrinsic_file << "  roll:  " << slam_param_.extrinsic.yaw_pitch_roll_deg[2] << " degree, \n";
-
 	extrinsic_file.close();
-
 	return true;
 }
 
 bool LocalizationModule::start_localization(int map_id) {
 	ModuleStatus running_module_status_now = running_module_status_.load();
-	ModuleStatus set_status				   = ModuleStatus::MODULE_LOCALIZATION;
-	auto		 localization_status_now   = localization_status_.load();
+	ModuleStatus set_status = ModuleStatus::MODULE_LOCALIZATION;
+	auto localization_status_now = localization_status_.load();
 
 	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
 				print_ModuleStatus(running_module_status_now).c_str());
@@ -344,20 +325,16 @@ bool LocalizationModule::start_localization(int map_id) {
 		exit(EXIT_FAILURE);
 	}
 	std::string load_map_dir = slam_param_.common.cloud_map_directory;
-
 	std::cout << "load_map_dir: " << slam_param_.common.cloud_map_directory << std::endl;
 
 	// ModuleStatus curr_running_module_status = running_module_status_.load();
 
-	// if (running_module_status_now == ModuleStatus::MODULE_IDLE){
 	if (need_start_localization(running_module_status_now, localization_status_now)) {
 		// update status
 		running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 
 		make_slam_obj(slam_param_, set_status);
-		// 加载地图
-		// ROS_INFO("load map dir: %s", load_map_dir.c_str());
-		std::cout << "9999999999999999999999999" << std::endl;
+
 		if (!slam_->load_map(load_map_dir)) {
 			std::cout << RED << "load map failed!" << RESET << std::endl;
 			release_slam_obj();
@@ -367,13 +344,11 @@ bool LocalizationModule::start_localization(int map_id) {
 			return false;
 		} else {
 			show_load_map_ = 0;
-			std::cout << "9999999999999000000000000000009" << std::endl;
 			// update status
 			running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
 			local_node_status_.store(1); // 1 = NORMAL
 			return true;
 		}
-		std::cout << "9999999999999911111111111111119" << std::endl;
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION &&
 			   (localization_status_is_ok(localization_status_now))) {
 		RCLCPP_INFO(node_->get_logger(), "skip, already running localization normally now");
@@ -396,13 +371,12 @@ bool LocalizationModule::start_localization(int map_id) {
 
 bool LocalizationModule::stop_localization() {
 	auto running_module_status_now = running_module_status_.load();
-	auto set_status				   = ModuleStatus::MODULE_LOCALIZATION;
+	auto set_status = ModuleStatus::MODULE_LOCALIZATION;
 
 	if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
 		// update module-status
 		running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
 
-		// sleep(1); // 暂停一秒
 		usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 		release_slam_obj();
 		RCLCPP_INFO(node_->get_logger(), "localization stopped !");
@@ -412,7 +386,6 @@ bool LocalizationModule::stop_localization() {
 		local_node_status_.store(0);
 
 		return true;
-
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_MAPPING ||
 			   running_module_status_now == ModuleStatus::MODULE_SEC_MAPPING) {
@@ -438,7 +411,6 @@ bool LocalizationModule::start_relocalization(int map_id) {
 	if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
 		// last_running_module_status_ = running_module_status_;
 		// set_module_status_ = ModuleStatus::MODULE_IDLE;
-		// // running_module_status_ = ModuleStatus::MODULE_STOPPING_SLAM;
 		// running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
 		if (!stop_localization()) {
 			return false;
@@ -497,7 +469,6 @@ bool LocalizationModule::restart_second_mapping(int map_id) {
 }
 
 bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status) {
-	// ROS_INFO("debug: making obj: lidar_slam ");
 	lidar_slam::SlamWorkMode set_slam_mode = lidar_slam::SlamWorkMode::UNKNOWN;
 	if (set_status == ModuleStatus::MODULE_MAPPING) {
 		set_slam_mode = lidar_slam::SlamWorkMode::MAPPING;
@@ -506,68 +477,37 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
 	} else if (set_status == ModuleStatus::MODULE_LOCALIZATION) {
 		set_slam_mode = lidar_slam::SlamWorkMode::LOCALIZATION;
 	} else {
-		// ROS_ERROR_STREAM(RED << "ModuleStatus: " << print_ModuleStatus(set_status).c_str() << ", status error!"
-		// <<RESET);
-		std::cout << RED << "ModuleStatus: " << print_ModuleStatus(set_status).c_str() << ", status error!" << RESET
-				  << std::endl;
 		return false;
 	}
 	RCLCPP_INFO(node_->get_logger(), "Making obj(lidar_slam) --- with: set_slam_mode = %s",
 				lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
-	slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode,
-													node_); //////////////////////////////////////////////TODO::
+	slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode, node_);
 	RCLCPP_INFO(node_->get_logger(), "\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
-
-	// slipping_ptr_->reset();
 	return true;
 }
 
 void LocalizationModule::release_slam_obj() {
 	releasing_slam_flag_ = true;
 
-	// sleep(1); // 暂停一秒
 	usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 	RCLCPP_INFO(node_->get_logger(), "start stopping lidar_slam");
 
 	lidar_slam::LidarSlam* temp_slam = slam_.release();
-	// cout<<"debug: temp_slam: "<<temp_slam<<endl;
-	// ROS_INFO("debug: release successfully");
 	delete temp_slam;
-	// cout<<"temp_slam: "<<temp_slam<<endl;
-	// ROS_INFO("debug: delete successfully");
 	temp_slam = nullptr;
-	// ROS_INFO("debug: set nullptr successfully");
 
-	// start_index_ = -1; // not used now, 目前不涉及创建元素的操作
-	// end_index_ = -1; // not used now, 目前不涉及创建元素的操作
 	running_module_status_.store(ModuleStatus::MODULE_IDLE);
 	mapping_node_status_.store(0); // 0: inactive
 	local_node_status_.store(0);   // 0: inactive
 	RCLCPP_INFO(node_->get_logger(), "\033[1;32mlidar_slam stopped !\033[0m");
 	releasing_slam_flag_ = false;
-
-	// slipping_ptr_->reset();
 }
 
 bool LocalizationModule::make_map_directory_name(int map_id) {
 	std::string map_folder = " ";
 	if (slam_param_.common.run_on_mower) {
-		// if (!nh_.getParam("/map_manager/map_folder", map_folder))  { ////////////////////////////////TODO::
-		//     // 从 rosparam 读取参数 失败，则用yaml中路径作为默认路径
-		//     // ROS_ERROR_STREAM("Load param: /map_manager/map_folder failed, using default param, map_folder: " <<
-		//     slam_param_.common.map_directory );
-		//    std::cout << "Load param: /map_manager/map_folder failed, using default param, map_folder: " <<
-		//    slam_param_.common.map_directory << std::endl;
-		//     map_folder = slam_param_.common.map_directory;
-		// } else {
-		//     // 成功读取 rosparam, 则选用读取的地图路径
-		//     // ROS_INFO_STREAM(GREEN << "Load param: /map_manager/map_folder success: " << map_folder);
-		//     std::cout << GREEN << "Load param: /map_manager/map_folder success: " << map_folder << std::endl;
-		// }
-
 		node_->get_parameter_or("map_manager.map_folder", map_folder, slam_param_.common.map_directory);
 	} else {
-		// if test on personal computer, use map_directory set in yaml file directly
 		map_folder = slam_param_.common.map_directory;
 	}
 
@@ -576,10 +516,8 @@ bool LocalizationModule::make_map_directory_name(int map_id) {
 
 	// 检查并创建地图路径
 	if (create_directory_if_not_exists(slam_param_.common.map_directory)) {
-		// ROS_INFO_STREAM("Directory created or already exists: " << slam_param_.common.map_directory );
 		std::cout << "Directory created or already exists: " << slam_param_.common.map_directory << std::endl;
 	} else {
-		// ROS_ERROR_STREAM(RED << "Failed to create directory: " << slam_param_.common.map_directory   <<RESET);
 		std::cout << RED << "Failed to create directory: " << slam_param_.common.map_directory << std::endl;
 		return false;
 	}

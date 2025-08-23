@@ -1,5 +1,6 @@
 map/*
 *.pcd
+build/*
 
 *.zip
 *.tar.gz

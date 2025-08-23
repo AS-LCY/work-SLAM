@@ -33,17 +33,17 @@ enum Surround { Prev, Next };
 enum E_jump { Nr_nor, Nr_zero, Nr_180, Nr_inf, Nr_blind };
 
 struct orgtype {
-	double	range;
-	double	dista;
-	double	angle[2];
-	double	intersect;
-	E_jump	edj[2];
+	double range;
+	double dista;
+	double angle[2];
+	double intersect;
+	E_jump edj[2];
 	Feature ftype;
 	orgtype() {
-		range	  = 0;
+		range = 0;
 		edj[Prev] = Nr_nor;
 		edj[Next] = Nr_nor;
-		ftype	  = Nor;
+		ftype = Nor;
 		intersect = 2;
 	}
 };
@@ -51,8 +51,8 @@ struct orgtype {
 namespace velodyne_ros {
 struct EIGEN_ALIGN16 Point {
 	PCL_ADD_POINT4D;
-	float	 intensity;
-	float	 time;
+	float intensity;
+	float time;
 	uint16_t ring;
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -65,10 +65,10 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_ros::Point,
 namespace ouster_ros {
 struct EIGEN_ALIGN16 Point {
 	PCL_ADD_POINT4D;
-	float	 intensity;
+	float intensity;
 	uint32_t t;
 	uint16_t reflectivity;
-	uint8_t	 ring;
+	uint8_t ring;
 	uint16_t ambient;
 	uint32_t range;
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

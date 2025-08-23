@@ -27,8 +27,8 @@ class LocalizationModuleParamManager {
 
 	bool load_config_params() {
 		// std::string ns = "flbot.lidar_slam.";
-		std::string ns		= "";
-		bool		success = true;
+		std::string ns = "";
+		bool success = true;
 
 		/// common *******************************************
 		node_->declare_parameter<bool>("common.run_on_mower", true);
@@ -76,32 +76,19 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<std::vector<long int>>("common.cpu_id", std::vector<long int>());
 		node_->get_parameter("common.cpu_id", loaded_param_.common.cpu_id);
 
-		std::cout << "common.run_on_mower:" << loaded_param_.common.run_on_mower << std::endl;
-		std::cout << "common.time_sync_en:" << loaded_param_.common.time_sync_en << std::endl;
-		std::cout << "common.localization_mode: " << loaded_param_.common.localization_mode << std::endl;
-		std::cout << "common.offline_mode: " << loaded_param_.common.offline_mode << std::endl;
-		std::cout << "common.fast_mode: " << loaded_param_.common.fast_mode << std::endl;
-		std::cout << "common.just_show_mode: " << loaded_param_.common.just_show_mode << std::endl;
-		std::cout << "common.show_rviz: " << loaded_param_.common.show_rviz << std::endl;
-		std::cout << "common.save_log_dir: " << loaded_param_.common.save_log_dir << std::endl;
-		std::cout << "common.log_keep_time: " << loaded_param_.common.log_keep_time << std::endl;
-		std::cout << "common.map_relative_to: " << loaded_param_.common.map_relative_to << std::endl;
-		std::cout << "common.map_directory: /" << loaded_param_.common.map_directory << std::endl;
-		std::cout << "common.sub_topic_ctrl_cmd: " << loaded_param_.common.sub_topic_ctrl_cmd << std::endl;
-
 		/// 处理地图目录路径
 		std::string parent_dir;
 		if (loaded_param_.common.map_relative_to == 0) { // 相对于pkg
 			parent_dir = ament_index_cpp::get_package_share_directory("lidar_slam");
 		} else if (loaded_param_.common.map_relative_to == 1) { // 相对于catkin_ws
 			std::string package_path = ament_index_cpp::get_package_share_directory("lidar_slam");
-			parent_dir				 = package_path + "/../../";
+			parent_dir = package_path + "/../../";
 		} else if (loaded_param_.common.map_relative_to == 2) { // 绝对路径
 			parent_dir = "";
 		}
 
-		loaded_param_.common.map_directory				  = parent_dir + loaded_param_.common.map_directory;
-		std::string			  map_directory_on_mower_temp = "";
+		loaded_param_.common.map_directory = parent_dir + loaded_param_.common.map_directory;
+		std::string map_directory_on_mower_temp = "";
 		std::vector<long int> cpu_id_on_mower_temp;
 
 		node_->declare_parameter<std::vector<long int>>("common.cpu_id_on_mower", std::vector<long int>());
@@ -111,14 +98,14 @@ class LocalizationModuleParamManager {
 
 		if (loaded_param_.common.run_on_mower) {
 			loaded_param_.common.map_directory = map_directory_on_mower_temp;
-			loaded_param_.common.cpu_id		   = cpu_id_on_mower_temp;
+			loaded_param_.common.cpu_id = cpu_id_on_mower_temp;
 		}
 
 		// ... 其他参数处理逻辑保持不变
 
 		/// extrinsic *******************************************
-		vector<double>		extrinsic_T;
-		vector<double>		extrinsic_R;
+		vector<double> extrinsic_T;
+		vector<double> extrinsic_R;
 		std::vector<double> Lidar_In_Wheel;					   // 4* 4
 		std::vector<double> extrinsic_euler_IMU_in_lidar;	   // 1 * 3
 		std::vector<double> extrinsic_euler_lidar_in_baselink; // 1 * 3
@@ -132,7 +119,6 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<bool>("extrinsic.extrinsic_est_en", false);
 		node_->get_parameter("extrinsic.extrinsic_est_en", loaded_param_.extrinsic.extrinsic_est_en);
 
-		// get_param(ns+ "extrinsic/Lidar_In_Wheel", Lidar_In_Wheel, &success);//temp
 		node_->declare_parameter<std::vector<double>>("extrinsic.Lidar_In_Wheel", std::vector<double>());
 		node_->get_parameter("extrinsic.Lidar_In_Wheel", Lidar_In_Wheel);
 
@@ -143,37 +129,37 @@ class LocalizationModuleParamManager {
 													  std::vector<double>());
 		node_->get_parameter("extrinsic.extrinsic_euler_lidar_in_baselink", extrinsic_euler_lidar_in_baselink);
 		///注意ROS2中使用点号(.)代替了斜杠(/)作为参数命名空间分隔符，且需要先声明参数再获取。
-		// 获取参数值
 
-		std::cout << "[LocalizationModuleParamManager]:22 " << std::endl;
 		// 矩阵赋值逻辑保持不变
 		loaded_param_.extrinsic.extrinT << extrinsic_T[0], extrinsic_T[1], extrinsic_T[2];
-		double yaw						= extrinsic_R[0] / 180 * M_PI;
-		double pitch					= extrinsic_R[1] / 180 * M_PI;
-		double roll						= extrinsic_R[2] / 180 * M_PI;
+		double yaw = extrinsic_R[0] / 180 * M_PI;
+		double pitch = extrinsic_R[1] / 180 * M_PI;
+		double roll = extrinsic_R[2] / 180 * M_PI;
 		loaded_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{ yaw, pitch, roll });
-		// ... 其他模块参数获取
+
 		// IMU in base_link
 		Eigen::Matrix3d R_imu_in_lidar = Eigen::Matrix3d::Identity();
 		if (extrinsic_euler_IMU_in_lidar.size() == 3) {
-			double yaw2	   = extrinsic_euler_IMU_in_lidar[0] / 180 * M_PI;
-			double pitch2  = extrinsic_euler_IMU_in_lidar[1] / 180 * M_PI;
-			double roll2   = extrinsic_euler_IMU_in_lidar[2] / 180 * M_PI;
-			R_imu_in_lidar = rpy2R(Eigen::Vector3d{ roll2, pitch2, yaw2 });
+			double yaw2 = extrinsic_euler_IMU_in_lidar[0] / 180 * M_PI;
+			double pitch2 = extrinsic_euler_IMU_in_lidar[1] / 180 * M_PI;
+			double roll2 = extrinsic_euler_IMU_in_lidar[2] / 180 * M_PI;
+			R_imu_in_lidar = rpy2R(Eigen::Vector3d{ roll2, pitch2, yaw2 }); // TODO(jxl): 内部实现和ypr2R等价
 		} else if (extrinsic_euler_IMU_in_lidar.size() == 4) {
-			double			   qx		  = extrinsic_euler_IMU_in_lidar[0];
-			double			   qy		  = extrinsic_euler_IMU_in_lidar[1];
-			double			   qz		  = extrinsic_euler_IMU_in_lidar[2];
-			double			   qw		  = extrinsic_euler_IMU_in_lidar[3];
+			double qx = extrinsic_euler_IMU_in_lidar[0];
+			double qy = extrinsic_euler_IMU_in_lidar[1];
+			double qz = extrinsic_euler_IMU_in_lidar[2];
+			double qw = extrinsic_euler_IMU_in_lidar[3];
 			Eigen::Quaterniond eigen_quat = Eigen::Quaterniond(qw, qx, qy, qz);
-			R_imu_in_lidar				  = eigen_quat.toRotationMatrix();
+			R_imu_in_lidar = eigen_quat.toRotationMatrix();
 		}
 
-		double yaw3								   = extrinsic_euler_lidar_in_baselink[0] / 180 * M_PI;
-		double pitch3							   = extrinsic_euler_lidar_in_baselink[1] / 180 * M_PI;
-		double roll3							   = extrinsic_euler_lidar_in_baselink[2] / 180 * M_PI;
-		auto   R_lidar_in_base					   = rpy2R(Eigen::Vector3d{ roll3, pitch3, yaw3 });
-		loaded_param_.extrinsic.R_baselink_IMU	   = R_lidar_in_base * R_imu_in_lidar;
+		double yaw3 = extrinsic_euler_lidar_in_baselink[0] / 180 * M_PI;
+		double pitch3 = extrinsic_euler_lidar_in_baselink[1] / 180 * M_PI;
+		double roll3 = extrinsic_euler_lidar_in_baselink[2] / 180 * M_PI;
+		auto R_lidar_in_base = rpy2R(Eigen::Vector3d{ roll3, pitch3, yaw3 });
+		loaded_param_.extrinsic.R_baselink_IMU = R_lidar_in_base * R_imu_in_lidar;
+		//仅用来转换IMU数据到baselink坐标系下
+
 		loaded_param_.extrinsic.yaw_pitch_roll_deg = extrinsic_euler_lidar_in_baselink;
 
 		// T_wheel_lidar & T_lidar_wheel
@@ -183,9 +169,9 @@ class LocalizationModuleParamManager {
 			Lidar_In_Wheel[10], Lidar_In_Wheel[11], Lidar_In_Wheel[12], Lidar_In_Wheel[13], Lidar_In_Wheel[14],
 			Lidar_In_Wheel[15];
 		loaded_param_.extrinsic.T_wheel_lidar.matrix() = T_wheel_lidar;
-		loaded_param_.extrinsic.T_lidar_wheel		   = loaded_param_.extrinsic.T_wheel_lidar.inverse();
+		loaded_param_.extrinsic.T_lidar_wheel = loaded_param_.extrinsic.T_wheel_lidar.inverse();
+
 		/// lidar_preproc params *******************************************
-		std::cout << "[LocalizationModuleParamManager]:23 " << std::endl;
 		node_->declare_parameter<int>("lidar_preproc.lidar_type", 5);
 		node_->get_parameter("lidar_preproc.lidar_type", loaded_param_.lidar_preproc.lidar_type);
 
@@ -200,11 +186,9 @@ class LocalizationModuleParamManager {
 			node_->get_parameter("lidar_preproc.surf_curvature_thr", loaded_param_.lidar_preproc.surf_curvature_thr);
 
 		} else if (loaded_param_.lidar_preproc.lidar_type == 1) {
-			//    GET_PARAM(int, "lidar_preproc.line_count", loaded_param_.lidar_preproc.line_count);
 			node_->declare_parameter<int>("lidar_preproc.line_count", 4);
 			node_->get_parameter("lidar_preproc.line_count", loaded_param_.lidar_preproc.line_count);
 		}
-		std::cout << "[LocalizationModuleParamManager]:24 " << std::endl;
 		node_->declare_parameter<std::string>("lidar_preproc.sub_lidar_topic", "/M300/lidar");
 		node_->get_parameter("lidar_preproc.sub_lidar_topic", loaded_param_.lidar_preproc.sub_lidar_topic);
 		node_->declare_parameter<std::string>("lidar_preproc.sub_imu_topic", "/M300/imu");
@@ -216,7 +200,6 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<std::vector<double>>("lidar_preproc.z_range", std::vector<double>());
 		node_->get_parameter("lidar_preproc.z_range", loaded_param_.lidar_preproc.z_range);
 
-		std::cout << "tttttttttttttt: " << loaded_param_.lidar_preproc.z_range.size() << std::endl;
 		node_->declare_parameter<int>("lidar_preproc.keep_lidar_num_before_curr", 1);
 		node_->get_parameter("lidar_preproc.keep_lidar_num_before_curr",
 							 loaded_param_.lidar_preproc.keep_lidar_num_before_curr);
@@ -226,9 +209,8 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("lidar_preproc.ring_filter_num", loaded_param_.lidar_preproc.ring_filter_num);
 		node_->declare_parameter<int>("lidar_preproc.cloud_size_to_keep", 2500);
 		node_->get_parameter("lidar_preproc.cloud_size_to_keep", loaded_param_.lidar_preproc.cloud_size_to_keep);
-		std::cout << "[LocalizationModuleParamManager]:25 " << std::endl;
 
-		//     /// mapping params *******************************************
+		// mapping params *******************************************
 		node_->declare_parameter<int>("lidar_preproc.extract_cloud_method", 0);
 		node_->get_parameter("lidar_preproc.extract_cloud_method", loaded_param_.lidar_preproc.extract_cloud_method);
 		node_->declare_parameter<double>("lidar_preproc.leafsize", 0.5);
@@ -239,7 +221,6 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("lidar_preproc.voxel_region_xyz", loaded_param_.lidar_preproc.voxel_region_xyz);
 		node_->declare_parameter<double>("lidar_preproc.boundary_z", 4.0);
 		node_->get_parameter("lidar_preproc.boundary_z", loaded_param_.lidar_preproc.boundary_z);
-		//     /// mapping params *******************************************
 		node_->declare_parameter<double>("mapping.acc_cov", 0.1);
 		node_->get_parameter("mapping.acc_cov", loaded_param_.mapping.acc_cov);
 		node_->declare_parameter<double>("mapping.gyr_cov", 0.1);
@@ -266,8 +247,8 @@ class LocalizationModuleParamManager {
 
 		node_->declare_parameter<double>("mapping.save_map_resolution", 0.1);
 		node_->get_parameter("mapping.save_map_resolution", loaded_param_.mapping.save_map_resolution);
+
 		/// localization params *******************************************
-		std::cout << "[LocalizationModuleParamManager]:26 " << std::endl;
 		node_->declare_parameter<float>("localization.fgicp_peroid_sec", 5.0);
 		node_->get_parameter("localization.fgicp_peroid_sec", loaded_param_.localization.fgicp_peroid_sec);
 		node_->declare_parameter<double>("localization.fgicp_score_fail_thr", 0.3);
@@ -313,8 +294,6 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("localization.fgicp_low_accuracy_count_thr",
 							 loaded_param_.localization.fgicp_low_accuracy_count_thr);
 
-		std::cout << "[LocalizationModuleParamManager]:27 " << std::endl;
-
 		/// re-localization params *******************************************s
 		node_->declare_parameter<double>("re_localization.score_thr", 0.05);
 		node_->get_parameter("re_localization.score_thr", loaded_param_.re_localization.score_thr);
@@ -337,7 +316,6 @@ class LocalizationModuleParamManager {
 							 loaded_param_.ikdtree.kdTreeReconstructPointLeafSize);
 		node_->declare_parameter<double>("ikdtree.map_leaf_size", 0.5);
 		node_->get_parameter("ikdtree.map_leaf_size", loaded_param_.ikdtree.map_leaf_size);
-		std::cout << "[LocalizationModuleParamManager]:28 " << std::endl;
 
 		///  detect slip params *******************************************
 		node_->declare_parameter<double>("detect_slip.detect_window_time_range", 2.0);
@@ -347,8 +325,7 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("detect_slip.slipping_count_thr", loaded_param_.detect_slip.slipping_count_thr);
 		node_->declare_parameter<double>("detect_slip.slipping_dist_thr", 0.15);
 		node_->get_parameter("detect_slip.slipping_dist_thr", loaded_param_.detect_slip.slipping_dist_thr);
-		std::cout << "[LocalizationModuleParamManager]:29 " << std::endl;
-		// ROS2日志输出
+
 		RCLCPP_INFO_STREAM(node_->get_logger(), BOLDGREEN << "run_on_mower: " << loaded_param_.common.run_on_mower);
 		RCLCPP_INFO_STREAM(node_->get_logger(), YELLOW << "set cpu_id size: " << loaded_param_.common.cpu_id.size());
 		RCLCPP_INFO_STREAM(node_->get_logger(), YELLOW << "map directory: " << loaded_param_.common.map_directory);
@@ -374,7 +351,7 @@ class LocalizationModuleParamManager {
 
 	~LocalizationModuleParamManager() = default;
 
-	rclcpp::Node::SharedPtr	   node_;
+	rclcpp::Node::SharedPtr node_;
 	lidar_slam::LidarSlamParam loaded_param_;
 };
 
