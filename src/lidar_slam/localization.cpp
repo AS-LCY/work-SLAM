@@ -6,7 +6,6 @@ Localization::Localization() {
 	log_info_manager_->reset_log_info();
 
 	gicp.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	// gicp.reset(new fast_gicp::FastGICP<PointType, PointType>());
 	gicp->setNumThreads(1);
 	gicp->setTransformationEpsilon(0.01);
 	gicp->setMaximumIterations(64);
@@ -41,7 +40,7 @@ Localization::Localization() {
 	CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
 	CloudGlobalMapIn_.reset(new PointCloudType());
-	map_ready_	 = false;
+	map_ready_ = false;
 	filter_init_ = false;
 }
 Localization::~Localization() {}
@@ -50,10 +49,10 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 	if (!src || !dst) return;
 
 	dst->clear();
-	dst->header				 = src->header;
-	dst->is_dense			 = true; // 确保目标点云标记为 dense
+	dst->header = src->header;
+	dst->is_dense = true; // 确保目标点云标记为 dense
 	dst->sensor_orientation_ = src->sensor_orientation_;
-	dst->sensor_origin_		 = src->sensor_origin_;
+	dst->sensor_origin_ = src->sensor_origin_;
 
 	// 保留空间优化性能
 	dst->reserve(src->size());
@@ -66,15 +65,15 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 		}
 
 		pcl::PointXYZI dst_pt;
-		dst_pt.x		 = src_pt.x;
-		dst_pt.y		 = src_pt.y;
-		dst_pt.z		 = src_pt.z;
+		dst_pt.x = src_pt.x;
+		dst_pt.y = src_pt.y;
+		dst_pt.z = src_pt.z;
 		dst_pt.intensity = src_pt.intensity;
 		dst->push_back(dst_pt);
 	}
 
 	// 更新点云尺寸信息
-	dst->width	= dst->size();
+	dst->width = dst->size();
 	dst->height = 1; // 转换为无序点云
 }
 
@@ -121,7 +120,7 @@ bool Localization::loadMap(std::string path) {
 	// pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
 	// pcl::PointCloud<pcl::PointXYZI>::Ptr GlobalMapShow(new pcl::PointCloud<pcl::PointXYZI>());
 	pcl::VoxelGrid<PointType> downSizeFilter;
-	PointCloudType::Ptr		  GlobalMapShow(new PointCloudType());
+	PointCloudType::Ptr GlobalMapShow(new PointCloudType());
 
 	double min_voxel_size = 0.1;
 	if (CloudGlobalMap->points.size() < 100000.0)
@@ -187,15 +186,15 @@ bool Localization::loadMap(std::string path) {
 			// ROS_INFO_STREAM("load file "<< filename );
 		}
 		while (std::getline(file, line)) {
-			ScInfo				readData;
-			std::stringstream	ss(line);
-			std::string			token;
+			ScInfo readData;
+			std::stringstream ss(line);
+			std::string token;
 			std::vector<double> values;
 			while (std::getline(ss, token, ',')) {
 				double value = std::stod(token);
 				values.push_back(value);
 			}
-			int index	= 0;
+			int index = 0;
 			readData.id = static_cast<int>(values[index++]);
 			//  std::cout << "  id: " <<readData.id << std::endl;
 
@@ -205,7 +204,7 @@ bool Localization::loadMap(std::string path) {
 				}
 			}
 			Eigen::Vector3d translation = readData.pose.translation();
-			pcl::PointXYZ	point;
+			pcl::PointXYZ point;
 			point.x = translation.x(); // 将x坐标设置为平移向量的x分量
 			point.y = translation.y(); // 将y坐标设置为平移向量的y分量
 			point.z = translation.z(); // 将z坐标设置为平移向量的z分量
@@ -226,7 +225,7 @@ bool Localization::loadMap(std::string path) {
 				}
 			}
 			// loadScManager.loadScancontextAndKeys(readData.polarcontext);
-			Eigen::MatrixXd sc		= readData.polarcontext; // v1
+			Eigen::MatrixXd sc = readData.polarcontext; // v1
 			Eigen::MatrixXd ringkey = scManager->makeRingkeyFromScancontext(sc);
 			// std::vector<float> polarcontext_invkey_vec = eig2stdvec( ringkey );
 			polarcontext_invkeys_mat_.push_back(eig2stdvec(ringkey));
@@ -346,7 +345,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 		// fit_score = icp->getFitnessScore();
 		if (fit_score < score_low_accuracy_thr) {
 			lastCorrectionOdomToMap = correctionOdomToMap;
-			lastUpdateTime			= curr_time_;
+			lastUpdateTime = curr_time_;
 			// ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);
 			cout << GREEN << "gicp success with score " << gicp->getFitnessScore() << RESET << endl;
 			// cout <<    GREEN << "gicp success with score "<< icp->getFitnessScore() << RESET << endl;
@@ -361,7 +360,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			Eigen::Affine3d affine_transform(lastCorrectionOdomToMap);
 			pcl::getTranslationAndEulerAngles(affine_transform, last_x, last_y, last_z, last_roll, last_pitch,
 											  last_yaw);
-			double			curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+			double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
 			Eigen::Affine3d affine_transform_co(correctionOdomToMap);
 			pcl::getTranslationAndEulerAngles(affine_transform_co, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
 											  curr_yaw); //  获取上一帧 相对 当前帧的 位姿
@@ -372,7 +371,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			if (!filter_init_) {
 				odom2map_x_filter = correctionOdomToMap.translation().x();
 				odom2map_y_filter = correctionOdomToMap.translation().y();
-				filter_init_	  = true;
+				filter_init_ = true;
 			} else {
 				odom2map_x_filter = ratio * correctionOdomToMap.translation().x() + (1 - ratio) * odom2map_x_filter;
 				odom2map_y_filter = ratio * correctionOdomToMap.translation().y() + (1 - ratio) * odom2map_y_filter;
@@ -428,7 +427,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	// Eigen::Vector3d current_euler = pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 	// double current_yaw = current_euler[0];
 	double current_pitch = current_euler[1];
-	double current_roll	 = current_euler[2];
+	double current_roll = current_euler[2];
 	// std::cout << "current yaw"<<current_euler[0]*180/M_PI<<" pitch "<<current_euler[1]*180/M_PI<< " roll
 	// "<<current_euler[2]*180/M_PI<<std::endl; Eigen::Isometry3d newTransform = Eigen::Isometry3d::Identity();
 	// newTransform.rotate(Eigen::AngleAxisd(current_pitch, Eigen::Vector3d::UnitY()));
@@ -436,21 +435,21 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	// std::cout <<newTransform.matrix()<<std::endl;
 	// newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,current_pitch,current_roll));
 	PointCloudType::Ptr gravityAlignedCLoud(new PointCloudType());
-	Eigen::Isometry3d	Transform		 = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d Transform = Eigen::Isometry3d::Identity();
 	Transform.matrix().block<3, 3>(0, 0) = initial_rotate;
-	*gravityAlignedCLoud				 = *transformPointCloud(cloudIn, Transform);
+	*gravityAlignedCLoud = *transformPointCloud(cloudIn, Transform);
 	//***************** gravityAlignedCLoud 用来生成当前点云的 sc-info
 
 	std::vector<std::pair<double, double>> search_trans = { { 0, 0 },	{ -4, 0 }, { 4, 0 },  { 0, -4 },  { 0, 4 },
 															{ -4, -4 }, { -4, 4 }, { 4, -4 }, { 4, 4 },	  { -2, 0 },
 															{ 2, 0 },	{ 0, -2 }, { 0, 2 },  { -2, -2 }, { -2, 2 },
 															{ 2, -2 },	{ 2, 2 } };
-	double								   min_dist		= std::numeric_limits<double>::max();
-	std::pair<int, float>				   best_match{ -1, 0.0 };
-	std::pair<double, double>			   best_trans;
-	double								   t0 = omp_get_wtime();
+	double min_dist = std::numeric_limits<double>::max();
+	std::pair<int, float> best_match{ -1, 0.0 };
+	std::pair<double, double> best_trans;
+	double t0 = omp_get_wtime();
 	for (auto& t : search_trans) {
-		Eigen::MatrixXd	   sc	   = scManager->makeScancontext(*(gravityAlignedCLoud), t.first, t.second);
+		Eigen::MatrixXd sc = scManager->makeScancontext(*(gravityAlignedCLoud), t.first, t.second);
 		std::vector<float> ringkey = eig2stdvec(scManager->makeRingkeyFromScancontext(sc));
 
 		// /*  for (const auto& number : ringkey) {
@@ -458,15 +457,15 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		//   }
 		//   std::cout << std::endl;*/
 		Eigen::MatrixXd sectorkey = scManager->makeSectorkeyFromScancontext(sc);
-		double			sc_dist	  = 1.0;
-		auto			match	  = scManager->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
+		double sc_dist = 1.0;
+		auto match = scManager->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
 		if (match.first != -1) {
 			std::cout << "trans: " << t.first << " " << t.second;
 			std::cout << " score: " << sc_dist << std::endl;
 			// ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<" score: "<<sc_dist);
 		}
 		if (sc_dist < min_dist) {
-			min_dist   = sc_dist;
+			min_dist = sc_dist;
 			best_match = match;
 			best_trans = t;
 		}
@@ -489,7 +488,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		std::cout << "use index " << match_idx << std::endl;
 		// ROS_INFO_STREAM("use index "<< match_idx);
 		Eigen::Matrix4d init_guess = LoadData[match_idx].pose.matrix();
-		Eigen::Vector3d euler	   = R2ypr(init_guess.block<3, 3>(0, 0));
+		Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
 		// Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
 		euler[0] += -best_match.second;
@@ -499,7 +498,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		//                         Eigen::AngleAxisd(current_pitch, Eigen::Vector3d::UnitY()) *
 		//                         Eigen::AngleAxisd(current_roll, Eigen::Vector3d::UnitX())).toRotationMatrix();// TODO
 		//                         use current pr?
-		Eigen::Matrix3d rotate		 = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
+		Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
 		init_guess.block<3, 3>(0, 0) = rotate;
 		// std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
 		euler = R2ypr(init_guess.block<3, 3>(0, 0));
@@ -507,9 +506,9 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		// "<<euler[2]*180/M_PI<<std::endl; euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
 		// ICP Settings zx gicp ?
-		Eigen::Vector2d			  offset_in_lidar{ -best_trans.first, -best_trans.second };
+		Eigen::Vector2d offset_in_lidar{ -best_trans.first, -best_trans.second };
 		Eigen::Rotation2D<double> rotation(euler[0]);
-		Eigen::Vector2d			  offset_in_map = rotation * offset_in_lidar;
+		Eigen::Vector2d offset_in_map = rotation * offset_in_lidar;
 		// std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl;
 		// std::cout << "map offset " << offset_in_map.transpose() <<std::endl;
 		init_guess.coeffRef(0, 3) = init_guess.coeffRef(0, 3) + offset_in_map[0];
@@ -543,7 +542,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		// ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
 		// 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
 		correctionOdomToMap = lidar_in_map * pose.inverse();
-		lastUpdateTime		= omp_get_wtime();
+		lastUpdateTime = omp_get_wtime();
 		// euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 		// std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
 		// std::cout << "x "<<lidar_in_map.translation().x()<<" y "<<lidar_in_map.translation().y()<< " z

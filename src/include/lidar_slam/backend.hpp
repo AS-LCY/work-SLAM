@@ -66,8 +66,8 @@ class BackEnd {
 	BackEnd(float dist, float angle, float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
 	~BackEnd();
 
-	void								   saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
-	PointCloudType::Ptr					   getCurrentMap(Eigen::Isometry3d T_map_odom);
+	void saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
+	PointCloudType::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
 	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud, double time);
 	void performLoopClosure(double time);
@@ -81,12 +81,12 @@ class BackEnd {
 	KeyPose getCurrentPose() { return KeyPoses.back(); }
 	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
 	std::vector<KeyPose> getKeyframePoses() { return KeyPoses; }
-	int					 getCurrentPoseIndex() {
-						 int temp_index = int(KeyPoses.size()) - 1;
-						 int curr_index = temp_index < 0 ? 0 : temp_index;
-						 return curr_index;
+	int getCurrentPoseIndex() {
+		int temp_index = int(KeyPoses.size()) - 1;
+		int curr_index = temp_index < 0 ? 0 : temp_index;
+		return curr_index;
 	}
-	std::map<int, int>	getloopIndex() { return loopIndexContainer; }
+	std::map<int, int> getloopIndex() { return loopIndexContainer; }
 	PointCloudType::Ptr getTestCloud() { return gravityAlignedCLoud; }
 
 	bool get_loaded_key_cloud_status() { return loaded_key_clouds_ready_; }
@@ -98,34 +98,34 @@ class BackEnd {
    private:
 	bool loaded_key_clouds_ready_ = false;
 
-	pcl::PointCloud<PointType>::Ptr		   KeyPoint;
-	std::vector<KeyPose>				   KeyPoses;
-	pcl::PointCloud<PointType>::Ptr		   CopyKeyPoint;
-	std::vector<KeyPose>				   CopyKeyPoses;
-	std::vector<PointCloudType::Ptr>	   KeyFrameCloud;
-	PointCloudType::Ptr					   show_map;
+	pcl::PointCloud<PointType>::Ptr KeyPoint;
+	std::vector<KeyPose> KeyPoses;
+	pcl::PointCloud<PointType>::Ptr CopyKeyPoint;
+	std::vector<KeyPose> CopyKeyPoses;
+	std::vector<PointCloudType::Ptr> KeyFrameCloud;
+	PointCloudType::Ptr show_map;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map;
 
-	float											keyframeDistThreshold;	//  判断是否为关键帧的距离阈值
-	float											keyframeAngleThreshold; //  判断是否为关键帧的角度阈值
-	float											loopKeyframeSearchRadius;
-	float											loopKeyframeSearchTimeDiff;
-	int												loopKeyframeSearchSkipKey;
-	float											loopIcpScore = 0.5;
-	map<int, int>									loopIndexContainer;
-	vector<pair<int, int>>							loopIndexQueue;
-	vector<gtsam::Pose3>							loopPoseQueue;
+	float keyframeDistThreshold;  //  判断是否为关键帧的距离阈值
+	float keyframeAngleThreshold; //  判断是否为关键帧的角度阈值
+	float loopKeyframeSearchRadius;
+	float loopKeyframeSearchTimeDiff;
+	int loopKeyframeSearchSkipKey;
+	float loopIcpScore = 0.5;
+	map<int, int> loopIndexContainer;
+	vector<pair<int, int>> loopIndexQueue;
+	vector<gtsam::Pose3> loopPoseQueue;
 	vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue;
-	gtsam::NonlinearFactorGraph						gtSAMgraph;
-	gtsam::ISAM2*									isam;
-	gtsam::Values									initialEstimate;
-	gtsam::Values									isamCurrentEstimate;
-	gtsam::ISAM2Params								parameters;
-	bool											aLoopIsClosed;
-	int												show_index = 0;
-	SCManager										scManager;
-	pcl::VoxelGrid<PointType>						downSizeFilterICP;
-	PointCloudType::Ptr								gravityAlignedCLoud;
+	gtsam::NonlinearFactorGraph gtSAMgraph;
+	gtsam::ISAM2* isam;
+	gtsam::Values initialEstimate;
+	gtsam::Values isamCurrentEstimate;
+	gtsam::ISAM2Params parameters;
+	bool aLoopIsClosed;
+	int show_index = 0;
+	SCManager scManager;
+	pcl::VoxelGrid<PointType> downSizeFilterICP;
+	PointCloudType::Ptr gravityAlignedCLoud;
 	// cv::Mat image;
 
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);

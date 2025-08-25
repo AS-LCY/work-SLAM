@@ -24,7 +24,7 @@ void PoseFilter::update_chassis(const fairland_msgs::chassic_data &chassis_msg){
     }
 
     /// member var /// TODO: add mutex
-    std::lock_guard<std::mutex> lock(chassis_mtx_);
+    std::unique_lock<std::mutex> lock(chassis_mtx_);
 
     double chassis_time = chassis_msg.header.stamp.toSec();
     if(update_lidar_init_.load() && !update_chassis_init_.load()){
@@ -94,7 +94,7 @@ bool PoseFilter::run_filter(double k_chassis){
 
     ///////////////////////////////////////////////////////////////////////////////////////////
     // chassis: 轮子记录的位置增量, delta time 与 chassis period 不一样
-    std::lock_guard<std::mutex> lock(chassis_mtx_); ////////////////////////// lock
+    std::unique_lock<std::mutex> lock(chassis_mtx_); ////////////////////////// lock
 
     /// TODO: need_reset, 在此处还是在上一层的调用
     // if(lidar_time - )

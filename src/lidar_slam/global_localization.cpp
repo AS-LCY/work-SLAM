@@ -226,7 +226,7 @@ bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Is
 	// }
 
 	/// search best match of scancontex ***********************************************************
-	std::pair<int, float>	  best_match{ -1, 0.0 };
+	std::pair<int, float> best_match{ -1, 0.0 };
 	std::pair<double, double> best_trans;
 	if (!scancontex_search(cloud_in, initial_rotate, best_match, best_trans)) {
 		std::cout << "scancontex search failed!" << std::endl;
@@ -238,7 +238,7 @@ bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Is
 	// ROS_ERROR_STREAM(RED << "scancontext search success, use index "<< best_match_idx <<RESET);
 
 	/// get init transform ************************************************************************
-	Eigen::Matrix4d	  init_guess = cal_init_transform(initial_rotate, best_match, best_trans);
+	Eigen::Matrix4d init_guess = cal_init_transform(initial_rotate, best_match, best_trans);
 	Eigen::Isometry3d test_transform(init_guess);					   /// debug
 	test_match_cloud_ = transformPointCloud(cloud_in, test_transform); /// debug
 
@@ -261,9 +261,9 @@ bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3
 										   std::pair<int, float>& best_match, std::pair<double, double>& best_trans) {
 	// transform (gravity_align) curr cloud
 	PointCloudType::Ptr gravity_aligned_cLoud(new PointCloudType());
-	Eigen::Isometry3d	transform		 = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 	transform.matrix().block<3, 3>(0, 0) = initial_rotate;
-	*gravity_aligned_cLoud				 = *transformPointCloud(cloud_in, transform);
+	*gravity_aligned_cLoud = *transformPointCloud(cloud_in, transform);
 
 	// set search_trans
 	/// TODO: parameterize search_trans ?
@@ -278,18 +278,18 @@ bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3
 	for (auto& t : search_trans) {
 		Eigen::MatrixXd sc =
 			sc_manager_->makeScancontext(*(gravity_aligned_cLoud), t.first, t.second); // get sc of curr cloud
-		std::vector<float> ringkey	 = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
-		Eigen::MatrixXd	   sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
+		std::vector<float> ringkey = eig2stdvec(sc_manager_->makeRingkeyFromScancontext(sc));
+		Eigen::MatrixXd sectorkey = sc_manager_->makeSectorkeyFromScancontext(sc);
 
 		double sc_dist = 1.0; // 当前匹配的距离(这个仅仅是初始化)，不是阈值
-		auto   match   = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
+		auto match = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
 		if (match.first != -1) {
 			std::cout << "trans: " << t.first << " " << t.second;
 			std::cout << "; score: " << sc_dist << std::endl;
 			//   ROS_INFO_STREAM("trans: "<< t.first << " " <<t.second <<"; score: "<<sc_dist);
 		}
 		if (sc_dist < min_dist) {
-			min_dist   = sc_dist;
+			min_dist = sc_dist;
 			best_match = match;
 			best_trans = t;
 		}
@@ -317,7 +317,7 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 	int match_idx = best_match.first;
 
 	Eigen::Matrix4d init_guess = loaded_sc_info_[match_idx].pose.matrix(); // use loaded data
-	Eigen::Vector3d euler	   = R2ypr(init_guess.block<3, 3>(0, 0));
+	Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
 
 	// 初始值: 确定 yaw 角, 用搜索到的 sc-info
 	euler[0] += -best_match.second;
@@ -326,10 +326,10 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 
 	// 初始值: 确定 pitch, roll, 用重力校正时的 initial_rotate,
 	Eigen::Vector3d current_euler = R2ypr(initial_rotate); // R2ypr(pose.matrix().block<3, 3>(0, 0));
-	double			current_pitch = current_euler[1];
-	double			current_roll  = current_euler[2];
+	double current_pitch = current_euler[1];
+	double current_roll = current_euler[2];
 
-	Eigen::Matrix3d rotate		 = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
+	Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
 	init_guess.block<3, 3>(0, 0) = rotate;
 	// std::cout << "original trans"<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
 	euler = R2ypr(init_guess.block<3, 3>(0, 0));
@@ -337,9 +337,9 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 	// "<<euler[2]*180/M_PI<<std::endl;
 
 	// ICP Settings zx gicp ?
-	Eigen::Vector2d			  offset_in_lidar{ -best_trans.first, -best_trans.second };
+	Eigen::Vector2d offset_in_lidar{ -best_trans.first, -best_trans.second };
 	Eigen::Rotation2D<double> rotation(euler[0]);
-	Eigen::Vector2d			  offset_in_map = rotation * offset_in_lidar;
+	Eigen::Vector2d offset_in_map = rotation * offset_in_lidar;
 	// std::cout << "lidar offset " << offset_in_lidar.transpose() <<std::endl;
 	// std::cout << "map offset " << offset_in_map.transpose() <<std::endl;
 	init_guess.coeffRef(0, 3) = init_guess.coeffRef(0, 3) + offset_in_map[0];
@@ -413,7 +413,7 @@ bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 	}
 
 	*loaded_global_map_ = *input_global_map;
-	global_map_ready_	= true;
+	global_map_ready_ = true;
 	return true;
 }
 
@@ -436,12 +436,12 @@ bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info) {
 	// ROS_INFO_STREAM("global-localization: loaded_sc_info_ size = "<<loaded_sc_info_.size());
 
 	// std::cout <<"debug: set polarcontext_invkeys_mat!"<<std::endl;
-	KeyMat						 polarcontext_invkeys_mat;
+	KeyMat polarcontext_invkeys_mat;
 	std::vector<Eigen::MatrixXd> polarcontexts;
-	int							 i = 0;
+	int i = 0;
 	for (ScInfo& scinfo : input_sc_info) {
 		// cout<<"debug: "<< i++ <<endl;
-		Eigen::MatrixXd sc		= scinfo.polarcontext;
+		Eigen::MatrixXd sc = scinfo.polarcontext;
 		Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext(sc);
 		polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));
 		polarcontexts.push_back(sc);

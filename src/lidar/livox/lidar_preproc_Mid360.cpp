@@ -80,6 +80,7 @@ bool LidarPreprocMid360::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::Share
 			// 新版驱动的 pointcloud2 中， timestamp 为完整时间辍，但单位是纳秒，需要 * 1e-9，将单位统一为 秒
 			// xyzin_point.curvature = (curpt->timestamp * 1e-9 - header_time) * 1000; // offset, unit = ms
 			xyzin_point.curvature = curpt->timestamp * 1e-9 - header_time; // offset, unit = second
+			//相对于第一个点的时间偏移，单位：秒
 
 			pcl_xyzin_out->points.push_back(xyzin_point);
 		}

@@ -13,7 +13,7 @@ Eigen::Vector3d R2ypr(const Eigen::Matrix3d& R) {
 	ypr(1) = p;
 	ypr(2) = r;
 
-	return ypr; // M_PI * 180.0;
+	return ypr;
 }
 
 Eigen::Matrix3d ypr2R(const Eigen::Vector3d& ypr) {
@@ -70,7 +70,6 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g) {
 	R0 = Eigen::Quaterniond::FromTwoVectors(ng1, ng2).toRotationMatrix();
 	double yaw = R2ypr(R0).x();
 	R0 = ypr2R(Eigen::Vector3d{ -yaw, 0, 0 }) * R0;
-	// R0 = Utility::ypr2R(Eigen::Vector3d{-90, 0, 0}) * R0;
 	return R0;
 }
 

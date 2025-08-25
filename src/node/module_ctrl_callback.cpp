@@ -330,7 +330,6 @@ bool LocalizationModule::start_localization(int map_id) {
 	// ModuleStatus curr_running_module_status = running_module_status_.load();
 
 	if (need_start_localization(running_module_status_now, localization_status_now)) {
-		// update status
 		running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 
 		make_slam_obj(slam_param_, set_status);
@@ -344,7 +343,6 @@ bool LocalizationModule::start_localization(int map_id) {
 			return false;
 		} else {
 			show_load_map_ = 0;
-			// update status
 			running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
 			local_node_status_.store(1); // 1 = NORMAL
 			return true;

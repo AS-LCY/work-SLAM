@@ -21,23 +21,25 @@ const double epsi = 0.001; // ESKF迭代时，如果dx<epsi 认为收敛
 namespace esekfom {
 using namespace Eigen;
 
-static PointCloudType::Ptr normvec(
-	new PointCloudType(100000, 1)); //特征点在地图中对应的平面参数(平面的单位法向量,以及当前点到平面距离)
+// TODO(jxl): 这四个变量很占内存
+static PointCloudType::Ptr normvec(new PointCloudType(100000, 1));
+//特征点在地图中对应的平面参数(平面的单位法向量,以及当前点到平面距离)
+
 static PointCloudType::Ptr laserCloudOri(new PointCloudType(100000, 1)); //有效特征点
 static PointCloudType::Ptr corr_normvect(new PointCloudType(100000, 1)); //有效特征点对应点法相量
-static bool				   point_selected_surf[100000] = { 1 };			 //判断是否是有效特征点
+static bool point_selected_surf[100000] = { 1 };						 //判断是否是有效特征点
 
 struct dyn_share_datastruct {
-	bool												  valid;	//有效特征点数量是否满足要求
-	bool												  converge; //迭代时，是否已经收敛
-	Eigen::Matrix<double, Eigen::Dynamic, 1>			  h;		//残差	(公式(14)中的z)
-	Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> h_x;		//雅可比矩阵H (公式(14)中的H)
+	bool valid;												   //有效特征点数量是否满足要求
+	bool converge;											   //迭代时，是否已经收敛
+	Eigen::Matrix<double, Eigen::Dynamic, 1> h;				   //残差	(公式(14)中的z)
+	Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> h_x; //雅可比矩阵H (公式(14)中的H)
 };
 
 class esekf {
    public:
-	typedef Matrix<double, 24, 24> cov;				 // 24X24的协方差矩阵
-	typedef Matrix<double, 24, 1>  vectorized_state; // 24X1的向量
+	typedef Matrix<double, 24, 24> cov;				// 24X24的协方差矩阵
+	typedef Matrix<double, 24, 1> vectorized_state; // 24X1的向量
 
 	esekf(){};
 	~esekf(){};
@@ -55,23 +57,23 @@ class esekf {
 		state_ikfom x_r;
 		x_r.pos = x.pos + f_.block<3, 1>(0, 0);
 
-		x_r.rot			 = x.rot * Sophus::SO3d::exp(f_.block<3, 1>(3, 0));
+		x_r.rot = x.rot * Sophus::SO3d::exp(f_.block<3, 1>(3, 0));
 		x_r.offset_R_L_I = x.offset_R_L_I * Sophus::SO3d::exp(f_.block<3, 1>(6, 0));
 		// x_r.rot = x.rot * Sophus::SO3::exp(f_.block<3, 1>(3, 0));
 		// x_r.offset_R_L_I = x.offset_R_L_I * Sophus::SO3::exp(f_.block<3, 1>(6, 0));
 
 		x_r.offset_T_L_I = x.offset_T_L_I + f_.block<3, 1>(9, 0);
-		x_r.vel			 = x.vel + f_.block<3, 1>(12, 0);
-		x_r.bg			 = x.bg + f_.block<3, 1>(15, 0);
-		x_r.ba			 = x.ba + f_.block<3, 1>(18, 0);
-		x_r.grav		 = x.grav + f_.block<3, 1>(21, 0);
+		x_r.vel = x.vel + f_.block<3, 1>(12, 0);
+		x_r.bg = x.bg + f_.block<3, 1>(15, 0);
+		x_r.ba = x.ba + f_.block<3, 1>(18, 0);
+		x_r.grav = x.grav + f_.block<3, 1>(21, 0);
 
 		return x_r;
 	}
 
 	//前向传播  公式(4-8)
 	void predict(double& dt, Eigen::Matrix<double, 12, 12>& Q, const input_ikfom& i_in) {
-		Eigen::Matrix<double, 24, 1>  f_   = get_f(x_, i_in); //公式(3)的f
+		Eigen::Matrix<double, 24, 1> f_ = get_f(x_, i_in);	  //公式(3)的f
 		Eigen::Matrix<double, 24, 24> f_x_ = df_dx(x_, i_in); //公式(7)的df/dx
 		Eigen::Matrix<double, 24, 12> f_w_ = df_dw(x_, i_in); //公式(7)的df/dw
 
@@ -95,18 +97,18 @@ class esekf {
 		for (int i = 0; i < feats_down_size; i++) //遍历所有的特征点
 		{
 			PointType& point_body = feats_down_body->points[i];
-			PointType  point_world;
+			PointType point_world;
 
 			V3D p_body(point_body.x, point_body.y, point_body.z);
 			//把Lidar坐标系的点先转到IMU坐标系，再根据前向传播估计的位姿x，转到世界坐标系
 			V3D p_global(x_.rot * (x_.offset_R_L_I * p_body + x_.offset_T_L_I) + x_.pos);
-			point_world.x		  = p_global(0);
-			point_world.y		  = p_global(1);
-			point_world.z		  = p_global(2);
+			point_world.x = p_global(0);
+			point_world.y = p_global(1);
+			point_world.z = p_global(2);
 			point_world.intensity = point_body.intensity;
 
 			vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
-			auto&		  points_near =
+			auto& points_near =
 				Nearest_Points[i]; // Nearest_Points[i]打印出来发现是按照离point_world距离，从小到大的顺序的vector
 
 			double ta = omp_get_wtime();
@@ -134,15 +136,15 @@ class esekf {
 				if (s > 0.9) //如果残差大于阈值，则认为该点是有效点
 				{
 					point_selected_surf[i] = true;
-					normvec->points[i].x   = pabcd(0); //存储平面的单位法向量  以及当前点到平面距离
-					normvec->points[i].y   = pabcd(1);
-					normvec->points[i].z   = pabcd(2);
+					normvec->points[i].x = pabcd(0); //存储平面的单位法向量  以及当前点到平面距离
+					normvec->points[i].y = pabcd(1);
+					normvec->points[i].z = pabcd(2);
 					normvec->points[i].intensity = pd2;
 				}
 			}
 		}
-		double t2			  = omp_get_wtime();
-		int	   effct_feat_num = 0; //有效特征点的数量
+		double t2 = omp_get_wtime();
+		int effct_feat_num = 0; //有效特征点的数量
 		for (int i = 0; i < feats_down_size; i++) {
 			if (point_selected_surf[i]) //对于满足要求的点
 			{
@@ -172,7 +174,7 @@ class esekf {
 
 			// 得到对应的平面的法向量
 			const PointType& norm_p = corr_normvect->points[i];
-			V3D				 norm_vec(norm_p.x, norm_p.y, norm_p.z);
+			V3D norm_vec(norm_p.x, norm_p.y, norm_p.z);
 
 			// 计算雅可比矩阵H
 			V3D C(x_.rot.matrix().transpose() * norm_vec);
@@ -203,7 +205,7 @@ class esekf {
 		// x_r.block<3, 1>(3, 0) = Sophus::SO3(x2.rot.matrix().transpose() * x1.rot.matrix()).log();
 		// x_r.block<3, 1>(6, 0) = Sophus::SO3(x2.offset_R_L_I.matrix().transpose() * x1.offset_R_L_I.matrix()).log();
 
-		x_r.block<3, 1>(9, 0)  = x1.offset_T_L_I - x2.offset_T_L_I;
+		x_r.block<3, 1>(9, 0) = x1.offset_T_L_I - x2.offset_T_L_I;
 		x_r.block<3, 1>(12, 0) = x1.vel - x2.vel;
 		x_r.block<3, 1>(15, 0) = x1.bg - x2.bg;
 		x_r.block<3, 1>(18, 0) = x1.ba - x2.ba;
@@ -218,9 +220,9 @@ class esekf {
 		normvec->resize(int(feats_down_body->points.size()));
 
 		dyn_share_datastruct dyn_share;
-		dyn_share.valid	   = true;
+		dyn_share.valid = true;
 		dyn_share.converge = true;
-		int			t	   = 0;
+		int t = 0;
 		state_ikfom x_propagated =
 			x_; //这里的x_和P_分别是经过正向传播后的状态量和协方差矩阵，因为会先调用predict函数再调用这个函数
 		cov P_propagated = P_;
@@ -240,26 +242,26 @@ class esekf {
 				continue;
 			}
 			vectorized_state dx;
-			double			 t_update_1 = omp_get_wtime(); // jacob cal
+			double t_update_1 = omp_get_wtime(); // jacob cal
 
-			dx_new			  = boxminus(x_, x_propagated); //公式(18)中的 x^k - x^
-			double t_update_2 = omp_get_wtime();			// x^k - x^
+			dx_new = boxminus(x_, x_propagated); //公式(18)中的 x^k - x^
+			double t_update_2 = omp_get_wtime(); // x^k - x^
 
 			//由于H矩阵是稀疏的，只有前12列有非零元素，后12列是零 因此这里采用分块矩阵的形式计算 减少计算量
-			auto						  H			 = dyn_share.h_x;				   // m X 12 的矩阵
-			Eigen::Matrix<double, 24, 24> HTH		 = Matrix<double, 24, 24>::Zero(); //矩阵 H^T * H
-			double						  t_update_3 = omp_get_wtime();				   // H^T * H
+			auto H = dyn_share.h_x;												// m X 12 的矩阵
+			Eigen::Matrix<double, 24, 24> HTH = Matrix<double, 24, 24>::Zero(); //矩阵 H^T * H
+			double t_update_3 = omp_get_wtime();								// H^T * H
 
 			HTH.block<12, 12>(0, 0) = H.transpose() * H;
 
-			auto												  K_front = (HTH / R + P_.inverse()).inverse();
+			auto K_front = (HTH / R + P_.inverse()).inverse();
 			Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> K;
-			K				  = K_front.block<24, 12>(0, 0) * H.transpose() / R; //卡尔曼增益  这里R视为常数
-			double t_update_4 = omp_get_wtime();								 //计算卡尔曼增益
+			K = K_front.block<24, 12>(0, 0) * H.transpose() / R; //卡尔曼增益  这里R视为常数
+			double t_update_4 = omp_get_wtime();				 //计算卡尔曼增益
 
 			Eigen::Matrix<double, 24, 24> KH = Matrix<double, 24, 24>::Zero(); //矩阵 K * H
-			KH.block<24, 12>(0, 0)			 = K * H;
-			double t_update_5				 = omp_get_wtime(); //计算矩阵 K * H
+			KH.block<24, 12>(0, 0) = K * H;
+			double t_update_5 = omp_get_wtime(); //计算矩阵 K * H
 
 			Matrix<double, 24, 1> dx_ =
 				K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
@@ -302,7 +304,7 @@ class esekf {
 
    private:
 	state_ikfom x_;
-	cov			P_ = cov::Identity();
+	cov P_ = cov::Identity();
 };
 
 } // namespace esekfom

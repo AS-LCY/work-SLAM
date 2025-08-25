@@ -66,8 +66,8 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 	loaded_keyframe_poses_.clear();
 	std::string line;
 	while (std::getline(pose_file, line)) {
-		std::stringstream	ss(line);
-		std::string			token;
+		std::stringstream ss(line);
+		std::string token;
 		std::vector<double> values; // 单行数据已经全部临时存于 values
 		while (std::getline(ss, token, ',')) {
 			double value = std::stod(token);
@@ -76,7 +76,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 
 		// 开始读入 read_one_line
 		KeyPose read_one_line;
-		int		idx = 0;
+		int idx = 0;
 
 		/// 第 0 项： index
 		read_one_line.index = static_cast<int>(values[idx++]); // 数据保存 ---------------------------------
@@ -91,7 +91,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 			}
 		}
 		Eigen::Vector3d translation = read_one_line.pose.translation();
-		PointType		point;
+		PointType point;
 		point.x = translation.x();			 // 将x坐标设置为平移向量的x分量
 		point.y = translation.y();			 // 将y坐标设置为平移向量的y分量
 		point.z = translation.z();			 // 将z坐标设置为平移向量的z分量
@@ -99,11 +99,11 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 
 		// Eigen::Matrix3d matrix = read_one_line.pose.linear();
 		// Eigen::Vector3d euler_angles = matrix.eulerAngles(2, 1, 0); // 获取 Z-Y-X 欧拉角
-		Eigen::Matrix3d matrix		 = read_one_line.pose.matrix().block<3, 3>(0, 0);
+		Eigen::Matrix3d matrix = read_one_line.pose.matrix().block<3, 3>(0, 0);
 		Eigen::Vector3d euler_angles = R2ypr(matrix); // defined in common_lib.h
-		read_one_line.yaw	= euler_angles[0];		  // 数据保存 -------------------------------------------------
+		read_one_line.yaw = euler_angles[0];		  // 数据保存 -------------------------------------------------
 		read_one_line.pitch = euler_angles[1];		  // 数据保存 -------------------------------------------------
-		read_one_line.roll	= euler_angles[2];		  // 数据保存 -------------------------------------------------
+		read_one_line.roll = euler_angles[2];		  // 数据保存 -------------------------------------------------
 
 		loaded_keyframe_poses_.push_back(read_one_line); // 数据保存 ---------------------------------------
 	}
@@ -120,7 +120,7 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 	;
 	// ROS_INFO_STREAM(BOLDGREEN<<"loading key_frame_cloud"<<RESET<<" from dir: " << keyframe_dir);
 	for (int i = 0; i < key_poses_size; i++) {
-		int			pose_index	   = loaded_keyframe_poses_[i].index;
+		int pose_index = loaded_keyframe_poses_[i].index;
 		std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) + ".pcd";
 		std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) + ".pcd -- ";
 		// ROS_INFO_STREAM("loading key_frame_cloud : " << std::to_string(pose_index) +  ".pcd -- " <<std::flush);
@@ -185,9 +185,9 @@ bool CloudMap::load_cloud_map(std::string map_dir) {
 	/// read data line by line, split one line by ","
 	std::string line;
 	while (std::getline(file, line)) {
-		ScInfo				read_one_line;
-		std::stringstream	ss(line);
-		std::string			token;
+		ScInfo read_one_line;
+		std::stringstream ss(line);
+		std::string token;
 		std::vector<double> values; // 单行数据临时存于 values
 		while (std::getline(ss, token, ',')) {
 			double value = std::stod(token);

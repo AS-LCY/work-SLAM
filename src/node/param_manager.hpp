@@ -26,7 +26,6 @@ class LocalizationModuleParamManager {
 	}
 
 	bool load_config_params() {
-		// std::string ns = "flbot.lidar_slam.";
 		std::string ns = "";
 		bool success = true;
 

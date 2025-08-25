@@ -1,10 +1,9 @@
 #ifndef COMMON_LIB_H
 #define COMMON_LIB_H
 
-#include <sys/stat.h> // makedir
-// #include <ros/ros.h> // 只用了打印，如果去ros，只需要注释相关 ROS_INFO ROS_WARN 等即可
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <sys/stat.h>
 
 #include <Eigen/Eigen>
 
@@ -31,7 +30,6 @@ using namespace Eigen;
 #define DEBUG_FILE_DIR(name) (string(string(ROOT_DIR) + "Log/" + name))
 
 typedef pcl::PointXYZINormal PointType;
-// typedef pcl::PointCloud<PointType> PointCloudXYZI;
 typedef pcl::PointCloud<PointType> PointCloudType;
 typedef vector<PointType, Eigen::aligned_allocator<PointType>> PointVector;
 typedef Vector3d V3D;
@@ -251,7 +249,6 @@ static float angle_norm(float a) {
 	return a;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////
 bool mkdir_p(const std::string& path, mode_t mode);
 
 /////////////////////////////////////////////////////////////////////////////////

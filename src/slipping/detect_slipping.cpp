@@ -36,10 +36,10 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int& slip_flag) {
 	// pop chassic data before lidar
 	double lidar_que_time_range = pose_que_.back().header.stamp.toSec() - pose_que_.front().header.stamp.toSec();
 
-	std::lock_guard<std::mutex> lock(chassis_que_mtx_);
+	std::unique_lock<std::mutex> lock(chassis_que_mtx_);
 
-	double que_time_fst	 = chassis_que_.front().header.stamp.toSec();
-	double que_time_snd	 = 0.0;
+	double que_time_fst = chassis_que_.front().header.stamp.toSec();
+	double que_time_snd = 0.0;
 	double que_time_last = chassis_que_.back().header.stamp.toSec();
 	while (que_time_last - que_time_fst > param_detect_window_time_range_ && chassis_que_.size() >= 2) {
 		chassis_que_.pop();
@@ -47,21 +47,21 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int& slip_flag) {
 
 		double pop_dt = que_time_snd - que_time_fst;
 		// double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
-		double pop_vel	= chassis_que_.front().ac_linear_velocity;
+		double pop_vel = chassis_que_.front().ac_linear_velocity;
 		double pop_dist = pop_vel * pop_dt;
 
 		// update
 		chassis_sum_dist_ = chassis_sum_dist_ - pop_dist;
-		que_time_fst	  = que_time_snd;
+		que_time_fst = que_time_snd;
 	}
 	double chassis_que_time_range =
 		chassis_que_.back().header.stamp.toSec() - chassis_que_.front().header.stamp.toSec();
 
 	///////////////////////////////////////////////////////////////////////////////
 	// detect
-	slip_flag				 = 0;
+	slip_flag = 0;
 	double curr_chassis_dist = std::abs(chassis_sum_dist_ / chassis_que_time_range * param_detect_window_time_range_);
-	double slipping_dist	 = curr_chassis_dist - lidar_sum_dist_;
+	double slipping_dist = curr_chassis_dist - lidar_sum_dist_;
 
 	if (slipping_dist > param_slipping_dist_thr_) {
 		slipping_count_++;
@@ -112,22 +112,22 @@ void DetectSlipping::update_chassis(fairland_msgs::chassic_data cur_chassis_msg)
 	if (!chassis_queue_init_) {
 		init_chassis_queue();
 		// first_chassis = true;
-		last_time			= cur_chassis_msg.header.stamp.toSec();
+		last_time = cur_chassis_msg.header.stamp.toSec();
 		chassis_queue_init_ = true;
 	}
 
 	double cur_time = cur_chassis_msg.header.stamp.toSec();
-	double cur_dt	= cur_time - last_time;
+	double cur_dt = cur_time - last_time;
 	// double cur_vel = std::abs(cur_chassis_msg.ac_linear_velocity);
-	double cur_vel	= cur_chassis_msg.ac_linear_velocity;
+	double cur_vel = cur_chassis_msg.ac_linear_velocity;
 	double cur_dist = cur_vel * cur_dt;
 
 	// update
-	last_time		  = cur_time;
+	last_time = cur_time;
 	chassis_sum_dist_ = chassis_sum_dist_ + cur_dist;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	std::lock_guard<std::mutex> lock(chassis_que_mtx_);
+	std::unique_lock<std::mutex> lock(chassis_que_mtx_);
 	// push
 	chassis_que_.push(cur_chassis_msg);
 	double que_time_fst = chassis_que_.front().header.stamp.toSec();
@@ -139,12 +139,12 @@ void DetectSlipping::update_chassis(fairland_msgs::chassic_data cur_chassis_msg)
 
 		double pop_dt = que_time_snd - que_time_fst;
 		// double pop_vel = std::abs(chassis_que_.front().ac_linear_velocity);
-		double pop_vel	= chassis_que_.front().ac_linear_velocity;
+		double pop_vel = chassis_que_.front().ac_linear_velocity;
 		double pop_dist = pop_vel * pop_dt;
 
 		// update
 		chassis_sum_dist_ = chassis_sum_dist_ - pop_dist;
-		que_time_fst	  = que_time_snd;
+		que_time_fst = que_time_snd;
 	}
 }
 
@@ -172,9 +172,9 @@ void DetectSlipping::update_lidar_by_distance(geometry_msgs::PoseStamped pose) {
 		pose_que_.pop();
 	}
 
-	double distance		 = cal_dist(pose_que_.front(), pose_que_.back());
+	double distance = cal_dist(pose_que_.front(), pose_que_.back());
 	double time_interval = pose_que_.back().header.stamp.toSec() - pose_que_.front().header.stamp.toSec();
-	lidar_sum_dist_		 = distance / time_interval * param_detect_window_time_range_;
+	lidar_sum_dist_ = distance / time_interval * param_detect_window_time_range_;
 	// ROS_INFO_STREAM("lidar time range:" << time_interval);
 	// ROS_INFO_STREAM("lidar distance:" << distance);
 	// ROS_INFO_STREAM("lidar distance:" << lidar_sum_dist_);
@@ -228,7 +228,7 @@ double DetectSlipping::cal_dist_along_heading(geometry_msgs::PoseStamped last_po
 	double curr_yaw = get_yaw_from_orientation(curr_pose.pose.orientation);
 	double pose_yaw = angle_norm(last_yaw + angle_norm(curr_yaw - last_yaw) / 2.0); // 车身，两帧的角度均值
 	double line_yaw = std::atan2(dy, dx);											// 速度方向的角度
-	double dyaw		= angle_norm(line_yaw - pose_yaw); // 速度方向与车身方向的夹角
+	double dyaw = angle_norm(line_yaw - pose_yaw); // 速度方向与车身方向的夹角
 
 	double line_dist = std::sqrt(dx * dx + dy * dy);
 	double curr_dist = std::abs(line_dist * std::cos(dyaw)); // 车身方向的位移
@@ -249,15 +249,15 @@ void DetectSlipping::update_imu(sensor_msgs::Imu imu_msg) {}
 
 bool DetectSlipping::load_params() {
 	LocalizationFusionParamsManager* param_manager = LocalizationFusionParamsManager::Instance();
-	const LocalizationFusionParams*	 loaded_param  = param_manager->get_localization_fusion_params();
+	const LocalizationFusionParams* loaded_param = param_manager->get_localization_fusion_params();
 
 	if (loaded_param == NULL) {
 		ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
 		return false;
 	} else {
 		param_detect_window_time_range_ = loaded_param->slip_params.detect_window_time_range;
-		param_slipping_dist_thr_		= loaded_param->slip_params.slipping_dist_thr;
-		param_slipping_count_thr_		= loaded_param->slip_params.slipping_count_thr;
+		param_slipping_dist_thr_ = loaded_param->slip_params.slipping_dist_thr;
+		param_slipping_count_thr_ = loaded_param->slip_params.slipping_count_thr;
 
 		ROS_INFO_STREAM("param_detect_window_time_range_: " << param_detect_window_time_range_);
 		return true;
@@ -279,9 +279,9 @@ void DetectSlipping::init_chassis_queue() {
 }
 
 void DetectSlipping::reset() {
-	lidar_queue_init_	= false;
+	lidar_queue_init_ = false;
 	chassis_queue_init_ = false;
-	slipping_count_		= 0;
+	slipping_count_ = 0;
 }
 
 } // namespace localization_module

@@ -51,8 +51,8 @@ class Localization {
 		// isometry3d.matrix().block<3, 1>(0, 3) = correctionOdomToMap.matrix().block<3, 1>(0, 3).cast<double>();
 		return correctionOdomToMap;
 	}
-	Eigen::Isometry3d					 getLastOdomToMap() { return lastCorrectionOdomToMap; }
-	std::vector<ScInfo>					 getLoadKeyFrame() { return LoadData; }
+	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap; }
+	std::vector<ScInfo> getLoadKeyFrame() { return LoadData; }
 	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() {
 		if (!map_ready_) return nullptr;
 		return CloudGlobalMapIn;
@@ -62,7 +62,7 @@ class Localization {
 	//    return CloudGlobalMapIn_;
 	// }
 
-	PointCloudType::Ptr			  getTestCloud() { return testMatchcloud; }
+	PointCloudType::Ptr getTestCloud() { return testMatchcloud; }
 	std::vector<Eigen::Vector3f>& getLoadMapPoints() {
 		// if (!map_ready_) return std::vector<Eigen::Vector3f>{};
 		return show_map_points;
@@ -72,31 +72,32 @@ class Localization {
 	// 初始化正态分布(NDT)对象
 	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt;
-	pcl::IterativeClosestPoint<PointType, PointType>::Ptr		 icp;
+	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp;
 
-	KeyMat								 polarcontext_invkeys_mat_;
-	std::vector<Eigen::MatrixXd>		 polarcontexts_;
-	PointCloudType::Ptr					 CloudGlobalMap;
-	PointCloudType::Ptr					 accumulateMap_;
-	std::vector<Eigen::Isometry3d>		 accumulateKeypose_;
-	PointCloudType::Ptr					 testMatchcloud;
+	KeyMat polarcontext_invkeys_mat_;
+	std::vector<Eigen::MatrixXd> polarcontexts_;
+	PointCloudType::Ptr CloudGlobalMap;
+	PointCloudType::Ptr accumulateMap_;
+	std::vector<Eigen::Isometry3d> accumulateKeypose_;
+	PointCloudType::Ptr testMatchcloud;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn;
-	PointCloudType::Ptr					 CloudGlobalMapIn_;
-	std::vector<ScInfo>					 LoadData;
-	std::shared_ptr<SCManager>			 scManager;
-	std::vector<Eigen::Vector3f>		 show_map_points;
+	PointCloudType::Ptr CloudGlobalMapIn_;
+	std::vector<ScInfo> LoadData;
+	std::shared_ptr<SCManager> scManager;
+	std::vector<Eigen::Vector3f> show_map_points;
+
 	// pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>::Ptr fast_gicp;
 	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp; // TODO test gicp with normal
 	// fast_gicp::FastGICP<PointType, PointType>::Ptr gicp; // TODO test gicp with normal
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
-	bool								map_ready_;
-	bool								filter_init_			= false;
-	Eigen::Isometry3d					correctionOdomToMap		= Eigen::Isometry3d::Identity();
-	Eigen::Isometry3d					lastCorrectionOdomToMap = Eigen::Isometry3d::Identity();
+	bool map_ready_;
+	bool filter_init_ = false;
+	Eigen::Isometry3d correctionOdomToMap = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d lastCorrectionOdomToMap = Eigen::Isometry3d::Identity();
 
-	double												   lastUpdateTime = 0.0f;
-	double												   curr_time_	  = 0.0f;
+	double lastUpdateTime = 0.0f;
+	double curr_time_ = 0.0f;
 	localization_module::LocalizationModuleLogInfoManager* log_info_manager_;
 };
 } // namespace lidar_slam

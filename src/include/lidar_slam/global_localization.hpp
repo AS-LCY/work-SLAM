@@ -100,23 +100,23 @@ class GlobalLocalization {
 	//////////////////////////////////// - load map - ////////////////////////////////////
 	std::shared_ptr<SCManager> sc_manager_;
 
-	bool				map_ready_ = false;
+	bool map_ready_ = false;
 	PointCloudType::Ptr loaded_global_map_;
 	std::vector<ScInfo> loaded_sc_info_; // 对应本地文件：data
 
-	std::vector<KeyPose>			 loaded_keyframe_poses_;
-	pcl::PointCloud<PointType>::Ptr	 loaded_key_point_;
+	std::vector<KeyPose> loaded_keyframe_poses_;
+	pcl::PointCloud<PointType>::Ptr loaded_key_point_;
 	std::vector<PointCloudType::Ptr> loaded_keyframe_clouds_;
 
 	// KeyMat polarcontext_invkeys_mat_;
 	// std::vector<Eigen::MatrixXd> polarcontexts_;
 
 	std::vector<Eigen::Isometry3d> accumulate_key_pose_;
-	PointCloudType::Ptr			   accumulate_map_;
+	PointCloudType::Ptr accumulate_map_;
 
 	//////////////////////////////////// - global-localize - ////////////////////////////////////
-	bool				global_map_ready_ = false;
-	bool				sc_manager_ready_ = false;
+	bool global_map_ready_ = false;
+	bool sc_manager_ready_ = false;
 	PointCloudType::Ptr test_match_cloud_; // debug
 
 	// result of global localization

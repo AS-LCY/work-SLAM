@@ -22,7 +22,8 @@ void LidarPreprocParent::sampling_cloud(PointCloudType::Ptr in_cloud_ptr, PointC
 #pragma omp parallel for num_threads(MP_PROC_NUM)
 	for (int i = 0; i < out_size; ++i) {
 		out_cloud_ptr->points[i] = in_cloud_ptr->points[i * point_filter_ratio];
-		out_cloud_ptr->points[i].curvature = in_cloud_ptr->points[i * point_filter_ratio].curvature * 1000;
+		out_cloud_ptr->points[i].curvature =
+			in_cloud_ptr->points[i * point_filter_ratio].curvature * 1000; //单位转成了ms
 	}
 
 	out_cloud_ptr->header = in_cloud_ptr->header;
