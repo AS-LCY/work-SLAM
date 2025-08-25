@@ -111,12 +111,12 @@ class LidarSlam {
 			   rclcpp::Node::SharedPtr node);
 
 	~LidarSlam() {
-		thread_run = false;
-		thread->join();
-		thread.reset(nullptr);
+		thread_run_ = false;
+		thread_->join();
+		thread_.reset(nullptr);
 
-		// show_thread->join();
-		// show_thread.reset(nullptr);
+		// show_thread_->join();
+		// show_thread_.reset(nullptr);
 
 		if (working_mode_ == SEC_MAPPING) {
 			global_localization_thread_->join();
@@ -138,18 +138,18 @@ class LidarSlam {
 		if (working_mode_ == LOCALIZATION) {
 			return true;
 		} else if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-			return back_end->saveMap(saveMapDirectory, resolution, getOdomToMap(), start_index, end_index);
+			return back_end_->saveMap(saveMapDirectory, resolution, getOdomToMap(), start_index, end_index);
 		} else {
 			return true;
 		}
 	}
 
 	bool load_map(string directory) {
-		globalLocalizationSuccess = false;
+		globalLocalizationSuccess_ = false;
 
 		// sleep(1); 只有 IDLE -> LOCALIZATION / SEC_MAPPING 时会加载地图， globalLocalization 相关为空，无需睡眠
 		if (working_mode_ == LOCALIZATION) {
-			localization->loadMap(directory);
+			localization_->loadMap(directory);
 		} else if (working_mode_ == SEC_MAPPING) {
 			if (!cloud_map_manager_->load_map_data(directory)) return false;
 		} else {
@@ -158,63 +158,63 @@ class LidarSlam {
 		return true;
 	}
 
-	int get_curr_pose_index() { return back_end->getCurrentPoseIndex(); }
+	int get_curr_pose_index() { return back_end_->getCurrentPoseIndex(); }
 
 	PointCloudType::Ptr get_lidar_cloud() {
-		std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
-		return undistortCloud;
+		std::lock_guard<std::mutex> lk(mtx_lidar_cloud_);
+		return undistortCloud_;
 	}
 
 	PointCloudType::Ptr get_filter_lidar_cloud() {
-		std::lock_guard<std::mutex> lk(mtx_lidar_cloud);
-		return FilteredUndistortCloud;
+		std::lock_guard<std::mutex> lk(mtx_lidar_cloud_);
+		return FilteredUndistortCloud_;
 	}
 
 	PointCloudType::Ptr get_odom_cloud() {
-		std::lock_guard<std::mutex> lk(mtx_odom_cloud);
-		return UndistortCloudInOdom;
+		std::lock_guard<std::mutex> lk(mtx_odom_cloud_);
+		return UndistortCloudInOdom_;
 	}
 
-	PointCloudType::Ptr get_kdtree_cloud() { return kdtreeCloud; }
+	PointCloudType::Ptr get_kdtree_cloud() { return kdtreeCloud_; }
 	std::deque<Eigen::Isometry3d> get_unoptimized_path() {
-		std::lock_guard<std::mutex> lk(mtx_path);
-		return unoptimized_path;
+		std::lock_guard<std::mutex> lk(mtx_path_);
+		return unoptimized_path_;
 	}
 	std::vector<Eigen::Isometry3d> get_optimized_path() {
-		std::lock_guard<std::mutex> lk(mtx_path);
-		return optimized_path;
+		std::lock_guard<std::mutex> lk(mtx_path_);
+		return optimized_path_;
 	}
-	map<int, int> getloopIndex() { return back_end->getloopIndex(); }
+	map<int, int> getloopIndex() { return back_end_->getloopIndex(); }
 	Eigen::Isometry3d getOdomToMap() {
 		if (working_mode_ == LOCALIZATION) {
-			return localization->getOdomToMap();
+			return localization_->getOdomToMap();
 		} else if (working_mode_ == MAPPING) {
 			Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-			transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
+			transform.matrix().block<3, 3>(0, 0) = p_imu_->initial_rotate;
 			return transform;
 		} else if (working_mode_ == SEC_MAPPING) {
 			return global_localization_->get_global_odom_to_map();
-			// return localization->getOdomToMap();
+			// return localization_->getOdomToMap();
 		} else {
 			// ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)
 			// <<RESET);
 			return Eigen::Isometry3d::Identity();
 		}
 		// if (param.localization_mode)
-		//    return localization->getOdomToMap();
+		//    return localization_->getOdomToMap();
 		// else{
 		//     if (sec_mapping_){
-		//         return localization->getOdomToMap();
+		//         return localization_->getOdomToMap();
 		//     }
 		//     Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-		//     transform.matrix().block<3, 3>(0, 0) = p_imu->initial_rotate;
+		//     transform.matrix().block<3, 3>(0, 0) = p_imu_->initial_rotate;
 		//     return transform;
 		// }
 	}
 
 	Eigen::Isometry3d getLastOdomToMap() {
 		if (working_mode_ == LOCALIZATION) {
-			return localization->getLastOdomToMap();
+			return localization_->getLastOdomToMap();
 		} else {
 			// ROS_ERROR_STREAM(RED << "error slam working mode, working_mode_ = " << print_SlamWorkMode(working_mode_)
 			// <<RESET);
@@ -223,17 +223,18 @@ class LidarSlam {
 	}
 
 	Eigen::Isometry3d getLidarInOdom() {
-		std::lock_guard<std::mutex> lk(mtx_pose);
+		std::lock_guard<std::mutex> lk(mtx_pose_);
 		// if(!param.localization_mode){
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-			return T_odom_lidar;
+			return T_odom_lidar_;
 		} else if (working_mode_ == LOCALIZATION) {
-			Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
+			Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose_.imu_state.rot, current_pose_.imu_state.pos).matrix());
 			Eigen::Isometry3d T_b_lidar(
-				Sophus::SE3d(current_pose.imu_state.offset_R_L_I, current_pose.imu_state.offset_T_L_I).matrix());
-			// Eigen::Isometry3d T_odom_b(Sophus::SE3(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
-			// Eigen::Isometry3d T_b_lidar(Sophus::SE3(current_pose.imu_state.offset_R_L_I,
-			// current_pose.imu_state.offset_T_L_I).matrix());
+				Sophus::SE3d(current_pose_.imu_state.offset_R_L_I, current_pose_.imu_state.offset_T_L_I).matrix());
+			// Eigen::Isometry3d T_odom_b(Sophus::SE3(current_pose_.imu_state.rot,
+			// current_pose_.imu_state.pos).matrix()); Eigen::Isometry3d
+			// T_b_lidar(Sophus::SE3(current_pose_.imu_state.offset_R_L_I,
+			// current_pose_.imu_state.offset_T_L_I).matrix());
 			Eigen::Isometry3d temp = T_odom_b * T_b_lidar;
 			return temp;
 		} else {
@@ -243,13 +244,13 @@ class LidarSlam {
 	}
 
 	Localization_base get_current_pose() {
-		std::lock_guard<std::mutex> lk(mtx_pose);
-		return current_pose;
+		std::lock_guard<std::mutex> lk(mtx_pose_);
+		return current_pose_;
 	}
 
 	double get_slam_time() {
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING || working_mode_ == LOCALIZATION) {
-			return localization_base.update_time;
+			return localization_base_.update_time;
 		} else {
 			double temp = rclcpp::Clock().now().seconds();
 			// TODO(jxl):
@@ -259,51 +260,51 @@ class LidarSlam {
 		}
 	}
 
-	Eigen::Isometry3d getWheelInOdom() { return getLidarInOdom() * T_lidar_wheel; }
-	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() { return localization->getLoadMap(); }
+	Eigen::Isometry3d getWheelInOdom() { return getLidarInOdom() * T_lidar_wheel_; }
+	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() { return localization_->getLoadMap(); }
 
 	// PointCloudType::Ptr  getLoadMap(){
-	//     return localization->getLoadMap();
+	//     return localization_->getLoadMap();
 	// }
-	std::vector<Eigen::Vector3f>& getLoadMapPoints() { return localization->getLoadMapPoints(); }
-	bool isGloalLocalizationSuccess() { return globalLocalizationSuccess; }
+	std::vector<Eigen::Vector3f>& getLoadMapPoints() { return localization_->getLoadMapPoints(); }
+	bool isGloalLocalizationSuccess() { return globalLocalizationSuccess_; }
 	Eigen::Isometry3d getLidarInMap() { //插值
 
-		// Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose.imu_state.rot, current_pose.imu_state.pos).matrix());
-		// Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose.imu_state.offset_R_L_I,
-		// current_pose.imu_state.offset_T_L_I).matrix()); Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * T_odom_b *
-		// T_b_lidar;
+		// Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose_.imu_state.rot, current_pose_.imu_state.pos).matrix());
+		// Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose_.imu_state.offset_R_L_I,
+		// current_pose_.imu_state.offset_T_L_I).matrix()); Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * T_odom_b
+		// * T_b_lidar;
 		Eigen::Isometry3d T_map_lidar = getOdomToMap() * getLidarInOdom();
 		return T_map_lidar;
 	}
 	Eigen::Isometry3d getWheelInMap() { //插值
 
-		return getLidarInMap() * T_lidar_wheel;
+		return getLidarInMap() * T_lidar_wheel_;
 	}
-	Eigen::Isometry3d getWheelInLidar() { return T_lidar_wheel; }
-	std::vector<ScInfo> getLoadKeyFrame() { return localization->getLoadKeyFrame(); }
+	Eigen::Isometry3d getWheelInLidar() { return T_lidar_wheel_; }
+	std::vector<ScInfo> getLoadKeyFrame() { return localization_->getLoadKeyFrame(); }
 	PointCloudType::Ptr getTestCloud() {
 		PointCloudType::Ptr temp(new PointCloudType());
 		if (working_mode_ == LOCALIZATION)
-			return localization->getTestCloud();
+			return localization_->getTestCloud();
 		else if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING)
-			return back_end->getTestCloud();
+			return back_end_->getTestCloud();
 		else
 			return temp;
 	}
-	PointCloudType::Ptr getCurrentMap() { return back_end->getCurrentMap(getOdomToMap()); }
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap() { return back_end->getCurrentRGBMap(); }
+	PointCloudType::Ptr getCurrentMap() { return back_end_->getCurrentMap(getOdomToMap()); }
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap() { return back_end_->getCurrentRGBMap(); }
 	// PointCloudType::Ptr getObstacleCloud()
 	// {
-	//     return ObstacleCloud;
+	//     return ObstacleCloud_;
 	// }
 	// PointCloudType::Ptr getFilteredObstacleCloud()
 	// {
-	//     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud);
-	//     return FilteredObstacleCloud;
+	//     std::lock_guard<std::mutex> lk(mtx_obstacle_cloud_);
+	//     return FilteredObstacleCloud_;
 	// }
 
-	double get_lidar_time() { return lidar_end_time; }
+	double get_lidar_time() { return lidar_end_time_; }
 
 	// string print_SlamWorkMode(SlamWorkMode e){
 	//     switch (e){
@@ -326,6 +327,16 @@ class LidarSlam {
 	int get_local_thrd_status() { return local_thrd_status_.load(); }
 	int get_slam_run_status() { return slam_run_status_.load(); }
 	int get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
+
+   private:
+	bool sync_packages(MeasureGroup& meas);
+	void loopClosureThread();
+	void sec_mapping_loopClosureThread();
+	void localizationThread();
+	// void relocalizationForMappingThread();
+	void global_localization_for_sec_mapping_thread();
+	void showThread();
+	void delete_log_file(double keep_time);
 
    private:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -372,61 +383,61 @@ class LidarSlam {
 
 	bool need_localize_ = true;
 
-	deque<double> time_buffer;				 // 记录lidar时间, lidar header time
-	deque<PointCloudType::Ptr> lidar_buffer; //记录特征提取或间隔采样后的lidar（特征）数据
-	deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer;
-	bool lidar_pushed = false;
-	// atomic<double> lidar_end_time = 0;
-	atomic<double> lidar_end_time;	  ///< 当前帧雷达，帧结束的时间，update: sync_packages()
-	double lidar_mean_scantime = 0.0; ///< 单帧点云的 time period
-	double first_lidar_time = 0.0;	  // 第一帧点云的时间
-	int scan_num = 0;
-	bool flg_first_scan = true;
-	double last_timestamp_lidar = 0;
-	double last_timestamp_imu = -1.0; ///< 最新的 imu 时间， update: imu_cbk()
-	double timediff_lidar_wrt_imu = 0.0;
-	bool time_sync_en = false;
-	bool timediff_set_flg = false; // 标记是否已经进行了时间补偿
-	bool reseting = false;
-	bool imu_file_shift = false;
-	std::deque<Eigen::Isometry3d> unoptimized_path;
-	std::vector<Eigen::Isometry3d> optimized_path;
-	std::vector<livox_ros::ImuMsg> temp_imu_msg;
-	std::deque<double> pcd_file;
-	std::ofstream imu_file;
-	std::ofstream localization_file;
-	MeasureGroup Measures;
-	Eigen::Isometry3d T_odom_lidar;
-	Eigen::Isometry3d T_lidar_wheel;
+	deque<double> time_buffer_;				  // 记录lidar时间, lidar header time
+	deque<PointCloudType::Ptr> lidar_buffer_; //记录特征提取或间隔采样后的lidar（特征）数据
+	deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer_;
+	bool lidar_pushed_ = false;
+	atomic<double> lidar_end_time_;	   ///< 当前帧雷达，帧结束的时间，update: sync_packages()
+	double lidar_mean_scantime_ = 0.0; ///< 单帧点云的 time period
+	double first_lidar_time_ = 0.0;	   // 第一帧点云的时间
+	int scan_num_ = 0;
+	bool flg_first_scan_ = true;
+	double last_timestamp_lidar_ = 0;
+	double last_timestamp_imu_ = -1.0; ///< 最新的 imu 时间， update: imu_cbk()
+	double timediff_lidar_wrt_imu_ = 0.0;
+	bool time_sync_en_ = false;
+	bool timediff_set_flg_ = false; // 标记是否已经进行了时间补偿
+	bool reseting_ = false;
+	bool imu_file_shift_ = false;
+	std::deque<Eigen::Isometry3d> unoptimized_path_;
+	std::vector<Eigen::Isometry3d> optimized_path_;
+	std::vector<livox_ros::ImuMsg> temp_imu_msg_;
+	std::deque<double> pcd_file_;
+	std::ofstream imu_file_;
+	std::ofstream localization_file_;
+	MeasureGroup Measures_;
+	Eigen::Isometry3d T_odom_lidar_;
+	Eigen::Isometry3d T_lidar_wheel_;
 
 	// livox_ros::DriverNode livox_node;
-	std::deque<std::pair<double, Eigen::Isometry3d>> poses_buffer;
+	std::deque<std::pair<double, Eigen::Isometry3d>> poses_buffer_;
 
-	bool thread_run = true;
-	bool globalLocalizationSuccess = false;
-	bool localization_wait = false;
-	bool loop_closure_wait = false;
-	Localization_base localization_base; // 每次点云处理后更新，并作为current_pose 积分结果的base
-	Localization_base current_pose;
+	bool thread_run_ = true;
+	bool globalLocalizationSuccess_ = false;
+	bool localization_wait_ = false;
+	bool loop_closure_wait_ = false;
+	Localization_base localization_base_; // 每次点云处理后更新，并作为current_pose 积分结果的base
+	Localization_base current_pose_;
 
-	std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree = nullptr;
-	std::unique_ptr<std::thread> thread = nullptr;
-	// std::unique_ptr<std::thread> show_thread = nullptr;
+	std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree_ = nullptr;
+	std::unique_ptr<std::thread> thread_ = nullptr;
+	// std::unique_ptr<std::thread> show_thread_ = nullptr;
 	std::unique_ptr<std::thread> global_localization_thread_ = nullptr;
-	mutex mtx_buffer;
-	mutex mtx_odom_cloud;
-	mutex mtx_lidar_cloud;
-	mutex mtx_obstacle_cloud;
-	mutex mtx_localization_base;
-	mutex mtx_current_pose;
-	mutex mtx_path;
-	mutex mtx_pose;
 
-	esekfom::esekf kf;
-	// std::unique_ptr<Preprocess> p_lidar_pre= nullptr; //TODO(jxl): 这个模块被屏蔽掉了？
-	std::unique_ptr<ImuProcess> p_imu = nullptr;
-	std::unique_ptr<BackEnd> back_end = nullptr;
-	std::unique_ptr<Localization> localization = nullptr;
+	mutex mtx_buffer_;
+	mutex mtx_odom_cloud_;
+	mutex mtx_lidar_cloud_;
+	mutex mtx_obstacle_cloud_;
+	mutex mtx_localization_base_;
+	mutex mtx_current_pose_;
+	mutex mtx_path_;
+	mutex mtx_pose_;
+
+	esekfom::esekf kf_;
+	// std::unique_ptr<Preprocess> p_lidar_pre_= nullptr; //TODO(jxl): 这个模块被屏蔽掉了？
+	std::unique_ptr<ImuProcess> p_imu_ = nullptr;
+	std::unique_ptr<BackEnd> back_end_ = nullptr;
+	std::unique_ptr<Localization> localization_ = nullptr;
 	std::unique_ptr<GlobalLocalization> global_localization_ = nullptr;
 	std::unique_ptr<CloudMap> cloud_map_manager_ = nullptr;
 
@@ -437,14 +448,14 @@ class LidarSlam {
 
 	std::shared_ptr<localization_module::LidarPreprocParent> lidar_pre_ptr_;
 
-	PointCloudType::Ptr UndistortCloudInOdom;
-	PointCloudType::Ptr undistortCloud; // lidar 系
-	PointCloudType::Ptr FilteredUndistortCloud;
-	pcl::VoxelGrid<PointType> downSizeFilterCloud;
-	pcl::VoxelGrid<PointType> downSizeFilterCloud_test;
-	PointCloudType::Ptr kdtreeCloud;
-	// PointCloudType::Ptr ObstacleCloud; // disable ObstacleCloud by pmm
-	PointCloudType::Ptr FilteredObstacleCloud;
+	PointCloudType::Ptr UndistortCloudInOdom_;
+	PointCloudType::Ptr undistortCloud_; // lidar 系
+	PointCloudType::Ptr FilteredUndistortCloud_;
+	pcl::VoxelGrid<PointType> downSizeFilterCloud_;
+	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;
+	PointCloudType::Ptr kdtreeCloud_;
+	// PointCloudType::Ptr ObstacleCloud_; // disable ObstacleCloud_ by pmm
+	PointCloudType::Ptr FilteredObstacleCloud_;
 
 	SlamWorkMode working_mode_ = UNKNOWN;
 	// LocalizationStatus l_status_ = L_INACTIVE;
@@ -459,15 +470,6 @@ class LidarSlam {
 	localization_module::LocalizationModuleLogInfoManager* log_info_manager_;
 
 	// cpu_set_t mask;
-
-	bool sync_packages(MeasureGroup& meas);
-	void loopClosureThread();
-	void sec_mapping_loopClosureThread();
-	void localizationThread();
-	// void relocalizationForMappingThread();
-	void global_localization_for_sec_mapping_thread();
-	void showThread();
-	void delete_log_file(double keep_time);
 };
 
 } // namespace lidar_slam
