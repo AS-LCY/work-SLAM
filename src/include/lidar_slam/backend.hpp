@@ -1,19 +1,19 @@
 #ifndef BACKEND_H
 #define BACKEND_H
-#pragma once
-#include <omp.h>
 
-#include <mutex>
-// #include <math.h> // ikd_Tree.h 中已包含
+#pragma once
+
+#include <omp.h>
 #include <unistd.h>
 
 #include <cmath>
+#include <csignal>
 #include <fstream>
+#include <mutex>
 #include <thread>
 // #include <filesystem> // c++17
 
 #include <Eigen/Core>
-#include <csignal>
 
 // #include <opencv2/opencv.hpp>
 // #include <opencv2/core.hpp>
@@ -30,10 +30,8 @@
 
 #include <pcl/search/impl/search.hpp>
 // #include <pcl/filters/impl/voxel_grid.hpp>
-
 // #include <pcl/registration/ndt.h> // 没用上
 // #include <pcl/filters/crop_box.h> //没用上
-// #include <pcl/filters/passthrough.h> // getObstacleMap 中使用，此函数未使用上
 
 // gstam
 #include <gtsam/geometry/Pose3.h>
@@ -57,54 +55,57 @@
 #include "lidar_slam/scan_context/Scancontext.h"
 namespace lidar_slam {
 
-// struct KeyPose
-// {
-//     Eigen::Isometry3d pose;
-//     int  index;
-//     double time;
-//     double roll;
-//     double pitch;
-//     double yaw;
-// }; // moved to data_struct_define.h
-
 class BackEnd {
    public:
 	BackEnd(float dist, float angle, float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
 	~BackEnd();
 
 	void saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
+
 	PointCloudType::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
+
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
+
 	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud, double time);
+
 	void performLoopClosure(double time);
+	// void performSCLoopClosure();
 
 	// if start_index == end_index == 0; save all;
 	bool saveMap(std::string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
 				 int end_index);
+
 	bool correctPoses();
+
 	void recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeReconstructRadius,
 						   float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize);
 
-	// PointCloudType::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
-
-	KeyPose getCurrentPose() { return KeyPoses_.back(); }
+	KeyPose getCurrentPose() {
+		return KeyPoses_.back(); // TODO(jxl): 变量的使用要加锁
+	}
 
 	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
 
-	std::vector<KeyPose> getKeyframePoses() { return KeyPoses_; }
+	std::vector<KeyPose> getKeyframePoses() {
+		return KeyPoses_; // TODO(jxl): 变量的使用要加锁
+	}
+
 	int getCurrentPoseIndex() {
-		int temp_index = int(KeyPoses_.size()) - 1;
+		int temp_index = int(KeyPoses_.size()) - 1; // TODO(jxl): 变量的使用要加锁
 		int curr_index = temp_index < 0 ? 0 : temp_index;
 		return curr_index;
 	}
+
 	std::map<int, int> getloopIndex() { return loopIndexContainer_; }
+
 	PointCloudType::Ptr getTestCloud() { return gravityAlignedCLoud_; }
 
 	bool get_loaded_key_cloud_status() { return loaded_key_clouds_ready_; }
 
-	bool set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
-							   std::vector<ScInfo> input_vec_sc_info, std::vector<KeyPose> input_vec_key_poses,
-							   Eigen::Isometry3d trans_map_odom);
+	bool set_loaded_key_clouds(const std::vector<PointCloudType::Ptr>& input_vec_key_clouds,
+							   const std::vector<ScInfo>& input_vec_sc_info,
+							   const std::vector<KeyPose>& input_vec_key_poses,
+							   const Eigen::Isometry3d& trans_map_odom);
 
    private:
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);
@@ -116,17 +117,20 @@ class BackEnd {
 
 	bool detectLoopClosureDistance(int* latestID, int* closestID, double time);
 	void loopFindNearKeyframes(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum);
-	void loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum,
-											const int _wrt_key);
+	// void loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum,
+	// 										const int _wrt_key);
 
    private:
 	bool loaded_key_clouds_ready_ = false;
 
-	pcl::PointCloud<PointType>::Ptr KeyPoint_;
-	std::vector<KeyPose> KeyPoses_;
+	pcl::PointCloud<PointType>::Ptr KeyPoint_; //关键帧位置
+	std::vector<KeyPose> KeyPoses_;			   //关键帧位姿
+
 	pcl::PointCloud<PointType>::Ptr CopyKeyPoint_;
 	std::vector<KeyPose> CopyKeyPoses_;
+
 	std::vector<PointCloudType::Ptr> KeyFrameCloud_;
+
 	PointCloudType::Ptr show_map_;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map_;
 
@@ -162,6 +166,7 @@ class BackEnd {
 	std::mutex mtxCurrentMap_;
 	std::mutex mtxCurrentRGBMap_;
 };
+
 } // namespace lidar_slam
 
 #endif

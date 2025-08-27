@@ -108,8 +108,8 @@ class esekf {
 			point_world.intensity = point_body.intensity;
 
 			vector<float> pointSearchSqDis(NUM_MATCH_POINTS);
-			auto& points_near =
-				Nearest_Points[i]; // Nearest_Points[i]打印出来发现是按照离point_world距离，从小到大的顺序的vector
+			auto& points_near = Nearest_Points[i];
+			// Nearest_Points[i]打印出来发现是按照离point_world距离，从小到大的顺序的vector
 
 			double ta = omp_get_wtime();
 			if (ekfom_data.converge) {
