@@ -375,8 +375,8 @@ class LidarSlam {
 	std::ofstream localization_file_;
 
 	MeasureGroup Measures_;
-	Eigen::Isometry3d T_odom_lidar_;
-	Eigen::Isometry3d T_lidar_wheel_;
+	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
 
 	std::deque<std::pair<double, Eigen::Isometry3d>> poses_buffer_; // TODO(jxl): 这个变量没有使用
 

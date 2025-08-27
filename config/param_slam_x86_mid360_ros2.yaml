@@ -131,13 +131,15 @@
       b_acc_cov: 0.0001 # 
       b_gyr_cov: 0.0001 #
 
-      cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize 
+      cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
+
       key_frame_distance: 1.0   # unit: m     # 大于此距离为关键帧
       key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧
       loopSearchDistance: 1.5
-      loopSearchTimeDiff: 30.0  # unit: sec, 原本30s, 
+      loopSearchTimeDiff: 30.0  # unit: sec
       loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
       loopIcpScore: 0.3
+
       # use_ele_pcd_flag: false   # 是否使用单区域pcd
       # save_ele_pcd_flag: false  # 是否保存单区域pcd
       save_map_resolution: 0.1 # unit: m

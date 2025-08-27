@@ -103,6 +103,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 
 	const auto extrinT = config_param_.extrinsic.extrinT;
 	const auto extrinR = config_param_.extrinsic.extrinR;
+
 	p_imu_.reset(new ImuProcess());
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
@@ -130,6 +131,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	} else if (work_mode == SEC_MAPPING) {
 		global_localization_thread_.reset(
 			new std::thread(&LidarSlam::global_localization_for_sec_mapping_thread, this));
+
 		thread_.reset(new std::thread(&LidarSlam::sec_mapping_loopClosureThread, this));
 		hb_time_thread_loop_closure_.store(curr_time);
 		hb_time_thread_secmap_relocalize_.store(curr_time);
@@ -254,10 +256,9 @@ void LidarSlam::loopClosureThread() {
 		hb_time_thread_loop_closure_.store(rclcpp::Clock().now().seconds());
 
 		auto start = std::chrono::steady_clock::now();
-		// if (loop_closure_wait_){
 		back_end_->performLoopClosure(lidar_end_time_); //  回环检测
-		// }
-		// performSCLoopClosure();
+		// back_end_->performSCLoopClosure();
+
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
@@ -732,8 +733,8 @@ bool LidarSlam::run() {
 			return false;
 		}
 
-		// log_info_manager_->slam_info.data[13]= -100; //
-		// log_info_manager_->slam_info.data[15]= -100; //
+		// log_info_manager_->slam_info.data[13]= -100;
+		// log_info_manager_->slam_info.data[15]= -100;
 		log_info_manager_->slam_info.data[24] = Measures_.lidar_beg_time - last_lidar_time;
 		log_info_manager_->slam_info.data[25] = Measures_.lidar_beg_time;
 		log_info_manager_->slam_info.data[26] = Measures_.lidar_end_time - Measures_.lidar_beg_time;
@@ -867,7 +868,7 @@ bool LidarSlam::run() {
 					back_end_->saveCurrentCloud(undistortCloud_,
 												getLidarInMap()); //注意这里只是为了取水平面，后端还是在odom坐标系
 					{
-						std::unique_lock<std::mutex> lk(mtx_path_);
+						std::unique_lock<std::mutex> lk(mtx_path_); // TODO(jxl): 在同一个线程中，不用加锁
 						unoptimized_path_.emplace_back(getWheelInMap()); // TODO max size
 						if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
 					}
@@ -877,13 +878,12 @@ bool LidarSlam::run() {
 					state_updated.pos = T_odom_b.translation();
 					state_updated.rot = Sophus::SO3d(T_odom_b.rotation());
 					// state_updated.rot =  Sophus::SO3(T_odom_b.rotation());
+
 					kf_.change_x(state_updated);
 					new_key_cloud_arrived_ = true;
 				}
 
 				// 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
-
-				// ROS_INFO_STREAM(BLUE<<"check LoopIsClosed "<<RESET);
 				bool LoopIsClosed = back_end_->correctPoses();
 				{
 					std::unique_lock<std::mutex> lk(mtx_path_);

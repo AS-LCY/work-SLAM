@@ -5,31 +5,35 @@
 
 #include <mutex>
 // #include <math.h> // ikd_Tree.h 中已包含
+#include <unistd.h>
+
 #include <cmath>
 #include <fstream>
 #include <thread>
 // #include <filesystem> // c++17
-#include <unistd.h>
 
 #include <Eigen/Core>
 #include <csignal>
+
 // #include <opencv2/opencv.hpp>
 // #include <opencv2/core.hpp>
+
 // pcl
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
+#include <pcl/filters/filter.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/range_image/range_image.h>
 #include <pcl/registration/icp.h>
 
 #include <pcl/search/impl/search.hpp>
+// #include <pcl/filters/impl/voxel_grid.hpp>
+
 // #include <pcl/registration/ndt.h> // 没用上
-#include <pcl/filters/filter.h>
-#include <pcl/io/pcd_io.h>
 // #include <pcl/filters/crop_box.h> //没用上
 // #include <pcl/filters/passthrough.h> // getObstacleMap 中使用，此函数未使用上
-#include <pcl/filters/voxel_grid.h>
-// #include <pcl/filters/impl/voxel_grid.hpp>
 
 // gstam
 #include <gtsam/geometry/Pose3.h>
@@ -45,12 +49,14 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+
 // lidar_slam
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/data_struct_define.h"
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
 namespace lidar_slam {
+
 // struct KeyPose
 // {
 //     Eigen::Isometry3d pose;
@@ -71,23 +77,28 @@ class BackEnd {
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
 	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud, double time);
 	void performLoopClosure(double time);
+
 	// if start_index == end_index == 0; save all;
 	bool saveMap(std::string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
 				 int end_index);
 	bool correctPoses();
 	void recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeReconstructRadius,
 						   float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize);
+
 	// PointCloudType::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
-	KeyPose getCurrentPose() { return KeyPoses.back(); }
+
+	KeyPose getCurrentPose() { return KeyPoses_.back(); }
+
 	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
-	std::vector<KeyPose> getKeyframePoses() { return KeyPoses; }
+
+	std::vector<KeyPose> getKeyframePoses() { return KeyPoses_; }
 	int getCurrentPoseIndex() {
-		int temp_index = int(KeyPoses.size()) - 1;
+		int temp_index = int(KeyPoses_.size()) - 1;
 		int curr_index = temp_index < 0 ? 0 : temp_index;
 		return curr_index;
 	}
-	std::map<int, int> getloopIndex() { return loopIndexContainer; }
-	PointCloudType::Ptr getTestCloud() { return gravityAlignedCLoud; }
+	std::map<int, int> getloopIndex() { return loopIndexContainer_; }
+	PointCloudType::Ptr getTestCloud() { return gravityAlignedCLoud_; }
 
 	bool get_loaded_key_cloud_status() { return loaded_key_clouds_ready_; }
 
@@ -96,38 +107,6 @@ class BackEnd {
 							   Eigen::Isometry3d trans_map_odom);
 
    private:
-	bool loaded_key_clouds_ready_ = false;
-
-	pcl::PointCloud<PointType>::Ptr KeyPoint;
-	std::vector<KeyPose> KeyPoses;
-	pcl::PointCloud<PointType>::Ptr CopyKeyPoint;
-	std::vector<KeyPose> CopyKeyPoses;
-	std::vector<PointCloudType::Ptr> KeyFrameCloud;
-	PointCloudType::Ptr show_map;
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map;
-
-	float keyframeDistThreshold;  //  判断是否为关键帧的距离阈值
-	float keyframeAngleThreshold; //  判断是否为关键帧的角度阈值
-	float loopKeyframeSearchRadius;
-	float loopKeyframeSearchTimeDiff;
-	int loopKeyframeSearchSkipKey;
-	float loopIcpScore = 0.5;
-	map<int, int> loopIndexContainer;
-	vector<pair<int, int>> loopIndexQueue;
-	vector<gtsam::Pose3> loopPoseQueue;
-	vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue;
-	gtsam::NonlinearFactorGraph gtSAMgraph;
-	gtsam::ISAM2* isam;
-	gtsam::Values initialEstimate;
-	gtsam::Values isamCurrentEstimate;
-	gtsam::ISAM2Params parameters;
-	bool aLoopIsClosed;
-	int show_index = 0;
-	SCManager scManager;
-	pcl::VoxelGrid<PointType> downSizeFilterICP;
-	PointCloudType::Ptr gravityAlignedCLoud;
-	// cv::Mat image;
-
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);
 	// bool create_directory_if_not_exists(const std::string &directoryPath);
 	// bool mkdir_p(const std::string &dir_path, mode_t mode);
@@ -139,11 +118,49 @@ class BackEnd {
 	void loopFindNearKeyframes(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum);
 	void loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum,
 											const int _wrt_key);
-	std::mutex mtxPose;
-	std::mutex mtxCloud;
-	std::mutex mtxLoopInfo;
-	std::mutex mtxCurrentMap;
-	std::mutex mtxCurrentRGBMap;
+
+   private:
+	bool loaded_key_clouds_ready_ = false;
+
+	pcl::PointCloud<PointType>::Ptr KeyPoint_;
+	std::vector<KeyPose> KeyPoses_;
+	pcl::PointCloud<PointType>::Ptr CopyKeyPoint_;
+	std::vector<KeyPose> CopyKeyPoses_;
+	std::vector<PointCloudType::Ptr> KeyFrameCloud_;
+	PointCloudType::Ptr show_map_;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map_;
+
+	float keyframeDistThreshold_;  //  判断是否为关键帧的距离阈值
+	float keyframeAngleThreshold_; //  判断是否为关键帧的角度阈值
+	float loopKeyframeSearchRadius_;
+	float loopKeyframeSearchTimeDiff_;
+	int loopKeyframeSearchSkipKey_;
+	float loopIcpScore_ = 0.5;
+
+	map<int, int> loopIndexContainer_;
+	vector<pair<int, int>> loopIndexQueue_;
+	vector<gtsam::Pose3> loopPoseQueue_;
+	vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue_;
+
+	gtsam::NonlinearFactorGraph gtSAMgraph_;
+	gtsam::ISAM2* isam_;
+	gtsam::Values initialEstimate_;
+	gtsam::Values isamCurrentEstimate_;
+	gtsam::ISAM2Params parameters_;
+
+	bool aLoopIsClosed_;
+	int show_index_ = 0;
+
+	SCManager scManager_;
+
+	pcl::VoxelGrid<PointType> downSizeFilterICP_;
+	PointCloudType::Ptr gravityAlignedCLoud_;
+
+	std::mutex mtxPose_;
+	std::mutex mtxCloud_;
+	std::mutex mtxLoopInfo_;
+	std::mutex mtxCurrentMap_;
+	std::mutex mtxCurrentRGBMap_;
 };
 } // namespace lidar_slam
 
