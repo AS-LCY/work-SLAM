@@ -6,39 +6,32 @@ Localization::Localization() {
 	log_info_manager_->reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	gicp_->setNumThreads(1);
+	gicp_->setNumThreads(1); // TODO(jxl)
 	gicp_->setTransformationEpsilon(0.01);
 	gicp_->setMaximumIterations(64);
-	gicp_->setMaxCorrespondenceDistance(2.0);
+	gicp_->setMaxCorrespondenceDistance(2.0); // TODO(jxl)
 	gicp_->setCorrespondenceRandomness(20);
 
-	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
-	// ndt.reset(new pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
 	ndt_.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
 	icp_.reset(new pcl::IterativeClosestPoint<PointType, PointType>());
+
 	// 根据输入数据的尺度设置NDT相关参数
 	ndt_->setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
 	ndt_->setStepSize(0.1);				  //为more-thuente线搜索设置最大步长
 	ndt_->setResolution(0.5);			  //设置NDT网格网格结构的分辨率（voxelgridcovariance）
-	//以上参数在使用房间尺寸比例下运算比较好，但如果需要处理例如一个杯子的扫描之类更小的物体，需要对参数进行缩小
-
-	//设置匹配迭代的最大次数，这个参数控制程序运行的最大迭代次数，一般来说这个限制值之前优化程序会在epsilon变换阀值下终止
-	//添加最大迭代次数限制能够增加程序的鲁棒性阻止了它在错误的方向上运行时间过长
 	ndt_->setMaximumIterations(35);
 
 	// 3. 设置参数
-
 	icp_->setMaximumIterations(50);			  // 最大迭代次数
 	icp_->setTransformationEpsilon(1e-8);	  // 变换收敛阈值
 	icp_->setEuclideanFitnessEpsilon(1);	  // 误差收敛阈值
-	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离
+	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离 //TODO(jxl)
 
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
 	CloudGlobalMap_.reset(new PointCloudType());
 	accumulateMap_.reset(new PointCloudType());
 	testMatchcloud_.reset(new PointCloudType());
 	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
-
 	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
 	map_ready_ = false;
 	filter_init_ = false;
@@ -56,12 +49,9 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 
 	// 保留空间优化性能
 	dst->reserve(src->size());
-
-	// 逐点复制并过滤 NaN
 	for (const auto& src_pt : src->points) {
-		// 检查坐标是否有效
 		if (!std::isfinite(src_pt.x) || !std::isfinite(src_pt.y) || !std::isfinite(src_pt.z)) {
-			continue; // 跳过无效点
+			continue;
 		}
 
 		pcl::PointXYZI dst_pt;
@@ -71,8 +61,6 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 		dst_pt.intensity = src_pt.intensity;
 		dst->push_back(dst_pt);
 	}
-
-	// 更新点云尺寸信息
 	dst->width = dst->size();
 	dst->height = 1; // 转换为无序点云
 }
