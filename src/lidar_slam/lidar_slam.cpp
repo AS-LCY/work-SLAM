@@ -223,7 +223,7 @@ void LidarSlam::sec_mapping_loopClosureThread() {
 			const std::vector<KeyPose>& loaded_keyframe_poses = cloud_map_manager_->get_loaded_keyframe_poses();
 			const std::vector<ScInfo>& loaded_sc_info = cloud_map_manager_->get_load_sc_info_();
 			const Eigen::Isometry3d& global_odom_to_map = global_localization_->get_global_odom_to_map();
-			// sec_mapping模式下，最开始全局重定位确定的T_map_odom, 还是T_odom_map
+			// sec_mapping模式下，最开始全局重定位确定的T_map_odom
 
 			// TODO bug here  //TODO(jxl): 什么意思，有bug？
 			if (cloud_map_manager_->get_map_data_status()) {

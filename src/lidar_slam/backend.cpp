@@ -693,7 +693,6 @@ PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
 	}
 
 	// TODO(jxl): mtxCloud_是锁KeyFrameCloud，KeyPoses也有自己的锁
-
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		std::unique_lock<std::mutex> lk2(mtxPose_);
@@ -714,29 +713,25 @@ PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
 bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
 					  int end_index) {
 	cout << "****************************************************" << endl;
-	// ROS_INFO( "****************************************************");
 	if (KeyPoses_.empty() || KeyPoses_.size() == 0) {
 		cout << "key frame empty" << endl;
-		// ROS_WARN_STREAM(YELLOW << "key frame empty" << RESET);
 		return false;
 	}
+
 	// 检查并创建 yaml 中的地图路径
 	if (create_directory_if_not_exists(saveMapDirectory)) {
 		std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
-		// ROS_INFO_STREAM("Directory created or already exists: " << saveMapDirectory);
 	} else {
 		std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
-		// ROS_ERROR_STREAM(RED << "Failed to create directory: " << saveMapDirectory  <<RESET);
 		return false;
 	}
+
 	// 创建关键帧点云保存路径
 	std::string save_key_frame_cloud_dir = saveMapDirectory + "/key_frame_cloud/";
 	if (create_directory_if_not_exists(save_key_frame_cloud_dir)) {
 		std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
-		// ROS_INFO_STREAM("Directory created or already exists: " << save_key_frame_cloud_dir);
 	} else {
 		std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
-		// ROS_ERROR_STREAM(RED << "Failed to create directory: " << save_key_frame_cloud_dir <<RESET);
 		return false;
 	}
 
@@ -745,6 +740,7 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 	PointCloudType::Ptr globalMapCloud(new PointCloudType());
 	PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
 	ScInfo infos[(int)KeyPoses_.size()];
+
 	// 注意：拼接地图时，keyframe是lidar系，而fastlio更新后的存到的cloudKeyPoses6D 关键帧位姿是body系下的，需要把
 	// cloudKeyPoses6D  转换为T_world_lidar 。 T_world_lidar = T_world_body * T_body_lidar , T_body_lidar 是外参
 	int start = 0, end = 0;
@@ -753,10 +749,8 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 	if (start_index == 0 && end_index == 0) {
 		start = 0;
 		end = KeyPosesSize - 1;
-		// pcd_file_path = saveMapDirectory + "/GlobalMap.pcd";
 	} else if (start_index == -1 || end_index == -1) {
 		cout << "start-point or end-point not set, save all to cloud_map.pcd " << endl;
-		// ROS_WARN_STREAM(YELLOW << "start-point or end-point not set, save all to cloud_map.pcd "<< RESET);
 		start = 0;
 		end = KeyPosesSize - 1;
 	} else {
@@ -766,84 +760,66 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 			end = KeyPosesSize - 1;
 		}
 	}
-
 	std::string key_frame_cloud_path = "";
-	//   for (int i = 0; i < (int)KeyPoses_.size(); i++) {
 	for (int i = start; i <= end; i++) {
 		// 生成地图
 		*globalMapCloud += *transformPointCloud(KeyFrameCloud_[i], T_map_odom * KeyPoses_[i].pose);
+
 		// ScanContex 信息组合获取
 		ScInfo info;
 		info.id = i;
 		info.pose = T_map_odom * KeyPoses_[i].pose;
 		info.polarcontext = scManager_.getSc(i);
 		infos[i] = info;
+
 		// 保存关键帧点云
 		key_frame_cloud_path = save_key_frame_cloud_dir + std::to_string(i) + ".pcd";
 		int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud_[i]);
 	}
 	cout << "\nSave resolution: " << resolution << endl;
-	// ROS_INFO_STREAM("Save resolution: " << resolution);
 
 	pcl::VoxelGrid<PointType> downSizeFilter;
 	downSizeFilter.setInputCloud(globalMapCloud);
 	downSizeFilter.setLeafSize(resolution, resolution, resolution);
 	downSizeFilter.filter(*globalSurfCloudDS);
 	cout << "cloud_map size: " << globalSurfCloudDS->points.size() << endl;
-	// ROS_INFO_STREAM("cloud_map size: "<<globalSurfCloudDS->points.size());
-
 	cout << "Saving map to pcd file: " << pcd_file_path << endl;
-	// ROS_INFO_STREAM("Saving map to pcd file: "<<pcd_file_path);
 
-	/** savePCDFileBinary 返回值：
-	 *  0 --- 保存成功
-	 * -1 --- 保存失败
-	 */
 	int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS); //  稠密地图
-	if (ret == -1) {
+	if (ret == -1) {														 //失败
 		cout << "save cloud-map failed" << endl;
-		// ROS_ERROR_STREAM(RED << "save cloud-map failed" << RESET);
 		return false;
-	} else if (ret == 0) {
+	} else if (ret == 0) { //成功
 		cout << "Saving map to pcd files completed" << endl;
-		// ROS_INFO_STREAM(GREEN << "Saving map to pcd files completed"<< RESET);
 	}
-	// int ret = pcl::io::savePCDFileASCII(pcd_file_path, *globalSurfCloudDS);       //  稠密地图
-	// cout<<"savePCDFileBinary result: "<<ret<<endl;
 
 	cout << "Saving loop data" << endl;
-	// ROS_INFO("Saving loop data");
 	std::ofstream file(saveMapDirectory + "/data");
 	std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
 	if (!file.is_open()) {
 		cout << "sc data file open failed" << endl;
-		// ROS_ERROR_STREAM(RED << "sc data file open failed" << RESET);
 		return false;
 	}
 	if (!file_pose.is_open()) {
 		cout << "key_frame_pose file open failed" << endl;
-		// ROS_ERROR_STREAM(RED << "key_frame_pose file open failed" << RESET);
 		return false;
 	}
-	// for (int i = 0; i < (int)KeyPoses_.size(); i++) {
 	for (int i = start; i <= end; i++) {
 		file << infos[i].id << ',';
 		Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, ",", ",", "", "", "", "");
 		file << (infos[i].pose).matrix().format(fmt) << ',';
 		file << infos[i].polarcontext.rows() << ',' << infos[i].polarcontext.cols() << ',';
 		file << infos[i].polarcontext.format(fmt) << '\n';
+
 		// key_frame Pose
 		file_pose << infos[i].id << ',';
 		file_pose << std::setprecision(15) << KeyPoses_[i].time << ',';
-		// file_pose <<KeyPoses_[i].time << ',';
 		file_pose << std::setprecision(6) << (infos[i].pose).matrix().format(fmt) << '\n';
 	}
 	file.close();
 	file_pose.close();
 	cout << "Saving loop data completed" << endl;
 	cout << "****************************************************" << endl;
-	// ROS_INFO_STREAM(GREEN << "Saving loop data completed" << RESET);
-	// ROS_INFO("****************************************************");
 
 	return true;
 }

@@ -32,6 +32,7 @@ using namespace Eigen;
 typedef pcl::PointXYZINormal PointType;
 typedef pcl::PointCloud<PointType> PointCloudType;
 typedef vector<PointType, Eigen::aligned_allocator<PointType>> PointVector;
+
 typedef Vector3d V3D;
 typedef Matrix3d M3D;
 typedef Vector3f V3F;

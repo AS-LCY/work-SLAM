@@ -5,41 +5,41 @@ Localization::Localization() {
 	log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
 	log_info_manager_->reset_log_info();
 
-	gicp.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	gicp->setNumThreads(1);
-	gicp->setTransformationEpsilon(0.01);
-	gicp->setMaximumIterations(64);
-	gicp->setMaxCorrespondenceDistance(2.0);
-	gicp->setCorrespondenceRandomness(20);
+	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
+	gicp_->setNumThreads(1);
+	gicp_->setTransformationEpsilon(0.01);
+	gicp_->setMaximumIterations(64);
+	gicp_->setMaxCorrespondenceDistance(2.0);
+	gicp_->setCorrespondenceRandomness(20);
 
 	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
 	// ndt.reset(new pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>());
-	ndt.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
-	icp.reset(new pcl::IterativeClosestPoint<PointType, PointType>());
+	ndt_.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
+	icp_.reset(new pcl::IterativeClosestPoint<PointType, PointType>());
 	// 根据输入数据的尺度设置NDT相关参数
-	ndt->setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
-	ndt->setStepSize(0.1);				 //为more-thuente线搜索设置最大步长
-	ndt->setResolution(0.5);			 //设置NDT网格网格结构的分辨率（voxelgridcovariance）
+	ndt_->setTransformationEpsilon(0.01); //为终止条件设置最小转换差异
+	ndt_->setStepSize(0.1);				  //为more-thuente线搜索设置最大步长
+	ndt_->setResolution(0.5);			  //设置NDT网格网格结构的分辨率（voxelgridcovariance）
 	//以上参数在使用房间尺寸比例下运算比较好，但如果需要处理例如一个杯子的扫描之类更小的物体，需要对参数进行缩小
 
 	//设置匹配迭代的最大次数，这个参数控制程序运行的最大迭代次数，一般来说这个限制值之前优化程序会在epsilon变换阀值下终止
 	//添加最大迭代次数限制能够增加程序的鲁棒性阻止了它在错误的方向上运行时间过长
-	ndt->setMaximumIterations(35);
+	ndt_->setMaximumIterations(35);
 
 	// 3. 设置参数
 
-	icp->setMaximumIterations(50);			 // 最大迭代次数
-	icp->setTransformationEpsilon(1e-8);	 // 变换收敛阈值
-	icp->setEuclideanFitnessEpsilon(1);		 // 误差收敛阈值
-	icp->setMaxCorrespondenceDistance(0.05); // 最大对应点距离
+	icp_->setMaximumIterations(50);			  // 最大迭代次数
+	icp_->setTransformationEpsilon(1e-8);	  // 变换收敛阈值
+	icp_->setEuclideanFitnessEpsilon(1);	  // 误差收敛阈值
+	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离
 
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-	CloudGlobalMap.reset(new PointCloudType());
+	CloudGlobalMap_.reset(new PointCloudType());
 	accumulateMap_.reset(new PointCloudType());
-	testMatchcloud.reset(new PointCloudType());
-	CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	testMatchcloud_.reset(new PointCloudType());
+	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-	CloudGlobalMapIn_.reset(new PointCloudType());
+	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
 	map_ready_ = false;
 	filter_init_ = false;
 }
@@ -79,10 +79,10 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 
 bool Localization::loadMap(std::string path) {
 	map_ready_ = false;
-	CloudGlobalMap.reset(new PointCloudType());
-	CloudGlobalMapIn.reset(new pcl::PointCloud<pcl::PointXYZI>());
-	CloudGlobalMapIn_.reset(new PointCloudType());
-	show_map_points.clear();
+	CloudGlobalMap_.reset(new PointCloudType());
+	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
+	show_map_points_.clear();
 	PointCloudType::Ptr TempMap(new PointCloudType());
 
 	std::string cloud_map_file_path = path + std::string("cloud_map.pcd");
@@ -96,11 +96,11 @@ bool Localization::loadMap(std::string path) {
 			std::cerr << "Failed to load PCD file" << std::endl;
 			return false;
 		}
-		*CloudGlobalMap = *TempMap;
+		*CloudGlobalMap_ = *TempMap;
 		std::cout << "load map from : " << cloud_map_file_path << "--- point size: " << TempMap->points.size()
 				  << std::endl;
 
-		std::cout << "Cloud validity: " << CloudGlobalMap->is_dense << " " << CloudGlobalMap->points.size()
+		std::cout << "Cloud validity: " << CloudGlobalMap_->is_dense << " " << CloudGlobalMap_->points.size()
 				  << std::endl;
 	}
 	// // no ComplementMap.pcd
@@ -110,31 +110,31 @@ bool Localization::loadMap(std::string path) {
 	if (map_file.good()) {
 		TempMap->points.clear();
 		pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap);
-		*CloudGlobalMap += *TempMap;
+		*CloudGlobalMap_ += *TempMap;
 		std::cout << "load map from : " << ComplementMap_file_path << "size " << TempMap->points.size() << std::endl;
 		// ROS_INFO_STREAM("load map from : " << ComplementMap_file_path<<"size "<<TempMap->points.size() );
 	}
 
-	pcl::copyPointCloud(*(CloudGlobalMap), *CloudGlobalMapIn_);
-	// copyPointCloudManual(CloudGlobalMap, CloudGlobalMapIn);
+	pcl::copyPointCloud(*(CloudGlobalMap_), *CloudGlobalMapIn_PointType_);
+	// copyPointCloudManual(CloudGlobalMap_, CloudGlobalMapIn_);
 	// pcl::VoxelGrid<pcl::PointXYZI> downSizeFilter;
 	// pcl::PointCloud<pcl::PointXYZI>::Ptr GlobalMapShow(new pcl::PointCloud<pcl::PointXYZI>());
 	pcl::VoxelGrid<PointType> downSizeFilter;
 	PointCloudType::Ptr GlobalMapShow(new PointCloudType());
 
 	double min_voxel_size = 0.1;
-	if (CloudGlobalMap->points.size() < 100000.0)
+	if (CloudGlobalMap_->points.size() < 100000.0)
 		downSizeFilter.setLeafSize(0.5, 0.5, 0.5); // for global map visualization
 	else {
-		min_voxel_size = min(0.3 * CloudGlobalMap->points.size() / 100000.0, 2.0);
+		min_voxel_size = min(0.3 * CloudGlobalMap_->points.size() / 100000.0, 2.0);
 		downSizeFilter.setLeafSize(min_voxel_size, min_voxel_size, min_voxel_size); // for global map visualization
 	}
 
-	downSizeFilter.setInputCloud(CloudGlobalMapIn_);
+	downSizeFilter.setInputCloud(CloudGlobalMapIn_PointType_);
 
 	downSizeFilter.filter(*GlobalMapShow);
 
-	std::cout << "load map from : " << path + std::string("=GlobalMap.pcd") << "size " << CloudGlobalMap->points.size()
+	std::cout << "load map from : " << path + std::string("=GlobalMap.pcd") << "size " << CloudGlobalMap_->points.size()
 			  << std::endl;
 	std::cout << "show map points: " << GlobalMapShow->points.size() << std::endl;
 
@@ -146,9 +146,9 @@ bool Localization::loadMap(std::string path) {
 		point.y() = GlobalMapShow->points[i].y;
 		point.z() = GlobalMapShow->points[i].z;
 
-		show_map_points.push_back(point);
+		show_map_points_.push_back(point);
 	}
-	if (CloudGlobalMap->points.size() == 0) {
+	if (CloudGlobalMap_->points.size() == 0) {
 		std::cerr << "Failed to load map." << std::endl;
 		// ROS_ERROR_STREAM(RED << "Failed to load map."  << RESET);
 		return false;
@@ -165,7 +165,7 @@ bool Localization::loadMap(std::string path) {
 	// }
 
 	std::string line;
-	LoadData.clear();
+	LoadData_.clear();
 	polarcontext_invkeys_mat_.clear();
 	polarcontexts_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
@@ -174,7 +174,7 @@ bool Localization::loadMap(std::string path) {
 
 	////////////////////////////////////////////////////
 
-	scManager.reset(new SCManager()); /////////////// TODO，是否每次加载地图都需要 重置ScanContex，即重定位
+	scManager_.reset(new SCManager()); /////////////// TODO，是否每次加载地图都需要 重置ScanContex，即重定位
 	for (auto filename : files) {
 		std::ifstream file(filename);
 		if (!file) {
@@ -226,31 +226,31 @@ bool Localization::loadMap(std::string path) {
 			}
 			// loadScManager.loadScancontextAndKeys(readData.polarcontext);
 			Eigen::MatrixXd sc = readData.polarcontext; // v1
-			Eigen::MatrixXd ringkey = scManager->makeRingkeyFromScancontext(sc);
+			Eigen::MatrixXd ringkey = scManager_->makeRingkeyFromScancontext(sc);
 			// std::vector<float> polarcontext_invkey_vec = eig2stdvec( ringkey );
 			polarcontext_invkeys_mat_.push_back(eig2stdvec(ringkey));
 			polarcontexts_.push_back(sc);
 			//   if (i == 17)
 			//    std::cout << " \n matrix:"  << std::endl;
 			//    std::cout << value <<",";
-			LoadData.push_back(readData);
+			LoadData_.push_back(readData);
 		}
 		file.close();
 	}
-	if (LoadData.size() == 0) return false;
-	scManager->buildRingKeyKDTree(polarcontext_invkeys_mat_, polarcontexts_);
+	if (LoadData_.size() == 0) return false;
+	scManager_->buildRingKeyKDTree(polarcontext_invkeys_mat_, polarcontexts_);
 
-	std::cout << "get_load_data : " << LoadData.size() << std::endl;
-	// ROS_INFO_STREAM("get_load_data : " << LoadData.size() );
+	std::cout << "get_load_data : " << LoadData_.size() << std::endl;
+	// ROS_INFO_STREAM("get_load_data : " << LoadData_.size() );
 	map_ready_ = true;
 	cout << "\033[1;32mLoad map success!\033[0m" << endl;
 	// ROS_INFO_STREAM(BOLDGREEN << "Load map success!" << RESET );
-	copyPointCloudManual(CloudGlobalMapIn_,
-						 CloudGlobalMapIn); // TODO：： 这里解决过一个 align free 的问题 ，避免栈区内存拷贝给堆区内存上
+	copyPointCloudManual(CloudGlobalMapIn_PointType_,
+						 CloudGlobalMapIn_); // TODO：： 这里解决过一个 align free 的问题 ，避免栈区内存拷贝给堆区内存上
 
-	// ndt->setInputTarget(CloudGlobalMapIn_);  //目标点云
-	gicp->setInputTarget(CloudGlobalMapIn); //目标点云
-	// icp->setInputTarget(CloudGlobalMapIn_);  //目标点云
+	// ndt_->setInputTarget(CloudGlobalMapIn_PointType_);  //目标点云
+	gicp_->setInputTarget(CloudGlobalMapIn_); //目标点云
+	// icp_->setInputTarget(CloudGlobalMapIn_PointType_);  //目标点云
 	std::cout << "--------------------" << std::endl;
 	return true;
 }
@@ -273,26 +273,26 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	// static const double ratio = 0.1;
 	static const double ratio = 1.0;
 	std::cout << "odomCloud:" << odomCloud->points.size() << std::endl;
-	std::cout << "CloudGlobalMapIn:" << CloudGlobalMapIn->points.size() << std::endl;
+	std::cout << "CloudGlobalMapIn_:" << CloudGlobalMapIn_->points.size() << std::endl;
 	if (!map_ready_) return false;
 	// TODO::
-	gicp->setInputSource(odomCloud);
-	// TODO:: gicp->setInputTarget(CloudGlobalMapIn);
+	gicp_->setInputSource(odomCloud);
+	// TODO:: gicp_->setInputTarget(CloudGlobalMapIn_);
 	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>()); //
 	// PointCloudType::Ptr unused_result(new PointCloudType());
 	// TODO::
-	gicp->align(*unused_result, correctionOdomToMap.matrix().cast<float>());
+	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
 
 	// 设置使用机器人测距法得到的粗略初始变换矩阵结果
 	// 计算需要的刚体变换以便将输入的源点云匹配到目标点云
 	// pcl::PointCloud<pcl::PointXYZI>::Ptr output_cloud(new pcl::PointCloud<pcl::PointXYZI>);
 	PointCloudType::Ptr output_cloud(new PointCloudType());
-	// ndt->setInputSource(odomCloud);  //源点云
-	//  icp->setInputSource(odomCloud);  //源点云
+	// ndt_->setInputSource(odomCloud);  //源点云
+	//  icp_->setInputSource(odomCloud);  //源点云
 	// Setting point cloud to be aligned to.
-	// ndt.setInputTarget(CloudGlobalMapIn);  //目标点云
-	// ndt->align(*output_cloud, correctionOdomToMap.matrix().cast<float>());
-	//  icp->align(*output_cloud, correctionOdomToMap.matrix().cast<float>());
+	// ndt.setInputTarget(CloudGlobalMapIn_);  //目标点云
+	// ndt_->align(*output_cloud, correctionOdomToMap_.matrix().cast<float>());
+	//  icp_->align(*output_cloud, correctionOdomToMap_.matrix().cast<float>());
 	std::cout << "..........----......" << std::endl;
 
 	/*
@@ -322,11 +322,11 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	 */
 
 	// double last_temp_x, last_temp_y, last_temp_z, last_temp_roll, last_temp_pitch, last_temp_yaw;
-	// pcl::getTranslationAndEulerAngles(correctionOdomToMap, last_temp_x, last_temp_y, last_temp_z, last_temp_roll,
+	// pcl::getTranslationAndEulerAngles(correctionOdomToMap_, last_temp_x, last_temp_y, last_temp_z, last_temp_roll,
 	// last_temp_pitch, last_temp_yaw); //  获取上一帧 相对 当前帧的 位姿
 
 	// Eigen::Isometry3d temp_curr_correctionOdomToMap = Eigen::Isometry3d::Identity();
-	// temp_curr_correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
+	// temp_curr_correctionOdomToMap.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
 	// double curr_temp_x, curr_temp_y, curr_temp_z, curr_temp_roll, curr_temp_pitch, curr_temp_yaw;
 	// pcl::getTranslationAndEulerAngles(temp_curr_correctionOdomToMap, curr_temp_x, curr_temp_y, curr_temp_z,
 	// curr_temp_roll, curr_temp_pitch, curr_temp_yaw); //  获取上一帧 相对 当前帧的 位姿
@@ -334,34 +334,34 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	// cout << YELLOW << "x: "<< last_temp_x << " y: "<< last_temp_y << " z: "<< last_temp_z << " roll: "<<
 	// last_temp_roll << " pitch: "<< last_temp_pitch << " yaw: "<< last_temp_yaw << RESET << endl; cout << YELLOW <<
 	// "x: "<< curr_temp_x << " y: "<< curr_temp_y << " z: "<< curr_temp_z << " roll: "<< curr_temp_roll << " pitch: "<<
-	// curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl; fit_score = gicp->getFitnessScore();
-	if (gicp->hasConverged() == false) {
-		// if(icp->hasConverged() ==false){
+	// curr_temp_pitch << " yaw: "<< curr_temp_yaw << RESET << endl; fit_score = gicp_->getFitnessScore();
+	if (gicp_->hasConverged() == false) {
+		// if(icp_->hasConverged() ==false){
 		// ROS_ERROR_STREAM(RED << "gicp not converged "<<RESET);
 		cout << RED << "gicp not converged " << RESET << endl;
 		return false;
 	} else {
-		fit_score = gicp->getFitnessScore();
-		// fit_score = icp->getFitnessScore();
+		fit_score = gicp_->getFitnessScore();
+		// fit_score = icp_->getFitnessScore();
 		if (fit_score < score_low_accuracy_thr) {
-			lastCorrectionOdomToMap = correctionOdomToMap;
-			lastUpdateTime = curr_time_;
-			// ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp->getFitnessScore() << RESET);
-			cout << GREEN << "gicp success with score " << gicp->getFitnessScore() << RESET << endl;
-			// cout <<    GREEN << "gicp success with score "<< icp->getFitnessScore() << RESET << endl;
-			correctionOdomToMap.matrix() = gicp->getFinalTransformation().matrix().cast<double>();
-			// correctionOdomToMap.matrix() =  icp->getFinalTransformation().matrix().cast<double>();
+			lastCorrectionOdomToMap_ = correctionOdomToMap_;
+			lastUpdateTime_ = curr_time_;
+			// ROS_INFO_STREAM(GREEN << "gicp success with score "<< gicp_->getFitnessScore() << RESET);
+			cout << GREEN << "gicp success with score " << gicp_->getFitnessScore() << RESET << endl;
+			// cout <<    GREEN << "gicp success with score "<< icp_->getFitnessScore() << RESET << endl;
+			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			// correctionOdomToMap_.matrix() =  icp_->getFinalTransformation().matrix().cast<double>();
 
 			curr_time_ = omp_get_wtime();
 
 			double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-			// pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap, last_x, last_y, last_z, last_roll, last_pitch,
-			// last_yaw); //  获取上一帧 相对 当前帧的 位姿
-			Eigen::Affine3d affine_transform(lastCorrectionOdomToMap);
+			// pcl::getTranslationAndEulerAngles(lastCorrectionOdomToMap_, last_x, last_y, last_z, last_roll,
+			// last_pitch, last_yaw); //  获取上一帧 相对 当前帧的 位姿
+			Eigen::Affine3d affine_transform(lastCorrectionOdomToMap_);
 			pcl::getTranslationAndEulerAngles(affine_transform, last_x, last_y, last_z, last_roll, last_pitch,
 											  last_yaw);
 			double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-			Eigen::Affine3d affine_transform_co(correctionOdomToMap);
+			Eigen::Affine3d affine_transform_co(correctionOdomToMap_);
 			pcl::getTranslationAndEulerAngles(affine_transform_co, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
 											  curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 
@@ -369,33 +369,33 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			double abs_dy = std::abs(curr_y - last_y);
 
 			if (!filter_init_) {
-				odom2map_x_filter = correctionOdomToMap.translation().x();
-				odom2map_y_filter = correctionOdomToMap.translation().y();
+				odom2map_x_filter = correctionOdomToMap_.translation().x();
+				odom2map_y_filter = correctionOdomToMap_.translation().y();
 				filter_init_ = true;
 			} else {
-				odom2map_x_filter = ratio * correctionOdomToMap.translation().x() + (1 - ratio) * odom2map_x_filter;
-				odom2map_y_filter = ratio * correctionOdomToMap.translation().y() + (1 - ratio) * odom2map_y_filter;
-				correctionOdomToMap.translation().x() = odom2map_x_filter;
-				correctionOdomToMap.translation().y() = odom2map_y_filter;
+				odom2map_x_filter = ratio * correctionOdomToMap_.translation().x() + (1 - ratio) * odom2map_x_filter;
+				odom2map_y_filter = ratio * correctionOdomToMap_.translation().y() + (1 - ratio) * odom2map_y_filter;
+				correctionOdomToMap_.translation().x() = odom2map_x_filter;
+				correctionOdomToMap_.translation().y() = odom2map_y_filter;
 			}
 
 			// if(use_pose_filter){
 			//     if(abs_dx > odom2map_delta_thr){
-			//         // correctionOdomToMap.translation().x() = lastCorrectionOdomToMap.translation().x() + 0.025 *
-			//         (curr_x - last_x)/abs_dx; correctionOdomToMap.translation().x() =
-			//         lastCorrectionOdomToMap.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
+			//         // correctionOdomToMap_.translation().x() = lastCorrectionOdomToMap_.translation().x() + 0.025 *
+			//         (curr_x - last_x)/abs_dx; correctionOdomToMap_.translation().x() =
+			//         lastCorrectionOdomToMap_.translation().x() + odom2map_delta_set * (curr_x - last_x)/abs_dx;
 			//     }
 			//     if(abs_dy > odom2map_delta_thr){
-			//         // correctionOdomToMap.translation().y() = lastCorrectionOdomToMap.translation().y() + 0.025 *
-			//         (curr_y - last_y)/abs_dy; correctionOdomToMap.translation().y() =
-			//         lastCorrectionOdomToMap.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
+			//         // correctionOdomToMap_.translation().y() = lastCorrectionOdomToMap_.translation().y() + 0.025 *
+			//         (curr_y - last_y)/abs_dy; correctionOdomToMap_.translation().y() =
+			//         lastCorrectionOdomToMap_.translation().y() + odom2map_delta_set * (curr_y - last_y)/abs_dy;
 			//     }
 			// }
 
-			// pcl::getTranslationAndEulerAngles(correctionOdomToMap, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
+			// pcl::getTranslationAndEulerAngles(correctionOdomToMap_, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
 			// curr_yaw); //  获取上一帧 相对 当前帧的 位姿
 			// // update log_info (log_info_manager_) 暂时注释掉，后期再补充
-			// log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime;
+			// log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime_;
 			// log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
 			// log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
 			// log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
@@ -449,16 +449,16 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	std::pair<double, double> best_trans;
 	double t0 = omp_get_wtime();
 	for (auto& t : search_trans) {
-		Eigen::MatrixXd sc = scManager->makeScancontext(*(gravityAlignedCLoud), t.first, t.second);
-		std::vector<float> ringkey = eig2stdvec(scManager->makeRingkeyFromScancontext(sc));
+		Eigen::MatrixXd sc = scManager_->makeScancontext(*(gravityAlignedCLoud), t.first, t.second);
+		std::vector<float> ringkey = eig2stdvec(scManager_->makeRingkeyFromScancontext(sc));
 
 		// /*  for (const auto& number : ringkey) {
 		//       std::cout << number << " ";
 		//   }
 		//   std::cout << std::endl;*/
-		Eigen::MatrixXd sectorkey = scManager->makeSectorkeyFromScancontext(sc);
+		Eigen::MatrixXd sectorkey = scManager_->makeSectorkeyFromScancontext(sc);
 		double sc_dist = 1.0;
-		auto match = scManager->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
+		auto match = scManager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
 		if (match.first != -1) {
 			std::cout << "trans: " << t.first << " " << t.second;
 			std::cout << " score: " << sc_dist << std::endl;
@@ -487,7 +487,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	if (match_idx != -1) {
 		std::cout << "use index " << match_idx << std::endl;
 		// ROS_INFO_STREAM("use index "<< match_idx);
-		Eigen::Matrix4d init_guess = LoadData[match_idx].pose.matrix();
+		Eigen::Matrix4d init_guess = LoadData_[match_idx].pose.matrix();
 		Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
 		// Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
@@ -518,11 +518,11 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		// "<<euler[2]*180/M_PI<<std::endl; std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
 		// //use the outcome of ndt as the initial guess for ICP
 		Eigen::Isometry3d testtransform(init_guess);
-		testMatchcloud = transformPointCloud(cloudIn, testtransform);
+		testMatchcloud_ = transformPointCloud(cloudIn, testtransform);
 		icp.setInputSource(cloudIn);
-		icp.setInputTarget(CloudGlobalMap);
+		icp.setInputTarget(CloudGlobalMap_);
 		// std::cout << "globalLocalization icp fail "<<cloudIn->points.size()<<"
-		// "<<CloudGlobalMap->points.size()<<std::endl;
+		// "<<CloudGlobalMap_->points.size()<<std::endl;
 		PointCloudType::Ptr unused_result(new PointCloudType());
 		icp.align(*unused_result, init_guess.cast<float>());
 		// 未收敛，或者匹配不够好
@@ -541,15 +541,15 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		// 初始值的确定和当前的位置无关，但是获取最后的odom-2-map与当前的lidar-in-odom 有关
 		// ？？？？ 可以在定位过程中（例：定位失败时）直接启动重定位，而不需要整个重启定位模块，？？？并不能
 		// 要确保 lidar odom 没有问题才可以，但是怎么能确定呢？？？
-		correctionOdomToMap = lidar_in_map * pose.inverse();
-		lastUpdateTime = omp_get_wtime();
+		correctionOdomToMap_ = lidar_in_map * pose.inverse();
+		lastUpdateTime_ = omp_get_wtime();
 		// euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 		// std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
 		// std::cout << "x "<<lidar_in_map.translation().x()<<" y "<<lidar_in_map.translation().y()<< " z
 		// "<<lidar_in_map.translation().z()<<std::endl;
 
 		// float x, y, z, roll, pitch, yaw;
-		// pcl::getTranslationAndEulerAngles(correctionOdomToMap, x, y, z, roll, pitch, yaw); //  获取上一帧 相对
+		// pcl::getTranslationAndEulerAngles(correctionOdomToMap_, x, y, z, roll, pitch, yaw); //  获取上一帧 相对
 		// 当前帧的 位姿 std::cout << "icp results"<<" "<< x <<" "<< y <<" "<< z <<" "<< yaw <<" "<< pitch <<" "<<
 		// roll<<std::endl; std::cout << "-------------------------------------------"<<std::endl;
 		double t2 = omp_get_wtime();
