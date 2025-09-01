@@ -34,25 +34,14 @@ class Localization {
 	~Localization();
 	bool loadMap(std::string path);
 
-	// bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double
-	// odom2map_delta_set, bool use_filter);
-
 	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& score, double score_fail_thr,
 				  double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set,
 				  bool use_pose_filter);
 
-	// bool localize(PointCloudType::Ptr odomCloud, double &score, double score_fail_thr, double score_low_accuracy_thr,
-	// double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter);
-
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
 
-	Eigen::Isometry3d getOdomToMap() {
-		//  Eigen::Isometry3d isometry3d;
-		//  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap_.matrix().block<3, 3>(0, 0).cast<double>();
-		// isometry3d.matrix().block<3, 1>(0, 3) = correctionOdomToMap_.matrix().block<3, 1>(0, 3).cast<double>();
-		return correctionOdomToMap_;
-	}
+	Eigen::Isometry3d getOdomToMap() { return correctionOdomToMap_; }
 
 	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap_; }
 
@@ -63,11 +52,6 @@ class Localization {
 		return CloudGlobalMapIn_;
 	}
 
-	// PointCloudType::Ptr getLoadMap(){
-	//    if (!map_ready_) return nullptr;
-	//    return CloudGlobalMapIn_PointType_;
-	// }
-
 	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
 
 	std::vector<Eigen::Vector3f>& getLoadMapPoints() {
@@ -76,8 +60,6 @@ class Localization {
 	}
 
    private:
-	// 初始化正态分布(NDT)对象
-	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
 
 	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
@@ -91,7 +73,7 @@ class Localization {
 	std::vector<Eigen::Isometry3d> accumulateKeypose_;
 	PointCloudType::Ptr testMatchcloud_;
 
-	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn_;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn_; //降采样后的全局地图(target cloud)
 	PointCloudType::Ptr CloudGlobalMapIn_PointType_;
 
 	std::vector<ScInfo> LoadData_;
@@ -103,7 +85,7 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
 	bool map_ready_;
 	bool filter_init_ = false;
-	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity(); // T_map_odom
 	Eigen::Isometry3d lastCorrectionOdomToMap_ = Eigen::Isometry3d::Identity();
 
 	double lastUpdateTime_ = 0.0f;

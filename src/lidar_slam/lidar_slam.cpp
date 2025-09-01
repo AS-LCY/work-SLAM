@@ -103,6 +103,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 	// 定位
 	localization_.reset(new Localization());
+
 	global_localization_.reset(new GlobalLocalization());
 	cloud_map_manager_.reset(new CloudMap());
 
@@ -225,7 +226,7 @@ void LidarSlam::sec_mapping_loopClosureThread() {
 			const Eigen::Isometry3d& global_odom_to_map = global_localization_->get_global_odom_to_map();
 			// sec_mapping模式下，最开始全局重定位确定的T_map_odom
 
-			// TODO bug here  //TODO(jxl): 什么意思，有bug？
+			// TODO bug here  //TODO(jxl): 什么意思，这里有bug？
 			if (cloud_map_manager_->get_map_data_status()) {
 				back_end_->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_sc_info, loaded_keyframe_poses,
 												 global_odom_to_map);
@@ -275,7 +276,6 @@ void LidarSlam::localizationThread() {
 	const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
 	const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
 
-	// const auto fgicp_score_thr = config_param_.localization.fgicp_score_thr;
 	const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
 	const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
 	const auto fgicp_fail_count_thr = config_param_.localization.fgicp_fail_count_thr;
@@ -458,11 +458,11 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					cout << YELLOW << "secmap relocalizing: cloud empty ... " << RESET << endl;
 				} else {
 					cout << "point(in use) count: " << UndistortCloudInOdom_->points.size() << endl;
-					PointCloudType::Ptr temp(new PointCloudType());
-					{
-						std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-						pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // TODO(jxl)：拷贝完后的temp点云没有使用?
-					}
+					// PointCloudType::Ptr temp(new PointCloudType());
+					// {
+					// 	std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
+					// 	pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // TODO(jxl)：拷贝完后的temp点云没有使用?
+					// }
 
 					globalLocalizationSuccess_ = global_localization_->global_localize(
 						undistortCloud_, T_odom_lidar_, p_imu_->initial_rotate_, score_thr);
@@ -658,6 +658,7 @@ void LidarSlam::delete_log_file(double keep_time) { // about 100MB pr 60s
 
 bool LidarSlam::run() { // lio线程
 	static const int prm_lidar_no_point_count_thr = config_param_.common.lidar_no_point_count_thr;
+
 	/// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
 	static int frame_num = 0;
 	static double aver_time_consu = 0, aver_time_icp = 0, aver_time_incre = 0, aver_time_solve = 0;
@@ -808,7 +809,7 @@ bool LidarSlam::run() { // lio线程
 					cout << YELLOW << "************************* backend: keyPosesCount: "
 						 << back_end_->getKeyframePoses().size() - 1 << RESET << endl;
 
-					back_end_->saveCurrentCloud(undistortCloud_, getLidarInMap());
+					back_end_->saveCurrentCloud(undistortCloud_, getLidarInMap()); //保存当前帧点云的信息到scManager_中
 					//注意这里只是为了取水平面，后端还是在odom坐标系
 
 					{
@@ -825,7 +826,7 @@ bool LidarSlam::run() { // lio线程
 					state_ikfom state_updated = kf_.get_x();
 					state_updated.pos = T_odom_b.translation();
 					state_updated.rot = Sophus::SO3d(T_odom_b.rotation());
-					kf_.change_x(state_updated); // TODO(jxl): 强行把滤波器的状态改变，不对
+					kf_.change_x(state_updated); // TODO(jxl): 强行把滤波器的状态改变，逻辑上说不通
 
 					new_key_cloud_arrived_ = true;
 				}
@@ -946,7 +947,7 @@ bool LidarSlam::run() { // lio线程
 		return true;
 	} else {
 		// cout << "sync measure failed !"<<endl;
-		delete_log_file(config_param_.common.log_keep_time);
+		// delete_log_file(config_param_.common.log_keep_time);
 
 		// TODO(jxl): 同步失败，应该reset Measures_
 	}

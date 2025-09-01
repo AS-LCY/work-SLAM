@@ -8,27 +8,18 @@
       
       init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
       time_sync_en: false
-      localization_mode: false
+      localization_mode: false # 没有起作用
       
-      offline_mode: false
-      temp_test_offline: true ## default to "false", if test with offline bag, set to "true"
-      fast_mode: false
-      just_show_mode: false
-      show_rviz: false
+      offline_mode: false # 没有起作用
+      temp_test_offline: true # 没有起作用 
+      fast_mode: false # 没有起作用 
+      just_show_mode: false # 没有起作用 
+      show_rviz: false # 没有起作用
 
-      save_log_dir: "/home/"
-      log_keep_time: 500.0
+      save_log_dir: "/home/" # 没有起作用
+      log_keep_time: 500.0 # 没有起作用
 
       map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-
-      # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
-      # map_directory: "/home/pmm/data/3-vanjee/0106/3dmap-mid360/"
-      # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/v2/1009-23f/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/relocal/0114/3dmap/"
-      # map_directory: "/FD_workspace/FD_workspace_humble/cloud_map_data/"
-      # map_directory: "/home/pmm/data/1-livox/2025/0208-th-cover/maps/"
       map_directory: "/home/nb00085/maps/" #保存地图的路径
       
       sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
@@ -37,14 +28,13 @@
       pub_topic_module_loginfo: "/flbot/localization_module/log_info"
       pub_topic_slipping: "/flbot/localization_module/slipping_old"
 
-      receive_lidar_freq: 10 # unit: hz
-      slam_lose_rate_time_thr: 0.1 # unit: second
-      lidar_no_point_count_thr:  10
+      receive_lidar_freq: 10 # unit: hz # 没有起作用
+      slam_lose_rate_time_thr: 0.1 # unit: s # LidarSlam::run()函数一次时间阈值
+      lidar_no_point_count_thr:  10 # 连续10帧没有点，warning
       check_delay: false
       feats_down_size_thr: 200 # 降采样后的点个数小于200个会被认为没有点
-      use_pose_filter: false #TODO(jxl): 定位线程使用
+      use_pose_filter: false # 没有起作用
 
-      # cpu_id: []
       cpu_id: [4, 5]
 
     extrinsic:    
@@ -69,64 +59,57 @@
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
-      fgicp_peroid_sec: 60.0  #时间周期，单位：秒  TODO(jxl): 每60s定位一次
-
-      # fgicp_score_thr: 0.1
+      fgicp_peroid_sec: 60.0  #时间周期，单位：秒  TODO(jxl): 每60s和离线地图匹配一次
       fgicp_score_fail_thr: 0.3 
       fgicp_score_low_accuracy_thr: 0.07 # < 0.07, localize state = normal
       fgicp_fail_count_thr: 5 # (0.3, +∞)，失败次数+1，超过5次，localize state = failed
       fgicp_low_accuracy_count_thr: 1800 # (0.07, 0.3)，低精度次数+1，超过1800次，localize state = failed
 
-      # pose filter
-      filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
-      fst_order_k: 0.7
-      odom2map_delta_thr: 0.05 # double: m
-      odom2map_delta_set: 0.01 # double: m
-
-      lidar_ratio: 0.2
-      baselink_dy_thr: 0.02
-      baselink_dx_thr: 0.04
-      baselink_dyaw_thr: 0.5 # unit: degree
-      window_size: 4 
-      filter_freq: 100
-      using_turning_proc: true
-      chassis_linear_velocity_thr: 0.02
-      motionless_chassis_ratio: 0.98
-      lidar_cbk_delay_thr: 2.0 # 
+      # pose_filter.cpp.bak 已经弃用
+      filter_method: 1 # 0-一阶滤波 # 1-窗口滤波 # 没有起作用
+      fst_order_k: 0.7 # 没有起作用
+      odom2map_delta_thr: 0.05 # double: m  # 没有起作用
+      odom2map_delta_set: 0.01 # double: m  # 没有起作用
+      lidar_ratio: 0.2 # 没有起作用
+      baselink_dy_thr: 0.02 # 没有起作用
+      baselink_dx_thr: 0.04 # 没有起作用
+      baselink_dyaw_thr: 0.5 # unit: degree  # 没有起作用
+      window_size: 4  # 没有起作用
+      filter_freq: 100 # 没有起作用
+      using_turning_proc: true # 没有起作用
+      chassis_linear_velocity_thr: 0.02 # 没有起作用
+      motionless_chassis_ratio: 0.98 # 没有起作用
+      lidar_cbk_delay_thr: 2.0 # 没有起作用 
 
     lidar_preproc:
-      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  # 
+      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
       sub_lidar_topic: "/livox/lidar"
       sub_imu_topic: "/livox/imu"
-      # sub_lidar_topic: "/robosense/lidar"
-      # sub_imu_topic: "/robosense/imu"
 
-      line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
-      blind_distance: 0.2
+      line_count: 4 # 没有起作用 
+      blind_distance: 0.2 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
       z_range: [-5.0, 20.0] #TODO(jxl): z > 20m点被过滤掉了
 
-      keep_lidar_num_before_curr: 1 #TODO(jxl): buffer阈值有点小
-
-      # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
+      keep_lidar_num_before_curr: 1 #TODO(jxl): buffer阈值有点太小
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
-      # feature_enabled: false  # default to false
-      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
-      point_filter_num: 6 # 每隔多少个点采样一个点，该参数暂时没有起作用
-      ring_filter_num: 1  # 这个参数没有起作用
+      # feature_enabled: false  # 没有起作用 
+      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature   # 没有起作用
+      point_filter_num: 6 # 每隔多少个点采样一个点    # 没有起作用
+      ring_filter_num: 1  # 没有起作用
 
       leafsize: 0.5 #定位模式下，对lio前端降采样后的点云再来一次downsample, 用来全局初始化定位
-      leafsize_vec: [0.2, 0.8] # voxel 所需参数
-      voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax
-      boundary_z: 3.0 # init: m
+      leafsize_vec: [0.2, 0.8] # voxel 所需参数    # 没有起作用
+      voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax  # 没有起作用
+      boundary_z: 3.0 # init: m    # 没有起作用
       
       # obstacle_max_range:  2.5
       # obstacle_max_height: 0.5
       # obstacle_min_height: -0.1 # above wheel center
       # obstacle_filter_size: 20
 
-      grid_size: 0.05 # unit: m
+      grid_size: 0.05 # unit: m   # 没有起作用
       time_cost_thr_print: 10.0 # unit: ms
 
     mapping:
@@ -143,7 +126,7 @@
       loopSearchDistance: 1.5   # TODO(jxl): 当前关键帧1.5m范围内找潜在回环关键帧，参数有点小
       loopSearchTimeDiff: 30.0  # unit: sec  潜在回环关键帧时间与当前帧时间差大于30s
       loopSearchSkipKey: 5  # 潜在回环关键帧与当前关键帧间隔大于5个关键帧
-      loopIcpScore: 0.3     # 
+      loopIcpScore: 0.3     # 闭环检测成功的阈值
 
       # use_ele_pcd_flag: false   # 是否使用单区域pcd
       # save_ele_pcd_flag: false  # 是否保存单区域pcd

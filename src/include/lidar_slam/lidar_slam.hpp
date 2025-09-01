@@ -177,7 +177,7 @@ class LidarSlam {
 			return transform;
 		} else if (working_mode_ == SEC_MAPPING) {
 			return global_localization_->get_global_odom_to_map();
-			// TODO(jxl):最开始由全局初始化确定，等结束后，由后端实时维护，不应该是个常量
+			// TODO(jxl):最开始由全局初始化模块确定，等结束后，由后端实时维护，不应该是个常量
 		} else {
 			return Eigen::Isometry3d::Identity();
 		}

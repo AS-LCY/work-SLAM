@@ -149,9 +149,7 @@ class LocalizationModule {
 
 	bool init_module_by_set_status(ModuleStatus set_status);
 
-	// void make_slam_obj(string work_path, bool localization_mode, bool offline_mode, bool sec_mapping);
 	bool make_slam_obj(lidar_slam::LidarSlamParam yaml_param, ModuleStatus set_status);
-	// void make_slam_obj(string work_path, bool slam_mode, bool offline_mode);
 
 	void release_slam_obj();
 
@@ -248,7 +246,6 @@ class LocalizationModule {
 	}
 
    private:
-	// ROS2 节点句柄
 	rclcpp::Node::SharedPtr node_;
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,7 +257,7 @@ class LocalizationModule {
 	 * 2: lidar cbk delay
 	 * 3: localize thread delay
 	 */
-	std::atomic<int> local_node_status_{ 0 };
+	std::atomic<int> local_node_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
 
 	/*************************************************** */
 	/** @mapping_node_status_:
@@ -270,7 +267,7 @@ class LocalizationModule {
 	 * 3: secmap-relocal thread delay
 	 * 4: loop_closure_thread_delay
 	 */
-	std::atomic<int> mapping_node_status_{ 0 };
+	std::atomic<int> mapping_node_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 各线程、callback、timer heartbeat
@@ -345,7 +342,7 @@ class LocalizationModule {
 	 * 4: m_creating_ele (not used)
 	 * 5: m_failed
 	 */
-	std::atomic<int> mapping_status_{ 0 };
+	std::atomic<int> mapping_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
 
 	/** @map_saved_:
 	 * 0: map not saved yet
@@ -365,7 +362,7 @@ class LocalizationModule {
 	 * 4: l_low_accuracy
 	 * 5: l_failed
 	 */
-	std::atomic<int> localization_status_{ 0 };
+	std::atomic<int> localization_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
 
 	// other thread
 	std::thread show_thread_;

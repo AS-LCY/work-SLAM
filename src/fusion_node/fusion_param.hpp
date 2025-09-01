@@ -8,44 +8,44 @@
 namespace localization_module {
 struct DetectSlipParam {
 	double detect_window_time_range = 2;
-	int	   slipping_count_thr		= 5;
-	double slipping_dist_thr		= 0.2;
+	int slipping_count_thr = 5;
+	double slipping_dist_thr = 0.2;
 };
 
 struct FusionTopicParams {
-	std::string sub_imu_topic		   = "/livox/imu";
-	std::string sub_chassis_topic	   = "/livox/imu";
-	std::string sub_slam_odom_topic	   = "/livox/imu";
+	std::string sub_imu_topic = "/livox/imu";
+	std::string sub_chassis_topic = "/livox/imu";
+	std::string sub_slam_odom_topic = "/livox/imu";
 	std::string pub_localization_topic = "/flbot/localiztion/odometry";
-	std::string pub_slipping_topic	   = "/flbot/localiztion/slipping";
+	std::string pub_slipping_topic = "/flbot/localiztion/slipping";
 };
 
 struct EkfGatingParams {
-	int	   mah_drift_thresh			= 10;
-	int	   mah_drift_lateral_thresh = 10;
+	int mah_drift_thresh = 10;
+	int mah_drift_lateral_thresh = 10;
 	double dis_drift_lateral_thresh = 0.3;
-	int	   mah_warn_thresh			= 5;
-	int	   mah_warn_lateral_thresh	= 5;
-	double turn_angular_thresh		= 0.01;
+	int mah_warn_thresh = 5;
+	int mah_warn_lateral_thresh = 5;
+	double turn_angular_thresh = 0.01;
 };
 
 struct LocalizationFusionParams {
-	bool				use_fusion			   = true;
-	int					status_num			   = 0; ///< the status number
-	int					measure_num			   = 0; ///< the measurement number
-	int					input_num			   = 0; ///< the input command number
-	int					localization_fusion_dt = 0; ///< the localization fusion period
-	std::vector<double> status_cov_mat_diag;		///< the status initial convariance
-	std::vector<double> input_cov_mat_diag;			///< the input convariance
-	std::vector<double> measure_cov_mat_diag;		///< the measurement convariance
-	double				w_thr			= 0.15;
-	bool				ekf_use_chassis = true;
-	bool				use_ekf_yaw		= false;
+	bool use_fusion = true;
+	int status_num = 0;						  ///< the status number
+	int measure_num = 0;					  ///< the measurement number
+	int input_num = 0;						  ///< the input command number
+	int localization_fusion_dt = 0;			  ///< the localization fusion period
+	std::vector<double> status_cov_mat_diag;  ///< the status initial convariance
+	std::vector<double> input_cov_mat_diag;	  ///< the input convariance
+	std::vector<double> measure_cov_mat_diag; ///< the measurement convariance
+	double w_thr = 0.15;
+	bool ekf_use_chassis = true;
+	bool use_ekf_yaw = false;
 	std::vector<double> baselink_in_lidar;
-	double				time_lost_thr = 3.0;
-	EkfGatingParams		gating_params;
-	FusionTopicParams	topic_params;
-	DetectSlipParam		slip_params;
+	double time_lost_thr = 3.0;
+	EkfGatingParams gating_params;
+	FusionTopicParams topic_params;
+	DetectSlipParam slip_params;
 };
 
 /// @brief the class to load the LocalizationFusion parameters
@@ -72,8 +72,8 @@ class LocalizationFusionParamsManager {
 	/// @brief load the parameters to init localization fusion from the ros parameter server
 	/// @return return true if load localization fusion parameters success, otherwise return false
 	bool load_localization_fusion_params() {
-		bool			  success = true;
-		const std::string title	  = "/flbot/localization/localization_fusion/";
+		bool success = true;
+		const std::string title = "/flbot/localization/localization_fusion/";
 		get_param(title + "use_fusion", localization_fusion_params_.use_fusion, &success);
 		get_param(title + "status_num", localization_fusion_params_.status_num, &success);
 		get_param(title + "measure_num", localization_fusion_params_.measure_num, &success);
@@ -192,7 +192,7 @@ class LocalizationFusionParamsManager {
 	~LocalizationFusionParamsManager();
 
    private:
-	ros::NodeHandle			 nh_;
+	ros::NodeHandle nh_;
 	LocalizationFusionParams localization_fusion_params_; ///< the localization fusion params object
 };
 

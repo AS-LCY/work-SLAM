@@ -340,9 +340,11 @@ bool BackEnd::set_loaded_key_clouds(const std::vector<PointCloudType::Ptr>& inpu
 
 	KeyFrameCloud_.assign(input_vec_key_clouds.begin(), input_vec_key_clouds.end());
 
-	// 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
-	// 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
-	// T_map_odom： 传入的这个值是重定位结果
+	// 加载的 pose 是当前 map 坐标系下的，T_map_lidar
+	// 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar
+
+	// TODO(jxl): 在sec_mapping模式下，加载之前建图结束的map_pose，fixed，然后添加T_map_odom init node
+	//到graph中，后续再添加node的时候，左乘T_map_odom得到node init pose。根据最新node，优化前后，更新T_map_odom
 	cout << "loaded_key_poses size: " << input_vec_key_poses.size() << endl;
 	int i = 0;
 	for (auto& kp : input_vec_key_poses) {

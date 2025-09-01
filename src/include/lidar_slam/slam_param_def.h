@@ -10,6 +10,7 @@
 namespace lidar_slam {
 struct ExtrinsicParam {
 	// EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	bool extrinsic_est_en;
 	V3D extrinT;
 	M3D extrinR;
@@ -85,7 +86,6 @@ struct MappingParam {
 
 struct LocalizationParam {
 	float fgicp_peroid_sec = 1;
-	// double fgicp_score_thr = 0.1;
 	double fgicp_score_fail_thr = 0.3;
 	double fgicp_score_low_accuracy_thr = 0.1;
 	int filter_method = 0;
