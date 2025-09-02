@@ -43,6 +43,8 @@ struct DetectSlipParam {
 };
 
 struct LidarSlamParam {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	CommonParam common;
 	ExtrinsicParam extrinsic;
 	LidarPreprocParam lidar_preproc;

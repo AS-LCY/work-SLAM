@@ -32,6 +32,8 @@ namespace localization_module {
 
 class LocalizationFusion {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	LocalizationFusion();
 	~LocalizationFusion();
 
@@ -61,26 +63,26 @@ class LocalizationFusion {
 	LocalizationModuleLogInfoManager* log_info_manager_;
 
    private:
-	std::mutex							   mutex_; ///< the only mutex
+	std::mutex mutex_; ///< the only mutex
 	std::shared_ptr<EkfLocalizationFusion> ekf_fusion_ptr_;
-	std::shared_ptr<DetectSlipping>		   slipping_ptr_;
+	std::shared_ptr<DetectSlipping> slipping_ptr_;
 
 	bool is_chassis_rcv_ = false;
-	bool is_imu_rcv_	 = false;
-	bool lf_need_init_	 = true;
+	bool is_imu_rcv_ = false;
+	bool lf_need_init_ = true;
 
 	bool use_fusion_ = true;
 
-	long			  seq_count_ = 0;
+	long seq_count_ = 0;
 	Eigen::Isometry3d T_baselink2lidar_;
 	Eigen::Isometry3d T_lidar2baselink_;
 
 	double last_slam_odom_time_ = 0.0;
-	double slam_speed_			= 0;
+	double slam_speed_ = 0;
 
 	// param read
-	double time_lost_thr_	= 3.0; // unit: second
-	bool   ekf_use_chassis_ = true;
+	double time_lost_thr_ = 3.0; // unit: second
+	bool ekf_use_chassis_ = true;
 
 	fairland_msgs::LocalizationPoseData last_status_;
 	fairland_msgs::LocalizationPoseData status_tmp_;
@@ -91,18 +93,18 @@ class LocalizationFusion {
 	ros::Subscriber sub_imu_;
 	ros::Subscriber sub_chassis_;
 	ros::Subscriber sub_slam_odom_;
-	ros::Publisher	pub_fusion_odom_;
-	ros::Publisher	pub_slip_;
-	ros::Publisher	pub_info_;
-	std::string		sub_imu_topic_;
-	std::string		sub_chassis_topic_;
-	std::string		sub_slam_odom_topic_;
-	std::string		pub_localization_topic_;
-	std::string		pub_slipping_topic_;
+	ros::Publisher pub_fusion_odom_;
+	ros::Publisher pub_slip_;
+	ros::Publisher pub_info_;
+	std::string sub_imu_topic_;
+	std::string sub_chassis_topic_;
+	std::string sub_slam_odom_topic_;
+	std::string pub_localization_topic_;
+	std::string pub_slipping_topic_;
 
-	fairland_msgs::chassic_data chassis_msg_;	///< the chassis message
-	nav_msgs::Odometry			slam_odom_msg_; ///< the gnss message
-	sensor_msgs::Imu			imu_msg_;		///< the imu message
+	fairland_msgs::chassic_data chassis_msg_; ///< the chassis message
+	nav_msgs::Odometry slam_odom_msg_;		  ///< the gnss message
+	sensor_msgs::Imu imu_msg_;				  ///< the imu message
 };
 
 } // namespace localization_module

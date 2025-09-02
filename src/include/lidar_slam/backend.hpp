@@ -57,6 +57,8 @@ namespace lidar_slam {
 
 class BackEnd {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	BackEnd(float dist, float angle, float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
 	~BackEnd();
 

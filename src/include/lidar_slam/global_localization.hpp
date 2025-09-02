@@ -24,6 +24,8 @@ namespace lidar_slam {
 
 class GlobalLocalization {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	GlobalLocalization();
 	~GlobalLocalization();
 

@@ -15,6 +15,8 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Matrix;
 /// @brief vehicle ekf based on bicycle motion model
 class PoseEKF {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	PoseEKF();
 
 	PoseEKF(const int& status_num, const int& input_num, const int& measure_num, const Matrix& status_cov,
@@ -59,10 +61,10 @@ class PoseEKF {
 	Matrix get_mah_vec(const Matrix& res, const Matrix& measure);
 
    private:
-	int	   status_num_;	 // status num
-	int	   measure_num_; // measure num
-	int	   input_num_;	 // input num
-	double dt_;			 // period of extended kalman filter
+	int status_num_;  // status num
+	int measure_num_; // measure num
+	int input_num_;	  // input num
+	double dt_;		  // period of extended kalman filter
 
 	// params for motion model
 	double wheelbase_;
@@ -87,10 +89,10 @@ class PoseEKF {
 	// Matrix SI_; // not in use
 	Matrix K_;
 
-	double			lateral_update_max_ = 0.10;
-	double			lateral_update_min_ = 0.01;
+	double lateral_update_max_ = 0.10;
+	double lateral_update_min_ = 0.01;
 	EkfGatingParams gating_params_;
-	bool			is_turn_ = false;
+	bool is_turn_ = false;
 };
 
 } // namespace localization_module

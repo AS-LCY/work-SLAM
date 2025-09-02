@@ -30,6 +30,8 @@ static PointCloudType::Ptr corr_normvect(new PointCloudType(100000, 1)); //有�
 static bool point_selected_surf[100000] = { 1 };						 //判断是否是有效特征点
 
 struct dyn_share_datastruct {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	bool valid;												   //有效特征点数量是否满足要求
 	bool converge;											   //迭代时，是否已经收敛
 	Eigen::Matrix<double, Eigen::Dynamic, 1> h;				   //残差	(公式(14)中的z)
@@ -38,6 +40,8 @@ struct dyn_share_datastruct {
 
 class esekf {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	typedef Matrix<double, 24, 24> cov;				// 24X24的协方差矩阵
 	typedef Matrix<double, 24, 1> vectorized_state; // 24X1的向量
 

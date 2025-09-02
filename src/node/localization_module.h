@@ -107,6 +107,8 @@ enum SlamCtrlCmd {
 
 class LocalizationModule {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	// LocalizationModule(ModuleStatus init_status);
 	// explicit LocalizationModule(
 	//     rclcpp::Node::SharedPtr node,

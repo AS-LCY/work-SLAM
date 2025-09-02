@@ -25,6 +25,8 @@ namespace localization_module {
 
 class EkfLocalizationFusion {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	EkfLocalizationFusion();
 	~EkfLocalizationFusion();
 
@@ -39,7 +41,7 @@ class EkfLocalizationFusion {
 	bool is_init();
 
 	void localization_fusion_core(const fairland_msgs::LocalizationPoseData& status,
-								  fairland_msgs::LocalizationPoseData*		 status_out);
+								  fairland_msgs::LocalizationPoseData* status_out);
 
    private:
 	void set_localizationfusion_input();
@@ -51,21 +53,21 @@ class EkfLocalizationFusion {
 
    public:
    private:
-	std::shared_ptr<PoseEKF>			ekf_ptr_; ///< the ekf pointer
+	std::shared_ptr<PoseEKF> ekf_ptr_; ///< the ekf pointer
 	fairland_msgs::LocalizationPoseData pose_msg_;
 
 	EkfGatingParams gating_params_;
-	bool			use_ekf_yaw_ = false;
+	bool use_ekf_yaw_ = false;
 
-	bool   is_init_	 = false; ///< if init or notLocalizationFusionParams
-	double offset_x_ = 0.0;	  ///< offset for position x
-	double offset_y_ = 0.0;	  ///< offset for posttion y
-	double ts_;				  ///< timestamp for fusion
+	bool is_init_ = false;	///< if init or notLocalizationFusionParams
+	double offset_x_ = 0.0; ///< offset for position x
+	double offset_y_ = 0.0; ///< offset for posttion y
+	double ts_;				///< timestamp for fusion
 
-	int	   status_num_;	 ///< status num
-	int	   measure_num_; ///< measure num
-	int	   input_num_;	 ///< input num
-	double dt_;			 ///< period of extended kalman filter
+	int status_num_;  ///< status num
+	int measure_num_; ///< measure num
+	int input_num_;	  ///< input num
+	double dt_;		  ///< period of extended kalman filter
 
 	Matrix input_;				///< the control command [v, w]
 	Matrix measure_;			///< the measurement [x, y, theta]

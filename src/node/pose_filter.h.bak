@@ -23,6 +23,8 @@ class PoseFilter{
 /////////////////////////////////////////////////////////////////////////////////////
 /* member func */
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     PoseFilter(/* args */);
     ~PoseFilter();
 

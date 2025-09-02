@@ -9,7 +9,7 @@
 
 namespace lidar_slam {
 struct ExtrinsicParam {
-	// EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	bool extrinsic_est_en;
 	V3D extrinT;

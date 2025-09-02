@@ -7,6 +7,8 @@
 namespace lidar_slam {
 
 struct KeyPose {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	Eigen::Isometry3d pose;
 	int index;
 	double time;
@@ -16,6 +18,8 @@ struct KeyPose {
 }; // defined in backend before
 
 struct ScInfo {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	int id;
 	Eigen::Isometry3d pose;
 	Eigen::MatrixXd polarcontext;

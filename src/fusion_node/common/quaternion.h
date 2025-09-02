@@ -19,11 +19,13 @@ const double M_PI2 = M_PI * 2;
 /// Angle and Quaternions.
 class Quaternion {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	static double rad2deg(double rad);
 	static double deg2rad(double deg);
 
 	static geometry_msgs::Quaternion eigen_quat_2_geo_quat(const Eigen::Quaterniond eq);
-	static Eigen::Quaterniond		 geo_quat_2_eigen_quat(const geometry_msgs::Quaternion gq);
+	static Eigen::Quaterniond geo_quat_2_eigen_quat(const geometry_msgs::Quaternion gq);
 
 	/// @brief The static method rotate_vector3 rotates the input vector with the rotation decribed by the input
 	/// quaterion.
@@ -34,9 +36,9 @@ class Quaternion {
 	/// described in quaternion.
 	/// @param is_reverse_flag with type bool is the flag to idicate whether to rotate backward, default to false.
 	/// @return The function returns the rotated vector.
-	static geometry_msgs::Vector3 rotate_vector3(const geometry_msgs::Vector3&	  vin,
+	static geometry_msgs::Vector3 rotate_vector3(const geometry_msgs::Vector3& vin,
 												 const geometry_msgs::Quaternion& quat,
-												 const bool						  is_reverse_flag = false);
+												 const bool is_reverse_flag = false);
 
 	/// @brief The static method get_euler_zyx convers a rotation from quaternion form to euler form with the order
 	/// z-y-x (or yaw-pitch-roll)
@@ -51,7 +53,7 @@ class Quaternion {
 	/// @return The function returns the rotation in quaternion form.
 	static geometry_msgs::Quaternion get_quaternion(const geometry_msgs::Vector3& euler_zyx);
 	static geometry_msgs::Quaternion get_quaternion(const std::vector<double>& euler_zyx);
-	static Eigen::Quaterniond		 get_eigen_quaternion(const std::vector<double>& euler_zyx);
+	static Eigen::Quaterniond get_eigen_quaternion(const std::vector<double>& euler_zyx);
 
 	/// @brief Get the quaternion that can rotate vector v1 to vector v2
 	/// @param v1 The first vector that the rotate begins

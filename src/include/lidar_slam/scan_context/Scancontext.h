@@ -57,6 +57,8 @@ Eigen::Matrix4f yaw2matrix(const float& y);
 
 class SCManager {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	SCManager() = default; // reserving data space (of std::vector) could be considered. but the descriptor is
 						   // lightweight so don't care.
 

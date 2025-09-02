@@ -30,6 +30,8 @@
 namespace lidar_slam {
 class Localization {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	Localization();
 	~Localization();
 	bool loadMap(std::string path);

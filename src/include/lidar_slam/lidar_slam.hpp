@@ -47,6 +47,8 @@
 
 namespace lidar_slam {
 struct LidarParam {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	V3D extrinT;
 	M3D extrinR;
 	Eigen::Isometry3d T_wheel_lidar = Eigen::Isometry3d::Identity();
@@ -74,6 +76,8 @@ struct LidarParam {
 };
 
 struct Localization_base {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	state_ikfom imu_state;
 	double base_time = 0;
 	double update_time = 0;
@@ -91,6 +95,8 @@ string print_SlamWorkMode(SlamWorkMode e);
 
 class LidarSlam {
    public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode, rclcpp::Node::SharedPtr node); // new added
 	LidarSlam() = delete;
 	LidarSlam(const LidarSlam&) = delete;

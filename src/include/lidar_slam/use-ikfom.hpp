@@ -15,6 +15,8 @@
 
 // 24维的状态量x
 struct state_ikfom {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	Eigen::Vector3d pos = Eigen::Vector3d(0, 0, 0);
 	Sophus::SO3d rot = Sophus::SO3d(Eigen::Matrix3d::Identity());
 	Sophus::SO3d offset_R_L_I = Sophus::SO3d(Eigen::Matrix3d::Identity()); // imu frame to laser frame
@@ -39,6 +41,8 @@ struct state_ikfom {
 
 //输入u
 struct input_ikfom {
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 	Eigen::Vector3d acc = Eigen::Vector3d(0, 0, 0);
 	Eigen::Vector3d gyro = Eigen::Vector3d(0, 0, 0);
 };
