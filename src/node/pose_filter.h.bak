@@ -81,7 +81,7 @@ private:
     Eigen::Isometry3d last_lidar_smooth_;
     Eigen::Isometry3d curr_lidar_smooth_;
     std::atomic<double> curr_lidar_yaw_;
-    std::deque<Eigen::Isometry3d> pose_orig_deque_;
+    std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> pose_orig_deque_;
 
     // filter 
     double last_chassis_x_ = 0;

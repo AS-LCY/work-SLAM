@@ -221,8 +221,8 @@ void LidarSlam::sec_mapping_loopClosureThread() {
 
 			const std::vector<PointCloudType::Ptr>& loaded_keyframe_clouds =
 				cloud_map_manager_->get_loaded_keyframe_clouds();
-			const std::vector<KeyPose>& loaded_keyframe_poses = cloud_map_manager_->get_loaded_keyframe_poses();
-			const std::vector<ScInfo>& loaded_sc_info = cloud_map_manager_->get_load_sc_info_();
+			const auto& loaded_keyframe_poses = cloud_map_manager_->get_loaded_keyframe_poses();
+			const auto& loaded_sc_info = cloud_map_manager_->get_load_sc_info_();
 			const Eigen::Isometry3d& global_odom_to_map = global_localization_->get_global_odom_to_map();
 			// sec_mapping模式下，最开始全局重定位确定的T_map_odom
 
@@ -841,8 +841,7 @@ bool LidarSlam::run() { // lio线程
 				{
 					std::unique_lock<std::mutex> lk(mtx_path_);
 					optimized_path_.clear();
-					std::vector<KeyPose> lidar_in_odom;
-					lidar_in_odom = back_end_->getKeyframePoses();
+					auto lidar_in_odom = back_end_->getKeyframePoses();
 					for (int i = 0; i < lidar_in_odom.size(); i++) {
 						optimized_path_.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel_);
 					}

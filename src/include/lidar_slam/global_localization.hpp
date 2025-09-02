@@ -32,7 +32,7 @@ class GlobalLocalization {
 	bool global_localize(PointCloudType::Ptr cloudIn, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 						 double score_thr);
 
-	bool fill_sc_manager(std::vector<ScInfo> input_sc_info);
+	bool fill_sc_manager(const std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>>& input_sc_info);
 	bool get_sc_manager_ready() { return sc_manager_ready_; }
 	bool set_global_map(PointCloudType::Ptr loaded_global_map);
 	bool get_global_map_ready() { return global_map_ready_; }
@@ -56,16 +56,16 @@ class GlobalLocalization {
 
 	bool map_ready_ = false;
 	PointCloudType::Ptr loaded_global_map_;
-	std::vector<ScInfo> loaded_sc_info_; // 对应本地文件：data
+	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> loaded_sc_info_; // 对应本地文件：data
 
-	std::vector<KeyPose> loaded_keyframe_poses_;
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> loaded_keyframe_poses_;
 	pcl::PointCloud<PointType>::Ptr loaded_key_point_;
 	std::vector<PointCloudType::Ptr> loaded_keyframe_clouds_;
 
 	// KeyMat polarcontext_invkeys_mat_;
 	// std::vector<Eigen::MatrixXd> polarcontexts_;
 
-	std::vector<Eigen::Isometry3d> accumulate_key_pose_;
+	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> accumulate_key_pose_;
 	PointCloudType::Ptr accumulate_map_;
 
 	// global-localize

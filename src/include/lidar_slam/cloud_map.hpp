@@ -32,9 +32,11 @@ class CloudMap {
 	bool load_map_data(std::string map_dir);
 
 	PointCloudType::Ptr get_loaded_cloud_map() { return loaded_global_map_; }
-	std::vector<ScInfo> get_load_sc_info_() { return loaded_sc_info_; }
+	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> get_load_sc_info_() { return loaded_sc_info_; }
 	std::vector<PointCloudType::Ptr> get_loaded_keyframe_clouds() { return loaded_keyframe_clouds_; }
-	std::vector<KeyPose> get_loaded_keyframe_poses() { return loaded_keyframe_poses_; }
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> get_loaded_keyframe_poses() {
+		return loaded_keyframe_poses_;
+	}
 	bool get_map_data_status() { return map_data_ready_; }
 
    private:
@@ -46,9 +48,9 @@ class CloudMap {
 
 	bool map_data_ready_ = false;
 	PointCloudType::Ptr loaded_global_map_;
-	std::vector<KeyPose> loaded_keyframe_poses_;
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> loaded_keyframe_poses_;
 	std::vector<PointCloudType::Ptr> loaded_keyframe_clouds_;
-	std::vector<ScInfo> loaded_sc_info_;
+	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> loaded_sc_info_;
 
 	/// 加载data数据所用
 	std::shared_ptr<SCManager> sc_manager_;
@@ -56,7 +58,7 @@ class CloudMap {
 	KeyMat polarcontext_invkeys_mat_;
 	std::vector<Eigen::MatrixXd> polarcontexts_;
 	pcl::PointCloud<PointType>::Ptr loaded_key_point_;
-	std::vector<Eigen::Isometry3d> accumulate_key_pose_;
+	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> accumulate_key_pose_;
 	PointCloudType::Ptr accumulate_map_;
 };
 

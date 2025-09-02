@@ -332,8 +332,8 @@ void BackEnd::loopFindNearKeyframes(PointCloudType::Ptr& nearKeyframes, const in
 
 // sec_mapping模式下，在启动后端线程之前，加载之前建图的meta信息以及全局定位初始化信息
 bool BackEnd::set_loaded_key_clouds(const std::vector<PointCloudType::Ptr>& input_vec_key_clouds,
-									const std::vector<ScInfo>& input_vec_sc_info,
-									const std::vector<KeyPose>& input_vec_key_poses,
+									const std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>>& input_vec_sc_info,
+									const std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>>& input_vec_key_poses,
 									const Eigen::Isometry3d& T_map_odom) {
 	KeyPoses_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());

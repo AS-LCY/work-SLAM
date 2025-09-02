@@ -174,7 +174,7 @@ bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 	return true;
 }
 
-bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info) {
+bool GlobalLocalization::fill_sc_manager(const std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>>& input_sc_info) {
 	sc_manager_.reset(new SCManager()); //// important
 	if (input_sc_info.empty() || input_sc_info.size() == 0) {
 		std::cout << " loaded sc info empty!" << std::endl;
@@ -187,7 +187,7 @@ bool GlobalLocalization::fill_sc_manager(std::vector<ScInfo> input_sc_info) {
 	KeyMat polarcontext_invkeys_mat;
 	std::vector<Eigen::MatrixXd> polarcontexts;
 	int i = 0;
-	for (ScInfo& scinfo : input_sc_info) {
+	for (const auto& scinfo : input_sc_info) {
 		Eigen::MatrixXd sc = scinfo.polarcontext;
 		Eigen::MatrixXd ringkey = sc_manager_->makeRingkeyFromScancontext(sc);
 		polarcontext_invkeys_mat.push_back(eig2stdvec(ringkey));

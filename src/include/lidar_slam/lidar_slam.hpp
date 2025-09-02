@@ -161,11 +161,11 @@ class LidarSlam {
 	}
 
 	inline PointCloudType::Ptr get_kdtree_cloud() const { return kdtreeCloud_; }
-	inline std::deque<Eigen::Isometry3d> get_unoptimized_path() {
+	inline std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_unoptimized_path() {
 		std::unique_lock<std::mutex> lk(mtx_path_);
 		return unoptimized_path_;
 	}
-	inline std::vector<Eigen::Isometry3d> get_optimized_path() {
+	inline std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_optimized_path() {
 		std::unique_lock<std::mutex> lk(mtx_path_);
 		return optimized_path_;
 	}
@@ -236,7 +236,9 @@ class LidarSlam {
 
 	inline pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() const { return localization_->getLoadMap(); }
 
-	inline std::vector<Eigen::Vector3f>& getLoadMapPoints() const { return localization_->getLoadMapPoints(); }
+	inline std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>>& getLoadMapPoints() const {
+		return localization_->getLoadMapPoints();
+	}
 
 	inline bool isGloalLocalizationSuccess() const { return globalLocalizationSuccess_; }
 
@@ -249,7 +251,9 @@ class LidarSlam {
 		return getLidarInMap() * T_lidar_wheel_; //插值
 	}
 	inline Eigen::Isometry3d getWheelInLidar() const { return T_lidar_wheel_; }
-	inline std::vector<ScInfo> getLoadKeyFrame() const { return localization_->getLoadKeyFrame(); }
+	inline std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() const {
+		return localization_->getLoadKeyFrame();
+	}
 	inline PointCloudType::Ptr getTestCloud() const {
 		PointCloudType::Ptr temp(new PointCloudType());
 		if (working_mode_ == LOCALIZATION)
@@ -355,8 +359,8 @@ class LidarSlam {
 	bool reseting_ = false;
 
 	bool imu_file_shift_ = false; // TODO(jxl): 这个变量没有使用
-	std::deque<Eigen::Isometry3d> unoptimized_path_;
-	std::vector<Eigen::Isometry3d> optimized_path_;
+	std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> unoptimized_path_;
+	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> optimized_path_;
 	std::vector<livox_ros::ImuMsg> temp_imu_msg_; // TODO(jxl): 这个变量没有使用
 
 	std::deque<double> pcd_file_; // TODO(jxl): 这个变量没有使用

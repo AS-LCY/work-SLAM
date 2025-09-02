@@ -353,7 +353,8 @@ void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopInde
 	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure success "<< RESET);
 }
 
-void LocalizationModule::show_keyframe(const std::vector<lidar_slam::ScInfo>& loadKeyframe) {
+void LocalizationModule::show_keyframe(
+	const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe) {
 	visualization_msgs::msg::MarkerArray MarkerArray; //定义MarkerArray对象
 	int number = loadKeyframe.size();				  // object_in为输入的目标个数
 	for (int i = 0; i < number; i++) {

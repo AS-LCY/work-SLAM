@@ -235,7 +235,7 @@ void PoseFilter::lidar_position_filter_window(Eigen::Isometry3d last_pose_smooth
         float w_sum, sum_x, sum_y, sum_z;
         w_sum = sum_x = sum_y = sum_z = 0;
         int i = 0;
-        for(std::deque<Eigen::Isometry3d>::iterator it = pose_orig_deque_.begin(); it!=pose_orig_deque_.end(); ++it){
+        for(std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>::iterator it = pose_orig_deque_.begin(); it!=pose_orig_deque_.end(); ++it){
             auto p = pose_orig_deque_[i];
             double w = i+1; // double w = 1;            
             sum_x += (it->translation().x() * w);

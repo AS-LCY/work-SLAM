@@ -88,7 +88,7 @@ class BackEnd {
 
 	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
 
-	std::vector<KeyPose> getKeyframePoses() {
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> getKeyframePoses() {
 		return KeyPoses_; // TODO(jxl): 变量的使用要加锁
 	}
 
@@ -105,8 +105,8 @@ class BackEnd {
 	bool get_loaded_key_cloud_status() { return loaded_key_clouds_ready_; }
 
 	bool set_loaded_key_clouds(const std::vector<PointCloudType::Ptr>& input_vec_key_clouds,
-							   const std::vector<ScInfo>& input_vec_sc_info,
-							   const std::vector<KeyPose>& input_vec_key_poses,
+							   const std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>>& input_vec_sc_info,
+							   const std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>>& input_vec_key_poses,
 							   const Eigen::Isometry3d& trans_map_odom);
 
    private:
@@ -125,11 +125,11 @@ class BackEnd {
    private:
 	bool loaded_key_clouds_ready_ = false;
 
-	pcl::PointCloud<PointType>::Ptr KeyPoint_; //关键帧位置
-	std::vector<KeyPose> KeyPoses_;			   //关键帧位姿
+	pcl::PointCloud<PointType>::Ptr KeyPoint_;						   //关键帧位置
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> KeyPoses_; //关键帧位姿
 
 	pcl::PointCloud<PointType>::Ptr CopyKeyPoint_;
-	std::vector<KeyPose> CopyKeyPoses_;
+	std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> CopyKeyPoses_;
 
 	std::vector<PointCloudType::Ptr> KeyFrameCloud_;
 

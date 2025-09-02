@@ -165,11 +165,12 @@ class LocalizationModule {
 	void imu_callback(Imu::SharedPtr msg_in);
 	void lidar_ros_callback(const PointCloud2::SharedPtr ros_msg);
 	// void chassis_callback(const ChassicData::SharedPtr msg_in);
-	// void publish_unoptimized_path(const std::deque<Eigen::Isometry3d> path, std::string frame, ros::Publisher
-	// pubUnoptimizedPath);
 
-	void publish_unoptimized_path(const std::deque<Eigen::Isometry3d>& path, const std::string& frame);
-	void publish_optimized_path(const std::vector<Eigen::Isometry3d>& path, const std::string& frame);
+	void publish_unoptimized_path(
+		const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
+		const std::string& frame);
+	void publish_optimized_path(const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
+								const std::string& frame);
 
 	// 发布点云
 	void publish_cloud(PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
@@ -188,19 +189,11 @@ class LocalizationModule {
 								 const std::string& child_frameid);
 	void process_loginfo();
 
-	// void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode,ros::Publisher pubTestCloud);
-	// void publish_static_transform(const Eigen::Isometry3d wheel_in_lidar);
-	// void publish_transform(const Eigen::Isometry3d& correction,string parent, string child);
-	// void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map, ros::Publisher pubOdomCloud);
-	// void visualizeLoopClosure(map<int, int> loopIndexContainer, nav_msgs::Path optimized_path_msg, ros::Publisher
-	// pubLoopConstraintEdge); void show_keyframe(std::vector<lidar_slam::ScInfo> loadKeyframe, ros::Publisher
-	// pubKeyframePose);
-
-	// void fill_log(Eigen::Isometry3d last_lidar_in_odom, Eigen::Isometry3d curr_lidar_in_odom);
 	// 发布测试点云
 	void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode);
 
 	void publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar);
+
 	// 发布动态变换
 	void publish_transform(const Eigen::Isometry3d& correction, const std::string& parent, const std::string& child);
 
@@ -209,7 +202,8 @@ class LocalizationModule {
 
 	void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
 
-	void show_keyframe(const std::vector<lidar_slam::ScInfo>& loadKeyframe);
+	void show_keyframe(
+		const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe);
 
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
 
@@ -371,13 +365,6 @@ class LocalizationModule {
 	int show_load_map_ = 0;
 
 	cpu_set_t cpu_mask_;
-
-	// 应该是目前没在用
-	// ros::ServiceServer srvSaveMap; // 应该是目前没在用
-	// std::vector<Eigen::Isometry3d> keyPoses;
-
-	// nav_msgs::Path unoptimized_path_msg;
-	// nav_msgs::Path optimized_path_msg;
 
 	// 点云和里程计发布者
 	rclcpp::Publisher<Odometry>::SharedPtr pubLidarInMap;

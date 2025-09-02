@@ -810,7 +810,8 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	}
 }
 
-void LocalizationModule::publish_unoptimized_path(const std::deque<Eigen::Isometry3d>& path, const std::string& frame) {
+void LocalizationModule::publish_unoptimized_path(
+	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
 	geometry_msgs::msg::PoseStamped msg;
 
 	unoptimized_path_msg.poses.clear();
@@ -833,7 +834,8 @@ void LocalizationModule::publish_unoptimized_path(const std::deque<Eigen::Isomet
 	pubUnoptimizedPath->publish(unoptimized_path_msg);
 }
 
-void LocalizationModule::publish_optimized_path(const std::vector<Eigen::Isometry3d>& path, const std::string& frame) {
+void LocalizationModule::publish_optimized_path(
+	const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
 	geometry_msgs::msg::PoseStamped msg;
 	// nav_msgs::msg::Path optimized_path_msg;
 
