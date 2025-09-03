@@ -54,15 +54,16 @@ void LocalizationModule::publish_odometry_in_map(const Eigen::Isometry3d& odom_i
 	br_.sendTransform(transform);
 }
 
-void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d& lidar_in_map,
-													   lidar_slam::Localization_base curr_pose,
-													   const std::string& frameid, const std::string& child_frameid,
-													   ModuleStatus curr_running_module_status) {
+void LocalizationModule::publish_odometry_lidar_in_map(
+	const Eigen::Isometry3d& lidar_in_map,	 // T_map_baselink
+	lidar_slam::Localization_base curr_pose, // T_odom_imu, imu和base_link朝向一致
+	const std::string& frameid,				 // map
+	const std::string& child_frameid,		 // base_link
+	ModuleStatus curr_running_module_status) {
 	nav_msgs::msg::Odometry odomAftMapped;
 	odomAftMapped.header.frame_id = frameid;
 	odomAftMapped.child_frame_id = child_frameid;
-	odomAftMapped.header.stamp = node_->now(); // ros::Time().fromSec(lidar_end_time);
-											   // odomAftMapped.header.stamp = ros::Time().fromSec(lidar_time_);
+	odomAftMapped.header.stamp = node_->now(); // TODO(jxl): 不应该是now时间，应该是用的哪个msg计算的pose，就是哪个时间
 	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
 	odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
 	odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
@@ -78,15 +79,16 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d& 
 		odomAftMapped.pose.covariance[1] = 2;
 	}
 
-	Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
-	Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
-	iso_transform.linear() = mat;
-	Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
-	Eigen::Matrix3d rot = iso_transform_inv.linear();
+	// Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
+	// Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
+	// iso_transform.linear() = mat;
+	// Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
+	// Eigen::Matrix3d rot = iso_transform_inv.linear();
+	// auto vel = rot * curr_pose.imu_state.vel;
 
-	auto vel = rot * curr_pose.imu_state.vel;
+	auto vel = curr_pose.imu_state.rot.matrix().inverse() * curr_pose.imu_state.vel;
 
-	odomAftMapped.twist.twist.linear.x = vel[0];
+	odomAftMapped.twist.twist.linear.x = vel[0]; // baselink下的线速度
 	odomAftMapped.twist.twist.linear.y = vel[1];
 	odomAftMapped.twist.twist.linear.z = vel[2];
 
@@ -96,37 +98,18 @@ void LocalizationModule::publish_odometry_lidar_in_map(const Eigen::Isometry3d& 
 	pubOdomAftMapped->publish(odomAftMapped);
 
 	geometry_msgs::msg::TransformStamped transform;
-
-	transform.header.stamp = node_->now();
-	transform.header.frame_id = odomAftMapped.header.frame_id; // 替换为实际的父坐标系
-	transform.child_frame_id = odomAftMapped.child_frame_id;   // 替换为实际的子坐标系
-
+	transform.header.stamp = node_->now(); // TODO(jxl): 不应该是now时间，应该是用的哪个msg计算的pose，就是哪个时间
+	transform.header.frame_id = odomAftMapped.header.frame_id;
+	transform.child_frame_id = odomAftMapped.child_frame_id;
 	transform.transform.translation.x = odomAftMapped.pose.pose.position.x;
 	transform.transform.translation.y = odomAftMapped.pose.pose.position.y;
 	transform.transform.translation.z = odomAftMapped.pose.pose.position.z;
-
 	transform.transform.rotation.w = odomAftMapped.pose.pose.orientation.w;
 	transform.transform.rotation.x = odomAftMapped.pose.pose.orientation.x;
 	transform.transform.rotation.y = odomAftMapped.pose.pose.orientation.y;
 	transform.transform.rotation.z = odomAftMapped.pose.pose.orientation.z;
 
-	//  br_.sendTransform(transform);
-
-	// auto odom_for_tf = odomAftMapped;
-	// // auto odom_for_tf = filter_odometry_;
-
-	// static tf::TransformBroadcaster br;
-	// tf::Transform transform;
-	// tf::Quaternion q;
-	// transform.setOrigin(tf::Vector3(odom_for_tf.pose.pose.position.x,
-	//                                 odom_for_tf.pose.pose.position.y,
-	//                                 odom_for_tf.pose.pose.position.z));
-	// q.setW(odom_for_tf.pose.pose.orientation.w);
-	// q.setX(odom_for_tf.pose.pose.orientation.x);
-	// q.setY(odom_for_tf.pose.pose.orientation.y);
-	// q.setZ(odom_for_tf.pose.pose.orientation.z);
-	// transform.setRotation(q);
-	// br.sendTransform(tf::StampedTransform(transform, odom_for_tf.header.stamp, frameid, child_frameid));
+	br_.sendTransform(transform);
 }
 
 /*
@@ -280,7 +263,6 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
 */
 
 void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg) {
-	// ros::Time timeLaserInfoStamp = ros::Time().now(); //  时间戳
 	string odometryFrame = "odom";
 
 	if (loopIndexContainer.empty()) return;
@@ -317,40 +299,28 @@ void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopInde
 	markerEdge.color.b = 0;
 	markerEdge.color.a = 1;
 
-	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure before for loop " << RESET);
-
 	int loop_i = 0;
 	// 遍历闭环
 	for (auto it = loopIndexContainer.begin(); it != loopIndexContainer.end(); ++it) {
-		// ROS_ERROR_STREAM(RED << "loop_i == %d --- 1", loop_i << RESET);
 		int key_cur = it->first;
 		int key_pre = it->second;
-		// ROS_ERROR_STREAM(RED << "loop_i == %d --- 2", loop_i << RESET);
 		geometry_msgs::msg::Point p;
-		// std::cout << "[visualizeLoopClosure]: optimized_path_msg.poses.size(): " << optimized_path_msg.poses.size()
-		// << "key_cur: " << key_cur<< std::endl;
 		p.x = optimized_path_msg.poses[key_cur].pose.position.x;
 		p.y = optimized_path_msg.poses[key_cur].pose.position.y;
 		p.z = optimized_path_msg.poses[key_cur].pose.position.z;
 
-		// ROS_ERROR_STREAM(RED << "loop_i == %d --- 3", loop_i << RESET);
 		markerNode.points.push_back(p);
 		markerEdge.points.push_back(p);
 		p.x = optimized_path_msg.poses[key_pre].pose.position.x;
 		p.y = optimized_path_msg.poses[key_pre].pose.position.y;
 		p.z = optimized_path_msg.poses[key_pre].pose.position.z;
-		// ROS_ERROR_STREAM(RED << "loop_i == %d --- 4", loop_i << RESET);
 		markerNode.points.push_back(p);
 		markerEdge.points.push_back(p);
-		// ROS_ERROR_STREAM(RED << "loop_i == %d --- 5", loop_i ++ << RESET);
 	}
-	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure before pub " << RESET);
 
 	markerArray.markers.push_back(markerNode);
 	markerArray.markers.push_back(markerEdge);
 	pubLoopConstraintEdge->publish(markerArray);
-
-	// ROS_ERROR_STREAM(RED << "visualizeLoopClosure success "<< RESET);
 }
 
 void LocalizationModule::show_keyframe(
@@ -358,7 +328,9 @@ void LocalizationModule::show_keyframe(
 	visualization_msgs::msg::MarkerArray MarkerArray; //定义MarkerArray对象
 	int number = loadKeyframe.size();				  // object_in为输入的目标个数
 	for (int i = 0; i < number; i++) {
-		if (i % 10 != 0) continue;
+		if (i % 10 != 0) {
+			continue;
+		}
 		visualization_msgs::msg::Marker Marker; //定义Marker对象
 		Marker.header.frame_id = "map";
 		Marker.header.stamp = node_->now();

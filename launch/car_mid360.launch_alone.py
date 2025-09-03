@@ -33,12 +33,13 @@ def generate_launch_description():
     #     'rviz_cfg',
     #     'fast_livo2.rviz'
     # )
-    tf_map_to_odom = Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            arguments=['0.0', '0.0', '0.0', '0.0', '0.0', '0.0', 'map', 'odom'],
-            name='map_to_odom_static_tf_publisher'
-        )
+
+    # tf_map_to_odom = Node(
+    #         package='tf2_ros',
+    #         executable='static_transform_publisher',
+    #         arguments=['0.0', '0.0', '0.0', '0.0', '0.0', '0.0', 'map', 'odom'],
+    #         name='map_to_odom_static_tf_publisher'
+    #     )
     
     # ekf_fusion = Node(
     #         package='robot_localization',
@@ -73,7 +74,7 @@ def generate_launch_description():
     
     return LaunchDescription([
         rviz_arg,
-        tf_map_to_odom,
+        # tf_map_to_odom,
         # ekf_fusion,
         lidar_slam_node #,
         # rviz_node #,

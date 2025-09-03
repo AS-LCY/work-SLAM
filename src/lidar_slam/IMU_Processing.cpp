@@ -14,7 +14,7 @@ ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true), start_tim
 	cov_bias_gyr_ = V3D(0.0001, 0.0001, 0.0001); //角速度bias协方差初始化
 	cov_bias_acc_ = V3D(0.0001, 0.0001, 0.0001); //加速度bias协方差初始化
 
-	mean_acc_ = V3D(0, 0, -1.0); // TODO(jxl): reset应该为（0，0，0）
+	mean_acc_ = V3D(0, 0, -1.0);
 	mean_gyr_ = V3D(0, 0, 0);
 	angvel_last_ = Vector3d(0, 0, 0);		 //上一帧角速度初始化
 	Lidar_T_wrt_IMU_ = Vector3d(0, 0, 0);	 // lidar到IMU的位置外参初始化
@@ -25,7 +25,7 @@ ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true), start_tim
 ImuProcess::~ImuProcess() {}
 
 void ImuProcess::Reset() {
-	mean_acc_ = V3D(0, 0, -1.0); // TODO(jxl): reset应该为（0，0，0）
+	mean_acc_ = V3D(0, 0, -1.0);
 	mean_gyr_ = V3D(0, 0, 0);
 	angvel_last_ = Vector3d(0, 0, 0);
 	imu_need_init_ = true;

@@ -367,23 +367,24 @@ class LocalizationModule {
 	cpu_set_t cpu_mask_;
 
 	// 点云和里程计发布者
-	rclcpp::Publisher<Odometry>::SharedPtr pubLidarInMap;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubOdomCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubBodyCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubObstacleCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubFilteredObstacleCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubTestCloud;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubKdtreeCloud;
-	rclcpp::Publisher<Path>::SharedPtr pubOptimizedPath;
-	rclcpp::Publisher<Path>::SharedPtr pubUnoptimizedPath;
-	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge;
-	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap;
-	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubKeyframePose;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pubRgbCloud;
-	rclcpp::Publisher<Imu>::SharedPtr pub_base_imu_;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pub_key_cloud_;
-	rclcpp::Publisher<PointCloud2>::SharedPtr pub_body_cloud_filter_;
+	rclcpp::Publisher<Odometry>::SharedPtr pubLidarInMap = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubOdomCloud = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubBodyCloud = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubObstacleCloud = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubFilteredObstacleCloud = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubTestCloud = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubKdtreeCloud = nullptr;
+	rclcpp::Publisher<Path>::SharedPtr pubOptimizedPath = nullptr;
+	rclcpp::Publisher<Path>::SharedPtr pubUnoptimizedPath = nullptr;
+	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge = nullptr;
+	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap = nullptr;
+	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubKeyframePose = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pubRgbCloud = nullptr;
+
+	rclcpp::Publisher<Imu>::SharedPtr pub_base_imu_ = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pub_key_cloud_ = nullptr;
+	rclcpp::Publisher<PointCloud2>::SharedPtr pub_body_cloud_filter_ = nullptr;
 
 	// 路径消息
 	Path unoptimized_path_msg;

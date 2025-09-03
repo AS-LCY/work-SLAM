@@ -78,6 +78,7 @@ bool LocalizationModule::create_ROS_IO() {
 
 	// both 建图 & 定位
 	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(100));
+	// T_map_baselink
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =
@@ -99,27 +100,42 @@ bool LocalizationModule::create_ROS_IO() {
 		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
 								 std::bind(&LocalizationModule::pub_module_status_timer, this), ctrl_callback_group_);
 
-	// only 定位
 	// TODO: 还需要区分哪些是建图或定位发布的
-	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10);
+	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
+
 	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/body_cloud", 20);
-	pub_body_cloud_filter_ =
-		node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/body_cloud_filter", 20);
-	pub_key_cloud_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/key_body_cloud", 20);
-	pubObstacleCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/obstacle_cloud", 10);
-	pubFilteredObstacleCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/filtered_obstacle_cloud", 10);
-	pubTestCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/test_cloud", 10);
-	pubKdtreeCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/kdtree_cloud", 10);
-	pubOptimizedPath = node_->create_publisher<nav_msgs::msg::Path>("/optimized_path", 1000);
-	pubUnoptimizedPath = node_->create_publisher<nav_msgs::msg::Path>("/unoptimized_path", 1000);
-	pubLoopConstraintEdge =
-		node_->create_publisher<visualization_msgs::msg::MarkerArray>("/flbot/mapping/loop_closure_constraints", 1);
+	//转到和base_link系朝向一致的点云, 位置还在雷达位置处
+	// TODO(jxl): 可以把点云转到base_link位置处
+
+	// pub_body_cloud_filter_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
+	// 	"/flbot/localization/body_cloud_filter", 20); //没有实际发布
+	// pub_key_cloud_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/key_body_cloud",
+	// 20);
+	// //当前帧如果是关键帧也发布， 为了实时性暂时屏蔽掉发布
+
+	// pubObstacleCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/obstacle_cloud", 10); //没有实际发布
+	// pubFilteredObstacleCloud =
+	// 	node_->create_publisher<sensor_msgs::msg::PointCloud2>("/filtered_obstacle_cloud", 10);	  //没有实际发布
+	// pubTestCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/test_cloud", 10);	  //没有实际发布
+	// pubKdtreeCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/kdtree_cloud", 10); //没有实际发布
+
+	pubOptimizedPath = node_->create_publisher<nav_msgs::msg::Path>(
+		"/optimized_path", 1000); // mapping或sec_mapping模式下，后端keyframe位姿在map系下
+	pubUnoptimizedPath =
+		node_->create_publisher<nav_msgs::msg::Path>("/unoptimized_path", 1000); //每一帧雷达pose在map系下
+
+	pubLoopConstraintEdge = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
+		"/flbot/mapping/loop_closure_constraints", 1); //建图模式下：只发布闭环nodes和edges，没有整体pose graph结构
+
 	pubKeyframePose = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/key_frame_pose", 1);
-	// pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry", 10);
-	pubLoadMap = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/Load_map", 1);
-	pubRgbCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("rgb_cloud", 1);
-	pub_base_imu_ =
-		node_->create_publisher<sensor_msgs::msg::Imu>("/flbot/localization/imu", 100); // base_link下的acc，gyro
+	//在定位模式下，发布之前建图结束后加载的关键帧位姿。
+	// TODO(jxl): 定位模式下不关心关键帧，只有mapping或sec_mapping模式下才关心关键帧
+
+	pubLoadMap = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/Load_map", 1); //每隔20s发布一次加载的地图
+
+	// pubRgbCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("rgb_cloud", 1); //没有发布
+	// pub_base_imu_ =
+	// 	node_->create_publisher<sensor_msgs::msg::Imu>("/flbot/localization/imu", 100); // base_link下的acc，gyro，
 
 	return true;
 }
@@ -223,8 +239,9 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		loadMap.header.stamp = node_->now();
 		loadMap.header.frame_id = "map";
 		pubLoadMap->publish(loadMap);
+		// TODO(jxl): 定位模式下，每隔20s发布一次加载的地图，没必要。可以只发布一次来可视化，在debug模式下。
+
 		show_keyframe(slam_->getLoadKeyFrame());
-		// TODO(jxl): 定位模式下，每隔20s发布一次地图，没必要。可以只发布一次来可视化，在debug模式下。
 	}
 	show_load_map_++;
 
@@ -239,36 +256,32 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 
 	if (running_slam_flag) {
 		if ((is_mapping_status(curr_running_module_status)) || slam_->isGloalLocalizationSuccess()) {
-			publish_cloud(slam_->get_odom_cloud(), "base_link", pubOdomCloud);
+			// publish_cloud(slam_->get_odom_cloud(), "base_link", pubOdomCloud);
+			// TODO(jxl): odom系下的点云，怎么frame_id是base_link？先注释掉
 		}
 		publish_cloud(slam_->get_lidar_cloud(), "lidar", pubBodyCloud);
 		// process_loginfo();
 	}
 
 	auto localization_status_now = localization_status_.load();
-	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3) {
-		// publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),  "map",
-		// "base_link", curr_running_module_status);
-		// pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
+	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3) { // m_standby
+		// if (slam_->get_new_key_cloud_arrived()) {
+		// 	publish_cloud(slam_->get_lidar_cloud(), "lidar", pub_key_cloud_);
+		// 	slam_->set_new_key_cloud_arrived(false);
+		// }
+		// publish_cloud(slam_->get_kdtree_cloud(), "mapping_odom", pubKdtreeCloud);
 
-		if (slam_->get_new_key_cloud_arrived()) {
-			publish_cloud(slam_->get_lidar_cloud(), "lidar", pub_key_cloud_);
-			slam_->set_new_key_cloud_arrived(false);
-		}
-
-		publish_cloud(slam_->get_kdtree_cloud(), "mapping_odom", pubKdtreeCloud);
 		publish_cloud(slam_->get_odom_cloud(), "mapping_odom", pubOdomCloud);
-		visualizeLoopClosure(slam_->getloopIndex(), optimized_path_msg);
+		visualizeLoopClosure(slam_->getloopIndex(),
+							 optimized_path_msg); // TODO(jxl): 只发布了闭环nodes和edges， 整个pose graph结构看不到
 		publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
 		publish_optimized_path(slam_->get_optimized_path(), string("map"));
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
 			   localization_status_is_ok(localization_status_now)) {
 		if (slam_->isGloalLocalizationSuccess()) {
-			// publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(),
-			// "map", "base_link", curr_running_module_status);
 			// publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
+			// TODO(jxl): 用新的接口发布T_map_lidar?
 		}
-		// pub_lidar_cloud(slam_->get_lidar_cloud(), pubBodyCloud);
 	}
 
 	// if (show_rviz_){
@@ -528,14 +541,10 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 	}
 
 	if (status_msg.localization_status != 0 && status_msg.localization_status != 3) {
-		// ROS_WARN_STREAM_THROTTLE(1.0, YELLOW << "[Status Timer]: localization_status: " <<
-		// int(status_msg.localization_status) << RESET);
 		RCLCPP_WARN(node_->get_logger(), "[Status Timer]: localization_status: %d",
 					int(status_msg.localization_status));
 	}
 	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) {
-		// ROS_WARN_STREAM_THROTTLE(1.0, RED << "[Status Timer]: mapping_status: " << int(status_msg.mapping_status)  <<
-		// RESET);
 		RCLCPP_WARN(node_->get_logger(), "[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
 	}
 	/*
@@ -574,10 +583,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
 		// publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
 	}
+
 	if (is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())) {
 		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
 									  "base_link", curr_running_module_status);
 		// publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
+
 		// 配合robot-localization 节点
 		// Eigen::Isometry3d T_m_o_ = slam_->getLidarInMap() * T_lidar_baselink_ * T_o_b_.inverse();
 		// publish_odometry_in_map(T_m_o_, "map", "odom");
@@ -777,22 +788,21 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	// msg->time_stamp = msg_in->header.stamp.toSec() + 28799.8614; temp, 测试万集雷达时用到
 
 	if (slam_param_.lidar_preproc.lidar_type == 3) {
-		// acc_after = acc_after / G_m_s2;
-		acc_after = acc_after / 9.7;
+		acc_after = acc_after / G_m_s2;
 	}
 
 	msg->angular_velocity << ang_after[0], ang_after[1], ang_after[2];
 	msg->linear_acceleration << acc_after[0], acc_after[1], acc_after[2];
 
-	sensor_msgs::msg::Imu imu_in_base = *msg_in;
-	imu_in_base.header.frame_id = "base_link";
-	imu_in_base.angular_velocity.x = msg->angular_velocity.x();
-	imu_in_base.angular_velocity.y = msg->angular_velocity.y();
-	imu_in_base.angular_velocity.z = msg->angular_velocity.z();
-	imu_in_base.linear_acceleration.x = msg->linear_acceleration.x();
-	imu_in_base.linear_acceleration.y = msg->linear_acceleration.y();
-	imu_in_base.linear_acceleration.z = msg->linear_acceleration.z();
-	pub_base_imu_->publish(imu_in_base); // TODO(jxl): not pub
+	// sensor_msgs::msg::Imu imu_in_base = *msg_in;
+	// imu_in_base.header.frame_id = "base_link";
+	// imu_in_base.angular_velocity.x = msg->angular_velocity.x();
+	// imu_in_base.angular_velocity.y = msg->angular_velocity.y();
+	// imu_in_base.angular_velocity.z = msg->angular_velocity.z();
+	// imu_in_base.linear_acceleration.x = msg->linear_acceleration.x();
+	// imu_in_base.linear_acceleration.y = msg->linear_acceleration.y();
+	// imu_in_base.linear_acceleration.z = msg->linear_acceleration.z();
+	// pub_base_imu_->publish(imu_in_base);
 
 	////////////////////////////////////////////////////////////////////////////////
 	// detect slip
@@ -837,7 +847,6 @@ void LocalizationModule::publish_unoptimized_path(
 void LocalizationModule::publish_optimized_path(
 	const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
 	geometry_msgs::msg::PoseStamped msg;
-	// nav_msgs::msg::Path optimized_path_msg;
 
 	optimized_path_msg.poses.clear();
 	optimized_path_msg.header.stamp = node_->now();

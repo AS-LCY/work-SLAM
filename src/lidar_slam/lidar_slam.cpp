@@ -15,6 +15,10 @@ string print_SlamWorkMode(SlamWorkMode e) {
 LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode, rclcpp::Node::SharedPtr node) {
 	config_param_ = yaml_param;
 	feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
+
+	// TODO(jxl): 对T_lidar_wheel的处理
+	//...
+
 	LidarSlam::reset(start_mode, node);
 }
 
@@ -841,7 +845,7 @@ bool LidarSlam::run() { // lio线程
 				{
 					std::unique_lock<std::mutex> lk(mtx_path_);
 					optimized_path_.clear();
-					auto lidar_in_odom = back_end_->getKeyframePoses();
+					auto lidar_in_odom = back_end_->getKeyframePoses(); // TODO(jxl): 后端的位姿是T_map_lidar
 					for (int i = 0; i < lidar_in_odom.size(); i++) {
 						optimized_path_.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel_);
 					}
