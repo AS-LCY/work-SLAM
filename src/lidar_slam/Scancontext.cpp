@@ -18,7 +18,7 @@ float xy2theta(const float& _x, const float& _y) {
 	if (_x >= 0 & _y < 0) return 360 - ((180 / M_PI) * atan((-_y) / _x));
 
 	return 0;
-}
+} // xy2theta
 
 MatrixXd circshift(MatrixXd& _mat, int _num_shift) {
 	// shift columns to right direction
@@ -36,12 +36,13 @@ MatrixXd circshift(MatrixXd& _mat, int _num_shift) {
 	}
 
 	return shifted_mat;
-}
+
+} // circshift
 
 std::vector<float> eig2stdvec(MatrixXd _eigmat) {
 	std::vector<float> vec(_eigmat.data(), _eigmat.data() + _eigmat.size());
 	return vec;
-}
+} // eig2stdvec
 
 Eigen::Matrix4f yaw2matrix(const float& y) {
 	Eigen::Matrix4f m;
@@ -66,7 +67,8 @@ double SCManager::distDirectSC(MatrixXd& _sc1, MatrixXd& _sc2) {
 
 	double sc_sim = sum_sector_similarity / num_eff_cols;
 	return 1.0 - sc_sim;
-}
+
+} // distDirectSC
 
 int SCManager::fastAlignUsingVkey(MatrixXd& _vkey1, MatrixXd& _vkey2) {
 	int argmin_vkey_shift = 0;
@@ -84,7 +86,8 @@ int SCManager::fastAlignUsingVkey(MatrixXd& _vkey1, MatrixXd& _vkey2) {
 	}
 
 	return argmin_vkey_shift;
-}
+
+} // fastAlignUsingVkey
 
 std::pair<double, int> SCManager::distanceBtnScanContext(MatrixXd& _sc1, MatrixXd& _sc2) {
 	// 1. fast align using variant key (not in original IROS18)
@@ -112,7 +115,8 @@ std::pair<double, int> SCManager::distanceBtnScanContext(MatrixXd& _sc1, MatrixX
 		}
 	}
 	return std::make_pair(min_sc_dist, argmin_shift);
-}
+
+} // distanceBtnScanContext
 
 MatrixXd SCManager::makeScancontext(pcl::PointCloud<SCPointType>& _scan_down, double dx, double dy) {
 	int num_pts_scan_down = _scan_down.points.size();
@@ -150,7 +154,7 @@ MatrixXd SCManager::makeScancontext(pcl::PointCloud<SCPointType>& _scan_down, do
 			if (desc(row_idx, col_idx) == NO_POINT) desc(row_idx, col_idx) = 0;
 
 	return desc;
-}
+} // SCManager::makeScancontext
 
 MatrixXd SCManager::makeRingkeyFromScancontext(Eigen::MatrixXd& _desc) {
 	/*
@@ -163,7 +167,7 @@ MatrixXd SCManager::makeRingkeyFromScancontext(Eigen::MatrixXd& _desc) {
 	}
 
 	return invariant_key;
-}
+} // SCManager::makeRingkeyFromScancontext
 
 MatrixXd SCManager::makeSectorkeyFromScancontext(Eigen::MatrixXd& _desc) {
 	/*
@@ -176,7 +180,7 @@ MatrixXd SCManager::makeSectorkeyFromScancontext(Eigen::MatrixXd& _desc) {
 	}
 
 	return variant_key;
-}
+} // SCManager::makeSectorkeyFromScancontext
 
 const Eigen::MatrixXd SCManager::getSc(int i) {
 	if (i > polarcontexts_.size() - 1) {
@@ -197,7 +201,10 @@ void SCManager::makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _sca
 	polarcontext_invkeys_.push_back(ringkey);
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
-}
+
+	// cout <<polarcontext_vkeys_.size() << endl;
+
+} // SCManager::makeAndSaveScancontextAndKeys
 
 void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
 	Eigen::MatrixXd sc = polarcontext; // v1
@@ -210,8 +217,10 @@ void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
 
-	TRACE_INFO_CLASS("load sc %d", polarcontext_vkeys_.size());
-}
+	cout << "load sc " << polarcontext_vkeys_.size() << endl;
+	// ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
+
+} // SCManager::loadScancontextAndKeys
 
 void SCManager::buildRingKeyKDTree(KeyMat& polarcontext_invkeys_mat, std::vector<Eigen::MatrixXd>& polarcontexts) {
 	polarcontexts_ = polarcontexts;
@@ -380,7 +389,8 @@ std::pair<int, float> SCManager::detectLoopClosureID(void) {
 	std::pair<int, float> result{ loop_id, yaw_diff_rad };
 
 	return result;
-}
+
+} // SCManager::detectLoopClosureID
 
 const Eigen::MatrixXd& SCManager::getConstRefRecentSCD(void) { return polarcontexts_.back(); }
 

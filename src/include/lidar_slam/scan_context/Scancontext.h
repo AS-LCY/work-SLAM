@@ -41,17 +41,17 @@ using std::sin;
 
 using SCPointType = PointType; // using xyz only. but a user can exchange the original bin encoding function (i.e., max
 							   // hegiht) to max intensity (for detail, refer 20 ICRA Intensity Scan Context)
-using KeyMat = std::vector<std::vector<float> >;
+using KeyMat	 = std::vector<std::vector<float> >;
 using InvKeyTree = KDTreeVectorOfVectorsAdaptor<KeyMat, float>;
 
 // namespace SC2
 // {
 
 // sc param-independent helper functions
-float xy2theta(const float& _x, const float& _y);
-Eigen::MatrixXd circshift(Eigen::MatrixXd& _mat, int _num_shift);
+float			   xy2theta(const float& _x, const float& _y);
+Eigen::MatrixXd	   circshift(Eigen::MatrixXd& _mat, int _num_shift);
 std::vector<float> eig2stdvec(Eigen::MatrixXd _eigmat);
-Eigen::Matrix4f yaw2matrix(const float& y);
+Eigen::Matrix4f	   yaw2matrix(const float& y);
 // struct ScInfo {
 //     int id;
 //     Eigen::Isometry3d pose;
@@ -69,21 +69,21 @@ class SCManager {
 	Eigen::MatrixXd makeScancontext(pcl::PointCloud<SCPointType>& _scan_down, double dx = 0, double dy = 0);
 	Eigen::MatrixXd makeRingkeyFromScancontext(Eigen::MatrixXd& _desc);
 	Eigen::MatrixXd makeSectorkeyFromScancontext(Eigen::MatrixXd& _desc);
-	void buildRingKeyKDTree(KeyMat& polarcontext_invkeys_mat, std::vector<Eigen::MatrixXd>& polarcontexts);
+	void			buildRingKeyKDTree(KeyMat& polarcontext_invkeys_mat, std::vector<Eigen::MatrixXd>& polarcontexts);
 	std::pair<int, float> detectClosestMatch(Eigen::MatrixXd& sc, std::vector<float>& ringkey,
 											 Eigen::MatrixXd& sectorkey, double& score);
 
-	int fastAlignUsingVkey(Eigen::MatrixXd& _vkey1, Eigen::MatrixXd& _vkey2);
+	int	   fastAlignUsingVkey(Eigen::MatrixXd& _vkey1, Eigen::MatrixXd& _vkey2);
 	double distDirectSC(Eigen::MatrixXd& _sc1, Eigen::MatrixXd& _sc2); // "d" (eq 5) in the original paper (IROS 18)
 	std::pair<double, int> distanceBtnScanContext(Eigen::MatrixXd& _sc1,
 												  Eigen::MatrixXd& _sc2); // "D" (eq 6) in the original paper (IROS 18)
 
 	// User-side API
-	void makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _scan_down);
-	std::pair<int, float> detectLoopClosureID(void); // int: nearest node index, float: relative yaw
+	void				   makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _scan_down);
+	std::pair<int, float>  detectLoopClosureID(void); // int: nearest node index, float: relative yaw
 	const Eigen::MatrixXd& getConstRefRecentSCD(void);
-	const Eigen::MatrixXd getSc(int i);
-	void loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext);
+	const Eigen::MatrixXd  getSc(int i);
+	void				   loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext);
 
    public:
 	// hyper parameters ()
@@ -91,11 +91,11 @@ class SCManager {
 		0.5; // lidar height : add this for simply directly using lidar scan in the lidar local coord (not robot base
 			 // coord) / if you use robot-coord-transformed lidar scans, just set this as 0.
 
-	const int PC_NUM_RING = 20;		   // 20 in the original paper (IROS 18)
-	const int PC_NUM_SECTOR = 60;	   // 60 in the original paper (IROS 18)
-	const double PC_MAX_RADIUS = 80.0; // 80 meter max in the original paper (IROS 18)
+	const int	 PC_NUM_RING		 = 20;	 // 20 in the original paper (IROS 18)
+	const int	 PC_NUM_SECTOR		 = 60;	 // 60 in the original paper (IROS 18)
+	const double PC_MAX_RADIUS		 = 80.0; // 80 meter max in the original paper (IROS 18)
 	const double PC_UNIT_SECTORANGLE = 360.0 / double(PC_NUM_SECTOR);
-	const double PC_UNIT_RINGGAP = PC_MAX_RADIUS / double(PC_NUM_RING);
+	const double PC_UNIT_RINGGAP	 = PC_MAX_RADIUS / double(PC_NUM_RING);
 
 	// tree
 	const int NUM_EXCLUDE_RECENT = 1; // simply just keyframe gap, but node position distance-based exclusion is ok.
@@ -116,13 +116,13 @@ class SCManager {
 	int tree_making_period_conter = 0;
 
 	// data
-	std::vector<double> polarcontexts_timestamp_; // optional.
+	std::vector<double>			 polarcontexts_timestamp_; // optional.
 	std::vector<Eigen::MatrixXd> polarcontexts_;
 	std::vector<Eigen::MatrixXd> polarcontext_invkeys_;
 	std::vector<Eigen::MatrixXd> polarcontext_vkeys_;
 
-	KeyMat polarcontext_invkeys_mat_;
-	KeyMat polarcontext_invkeys_to_search_;
+	KeyMat						polarcontext_invkeys_mat_;
+	KeyMat						polarcontext_invkeys_to_search_;
 	std::unique_ptr<InvKeyTree> polarcontext_tree_;
 
 }; // SCManager

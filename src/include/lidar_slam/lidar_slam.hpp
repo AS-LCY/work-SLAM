@@ -1,15 +1,15 @@
 #ifndef LIDAR_SLAM_H
 #define LIDAR_SLAM_H
-
 #include <math.h>
 #include <omp.h>
 #include <pthread.h>
 #include <unistd.h>
 
-#include <chrono>
+#include <Eigen/Core>
 #include <csignal>
 #include <fstream>
 #include <mutex>
+#include <rclcpp/rclcpp.hpp>
 #include <thread>
 
 #include "boost/thread.hpp"
@@ -18,24 +18,25 @@
 #include <pcl/filters/voxel_grid.h>
 #include <yaml-cpp/yaml.h>
 
-#include <Eigen/Core>
-#include <rclcpp/rclcpp.hpp>
 #include <sophus/se3.hpp>
 
 // #include <fast_gicp/gicp/fast_gicp.hpp>
 
-#include "lidar/livox/ros_livox_datatype_def.h"
 #include "lidar_slam/IMU_Processing.hpp"
 #include "lidar_slam/backend.hpp"
 #include "lidar_slam/cloud_map.hpp"
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/global_localization.hpp"
 #include "lidar_slam/localization.hpp"
-#include "node/log_info_manager.hpp"
+
+// #include "lidar_slam/Viewer.hpp"
+// #include "include/livox_ros_driver2.h"
+// #include "driver_node.h"
+// #include "lddc.h"
+#include "lidar/livox/ros_livox_datatype_def.h"
 #include "node/module_param_def.h"
 // #include "node/module_status_def.h"
-
-#include <logTracer/tracer.h>
+#include "node/log_info_manager.hpp"
 
 // lidar
 #include "lidar/hesai/lidar_preproc_JT16.h"
@@ -175,19 +176,15 @@ class LidarSlam {
 	}
 	inline std::map<int, int> getloopIndex() const { return back_end_->getloopIndex(); }
 
-	// TODO(jxl): 这个函数实现可能有大的问题！
-	// ...
-	// ...
-	inline Eigen::Isometry3d getOdomToMap() const { // T_map_odom
+	inline Eigen::Isometry3d getOdomToMap() const {
 		if (working_mode_ == LOCALIZATION) {
 			return localization_->getOdomToMap();
-		} else if (working_mode_ == MAPPING) { // TODO(jxl): 由后端实时维护，不应该是这样
+		} else if (working_mode_ == MAPPING) {
 			Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
 			transform.matrix().block<3, 3>(0, 0) = p_imu_->initial_rotate_;
 			return transform;
 		} else if (working_mode_ == SEC_MAPPING) {
 			return global_localization_->get_global_odom_to_map();
-			// TODO(jxl):最开始由全局初始化模块确定，等结束后，由后端实时维护，不应该是个常量
 		} else {
 			return Eigen::Isometry3d::Identity();
 		}
@@ -204,10 +201,9 @@ class LidarSlam {
 	inline Eigen::Isometry3d getLidarInOdom() {
 		std::unique_lock<std::mutex> lk(mtx_pose_);
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-			return T_odom_lidar_;
+			return T_odom_lidar_;					// TODO(jxl): 什么含义
 		} else if (working_mode_ == LOCALIZATION) { // TODO(jxl): curr_pose是lidar位置处的base_link位姿，
 													// 如果是其它雷达(lidar和imu旋转不是单位阵，会有问题)
-			// TODO(jxl): 使用自己的锁mtx_current_pose_
 			Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose_.imu_state.rot, current_pose_.imu_state.pos).matrix());
 			Eigen::Isometry3d T_b_lidar(
 				Sophus::SE3d(current_pose_.imu_state.offset_R_L_I, current_pose_.imu_state.offset_T_L_I).matrix());
@@ -246,7 +242,11 @@ class LidarSlam {
 
 	inline bool isGloalLocalizationSuccess() const { return globalLocalizationSuccess_; }
 
-	inline Eigen::Isometry3d getLidarInMap() {
+	inline Eigen::Isometry3d getLidarInMap() { //插值
+		// Eigen::Isometry3d T_odom_b(Sophus::SE3d(current_pose_.imu_state.rot, current_pose_.imu_state.pos).matrix());
+		// Eigen::Isometry3d T_b_lidar(Sophus::SE3d(current_pose_.imu_state.offset_R_L_I,
+		// current_pose_.imu_state.offset_T_L_I).matrix());
+		// Eigen::Isometry3d T_map_lidar  =  getOdomToMap() * T_odom_b * T_b_lidar;
 		Eigen::Isometry3d T_map_lidar = getOdomToMap() * getLidarInOdom();
 		return T_map_lidar;
 	}
@@ -282,6 +282,17 @@ class LidarSlam {
 
 	inline double get_lidar_time() const { return lidar_end_time_; }
 
+	// string print_SlamWorkMode(SlamWorkMode e){
+	//     switch (e){
+	//     CASE_STR(MAPPING);
+	//     CASE_STR(SEC_MAPPING);
+	//     CASE_STR(LOCALIZATION);
+	//     default:
+	//         break;
+	//     }
+	//     return "UNKNOW_SlamWorkMode!";
+	// }
+
 	void set_new_key_cloud_arrived(bool flag) { new_key_cloud_arrived_ = flag; }
 	bool get_new_key_cloud_arrived() { return new_key_cloud_arrived_; }
 
@@ -289,7 +300,7 @@ class LidarSlam {
 	double get_hb_time_thread_loop_closure() { return hb_time_thread_loop_closure_.load(); }
 	double get_hb_time_thread_secmap_relocalize() { return hb_time_thread_secmap_relocalize_.load(); }
 
-	int get_local_thrd_status() { return localize_thrd_status_.load(); }
+	int get_local_thrd_status() { return local_thrd_status_.load(); }
 	int get_slam_run_status() { return slam_run_status_.load(); }
 	int get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
 
@@ -298,21 +309,24 @@ class LidarSlam {
 	void loopClosureThread();
 	void sec_mapping_loopClosureThread();
 	void localizationThread();
+	// void relocalizationForMappingThread();
+
 	void global_localization_for_sec_mapping_thread();
 	void delete_log_file(double keep_time);
 
    private:
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 	/// slam status    //
 	/*************************************************** */
-	/** @localize_thrd_status_:
+	/** @local_thrd_status_:
 	 * 0: inactive
 	 * 1: relocalize ing
 	 * 2: relocalize failed
 	 * 3: normal
-	 * 4: localize low accuracy
-	 * 5: localize failed
+	 * 4: local low accuracy
+	 * 5: local failed
 	 */
-	std::atomic<int> localize_thrd_status_{ 0 };
+	std::atomic<int> local_thrd_status_{ 0 };
 
 	/*************************************************** */
 	/** @slam_run_status_:
@@ -331,6 +345,7 @@ class LidarSlam {
 	 */
 	std::atomic<int> secmap_relocal_thrd_status_{ 0 };
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 各 线程、callback、timer heartbeat
 	std::atomic<double> hb_time_thread_localize_;		   // status = LOCALIZATION
 	std::atomic<double> hb_time_thread_loop_closure_;	   // status = MAPPING or SEC_MAPPING
@@ -394,7 +409,7 @@ class LidarSlam {
 	mutex mtx_lidar_cloud_;
 	mutex mtx_obstacle_cloud_;
 	mutex mtx_localization_base_;
-	mutex mtx_current_pose_;
+	mutex mtx_current_pose_; // TODO(jxl): 没有使用
 	mutex mtx_path_;
 	mutex mtx_pose_;
 
@@ -406,7 +421,7 @@ class LidarSlam {
 	std::unique_ptr<GlobalLocalization> global_localization_ = nullptr;
 	std::unique_ptr<CloudMap> cloud_map_manager_ = nullptr;
 
-	// stop localize thread 专用
+	// stop local thread 专用
 	// std::condition_variable cv_stop_local_;
 	// std::mutex mtx_stop_thread_;
 	// bool flag_stop_thread_ = false;
@@ -423,7 +438,6 @@ class LidarSlam {
 	PointCloudType::Ptr FilteredObstacleCloud_;
 
 	SlamWorkMode working_mode_ = UNKNOWN;
-
 	// LocalizationStatus l_status_ = L_INACTIVE;
 	// MappingStatus m_status_ = M_INACTIVE;
 	// bool second_mapping_need_global_localization_ = false;

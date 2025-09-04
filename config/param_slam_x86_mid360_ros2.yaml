@@ -27,14 +27,13 @@
       pub_topic_module_health: "/flbot/localization_module/module_health"
       pub_topic_module_loginfo: "/flbot/localization_module/log_info"
       pub_topic_slipping: "/flbot/localization_module/slipping_old"
-
-      receive_lidar_freq: 10 # unit: hz # 没有起作用
-      slam_lose_rate_time_thr: 0.1 # unit: s # LidarSlam::run()函数一次时间阈值
-      lidar_no_point_count_thr:  10 # 连续10帧没有点，warning
+      receive_lidar_freq: 10 # unit: hz
+      slam_lose_rate_time_thr: 0.1 # unit: second
+      lidar_no_point_count_thr:  10
       check_delay: false
-      feats_down_size_thr: 200 # 降采样后的点个数小于200个会被认为没有点
-      use_pose_filter: false # 没有起作用
-
+      feats_down_size_thr: 200 # 降采样后的点个数不能小于200个
+      use_pose_filter: false
+      # cpu_id: []
       cpu_id: [4, 5]
 
     extrinsic:    
@@ -59,27 +58,29 @@
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
-      fgicp_peroid_sec: 60.0  #时间周期，单位：秒  TODO(jxl): 每60s和离线地图匹配一次
-      fgicp_score_fail_thr: 0.3 
-      fgicp_score_low_accuracy_thr: 0.07 # < 0.07, localize state = normal
-      fgicp_fail_count_thr: 5 # (0.3, +∞)，失败次数+1，超过5次，localize state = failed
-      fgicp_low_accuracy_count_thr: 1800 # (0.07, 0.3)，低精度次数+1，超过1800次，localize state = failed
+      fgicp_peroid_sec: 60.0  #600 # 时间周期，单位： 秒
 
-      # pose_filter.cpp.bak 已经弃用
-      filter_method: 1 # 0-一阶滤波 # 1-窗口滤波 # 没有起作用
-      fst_order_k: 0.7 # 没有起作用
-      odom2map_delta_thr: 0.05 # double: m  # 没有起作用
-      odom2map_delta_set: 0.01 # double: m  # 没有起作用
-      lidar_ratio: 0.2 # 没有起作用
-      baselink_dy_thr: 0.02 # 没有起作用
-      baselink_dx_thr: 0.04 # 没有起作用
-      baselink_dyaw_thr: 0.5 # unit: degree  # 没有起作用
-      window_size: 4  # 没有起作用
-      filter_freq: 100 # 没有起作用
-      using_turning_proc: true # 没有起作用
-      chassis_linear_velocity_thr: 0.02 # 没有起作用
-      motionless_chassis_ratio: 0.98 # 没有起作用
-      lidar_cbk_delay_thr: 2.0 # 没有起作用 
+      # fgicp_score_thr: 0.1
+      fgicp_score_fail_thr: 0.3
+      fgicp_score_low_accuracy_thr: 0.07
+      fgicp_fail_count_thr: 5
+      fgicp_low_accuracy_count_thr: 1800
+
+      # pose filter
+      filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
+      fst_order_k: 0.7
+      odom2map_delta_thr: 0.05 # double: m
+      odom2map_delta_set: 0.01 # double: m
+      lidar_ratio: 0.2
+      baselink_dy_thr: 0.02
+      baselink_dx_thr: 0.04
+      baselink_dyaw_thr: 0.5 # unit: degree
+      window_size: 4 
+      filter_freq: 100
+      using_turning_proc: true
+      chassis_linear_velocity_thr: 0.02
+      motionless_chassis_ratio: 0.98
+      lidar_cbk_delay_thr: 2.0 # 
 
     lidar_preproc:
       lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
@@ -94,15 +95,15 @@
       keep_lidar_num_before_curr: 1 #TODO(jxl): buffer阈值有点太小
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
-      # feature_enabled: false  # 没有起作用 
-      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature   # 没有起作用
-      point_filter_num: 6 # 每隔多少个点采样一个点    # 没有起作用
-      ring_filter_num: 1  # 没有起作用
+      # feature_enabled: false  # default to false
+      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
+      point_filter_num: 6 # 每隔多少个点采样一个点
+      ring_filter_num: 1  # 这个参数没有起作用
 
-      leafsize: 0.5 #定位模式下，对lio前端降采样后的点云再来一次downsample, 用来全局初始化定位
-      leafsize_vec: [0.2, 0.8] # voxel 所需参数    # 没有起作用
-      voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax  # 没有起作用
-      boundary_z: 3.0 # init: m    # 没有起作用
+      leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
+      leafsize_vec: [0.2, 0.8] # voxel 所需参数
+      voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax
+      boundary_z: 3.0 # init: m
       
       # obstacle_max_range:  2.5
       # obstacle_max_height: 0.5
@@ -118,29 +119,29 @@
       b_acc_cov: 0.0001 # 
       b_gyr_cov: 0.0001 #
 
-      cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行down sample
+      cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
 
       key_frame_distance: 1.0   # unit: m     # 大于此距离为关键帧
       key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧
-
-      loopSearchDistance: 1.5   # TODO(jxl): 当前关键帧1.5m范围内找潜在回环关键帧，参数有点小
-      loopSearchTimeDiff: 30.0  # unit: sec  潜在回环关键帧时间与当前帧时间差大于30s
-      loopSearchSkipKey: 5  # 潜在回环关键帧与当前关键帧间隔大于5个关键帧
-      loopIcpScore: 0.3     # 闭环检测成功的阈值
+      loopSearchDistance: 1.5
+      loopSearchTimeDiff: 30.0  # unit: sec
+      loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
+      loopIcpScore: 0.3
 
       # use_ele_pcd_flag: false   # 是否使用单区域pcd
       # save_ele_pcd_flag: false  # 是否保存单区域pcd
       save_map_resolution: 0.1 # unit: m
 
     re_localization:
+      # score_thr: 0.05
       score_thr: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
     ikdtree:
       cube_len: 400.0
       det_range: 40.0
-      kdTreeReconstructRadius: 400.0 # TODO(jxl): 附近400m，参数有点大
-      kdTreeReconstructKeyFrameLeafSize: 10.0 # TODO(jxl): 10m的voxel大小来对附近关键帧降采样，参数有点大
+      kdTreeReconstructRadius: 400.0
+      kdTreeReconstructKeyFrameLeafSize: 10.0
       kdTreeReconstructPointLeafSize: 1.0
       map_leaf_size: 0.5  
       

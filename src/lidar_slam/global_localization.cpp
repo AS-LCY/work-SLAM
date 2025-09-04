@@ -165,7 +165,8 @@ bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in,
 
 bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 	if (input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size() == 0) {
-		TRACE_INFO_CLASS(" loaded global map empty!");
+		std::cout << " loaded global map empty!" << std::endl;
+		// ROS_WARN_STREAM(" loaded global map empty!");
 		return false;
 	}
 

@@ -18,22 +18,27 @@ CloudMap::~CloudMap() {
 	loaded_keyframe_clouds_.clear();
 }
 
+//////////////////////////////////// - load map - /////////////////////////////////////////////////////
+
 bool CloudMap::load_map_data(std::string map_dir) {
 	map_data_ready_ = false;
 
 	if (!load_cloud_map(map_dir)) {
-		TRACE_ERR_CLASS("load cloud map failed!");
+		cout << "load cloud map failed!" << endl;
+		// ROS_ERROR_STREAM(RED << "load cloud map failed!" << RESET);
 		return false;
 	}
 	std::string keyframe_dir = map_dir + "/key_frame_cloud/";
 	if (!load_key_frames(keyframe_dir)) {
-		TRACE_ERR_CLASS("load key frame clouds failed!");
+		cout << "load key frame clouds failed!" << endl;
+		// ROS_ERROR_STREAM(RED << "load key frame clouds failed!" << RESET);
 		return false;
 	}
 
 	map_data_ready_ = true;
-	TRACE_INFO_CLASS("load all map_data success, map_data_ready = true");
-
+	cout << "\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true" << endl;
+	// ROS_INFO_STREAM(BOLDGREEN <<"************************* load all map_data success," <<RESET<<" map_data_ready_ =
+	// true");
 	return true;
 }
 
@@ -196,5 +201,13 @@ bool CloudMap::load_cloud_map(std::string map_dir) {
 	TRACE_INFO_CLASS("loaded_sc_info size: %d", (int)loaded_sc_info_.size());
 	return true;
 }
+//////////////////////////////////// - load map end - /////////////////////////////////////////////////
+
+//////////////////////////////////// - save map - /////////////////////////////////////////////////////
+/// TODO:
+// bool CloudMap::save_map_data(){
+// }
+
+//////////////////////////////////// - save map end - /////////////////////////////////////////////////
 
 } // namespace lidar_slam
