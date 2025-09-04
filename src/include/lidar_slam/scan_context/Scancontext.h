@@ -25,6 +25,9 @@
 #include "lidar_slam/scan_context/KDTreeVectorOfVectorsAdaptor.h"
 #include "lidar_slam/scan_context/nanoflann.hpp"
 // #include "lidar_slam/scan_context/tictoc.h"
+
+#include <logTracer/tracer.h>
+
 using namespace Eigen;
 using namespace nanoflann;
 
@@ -56,6 +59,7 @@ Eigen::Matrix4f yaw2matrix(const float& y);
 // };
 
 class SCManager {
+	DECL_CLASSNAME(SCManager)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

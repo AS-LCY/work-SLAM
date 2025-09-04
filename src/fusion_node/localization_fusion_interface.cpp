@@ -327,9 +327,6 @@ bool LocalizationFusion::load_params() {
 
 	T_baselink2lidar_.translate(Eigen::Vector3d(baselink_in_lidar[0], baselink_in_lidar[1], baselink_in_lidar[2]));
 	T_baselink2lidar_.rotate(eigen_quat); // 应用四元数的旋转
-	// std::cout << "T_baselink2lidar_: " <<std::endl;
-	// std::cout << T_baselink2lidar_.translation()  <<std::endl;
-	// std::cout << T_baselink2lidar_.rotation()  <<std::endl;
 
 	T_lidar2baselink_ = T_baselink2lidar_.inverse();
 

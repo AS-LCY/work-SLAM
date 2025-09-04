@@ -180,13 +180,11 @@ MatrixXd SCManager::makeSectorkeyFromScancontext(Eigen::MatrixXd& _desc) {
 
 const Eigen::MatrixXd SCManager::getSc(int i) {
 	if (i > polarcontexts_.size() - 1) {
-		// ROS_ERROR_STREAM(RED << "error sc index" << RESET);
-		std::cout << RED << "error sc index" << RESET << std::endl;
+		TRACE_ERR_CLASS("error sc index");
+
 		return Eigen::MatrixXd::Zero(1, 1);
 	}
 	return polarcontexts_[i];
-
-	// cout <<polarcontext_vkeys_.size() << endl;
 }
 
 void SCManager::makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _scan_down) {
@@ -199,8 +197,6 @@ void SCManager::makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _sca
 	polarcontext_invkeys_.push_back(ringkey);
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
-
-	// cout <<polarcontext_vkeys_.size() << endl;
 }
 
 void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
@@ -214,8 +210,7 @@ void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
 
-	cout << "load sc " << polarcontext_vkeys_.size() << endl;
-	// ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
+	TRACE_INFO_CLASS("load sc %d", polarcontext_vkeys_.size());
 }
 
 void SCManager::buildRingKeyKDTree(KeyMat& polarcontext_invkeys_mat, std::vector<Eigen::MatrixXd>& polarcontexts) {
@@ -292,15 +287,11 @@ std::pair<int, float> SCManager::detectClosestMatch(Eigen::MatrixXd& sc, std::ve
 	score = min_dist;
 	if (min_dist < SC_DIST_THRES) {
 		loop_id = nn_idx;
-
-		// std::cout.precision(3);
-		std::cout << "[Success] index: " << nn_idx << " Nearest distance: " << min_dist << " ";
-		// ROS_INFO_STREAM("[Success] index: " <<nn_idx<<" Nearest distance: "<< min_dist << " ");
-		//  std::cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
+		TRACE_INFO_CLASS("[Success] index: %d,  Nearest distance: %f ", nn_idx, min_dist);
+		TRACE_INFO_CLASS("[Loop found] yaw diff: %f deg.", nn_align * PC_UNIT_SECTORANGLE);
 	} else {
-		// std::cout.precision(3);
-		// std::cout << "[Failed ] Nearest distance: " <<nn_idx<<" " << min_dist << std::endl;
-		// std::cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
+		TRACE_WARN_CLASS("[Failed ] index: %d,  Nearest distance: %f ", nn_idx, min_dist);
+		TRACE_INFO_CLASS("[Not loop] yaw diff: %f deg.", nn_align * PC_UNIT_SECTORANGLE);
 	}
 
 	// To do: return also nn_align (i.e., yaw diff)
@@ -375,21 +366,13 @@ std::pair<int, float> SCManager::detectLoopClosureID(void) {
 	 */
 	if (min_dist < SC_DIST_THRES) {
 		loop_id = nn_idx;
-
-		// std::cout.precision(3);
-		std::cout << "[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size() - 1 << " and "
-				  << nn_idx << "." << std::endl;
-		std::cout << "[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
-		// ROS_INFO_STREAM("[Loop found] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and
-		// " << nn_idx << "." ); ROS_INFO_STREAM("[Loop found] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg."
-		// );
+		TRACE_INFO_CLASS("[Loop found] Nearest distance: %f, btn: %d, nn_idx: %d", min_dist, polarcontexts_.size() - 1,
+						 nn_idx);
+		TRACE_INFO_CLASS("[Loop found] yaw diff: %f deg.", nn_align * PC_UNIT_SECTORANGLE);
 	} else {
-		std::cout.precision(3);
-		std::cout << "[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size() - 1 << " and "
-				  << nn_idx << "." << std::endl;
-		std::cout << "[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg." << std::endl;
-		// ROS_INFO_STREAM("[Not loop] Nearest distance: " << min_dist << " btn " << polarcontexts_.size()-1 << " and "
-		// << nn_idx << "."); ROS_INFO_STREAM("[Not loop] yaw diff: " << nn_align * PC_UNIT_SECTORANGLE << " deg.");
+		TRACE_INFO_CLASS("[Not loop] Nearest distance: %f, btn: %d, nn_idx: %d", min_dist, polarcontexts_.size() - 1,
+						 nn_idx);
+		TRACE_INFO_CLASS("[Not loop] yaw diff: %f deg.", nn_align * PC_UNIT_SECTORANGLE);
 	}
 
 	// To do: return also nn_align (i.e., yaw diff)

@@ -83,7 +83,7 @@ class Viewer{
         MapMin = std::unique_ptr<pangolin::Var<float>>(new pangolin::Var<float>("menu.min map ", 0, -1, 1));
         MapMax = std::unique_ptr<pangolin::Var<float>>(new pangolin::Var<float>("menu.max map ", 0.5, 0.5, 2));
         odom_cloud.reset(new PointCloudType());    
-        std::cout << "start pangolin viewer"<<std::endl; 
+       
     }
     ~Viewer(){}
     void Start(){
@@ -93,7 +93,7 @@ class Viewer{
     }
     Control_status getControl(){
       //   pangolin::OpenGlMatrix p = s_cam.GetModelViewMatrix();
-       //  std::cout << "Projection Matrix:" << std::endl << matrixToString(p) << std::endl;
+       
          status.localizationMode = (*localizationMode);
          status.showMap = (*showMap);
          status.showObstacle = (*showObstacle);

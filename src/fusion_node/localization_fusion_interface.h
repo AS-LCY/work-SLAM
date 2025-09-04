@@ -19,7 +19,8 @@
 // #include <visualization_msgs/Marker.h>
 // #include <visualization_msgs/MarkerArray.h>
 
-// 另一个节点中定义
+#include <logTracer/tracer.h>
+
 #include "ekf_fusion/ekf_localization_fusion.h"
 #include "fairland_msgs/LocalizationPoseData.h"
 #include "fairland_msgs/NameValues.h"
@@ -31,6 +32,7 @@
 namespace localization_module {
 
 class LocalizationFusion {
+	DECL_CLASSNAME(LocalizationFusion)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

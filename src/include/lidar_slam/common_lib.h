@@ -1,6 +1,7 @@
 #ifndef COMMON_LIB_H
 #define COMMON_LIB_H
 
+#include <logTracer/tracer.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sys/stat.h>

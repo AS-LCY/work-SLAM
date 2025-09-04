@@ -14,17 +14,16 @@ LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatu
 	: node_(node), br_(node_), tf_buffer_(node_->get_clock()), tf_listener_(tf_buffer_) {
 	//**************************** 加载参数 ********************************
 	if (!load_lidar_slam_param()) {
-		RCLCPP_INFO(node_->get_logger(), "Load lidar-slam param failed!");
+		TRACE_ERR_CLASS("Load lidar-slam param failed!");
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "Load lidar-slam param successfully!");
+		TRACE_INFO_CLASS("Load lidar-slam param successfully!");
 	}
 
 	//**************************** CPU 绑定 *********************************
 	CPU_ZERO(&cpu_mask_); // 初始化 CPU 亲和性集合，将其设置为零
 	for (int i = 0; i < slam_param_.common.cpu_id.size(); i++) {
 		CPU_SET(slam_param_.common.cpu_id[i], &cpu_mask_); // 将线程绑定到 cpu_id 核心
-		RCLCPP_INFO(node_->get_logger(), "\033[1;32mset cpu: %d\033[0m",
-					static_cast<int>(slam_param_.common.cpu_id[i]));
+		TRACE_INFO_CLASS("set cpu: %d", static_cast<int>(slam_param_.common.cpu_id[i]));
 	}
 
 	//************** 初始化一些成员变量, after param load  ********************
@@ -32,18 +31,17 @@ LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatu
 
 	//**************************** 创建 ROS IO ******************************
 	if (!create_ROS_IO()) {
-		RCLCPP_INFO(node_->get_logger(), "Create ROS-IO failed!");
+		TRACE_ERR_CLASS("Create ROS-IO failed!");
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "Create ROS-IO successfully!");
+		TRACE_INFO_CLASS("Create ROS-IO successfully!");
 	}
 
 	//**************************** 根据设置参数初始化 module status ******************************
 	if (!init_module_by_set_status(init_status)) {
-		RCLCPP_INFO(node_->get_logger(), "Try to init module with status: %s, but failed",
-					print_ModuleStatus(init_status).c_str());
+		TRACE_ERR_CLASS("Try to init module with status: %s, but failed", print_ModuleStatus(init_status).c_str());
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "Localization Module Start with status:\033[1;32m %s\033[0m",
-					print_ModuleStatus(running_module_status_.load()).c_str());
+		TRACE_INFO_CLASS("Localization Module Start with status: %s",
+						 print_ModuleStatus(running_module_status_.load()).c_str());
 	}
 
 	ros_spinner_start();
@@ -177,59 +175,27 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	last_slam_hb = hb_time_timer_slam_.load();
 
 	if (slam_timer_interval < 0) {
-		RCLCPP_ERROR(node_->get_logger(), "slam main thread time jump back, this_time - last_time = %.3f seconds",
-					 slam_timer_interval);
+		TRACE_ERR_CLASS("slam main thread time jump back, this_time - last_time = %.3f seconds", slam_timer_interval);
 	}
 	if (slam_timer_interval > 0.5) { //两次loop之间时间超过0.5s
-		RCLCPP_ERROR(node_->get_logger(), "slam main thread time jump to future, this_time - last_time =  %.3f seconds",
-					 slam_timer_interval);
+		TRACE_ERR_CLASS("slam main thread time jump to future, this_time - last_time = %.3f seconds",
+						slam_timer_interval);
 	}
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
-	static unsigned int print_idle_cnt = 0;
-	static unsigned int print_reset_slam_cnt = 0;
-	static unsigned int print_running_slam_cnt = 0;
-	if (curr_running_module_status == ModuleStatus::MODULE_IDLE) {
-		bool condition = (print_idle_cnt++ == 10);
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		RCLCPP_INFO_STREAM_EXPRESSION(
-			node_->get_logger(), condition,
-			"slam dealt: running module status: " << print_ModuleStatus(curr_running_module_status));
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		print_reset_slam_cnt = 0;	// if not STARTING or STOPPING slam, reset to 0
-		print_running_slam_cnt = 0; // if not RUNNING slam, reset to 0
-		return;
-	}
-	if (curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
+	// TRACE_INFO_CLASS("slam dealt: running module status: %s",
+	// print_ModuleStatus(curr_running_module_status).c_str());
+
+	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
+		curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
 		curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM) {
-		bool condition = (print_reset_slam_cnt++ == 0);
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		RCLCPP_INFO_STREAM_EXPRESSION(
-			node_->get_logger(), condition,
-			"slam dealt: running module status: " << print_ModuleStatus(curr_running_module_status));
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		print_idle_cnt = 0;			// if not IDLE, reset to 0
-		print_running_slam_cnt = 0; // if not RUNNING slam, reset to 0
+		// TRACE_INFO_CLASS("do nothing");
 		return;
 	}
 
 	if (curr_running_module_status == ModuleStatus::MODULE_MAPPING ||
 		curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING ||
 		curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-		bool condition = (print_running_slam_cnt++ == 10);
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		RCLCPP_INFO_STREAM_EXPRESSION(
-			node_->get_logger(), condition,
-			"slam dealt: running module status: " << print_ModuleStatus(curr_running_module_status));
-		RCLCPP_INFO_STREAM_EXPRESSION(node_->get_logger(), condition,
-									  "*************************************************");
-		print_idle_cnt = 0;		  // if not IDLE, reset to 0
-		print_reset_slam_cnt = 0; // if not STARTING or STOPPING SLAM, reset to 0
 	}
 
 	if (show_load_map_ % 200 == 0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
@@ -242,6 +208,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		// TODO(jxl): 定位模式下，每隔20s发布一次加载的地图，没必要。可以只发布一次来可视化，在debug模式下。
 
 		show_keyframe(slam_->getLoadKeyFrame());
+		show_load_map_ = 0;
 	}
 	show_load_map_++;
 
@@ -428,7 +395,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 		}
 	}
 	if (slam_param_.lidar_preproc.lidar_type == 1 && orig_point_cloud_size == 96) {
-		RCLCPP_ERROR(node_->get_logger(), "livox driver error, cloud-size: 96");
+		TRACE_ERR_CLASS("livox driver error, cloud-size: 96");
 		error_livox_driver_failed = true;
 		health_status_now = std::max(2, health_status_now);
 	}
@@ -523,8 +490,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 	} else if (curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM) {
 		status_msg.module_status = int(ModuleStatus_o::STOPPING);
 	} else {
-		RCLCPP_ERROR(node_->get_logger(), "error running module status: %s",
-					 print_ModuleStatus(curr_running_module_status).c_str());
+		TRACE_ERR_CLASS("error running module status: %s", print_ModuleStatus(curr_running_module_status).c_str());
 	}
 
 	// status_msg.localization_status
@@ -536,24 +502,23 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 	status_msg.map_saved = 0;
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE && map_saved_.load() == 1) {
 		status_msg.map_saved = 1;
-		RCLCPP_WARN(node_->get_logger(), "[Status Timer]: status_msg.map_saved: %d", int(status_msg.map_saved));
+		TRACE_WARN_CLASS("[Status Timer]: status_msg.map_saved: %d", int(status_msg.map_saved));
 		map_saved_.store(0);
 	}
 
 	if (status_msg.localization_status != 0 && status_msg.localization_status != 3) {
-		RCLCPP_WARN(node_->get_logger(), "[Status Timer]: localization_status: %d",
-					int(status_msg.localization_status));
+		TRACE_WARN_CLASS("[Status Timer]: localization_status: %d", int(status_msg.localization_status));
 	}
 	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) {
-		RCLCPP_WARN(node_->get_logger(), "[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
+		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
 	}
+
 	/*
 		geometry_msgs::msg::TransformStamped transform_o_b = initIdentityTransform();
-
 		try {
 			transform_o_b = tf_buffer_.lookupTransform(
 			"odom", "base_link", tf2::TimePointZero);
-		//   RCLCPP_INFO(this->get_logger(),
+		//   TRACE_INFO_CLASS(
 		//     "Transform: [%.2f, %.2f, %.2f] [%.2f, %.2f, %.2f, %.2f]",
 		//     transform_o_b.transform.translation.x,
 		//     transform_o_b.transform.translation.y,
@@ -563,7 +528,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		//     transform_o_b.transform.rotation.z,
 		//     transform_o_b.transform.rotation.w);
 		} catch (tf2::TransformException &ex) {
-		  RCLCPP_WARN(node_->get_logger(), "%s", ex.what());
+		  TRACE_WARN_CLASS( "%s", ex.what());
 		}
 
 		// Eigen::Isometry3d T_o_b_ = transformToEigen(transform_o_b);
@@ -637,18 +602,19 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 			// localization_status_.store(5); // 定位失败
 		}
 	} else if (node_status == 2) { // lidar cbk delay
-		RCLCPP_ERROR(node_->get_logger(), "lidar cbk delay !!!");
+		TRACE_ERR_CLASS("lidar cbk delay !!!");
 		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
 		localization_status_.store(5); // 定位失败
 	} else if (node_status == 3) {	   // localize thread delay
-		RCLCPP_ERROR(node_->get_logger(), "localize thread delay  !!!");
+		TRACE_ERR_CLASS("localize thread delay  !!!");
 		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
 		localization_status_.store(5); // 定位失败
 	} else {
-		RCLCPP_ERROR(node_->get_logger(), "status error, set to L_FAILED");
-		RCLCPP_ERROR(node_->get_logger(), "node_status: %d", node_status);
-		RCLCPP_ERROR(node_->get_logger(), "slam_run_status:%d", slam_run_status);
-		RCLCPP_ERROR(node_->get_logger(), "local_thrd_status:%d", local_thrd_status);
+		TRACE_ERR_CLASS("status error, set to L_FAILED");
+		TRACE_ERR_CLASS("node_status: %d", node_status);
+		TRACE_ERR_CLASS("slam_run_status:%d", slam_run_status);
+		TRACE_ERR_CLASS("local_thrd_status:%d", local_thrd_status);
+
 		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
 		localization_status_.store(5); // 定位失败
 	}
@@ -703,22 +669,22 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 			// mapping_status_.store(5); // 建图失败
 		}
 	} else if (node_status == 2) { // lidar cbk delay
-		RCLCPP_WARN(node_->get_logger(), "lidar cbk delay !!!");
+		TRACE_WARN_CLASS("lidar cbk delay !!!");
 		status_msg.mapping_status = int(MappingStatus::M_FAILED);
 		mapping_status_.store(5);
 	} else if (node_status == 3) { // localize thread delay
-		RCLCPP_ERROR(node_->get_logger(), "secmap-relocal thread delay  !!!");
+		TRACE_ERR_CLASS("secmap-relocal thread delay  !!!");
 		status_msg.mapping_status = int(MappingStatus::M_FAILED);
 		mapping_status_.store(5);
 	} else if (node_status == 4) { // loop_closure_thread_delay
-		RCLCPP_ERROR(node_->get_logger(), "loop_closure_thread_delay  !!!");
+		TRACE_ERR_CLASS("loop_closure_thread_delay  !!!");
 		status_msg.mapping_status = int(MappingStatus::M_FAILED);
 		mapping_status_.store(5);
 	} else {
-		RCLCPP_ERROR(node_->get_logger(), "status error, set to M_FAILED");
-		RCLCPP_ERROR(node_->get_logger(), "node_status:%d ", node_status);
-		RCLCPP_ERROR(node_->get_logger(), "slam_run_status: :%d ", slam_run_status);
-		RCLCPP_ERROR(node_->get_logger(), "secmap_relocal_thrd_status::%d ", secmap_relocal_thrd_status);
+		TRACE_ERR_CLASS("status error, set to M_FAILED");
+		TRACE_ERR_CLASS("node_status:%d ", node_status);
+		TRACE_ERR_CLASS("slam_run_status: :%d ", slam_run_status);
+		TRACE_ERR_CLASS("secmap_relocal_thrd_status::%d ", secmap_relocal_thrd_status);
 		status_msg.mapping_status = int(MappingStatus::M_FAILED);
 		mapping_status_.store(5);
 	}
@@ -742,7 +708,6 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	}
 
 	livox_cbk_update_time_.store(rclcpp::Time(ros_msg->header.stamp).seconds());
-	RCLCPP_INFO(node_->get_logger(), "received lidar -------------- lidar cbk");
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
@@ -769,7 +734,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
 	if ((t1 - t0) * 1000 > time_cost_thr_print) { // 10ms
-		RCLCPP_INFO(node_->get_logger(), "lidar-callback, time cost: %f ms --------", (t100 - t0) * 1000);
+		TRACE_INFO_CLASS("lidar-callback, time cost: %f ms --------", (t100 - t0) * 1000);
 	}
 }
 
@@ -893,8 +858,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status) {
 		}
 	}
 
-	RCLCPP_INFO(node_->get_logger(), "init module status: %s",
-				print_ModuleStatus(running_module_status_.load()).c_str());
+	TRACE_INFO_CLASS("init module status: %s", print_ModuleStatus(running_module_status_.load()).c_str());
 
 	return true;
 }
@@ -940,7 +904,7 @@ bool LocalizationModule::load_lidar_slam_param() {
 	const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
 	slam_param_ = loaded_param;
 	T_lidar_baselink_ = slam_param_.extrinsic.T_lidar_wheel;
-	RCLCPP_INFO(node_->get_logger(), "loaded_param success!");
+	TRACE_INFO_CLASS("loaded_param success!");
 	return true;
 }
 

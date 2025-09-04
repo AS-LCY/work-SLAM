@@ -14,6 +14,8 @@
 #include <pcl/point_cloud.h>
 
 // lidar_slam
+#include <logTracer/tracer.h>
+
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/data_struct_define.h"
 #include "lidar_slam/scan_context/Scancontext.h"
@@ -21,6 +23,7 @@
 namespace lidar_slam {
 
 class CloudMap {
+	DECL_CLASSNAME(CloudMap)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

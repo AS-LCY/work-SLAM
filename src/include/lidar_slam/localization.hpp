@@ -21,6 +21,8 @@
 // #include <pcl/search/impl/search.hpp>
 // #include <pcl/range_image/range_image.h> // 深度图像相关（将从图像采集器到场景中各点的距离值作为像素值的图像）
 
+#include <logTracer/tracer.h>
+
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
 #include "lidar_slam/ikd_Tree.h"
@@ -29,6 +31,7 @@
 
 namespace lidar_slam {
 class Localization {
+	DECL_CLASSNAME(Localization)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

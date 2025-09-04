@@ -1,6 +1,8 @@
 #ifndef LOCALIZATION_MODULE_PARAM_MANAGER_H
 #define LOCALIZATION_MODULE_PARAM_MANAGER_H
 
+#include <logTracer/tracer.h>
+
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <memory>
 #include <rclcpp/parameter.hpp>
@@ -16,6 +18,7 @@ using namespace std;
 namespace localization_module {
 
 class LocalizationModuleParamManager {
+	DECL_CLASSNAME(LocalizationModuleParamManager)
    public:
 	static LocalizationModuleParamManager* Instance(rclcpp::Node::SharedPtr node) {
 		static LocalizationModuleParamManager* instance = nullptr;
@@ -325,9 +328,9 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<double>("detect_slip.slipping_dist_thr", 0.15);
 		node_->get_parameter("detect_slip.slipping_dist_thr", loaded_param_.detect_slip.slipping_dist_thr);
 
-		RCLCPP_INFO_STREAM(node_->get_logger(), BOLDGREEN << "run_on_mower: " << loaded_param_.common.run_on_mower);
-		RCLCPP_INFO_STREAM(node_->get_logger(), YELLOW << "set cpu_id size: " << loaded_param_.common.cpu_id.size());
-		RCLCPP_INFO_STREAM(node_->get_logger(), YELLOW << "map directory: " << loaded_param_.common.map_directory);
+		TRACE_INFO_CLASS("run_on_mower: %d", loaded_param_.common.run_on_mower);
+		TRACE_INFO_CLASS("set cpu_id size: %d", (int)loaded_param_.common.cpu_id.size());
+		TRACE_INFO_CLASS("map directory: %s", loaded_param_.common.map_directory.c_str());
 
 		return success;
 	}
@@ -343,7 +346,7 @@ class LocalizationModuleParamManager {
 	// 私有构造函数
 	LocalizationModuleParamManager(rclcpp::Node::SharedPtr node) : node_(node) {
 		if (!load_config_params()) {
-			RCLCPP_ERROR(node_->get_logger(), "Failed to load configuration parameters");
+			TRACE_ERR_CLASS("Failed to load configuration parameters");
 			throw std::runtime_error("Parameter loading failed");
 		}
 	}

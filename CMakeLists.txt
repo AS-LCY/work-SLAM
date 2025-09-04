@@ -83,6 +83,10 @@ ament_auto_find_build_dependencies()
 # )
 find_package(fairland_msgs REQUIRED)
 
+
+find_package(logTracer REQUIRED)
+
+
 # 第三方库依赖
 find_package(Boost REQUIRED COMPONENTS
   system thread chrono serialization
@@ -168,6 +172,7 @@ target_link_libraries(lidar_slam
   Boost::serialization
   # /usr/local/lib/libfast_gicp.so
   gtsam
+  ${logTracer_LIBRARY}
 )
 
 # SLAM主节点 - 使用 ament_auto_add_executable

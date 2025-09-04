@@ -100,6 +100,7 @@ void BackEnd::addLoopFactor() {
 //在lio的线程中运行
 bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud,
 									 double time) {
+	auto start = std::chrono::high_resolution_clock::now();
 	if (!saveFrame(transformTobeMapped)) { //是否关键帧
 		return false;
 	}
@@ -149,12 +150,16 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, Poin
 	KeyPoses_.push_back(thisPose6D); //每个关键帧优化后的map pose
 	keyframes_lock.unlock();
 
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	TRACE_INFO_CLASS("backend update cost time: %f ms", double(duration.count()));
 	return true;
 }
 
 void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose) {
+	auto start = std::chrono::high_resolution_clock::now();
 	PointCloudType::Ptr currentCLoud(new PointCloudType());
-	pcl::copyPointCloud(*points, *currentCLoud);
+	pcl::copyPointCloud(*points, *currentCLoud); // TODO(jxl): 没必要拷贝来拷贝去
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		KeyFrameCloud_.emplace_back(currentCLoud);
@@ -168,6 +173,9 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 	gravityAlignedCLoud_.reset(new PointCloudType());
 	*gravityAlignedCLoud_ = *transformPointCloud(currentCLoud, Transform);
 	scManager_.makeAndSaveScancontextAndKeys(*gravityAlignedCLoud_); //关键帧点云转成和重力对齐
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+	TRACE_INFO_CLASS("backend save curr scan into scManager cost time: %f ms", double(duration.count()));
 }
 
 bool BackEnd::correctPoses() {
@@ -176,6 +184,7 @@ bool BackEnd::correctPoses() {
 	}
 
 	if (aLoopIsClosed_) {
+		auto start = std::chrono::high_resolution_clock::now();
 		// 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿
 		int numPoses = isamCurrentEstimate_.size();
 		std::unique_lock<std::mutex> keyframes_lock(mtxPose_);
@@ -196,6 +205,11 @@ bool BackEnd::correctPoses() {
 		std::unique_lock<std::mutex> lk(mtxCurrentMap_);
 		show_index_ = 0;
 		show_map_->clear();
+
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+		TRACE_INFO_CLASS("backend correct pose cost time: %f ms", double(duration.count()));
+
 		return true;
 	}
 	return false;
@@ -203,6 +217,7 @@ bool BackEnd::correctPoses() {
 
 void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeReconstructRadius,
 								float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize) {
+	auto start = std::chrono::high_resolution_clock::now();
 	pcl::KdTreeFLANN<PointType>::Ptr kdtreeGlobalMapPoses(new pcl::KdTreeFLANN<PointType>());
 	PointCloudType::Ptr subMapKeyPoses(new PointCloudType());
 	PointCloudType::Ptr subMapKeyPosesDS(new PointCloudType());
@@ -241,16 +256,17 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 												 kdTreeReconstructPointLeafSize); // for global map visualization
 	downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
 	downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
-
-	std::cout << "subMapKeyFramesDS sizes  =  " << subMapKeyFramesDS->points.size() << std::endl;
+	TRACE_INFO_CLASS("subMapKeyFramesDS sizes  =  %d", subMapKeyFramesDS->points.size());
 
 	ikdtree.reconstruct(subMapKeyFramesDS->points);
-	std::cout << "Reconstructed  ikdtree " << std::endl;
 
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 	int featsFromMapNum = ikdtree.validnum();
 	int kdtree_size_st = ikdtree.size();
-	std::cout << "featsFromMapNum  =  " << featsFromMapNum << "\t"
-			  << " kdtree_size_st   =  " << kdtree_size_st << std::endl;
+	TRACE_INFO_CLASS("ikdtree valid num = %d, kdtree_size = %d", featsFromMapNum, kdtree_size_st);
+	TRACE_INFO_CLASS("backend reconstruct ikdtree cost time: %f ms", double(duration.count()));
+	TRACE_INFO_CLASS("Reconstructed  ikdtree ");
 }
 
 bool BackEnd::detectLoopClosureDistance(int* latestID, int* closestID, double time) {
@@ -345,7 +361,7 @@ bool BackEnd::set_loaded_key_clouds(const std::vector<PointCloudType::Ptr>& inpu
 
 	// TODO(jxl): 在sec_mapping模式下，加载之前建图结束的map_pose，fixed，然后添加T_map_odom init node
 	//到graph中，后续再添加node的时候，左乘T_map_odom得到node init pose。根据最新node，优化前后，更新T_map_odom
-	cout << "loaded_key_poses size: " << input_vec_key_poses.size() << endl;
+	TRACE_INFO_CLASS("loaded_key_poses size:  %d", input_vec_key_poses.size());
 	int i = 0;
 	for (auto& kp : input_vec_key_poses) {
 		Eigen::Isometry3d T_map_lidar = kp.pose;
@@ -386,6 +402,7 @@ void BackEnd::performLoopClosure(double time) {
 		return;
 	}
 
+	auto loop_detected_start = std::chrono::high_resolution_clock::now();
 	std::unique_lock<std::mutex> keyframes_lock(mtxPose_);
 	CopyKeyPoint_->clear();
 	*CopyKeyPoint_ = *KeyPoint_;
@@ -400,10 +417,12 @@ void BackEnd::performLoopClosure(double time) {
 	if (!detectLoopClosureDistance(&loopKeyCur, &loopKeyPre, time)) {
 		return;
 	}
+	TRACE_INFO_CLASS("potential detected loop between %d and %d.", loopKeyCur, loopKeyPre);
+	auto loop_detected_end = std::chrono::high_resolution_clock::now();
+	auto loop_detect_duration =
+		std::chrono::duration_cast<std::chrono::milliseconds>(loop_detected_end - loop_detected_start);
+	TRACE_INFO_CLASS("backend loop detect cost time: %f ms", double(loop_detect_duration.count()));
 
-	// ROS_INFO_STREAM(BLUE<<"loop closure found! KeyCur = "<<loopKeyCur<< ", KeyPre = " <<loopKeyPre<<RESET);
-	// ROS_INFO_STREAM(BLUE<<"loopKeyCur time = "<<std::setprecision(15)<<KeyPoses_[loopKeyCur].time<<RESET);
-	// ROS_INFO_STREAM(BLUE<<"loopKeyPre time = "<<std::setprecision(15)<<KeyPoses_[loopKeyPre].time<<RESET);
 	PointCloudType::Ptr cureKeyframeCloud(new PointCloudType()); //  cur keyframe
 	PointCloudType::Ptr prevKeyframeCloud(new PointCloudType()); //   history keyframe submap
 	{
@@ -425,15 +444,19 @@ void BackEnd::performLoopClosure(double time) {
 	icp.setInputTarget(prevKeyframeCloud);
 	PointCloudType::Ptr unused_result(new PointCloudType());
 	icp.align(*unused_result);
-
-	// ROS_INFO_STREAM(YELLOW<<"icp.getFitnessScore(): "<<icp.getFitnessScore() <<RESET);
+	auto loop_edge_match_end = std::chrono::high_resolution_clock::now();
+	auto loop_edge_match_duration =
+		std::chrono::duration_cast<std::chrono::milliseconds>(loop_edge_match_end - loop_detected_end);
+	TRACE_INFO_CLASS("backend loop_edge match cost time: %f ms", double(loop_edge_match_duration.count()));
 
 	// 未收敛，或者匹配不够好
 	if (icp.hasConverged() == false ||
 		icp.getFitnessScore() > loopIcpScore_) { // TODO(jxl): 统计分数时，应该设置inlier阈值
+		TRACE_INFO_CLASS("loop failed, icp.hasConverged=%d, fitness score=%f > thresh= %f", icp.hasConverged(),
+						 icp.getFitnessScore(), loopIcpScore_);
 		return;
 	}
-	std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
+	TRACE_INFO_CLASS("true loop found! between %d and %d.", loopKeyCur, loopKeyPre);
 
 	// 闭环优化得到的当前关键帧与闭环关键帧之间的位姿变换
 	float x, y, z, roll, pitch, yaw;
@@ -449,20 +472,18 @@ void BackEnd::performLoopClosure(double time) {
 	float noiseScore = icp.getFitnessScore(); //  loop_clousre  noise from icp
 	Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
 	gtsam::noiseModel::Diagonal::shared_ptr constraintNoise = gtsam::noiseModel::Diagonal::Variances(Vector6);
-	std::cout << "loopNoiseQueue_   =   " << noiseScore << std::endl;
+	TRACE_INFO_CLASS("loopNoiseQueue = %f", noiseScore);
 
 	// 添加闭环因子需要的数据
 	std::unique_lock<std::mutex> lk(mtxLoopInfo_);
 	loopIndexQueue_.push_back(make_pair(loopKeyCur, loopKeyPre));
 	loopPoseQueue_.push_back(poseFrom.between(poseTo));
 	loopNoiseQueue_.push_back(constraintNoise);
-	loopIndexContainer_[loopKeyCur] = loopKeyPre; //   使用hash map 存储回环对
-	// ROS_INFO_STREAM(BLUE<<"loopIndexContainer_ size: "<<loopIndexContainer_.size()<<RESET);
+	loopIndexContainer_[loopKeyCur] = loopKeyPre;
 }
 
 // void BackEnd::UpdateImage(const cv::Mat &image,Eigen::Isometry3d lidar_pose)
 // {
-//     // std::cout << "111111111"<<std::endl;
 //     PointCloudType lidar_cloud_in_map;
 //     if (KeyPoses_.size() == 0)
 //        return;
@@ -559,7 +580,6 @@ void BackEnd::performLoopClosure(double time) {
 //         downSizeFilter.setInputCloud(show_rgb_map_);
 //         downSizeFilter.setLeafSize(resolution, resolution, resolution);
 //         downSizeFilter.filter(*show_rgb_map_);
-//         // std::cout << "22222222222"<<std::endl;
 // }
 
 // void performSCLoopClosure() {
@@ -579,7 +599,8 @@ void BackEnd::performLoopClosure(double time) {
 // 	float yawDiffRad = detectResult.second; // not use for v1 (because pcl icp withi initial somthing wrong...)
 // 	if (loopKeyPre == -1) return;
 
-// 	//   std::cout << "SC loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
+//
+//  // TRACE_INFO_CLASS("SC loop found! between %d and %d.", loopKeyCur, loopKeyPre);
 
 // 	// extract cloud
 // 	PointCloudType::Ptr cureKeyframeCloud(new PointCloudType());
@@ -714,26 +735,25 @@ PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
 
 bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
 					  int end_index) {
-	cout << "****************************************************" << endl;
 	if (KeyPoses_.empty() || KeyPoses_.size() == 0) {
-		cout << "key frame empty" << endl;
+		TRACE_ERR_CLASS("key frame empty");
 		return false;
 	}
 
 	// 检查并创建 yaml 中的地图路径
 	if (create_directory_if_not_exists(saveMapDirectory)) {
-		std::cout << "Directory created or already exists: " << saveMapDirectory << std::endl;
+		TRACE_INFO_CLASS("Directory created or already exists:  %s", saveMapDirectory.c_str());
 	} else {
-		std::cerr << "Failed to create directory: " << saveMapDirectory << std::endl;
+		TRACE_INFO_CLASS("Failed to create directory:  %s", saveMapDirectory.c_str());
 		return false;
 	}
 
 	// 创建关键帧点云保存路径
 	std::string save_key_frame_cloud_dir = saveMapDirectory + "/key_frame_cloud/";
 	if (create_directory_if_not_exists(save_key_frame_cloud_dir)) {
-		std::cout << "Directory created or already exists: " << save_key_frame_cloud_dir << std::endl;
+		TRACE_INFO_CLASS("Directory created or already exists:  %s", save_key_frame_cloud_dir.c_str());
 	} else {
-		std::cerr << "Failed to create directory: " << save_key_frame_cloud_dir << std::endl;
+		TRACE_ERR_CLASS("Failed to create directory:  %s", save_key_frame_cloud_dir.c_str());
 		return false;
 	}
 
@@ -752,7 +772,7 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 		start = 0;
 		end = KeyPosesSize - 1;
 	} else if (start_index == -1 || end_index == -1) {
-		cout << "start-point or end-point not set, save all to cloud_map.pcd " << endl;
+		TRACE_INFO_CLASS("start-point or end-point not set, save all to cloud_map.pcd ");
 		start = 0;
 		end = KeyPosesSize - 1;
 	} else {
@@ -778,32 +798,32 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 		key_frame_cloud_path = save_key_frame_cloud_dir + std::to_string(i) + ".pcd";
 		int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud_[i]);
 	}
-	cout << "\nSave resolution: " << resolution << endl;
+	TRACE_INFO_CLASS("Save resolution:  %f", resolution);
 
 	pcl::VoxelGrid<PointType> downSizeFilter;
 	downSizeFilter.setInputCloud(globalMapCloud);
 	downSizeFilter.setLeafSize(resolution, resolution, resolution);
 	downSizeFilter.filter(*globalSurfCloudDS);
-	cout << "cloud_map size: " << globalSurfCloudDS->points.size() << endl;
-	cout << "Saving map to pcd file: " << pcd_file_path << endl;
 
+	TRACE_INFO_CLASS("cloud_map size:  %d", (int)globalSurfCloudDS->points.size());
+	TRACE_INFO_CLASS("Saving map to pcd file:   %s", pcd_file_path.c_str());
 	int ret = pcl::io::savePCDFileBinary(pcd_file_path, *globalSurfCloudDS); //  稠密地图
 	if (ret == -1) {														 //失败
-		cout << "save cloud-map failed" << endl;
+		TRACE_ERR_CLASS("save cloud-map failed");
 		return false;
 	} else if (ret == 0) { //成功
-		cout << "Saving map to pcd files completed" << endl;
+		TRACE_INFO_CLASS("Saving map to pcd files completed");
 	}
 
-	cout << "Saving loop data" << endl;
+	TRACE_INFO_CLASS("Saving loop data to :  %s", (saveMapDirectory + "/data").c_str());
 	std::ofstream file(saveMapDirectory + "/data");
 	std::ofstream file_pose(save_key_frame_cloud_dir + "/key_frame_pose.txt");
 	if (!file.is_open()) {
-		cout << "sc data file open failed" << endl;
+		TRACE_ERR_CLASS("sc data file open failed");
 		return false;
 	}
 	if (!file_pose.is_open()) {
-		cout << "key_frame_pose file open failed" << endl;
+		TRACE_ERR_CLASS("key_frame_pose file open failed");
 		return false;
 	}
 	for (int i = start; i <= end; i++) {
@@ -820,8 +840,7 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 	}
 	file.close();
 	file_pose.close();
-	cout << "Saving loop data completed" << endl;
-	cout << "****************************************************" << endl;
+	TRACE_INFO_CLASS("Saving loop data completed");
 
 	return true;
 }

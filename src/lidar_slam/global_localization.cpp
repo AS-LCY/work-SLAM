@@ -23,11 +23,11 @@ bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Is
 	/// check map data status
 	/// make ScanContext using loaded_sc_info
 	if (!global_map_ready_) {
-		std::cout << "global map not ready!" << std::endl;
+		TRACE_ERR_CLASS("global map not ready!");
 		return false;
 	}
 	if (!sc_manager_ready_) {
-		std::cout << "sc manager not ready!" << std::endl;
+		TRACE_ERR_CLASS("sc manager not ready!");
 		return false;
 	}
 
@@ -35,11 +35,11 @@ bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Is
 	std::pair<int, float> best_match{ -1, 0.0 };
 	std::pair<double, double> best_trans;
 	if (!scancontex_search(cloud_in, initial_rotate, best_match, best_trans)) {
-		std::cout << "scancontex search failed!" << std::endl;
+		TRACE_ERR_CLASS("scancontex search failed!");
 		return false;
 	}
 	int best_match_idx = best_match.first;
-	std::cout << "scancontext search success, use index " << best_match_idx << std::endl;
+	TRACE_INFO_CLASS("scancontext search success, use index %d", best_match_idx);
 
 	Eigen::Matrix4d init_guess = cal_init_transform(initial_rotate, best_match, best_trans);
 	Eigen::Isometry3d test_transform(init_guess);					   /// debug
@@ -77,8 +77,7 @@ bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3
 		double sc_dist = 1.0; // 当前匹配的距离(这个仅仅是初始化)，不是阈值
 		auto match = sc_manager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
 		if (match.first != -1) {
-			std::cout << "trans: " << t.first << " " << t.second;
-			std::cout << "; score: " << sc_dist << std::endl;
+			TRACE_INFO_CLASS("trans: %f, %f, score: %f", t.first, t.second, sc_dist);
 		}
 		if (sc_dist < min_dist) {
 			min_dist = sc_dist;
@@ -90,7 +89,7 @@ bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3
 	// check scancontext search
 	int match_idx = best_match.first;
 	if (match_idx == -1) {
-		std::cout << "scancontext search fail, score {}: " << match_idx << " " << min_dist << std::endl;
+		TRACE_INFO_CLASS("scancontext search fail, score: %f", min_dist);
 		return false;
 	} else {
 		return true;
@@ -106,7 +105,7 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 
 	// 初始值: 确定 yaw 角, 用搜索到的 sc-info
 	euler[0] += -best_match.second;
-	std::cout << "rotate yaw: " << -best_match.second << std::endl;
+	TRACE_INFO_CLASS("rotate yaw:  %f degree", euler[0] * 180 / M_PI);
 
 	// 初始值: 确定 pitch, roll, 用重力校正时的 initial_rotate,
 	Eigen::Vector3d current_euler = R2ypr(initial_rotate);
@@ -123,10 +122,10 @@ Eigen::Matrix4d GlobalLocalization::cal_init_transform(Matrix3d initial_rotate, 
 	init_guess.coeffRef(1, 3) = init_guess.coeffRef(1, 3) + offset_in_map[1];
 	// init_guess.coeffRef(2, 3) = 0;
 
-	// std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll
-	// "<<euler[2]*180/M_PI<<std::endl;
-	// std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
-
+	TRACE_INFO_CLASS("initial yaw: %f, pitch: %f, roll: %f", euler[0] * 180 / M_PI, euler[1] * 180 / M_PI,
+					 euler[2] * 180 / M_PI);
+	TRACE_INFO_CLASS("intial trans x: %f, y: %f, z: %f", init_guess.coeffRef(0, 3), init_guess.coeffRef(1, 3),
+					 init_guess.coeffRef(2, 3));
 	return init_guess;
 }
 
@@ -145,27 +144,28 @@ bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in,
 
 	PointCloudType::Ptr unused_result(new PointCloudType());
 	icp.align(*unused_result, init_guess.cast<float>());
-	if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr) {
-		std::cout << "globalLocalization icp fail with score: " << icp.getFitnessScore() << std::endl;
+	if (icp.hasConverged() == false || icp.getFitnessScore() > score_thr) { // TODO(jxl): 统计内点，还是全部点
+		TRACE_ERR_CLASS("globalLocalization icp failed with score: %f, thres: %f", icp.getFitnessScore(), score_thr);
 		return false;
 	} else {
-		std::cout << "globalLocalization success with score: " << icp.getFitnessScore() << std::endl;
+		TRACE_INFO_CLASS("globalLocalization success with score: %f", icp.getFitnessScore())
 	}
-	Eigen::Isometry3d first_lidar_in_map; // first_lidar in_map: == odom
+	Eigen::Isometry3d first_lidar_in_map;
 	first_lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
-
 	res_global_odom_to_map = first_lidar_in_map * pose.inverse();
-	// euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-	// std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
-	// std::cout << "x "<<first_lidar_in_map.translation().x()<<" y "<<first_lidar_in_map.translation().y()<< " z
-	// "<<first_lidar_in_map.translation().z()<<std::endl;
+
+	auto euler = first_lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+	TRACE_INFO_CLASS("init lidar in map yaw: %f, pitch: %f, roll: %f", euler[0] * 180 / M_PI, euler[1] * 180 / M_PI,
+					 euler[2] * 180 / M_PI);
+	TRACE_INFO_CLASS("init lidar in map trans x: %f, y: %f, z: %f", first_lidar_in_map.translation().x(),
+					 first_lidar_in_map.translation().y(), first_lidar_in_map.translation().z());
 
 	return true;
 }
 
 bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 	if (input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size() == 0) {
-		std::cout << " loaded global map empty!" << std::endl;
+		TRACE_INFO_CLASS(" loaded global map empty!");
 		return false;
 	}
 
@@ -177,12 +177,12 @@ bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 bool GlobalLocalization::fill_sc_manager(const std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>>& input_sc_info) {
 	sc_manager_.reset(new SCManager()); //// important
 	if (input_sc_info.empty() || input_sc_info.size() == 0) {
-		std::cout << " loaded sc info empty!" << std::endl;
+		TRACE_INFO_CLASS(" loaded sc info empty!");
 		return false;
 	}
 
 	loaded_sc_info_ = input_sc_info;
-	std::cout << "global-localization: loaded_sc_info_ size = " << loaded_sc_info_.size() << std::endl;
+	TRACE_INFO_CLASS("global-localization: loaded_sc_info_ size = %d", loaded_sc_info_.size());
 
 	KeyMat polarcontext_invkeys_mat;
 	std::vector<Eigen::MatrixXd> polarcontexts;
@@ -195,7 +195,7 @@ bool GlobalLocalization::fill_sc_manager(const std::vector<ScInfo, Eigen::aligne
 	}
 	sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts); // save in sc_manager_
 	sc_manager_ready_ = true;
-	std::cout << "fill_sc_manager success, sc_manager_ready_ = true" << std::endl;
+	TRACE_INFO_CLASS("fill_sc_manager success, sc_manager_ready = true");
 	return true;
 }
 

@@ -7,6 +7,8 @@
 #include <vector>
 // #include <filesystem> // c++17
 
+#include <logTracer/tracer.h>
+
 // pcl
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
@@ -23,6 +25,7 @@
 namespace lidar_slam {
 
 class GlobalLocalization {
+	DECL_CLASSNAME(GlobalLocalization)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

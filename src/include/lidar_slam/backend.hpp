@@ -6,6 +6,7 @@
 #include <omp.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <fstream>
@@ -47,15 +48,18 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <logTracer/tracer.h>
 
 // lidar_slam
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/data_struct_define.h"
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
+
 namespace lidar_slam {
 
 class BackEnd {
+	DECL_CLASSNAME(BackEnd)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

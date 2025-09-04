@@ -1,4 +1,6 @@
 
+#include <logTracer/tracer.h>
+
 #include "localization_module.h"
 #include "node/localization_module.h"
 
@@ -36,8 +38,8 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 	auto msg = msg_in;
 	int ctrl_type = msg->data / 100 * 100;
 	auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
-	std::cout << BOLDGREEN << "Received Ctrl Msg: " << msg->data << RESET << std::endl;
-	std::cout << BOLDGREEN << "Received Ctrl Cmd: " << print_SlamCtrlCmd(curr_cmd) << RESET << std::endl;
+	TRACE_INFO_CLASS("Received Ctrl Msg: %d", msg->data);
+	TRACE_INFO_CLASS("Received Ctrl Cmd: %d", print_SlamCtrlCmd(curr_cmd));
 
 	int map_id = msg->data % 100;
 	if (map_id == 0) {
@@ -47,72 +49,72 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 	switch (curr_cmd) {
 		case START_MAPPING: {			 // 初次建图，或重置后建图
 			if (start_mapping(map_id)) { //启动建图成功
-				std::cout << GREEN << "start_mapping success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("start_mapping success!");
 			} else { //启动建图失败
-				std::cout << RED << "start_mapping failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("start_mapping failed!");
 			}
 			break;
 		}
 		case START_SEC_MAPPING: { // 重定位，并开始建图
 			if (start_second_mapping(map_id)) {
-				std::cout << GREEN << "start_second_mapping success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("start_second_mapping success!");
 			} else {
-				std::cout << RED << "Start Sec-mapping failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("start_second_mapping failed!");
 				release_slam_obj();
-				std::cout << YELLOW << "slam obj destroyed!" << RESET << std::endl;
+				TRACE_INFO_CLASS("slam obj destroyed!");
 			}
 			break;
 		}
 		case CANCLE_MAPPING: { // 不保存地图， 直接退出建图
 			if (stop_mapping_without_saving_map()) {
-				std::cout << GREEN << "stop_mapping(not saving map) success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("stop_mapping(not saving map) success!");
 			} else {
-				std::cout << RED << "stop_mapping failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("stop_mapping(not saving map) failed!");
 			}
 			break;
 		}
 		case SAVE_AND_END_MAPPING: { // 保存地图，并结束建图
 			if (stop_mapping()) {
-				std::cout << GREEN << "stop_mapping success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("stop_mapping success!");
 			} else {
-				std::cout << RED << "stop_mapping failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("stop_mapping failed!");
 			}
 			break;
 		}
 		case START_LOCALIZATION: { // 开始定位，（先重定位，再定位）
 			if (start_localization(map_id)) {
-				std::cout << GREEN << "start_localization success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("start_localization success!");
 			} else {
-				std::cout << RED << "start_localization failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("start_localization failed!");
 			}
 			break;
 		}
 		case EXIT_LOCALIZATION: {	   // 退出定位
 			if (stop_localization()) { // 停止定位成功
-				std::cout << GREEN << "stop_localization success!" << RESET << std::endl;
+				TRACE_INFO_CLASS("stop_localization success!");
 			} else {
-				std::cout << RED << "stop_localization failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("stop_localization failed!");
 			}
 			break;
 		}
 		case START_RELOCALIZATION: { // 重新进行重定位
 			if (start_relocalization(map_id)) {
-				RCLCPP_INFO(node_->get_logger(), "restart localization successfully!");
+				TRACE_INFO_CLASS("restart localization successfully!");
 			} else {
-				std::cout << RED << "start_relocalization failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("start_relocalization failed!");
 			}
 			break;
 		}
 		case RESTART_SEC_MAPPING: { // 重新进行重定位
 			if (restart_second_mapping(map_id)) {
-				RCLCPP_INFO(node_->get_logger(), "restart sec_mapping successfully!");
+				TRACE_INFO_CLASS("restart sec_mapping successfully!");
 			} else {
-				std::cout << RED << "restart sec_mapping failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("restart sec_mapping failed!");
 			}
 			break;
 		}
 		default: {
-			RCLCPP_INFO(node_->get_logger(), "mapping ctrl msg: %u invalid!", msg->data);
+			TRACE_INFO_CLASS("mapping ctrl msg: %u invalid!", msg->data);
 			break;
 		}
 	}
@@ -121,12 +123,11 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 bool LocalizationModule::start_mapping(int map_id) {
 	auto set_status = ModuleStatus::MODULE_MAPPING;
 	auto running_module_status_now = running_module_status_.load();
-	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
-				print_ModuleStatus(running_module_status_now).c_str());
-	RCLCPP_INFO(node_->get_logger(), "Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
+	TRACE_INFO_CLASS("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
+	TRACE_INFO_CLASS("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
 	if (!make_map_directory_name(map_id)) { // 基于 map_id, 保存在 [slam_param_.common.map_directory]
-		std::cout << "Map Directory Error!" << std::endl;
+		TRACE_ERR_CLASS("Map Directory Error!");
 		exit(EXIT_FAILURE);
 	}
 	if (running_module_status_now == ModuleStatus::MODULE_IDLE) {
@@ -136,18 +137,17 @@ bool LocalizationModule::start_mapping(int map_id) {
 		mapping_node_status_.store(1); // 1: normal
 		return true;
 	} else if (is_mapping_status(running_module_status_now)) {
-		RCLCPP_INFO(node_->get_logger(), "skip, already running mapping now");
+		TRACE_INFO_CLASS("skip, already running mapping now");
 		return false;
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
-		RCLCPP_INFO(node_->get_logger(), "skip, running localizing now, please stop localizing first");
+		TRACE_INFO_CLASS("skip, running localizing now, please stop localizing first");
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -156,12 +156,11 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 	auto running_module_status_now = running_module_status_.load();
 	ModuleStatus set_status = ModuleStatus::MODULE_SEC_MAPPING;
 
-	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
-				print_ModuleStatus(running_module_status_now).c_str());
-	RCLCPP_INFO(node_->get_logger(), "Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
+	TRACE_INFO_CLASS("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
+	TRACE_INFO_CLASS("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
 	if (!make_map_directory_name(map_id)) { // 基于 map_id, 保存在 [slam_param_.common.map_directory]
-		std::cout << "Map Directory Error!" << std::endl;
+		TRACE_ERR_CLASS("Map Directory Error!");
 		exit(EXIT_FAILURE);
 	}
 	std::string load_map_dir = slam_param_.common.cloud_map_directory;
@@ -170,11 +169,11 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 		running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 		make_slam_obj(slam_param_, set_status);
 		if (!slam_->load_map(load_map_dir)) {
-			std::cout << RED << "load map failed!" << RESET << std::endl;
+			TRACE_ERR_CLASS("load map failed!");
 
 			usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 			release_slam_obj();
-			RCLCPP_INFO(node_->get_logger(), "slam destoried!");
+			TRACE_INFO_CLASS("slam destoried!");
 
 			// update module-status
 			running_module_status_.store(ModuleStatus::MODULE_IDLE);
@@ -186,18 +185,17 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 			return true;
 		}
 	} else if (is_mapping_status(running_module_status_now)) {
-		RCLCPP_INFO(node_->get_logger(), "skip, already running mapping now");
+		TRACE_INFO_CLASS("skip, already running mapping now");
 		return false;
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
-		RCLCPP_INFO(node_->get_logger(), "skip, running localizing now, please stop localizing first");
+		TRACE_INFO_CLASS("skip, running localizing now, please stop localizing first");
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -209,7 +207,7 @@ bool LocalizationModule::stop_mapping_without_saving_map() {
 		running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
 		usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 		release_slam_obj();
-		RCLCPP_INFO(node_->get_logger(), "mapping stopped without saving map!");
+		TRACE_INFO_CLASS("mapping stopped without saving map!");
 
 		running_module_status_.store(ModuleStatus::MODULE_IDLE);
 		mapping_node_status_.store(0); // 0: inactive
@@ -217,17 +215,16 @@ bool LocalizationModule::stop_mapping_without_saving_map() {
 		return true;
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
-		RCLCPP_INFO(node_->get_logger(), "skip, can not stop mapping, running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("skip, can not stop mapping, running_module_status_: %s",
+						 print_ModuleStatus(running_module_status_now).c_str());
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -240,57 +237,55 @@ bool LocalizationModule::stop_mapping() {
 	if (is_mapping_status(running_module_status_now)) {
 		if (mapping_status_now == 3) { // m_standby
 			running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
-			RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-			RCLCPP_INFO(node_->get_logger(), "\033[1;32mstart saving map data\033[0m");
+			TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+			TRACE_INFO_CLASS("\033[1;32mstart saving map data\033[0m");
 			std::string pcd_dir = slam_param_.common.cloud_map_directory;
 			const auto resolution = slam_param_.mapping.save_map_resolution;
 			if (!slam_->save_map(pcd_dir, resolution, 0, 0)) {
-				std::cout << RED << "save map data failed!" << RESET << std::endl;
+				TRACE_ERR_CLASS("save map data failed!");
 			} else {
-				RCLCPP_INFO(node_->get_logger(), "\033[1;32msave map data success!\033[0m");
+				TRACE_INFO_CLASS("\033[1;32msave map data success!\033[0m");
 			}
 
 			save_extrinsic_to_file();
 
 			map_saved_.store(1);
-			std::cout << YELLOW << "[Slam ctrl]: map_saved_: " << map_saved_.load() << RESET << std::endl;
+			TRACE_INFO_CLASS("map_saved: %d", map_saved_.load());
 
-			RCLCPP_INFO(node_->get_logger(), "start stop mapping");
+			TRACE_INFO_CLASS("start stop mapping");
 			sleep(1);
 			// set_module_status_ = ModuleStatus::MODULE_IDLE;
 			release_slam_obj();
-			RCLCPP_INFO(node_->get_logger(), "mapping stopped !");
+			TRACE_INFO_CLASS("mapping stopped !");
 			running_module_status_.store(ModuleStatus::MODULE_IDLE);
 			mapping_node_status_.store(0); // 0: inactive
 
 			return true;
 		} else if (mapping_status_now == 4) { // m_creating_ele (not used)
-			RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-			RCLCPP_INFO(node_->get_logger(), "skip, please finish current map-element, or delete it first !");
+			TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+			TRACE_INFO_CLASS("skip, please finish current map-element, or delete it first !");
 			return false;
 		} else {
-			RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-			RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-			RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-						print_ModuleStatus(running_module_status_now).c_str());
-			RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-			RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-			RCLCPP_INFO(node_->get_logger(), "****************************");
+			TRACE_INFO_CLASS("skip, status error!");
+			TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+			TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+			TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+			TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+			TRACE_INFO_CLASS("****************************");
 			return false;
 		}
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
-		RCLCPP_INFO(node_->get_logger(), "skip, can not stop mapping, running_module_status_: %s",
-					print_ModuleStatus(running_module_status_.load()).c_str());
+		TRACE_INFO_CLASS("skip, can not stop mapping, running_module_status_: %s",
+						 print_ModuleStatus(running_module_status_.load()).c_str());
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -299,7 +294,7 @@ bool LocalizationModule::save_extrinsic_to_file() {
 	std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
 	std::ofstream extrinsic_file(extrinsic_file_name);
 	if (!extrinsic_file.is_open()) {
-		std::cout << "open extrinsic file failed!" << std::endl;
+		TRACE_ERR_CLASS("open extrinsic file failed!");
 		return false;
 	}
 
@@ -316,16 +311,15 @@ bool LocalizationModule::start_localization(int map_id) {
 	ModuleStatus set_status = ModuleStatus::MODULE_LOCALIZATION;
 	auto localization_status_now = localization_status_.load();
 
-	RCLCPP_INFO(node_->get_logger(), "Module Status for now: %s",
-				print_ModuleStatus(running_module_status_now).c_str());
-	RCLCPP_INFO(node_->get_logger(), "Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
+	TRACE_INFO_CLASS("Module Status for now: %s", print_ModuleStatus(running_module_status_now).c_str());
+	TRACE_INFO_CLASS("Trying to set module_status: %s", print_ModuleStatus(set_status).c_str());
 
 	if (!make_map_directory_name(map_id)) { // 基于 map_id, 保存在 [slam_param_.common.map_directory]
-		std::cout << "Map Directory Error!" << std::endl;
+		TRACE_ERR_CLASS("Map Directory Error!");
 		exit(EXIT_FAILURE);
 	}
 	std::string load_map_dir = slam_param_.common.cloud_map_directory;
-	std::cout << "load_map_dir: " << slam_param_.common.cloud_map_directory << std::endl;
+	TRACE_INFO_CLASS("load_map_dir: %s", load_map_dir.c_str());
 
 	// ModuleStatus curr_running_module_status = running_module_status_.load();
 
@@ -335,7 +329,7 @@ bool LocalizationModule::start_localization(int map_id) {
 		make_slam_obj(slam_param_, set_status);
 
 		if (!slam_->load_map(load_map_dir)) {
-			std::cout << RED << "load map failed!" << RESET << std::endl;
+			TRACE_ERR_CLASS("load map failed!");
 			release_slam_obj();
 
 			running_module_status_.store(ModuleStatus::MODULE_IDLE);
@@ -349,20 +343,18 @@ bool LocalizationModule::start_localization(int map_id) {
 		}
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION &&
 			   (localization_status_is_ok(localization_status_now))) {
-		RCLCPP_INFO(node_->get_logger(), "skip, already running localization normally now");
+		TRACE_INFO_CLASS("skip, already running localization normally now");
 		return false;
 	} else if (is_mapping_status(running_module_status_now)) {
-		RCLCPP_INFO(node_->get_logger(), "skip, running mapping now, please stop mapping first");
+		TRACE_INFO_CLASS("skip, running mapping now, please stop mapping first");
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error! start localization failed !");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_now: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error! start localization failed !");
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("running_module_status_now: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -377,7 +369,7 @@ bool LocalizationModule::stop_localization() {
 
 		usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
 		release_slam_obj();
-		RCLCPP_INFO(node_->get_logger(), "localization stopped !");
+		TRACE_INFO_CLASS("localization stopped !");
 
 		// update module-status
 		running_module_status_.store(ModuleStatus::MODULE_IDLE);
@@ -387,19 +379,17 @@ bool LocalizationModule::stop_localization() {
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_MAPPING ||
 			   running_module_status_now == ModuleStatus::MODULE_SEC_MAPPING) {
-		RCLCPP_INFO(node_->get_logger(), "skip, can not stop localization, running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("skip, can not stop localization, running_module_status_: %s",
+						 print_ModuleStatus(running_module_status_now).c_str());
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "last_running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "set_module_status: %s", print_ModuleStatus(set_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("last_running_module_status_: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("set_module_status: %s", print_ModuleStatus(set_status).c_str());
+		TRACE_INFO_CLASS("running_module_status_: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -421,16 +411,15 @@ bool LocalizationModule::start_relocalization(int map_id) {
 		}
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_MAPPING) {
-		RCLCPP_INFO(node_->get_logger(), "skip, can not stop localization, running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("skip, can not stop localization, running_module_status_: %s",
+						 print_ModuleStatus(running_module_status_now).c_str());
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_: %s",
-					print_ModuleStatus(running_module_status_now).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_: %s", print_ModuleStatus(running_module_status_now).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -452,16 +441,15 @@ bool LocalizationModule::restart_second_mapping(int map_id) {
 	} else if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
 			   curr_running_module_status == ModuleStatus::MODULE_MAPPING ||
 			   curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-		RCLCPP_INFO(node_->get_logger(), "skip, can not restart sec_mapping, running_module_status_: %s",
-					print_ModuleStatus(curr_running_module_status).c_str());
+		TRACE_INFO_CLASS("skip, can not restart sec_mapping, running_module_status_: %s",
+						 print_ModuleStatus(curr_running_module_status).c_str());
 		return false;
 	} else {
-		RCLCPP_INFO(node_->get_logger(), "skip, status error!");
-		RCLCPP_INFO(node_->get_logger(), "running_module_status_: %s",
-					print_ModuleStatus(curr_running_module_status).c_str());
-		RCLCPP_INFO(node_->get_logger(), "mapping_status: %d", mapping_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "localization_status: %d", localization_status_.load());
-		RCLCPP_INFO(node_->get_logger(), "****************************");
+		TRACE_INFO_CLASS("skip, status error!");
+		TRACE_INFO_CLASS("running_module_status_: %s", print_ModuleStatus(curr_running_module_status).c_str());
+		TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
+		TRACE_INFO_CLASS("localization_status: %d", localization_status_.load());
+		TRACE_INFO_CLASS("****************************");
 		return false;
 	}
 }
@@ -477,10 +465,10 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
 	} else {
 		return false;
 	}
-	RCLCPP_INFO(node_->get_logger(), "Making obj(lidar_slam) --- with: set_slam_mode = %s",
-				lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
+	TRACE_INFO_CLASS("Making obj(lidar_slam) --- with: set_slam_mode = %s",
+					 lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
 	slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode, node_);
-	RCLCPP_INFO(node_->get_logger(), "\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
+	TRACE_INFO_CLASS("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
 	return true;
 }
 
@@ -488,7 +476,7 @@ void LocalizationModule::release_slam_obj() {
 	releasing_slam_flag_ = true;
 
 	usleep(500000); // 单位: 微秒, 500,000us = 500ms = 0.5s
-	RCLCPP_INFO(node_->get_logger(), "start stopping lidar_slam");
+	TRACE_INFO_CLASS("start stopping lidar_slam");
 
 	lidar_slam::LidarSlam* temp_slam = slam_.release();
 	delete temp_slam;
@@ -497,7 +485,7 @@ void LocalizationModule::release_slam_obj() {
 	running_module_status_.store(ModuleStatus::MODULE_IDLE);
 	mapping_node_status_.store(0); // 0: inactive
 	local_node_status_.store(0);   // 0: inactive
-	RCLCPP_INFO(node_->get_logger(), "\033[1;32mlidar_slam stopped !\033[0m");
+	TRACE_INFO_CLASS("\033[1;32mlidar_slam stopped !\033[0m");
 	releasing_slam_flag_ = false;
 }
 
@@ -514,9 +502,9 @@ bool LocalizationModule::make_map_directory_name(int map_id) {
 
 	// 检查并创建地图路径
 	if (create_directory_if_not_exists(slam_param_.common.map_directory)) {
-		std::cout << "Directory created or already exists: " << slam_param_.common.map_directory << std::endl;
+		TRACE_INFO_CLASS("Directory created or already exists:  %s", slam_param_.common.map_directory.c_str());
 	} else {
-		std::cout << RED << "Failed to create directory: " << slam_param_.common.map_directory << std::endl;
+		TRACE_ERR_CLASS("Failed to create directory: %s", slam_param_.common.map_directory.c_str());
 		return false;
 	}
 	return true;

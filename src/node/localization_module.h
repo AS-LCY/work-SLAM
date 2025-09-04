@@ -106,6 +106,7 @@ enum SlamCtrlCmd {
 };
 
 class LocalizationModule {
+	DECL_CLASSNAME(LocalizationModule)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

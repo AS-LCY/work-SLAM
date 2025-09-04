@@ -235,7 +235,6 @@ class esekf {
 
 		for (int i = -1; i < maximum_iter; i++) // maximum_iter是卡尔曼滤波的最大迭代次数
 		{
-			// cout << YELLOW << "iter_i == "<< i << RESET<<endl;
 			dyn_share.valid = true;
 			// 计算雅克比，也就是点面残差的导数 H(代码里是h_x)
 
@@ -269,7 +268,7 @@ class esekf {
 
 			Matrix<double, 24, 1> dx_ =
 				K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
-			// std::cout << "dx_: " << dx_.transpose() << std::endl;
+
 			x_ = boxplus(x_, dx_); //公式(18)
 
 			dyn_share.converge = true;

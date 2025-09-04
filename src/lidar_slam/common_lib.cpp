@@ -150,7 +150,7 @@ bool create_directory_if_not_exists(const std::string& directory_path) {
 		if (status) {
 			return true; // 创建目录成功
 		} else {
-			std::cerr << "Error creating directory: " << directory_path << std::endl;
+			TRACE_ERR("Error creating directory: %s", directory_path.c_str());
 			return false; // 创建目录失败
 		}
 	} else {
@@ -168,7 +168,6 @@ bool create_directory_if_not_exists(const std::string& directory_path) {
             return true; // 创建目录成功
         }catch (const std::filesystem::filesystem_error& ex){
             std::cerr << "Error creating directory: " << ex.what() << std::endl;
-            // ROS_ERROR_STREAM(RED << "Error creating directory: " << ex.what()  <<RESET);
             return false; // 创建目录失败
         }
     } else {

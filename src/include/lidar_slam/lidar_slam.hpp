@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <csignal>
 #include <fstream>
 #include <mutex>
@@ -33,6 +34,8 @@
 #include "node/log_info_manager.hpp"
 #include "node/module_param_def.h"
 // #include "node/module_status_def.h"
+
+#include <logTracer/tracer.h>
 
 // lidar
 #include "lidar/hesai/lidar_preproc_JT16.h"
@@ -94,6 +97,7 @@ enum SlamWorkMode { MAPPING = 1, SEC_MAPPING = 2, LOCALIZATION = 3, UNKNOWN };
 string print_SlamWorkMode(SlamWorkMode e);
 
 class LidarSlam {
+	DECL_CLASSNAME(LidarSlam)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 

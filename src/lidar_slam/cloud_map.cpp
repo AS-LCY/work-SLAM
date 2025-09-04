@@ -22,31 +22,31 @@ bool CloudMap::load_map_data(std::string map_dir) {
 	map_data_ready_ = false;
 
 	if (!load_cloud_map(map_dir)) {
-		cout << "load cloud map failed!" << endl;
+		TRACE_ERR_CLASS("load cloud map failed!");
 		return false;
 	}
 	std::string keyframe_dir = map_dir + "/key_frame_cloud/";
 	if (!load_key_frames(keyframe_dir)) {
-		cout << "load key frame clouds failed!" << endl;
+		TRACE_ERR_CLASS("load key frame clouds failed!");
 		return false;
 	}
 
 	map_data_ready_ = true;
-	cout << "\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true" << endl;
+	TRACE_INFO_CLASS("load all map_data success, map_data_ready = true");
 
 	return true;
 }
 
 bool CloudMap::load_key_frames(std::string keyframe_dir) {
 	std::string keyframe_pose_path = keyframe_dir + "/key_frame_pose.txt";
-	std::cout << "\033[1;32mloading key_frame_pose \033[0mfrom : " << keyframe_pose_path << " -- ";
+	TRACE_INFO_CLASS("loading key_frame_pose from : %s", keyframe_pose_path.c_str());
 	std::ifstream pose_file(keyframe_pose_path);
 	try {
 		if (!pose_file) {
 			throw std::runtime_error("Failed to open pose_file");
 		}
 	} catch (const std::exception& e) {
-		std::cerr << "Exception occurred: " << e.what() << std::endl;
+		TRACE_ERR_CLASS("key frame pose file %s does not exist.", keyframe_pose_path.c_str());
 	}
 
 	/// read data line by line, split one line by ","
@@ -93,26 +93,22 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 		loaded_keyframe_poses_.push_back(read_one_line); // 数据保存
 	}
 	pose_file.close();
-	std::cout << "\033[1;32msuccess\033[0m -- loaded_keyframe_poses size: " << loaded_keyframe_poses_.size()
-			  << std::endl;
+	TRACE_INFO_CLASS("loaded_keyframe_poses size: %d", (int)loaded_keyframe_poses_.size());
 
-	/// load key frame cloud start
 	loaded_keyframe_clouds_.clear();
 	int key_poses_size = loaded_keyframe_poses_.size();
-	std::cout << "\033[1;32mloading key_frame_cloud\033[0m from dir: " << keyframe_dir << endl;
+	TRACE_INFO_CLASS("loading key_frame_cloud from dir: %s", keyframe_dir.c_str());
 	for (int i = 0; i < key_poses_size; i++) {
 		int pose_index = loaded_keyframe_poses_[i].index;
 		std::string key_cloud_path = keyframe_dir + "/" + std::to_string(pose_index) + ".pcd";
-		std::cout << "loading key_frame_cloud : " << std::to_string(pose_index) + ".pcd -- ";
+		TRACE_INFO_CLASS("loading key_frame_cloud : %s", key_cloud_path.c_str());
 
 		PointCloudType::Ptr temp_cloud(new PointCloudType());
 		if (0 == access(key_cloud_path.c_str(), 0)) {
 			pcl::io::loadPCDFile(key_cloud_path, *temp_cloud);
 			loaded_keyframe_clouds_.push_back((temp_cloud));
-			std::cout << "success -- points count: " << temp_cloud->points.size() << std::endl;
 		} else {
-			std::cerr << "failed -- key cloud file " << std::to_string(pose_index) << ".pcd does not exist."
-					  << std::endl;
+			TRACE_ERR_CLASS("key cloud file %s does not exist.", key_cloud_path.c_str());
 			return false;
 		}
 	}
@@ -123,13 +119,12 @@ bool CloudMap::load_key_frames(std::string keyframe_dir) {
 bool CloudMap::load_cloud_map(std::string map_dir) {
 	loaded_global_map_.reset(new PointCloudType());
 	std::string cloud_map_file_path = map_dir + "cloud_map.pcd";
-	std::cout << "\033[1;32mloading cloud map\033[0m from : " << cloud_map_file_path << " -- ";
+	TRACE_INFO_CLASS("loading cloud map from : %s", cloud_map_file_path.c_str());
 
 	if (0 == access(cloud_map_file_path.c_str(), 0)) {
 		pcl::io::loadPCDFile(cloud_map_file_path, *loaded_global_map_);
-		std::cout << "\033[1;32msuccess \033[0m-- points count: " << loaded_global_map_->points.size() << std::endl;
 	} else {
-		std::cerr << "\033[1;32mfailed \033[0m-- map file does not exist." << std::endl;
+		TRACE_ERR_CLASS("map file %s does not exist.", cloud_map_file_path.c_str());
 		return false;
 	}
 	// TODO: show map point
@@ -138,14 +133,14 @@ bool CloudMap::load_cloud_map(std::string map_dir) {
 	// load data(pose & ScanContex)
 	std::string sc_data_file_path = map_dir + "data";
 	loaded_sc_info_.clear();
-	std::cout << "\033[1;32mloading sc-data\033[0m from : " << sc_data_file_path << " -- ";
+	TRACE_INFO_CLASS("loading sc-data from : %s", sc_data_file_path.c_str());
 	std::ifstream file(sc_data_file_path);
 	try {
 		if (!file) {
 			throw std::runtime_error("Failed to open file");
 		}
 	} catch (const std::exception& e) {
-		std::cerr << "Exception occurred: " << e.what() << std::endl;
+		TRACE_ERR_CLASS("sc data file %s does not exist.", sc_data_file_path.c_str());
 	}
 
 	// KeyMat polarcontext_invkeys_mat;
@@ -178,7 +173,7 @@ bool CloudMap::load_cloud_map(std::string map_dir) {
 		int maxcol = values[index++];
 		/// check： sc 数据 size 是否对应
 		if (values.size() - index != (maxrow * maxcol)) {
-			std::cout << " error :" << values.size() << " " << index << " " << maxrow * maxcol << std::endl;
+			TRACE_ERR_CLASS("sc data size not match, load sc data failed.");
 			return false;
 		}
 
@@ -198,7 +193,7 @@ bool CloudMap::load_cloud_map(std::string map_dir) {
 	}
 
 	// sc_manager_->buildRingKeyKDTree(polarcontext_invkeys_mat, polarcontexts);
-	std::cout << "\033[1;32msuccess\033[0m -- loaded_sc_info size : " << loaded_sc_info_.size() << std::endl;
+	TRACE_INFO_CLASS("loaded_sc_info size: %d", (int)loaded_sc_info_.size());
 	return true;
 }
 

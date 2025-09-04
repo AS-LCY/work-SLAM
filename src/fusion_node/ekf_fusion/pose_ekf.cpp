@@ -17,21 +17,16 @@ PoseEKF::PoseEKF(const int& status_num, const int& input_num, const int& measure
 	ekf_matrix_init();
 	set_covariance(status_cov, input_cov, measure_cov);
 	dt_ = dt;
-
-	// ROS_INFO_STREAM("P_ init: ");
-	// ROS_INFO_STREAM(P_);
 }
 
 PoseEKF::~PoseEKF() {}
 
 void PoseEKF::reset(const Matrix& status_cov, const Matrix& input_cov, const Matrix& measure_cov) {
-	// std::cout<<"Reseting Pose-EKF ..."<<std::endl;
 	ROS_WARN_STREAM("Reseting Pose-EKF ...");
 	// set_dimension(status_num,input_num,measure_num); // dimension should not be changed
 	ekf_matrix_init();
 	set_covariance(status_cov, input_cov, measure_cov); // P_ need reset
-	// std::cout<<"P_: "<<std::endl;
-	// std::cout<<P_<<std::endl;
+
 	ROS_INFO_STREAM("P_ : ");
 	ROS_INFO_STREAM(P_);
 }
@@ -42,9 +37,9 @@ void PoseEKF::reset(const Matrix& status_cov, const Matrix& input_cov, const Mat
 
 void PoseEKF::move(const Matrix& input, const double& dt) {
 	auto theta = status_(2, 0); // theta(k-1)
-	auto vel   = input(0, 0);	// vel(k-1)
-	auto w	   = input(1, 0);	// omega(k-1)
-	auto dist  = vel * dt;
+	auto vel = input(0, 0);		// vel(k-1)
+	auto w = input(1, 0);		// omega(k-1)
+	auto dist = vel * dt;
 	// ROS_INFO("ekf move: dist: %.4f, dx: %.4f, dy: %.4f", dist, dist*std::cos(theta), dist*std::sin(theta));
 
 	Eigen::Matrix<double, 3, 1> dx;
@@ -65,8 +60,8 @@ void PoseEKF::predict(const Matrix& input, const double& dt) {
 	status_(2, 0) = localization_module::common::NumericalProcess::unify_angle(status_(2, 0));
 
 	// compute f,v jacobian
-	auto s	  = dt * std::sin(status_(2, 0));
-	auto c	  = dt * std::cos(status_(2, 0));
+	auto s = dt * std::sin(status_(2, 0));
+	auto c = dt * std::cos(status_(2, 0));
 	fj_(0, 2) = -s * input(0, 0);
 	fj_(1, 2) = c * input(0, 0);
 
@@ -80,7 +75,7 @@ void PoseEKF::predict(const Matrix& input, const double& dt) {
 
 	// copy
 	status_prior_ = status_ * 1.0;
-	P_prior_	  = P_ * 1.0;
+	P_prior_ = P_ * 1.0;
 }
 
 void PoseEKF::update(const Matrix& measure, bool trust_measure) {
@@ -94,20 +89,20 @@ void PoseEKF::update(const Matrix& measure, bool trust_measure) {
 
 	// temp mat for cal
 	Matrix PHt = P_ * H_.transpose(); // temp mat, 多处用到
-	S_		   = H_ * PHt + R_;
+	S_ = H_ * PHt + R_;
 	// hx
 	Matrix hx = status_;
-	Matrix y  = residual(measure, hx); //残差
+	Matrix y = residual(measure, hx); //残差
 
 	// 卡尔曼增益
-	K_		= PHt * S_.inverse();
+	K_ = PHt * S_.inverse();
 	status_ = status_ + K_ * y;
 	// ROS_INFO_STREAM("K_: " );
 	// ROS_INFO_STREAM(K_);
 
 	// numerically stable version
 	Matrix IKH = ekf_eye_n_ - K_ * H_;
-	P_		   = IKH * P_ * IKH.transpose() + K_ * R_ * K_.transpose();
+	P_ = IKH * P_ * IKH.transpose() + K_ * R_ * K_.transpose();
 	// P_ = IKH*P_;
 
 	status_post_ = status_ * 1.0;
@@ -147,7 +142,7 @@ Matrix PoseEKF::get_mah_vec(const Matrix& res, const Matrix& measure) {
 // 残差
 Matrix PoseEKF::residual(const Matrix& a, const Matrix& b) {
 	Matrix y = a - b;
-	y(2, 0)	 = localization_module::common::NumericalProcess::unify_angle(y(2, 0));
+	y(2, 0) = localization_module::common::NumericalProcess::unify_angle(y(2, 0));
 	return y;
 }
 
@@ -160,25 +155,25 @@ bool PoseEKF::input_check() {
 }
 
 void PoseEKF::ekf_matrix_init() {
-	measure_	  = Matrix::Zero(measure_num_, 1);
-	status_		  = Matrix::Zero(status_num_, 1);
+	measure_ = Matrix::Zero(measure_num_, 1);
+	status_ = Matrix::Zero(status_num_, 1);
 	status_prior_ = Matrix::Zero(status_num_, 1);
-	status_post_  = Matrix::Zero(status_num_, 1);
-	status_pre_	  = Matrix::Zero(status_num_, 1);
-	P_			  = Matrix::Zero(status_num_, status_num_);
-	P_prior_	  = Matrix::Zero(status_num_, status_num_);
-	P_post_		  = Matrix::Zero(status_num_, status_num_);
-	fj_			  = Matrix::Identity(status_num_, status_num_);
-	vj_			  = Matrix::Zero(status_num_, input_num_);
-	M_			  = Matrix::Zero(input_num_, input_num_);
-	H_			  = Matrix::Identity(status_num_, measure_num_);
-	K_			  = Matrix::Zero(status_num_, measure_num_);
+	status_post_ = Matrix::Zero(status_num_, 1);
+	status_pre_ = Matrix::Zero(status_num_, 1);
+	P_ = Matrix::Zero(status_num_, status_num_);
+	P_prior_ = Matrix::Zero(status_num_, status_num_);
+	P_post_ = Matrix::Zero(status_num_, status_num_);
+	fj_ = Matrix::Identity(status_num_, status_num_);
+	vj_ = Matrix::Zero(status_num_, input_num_);
+	M_ = Matrix::Zero(input_num_, input_num_);
+	H_ = Matrix::Identity(status_num_, measure_num_);
+	K_ = Matrix::Zero(status_num_, measure_num_);
 	ekf_eye_n_.setIdentity(status_num_, status_num_);
 }
 
 void PoseEKF::set_dimension(const int& status_num, const int& input_num, const int& measure_num) {
-	status_num_	 = status_num;
-	input_num_	 = input_num;
+	status_num_ = status_num;
+	input_num_ = input_num;
 	measure_num_ = measure_num;
 }
 

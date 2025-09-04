@@ -78,14 +78,12 @@ bool Localization::loadMap(std::string path) {
 	std::ifstream cloud_file(cloud_map_file_path);
 	if (cloud_file && cloud_file.good()) {
 		if (pcl::io::loadPCDFile(cloud_map_file_path, *TempMap) == -1) {
-			std::cerr << "Failed to load PCD file" << std::endl;
+			TRACE_ERR_CLASS("Failed to load PCD file %s", cloud_map_file_path.c_str());
 			return false;
 		}
 		*CloudGlobalMap_ = *TempMap;
-		std::cout << "load map from : " << cloud_map_file_path << "--- point size: " << TempMap->points.size()
-				  << std::endl;
-		std::cout << "Cloud validity: " << CloudGlobalMap_->is_dense << " " << CloudGlobalMap_->points.size()
-				  << std::endl;
+		TRACE_INFO_CLASS("load map from : %s", cloud_map_file_path.c_str());
+		TRACE_INFO_CLASS("cloud validity: %d", CloudGlobalMap_->is_dense);
 	}
 
 	// no ComplementMap.pcd
@@ -95,10 +93,10 @@ bool Localization::loadMap(std::string path) {
 	// 	TempMap->points.clear();
 	// 	pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap);
 	// 	*CloudGlobalMap_ += *TempMap;
-	// 	std::cout << "load map from : " << ComplementMap_file_path << "size " << TempMap->points.size() << std::endl;
+	//  TRACE_INFO_CLASS("load map from : %s", ComplementMap_file_path.c_str());
 	// }
 
-	pcl::copyPointCloud(*CloudGlobalMap_, *CloudGlobalMapIn_PointType_); // TODO(jxl): 没必要拷贝一次
+	pcl::copyPointCloud(*CloudGlobalMap_, *CloudGlobalMapIn_PointType_); // TODO(jxl): 没必要拷贝来拷贝去
 	pcl::VoxelGrid<PointType> downSizeFilter;
 	PointCloudType::Ptr GlobalMapShow(new PointCloudType());
 	double min_voxel_size = 0.1;
@@ -110,24 +108,22 @@ bool Localization::loadMap(std::string path) {
 	}
 	downSizeFilter.setInputCloud(CloudGlobalMapIn_PointType_);
 	downSizeFilter.filter(*GlobalMapShow);
-	std::cout << "load map from : " << path + std::string("=GlobalMap.pcd") << "size " << CloudGlobalMap_->points.size()
-			  << std::endl;
-	std::cout << "show map points: " << GlobalMapShow->points.size() << std::endl;
+
 	for (int i = 0; i < GlobalMapShow->points.size(); i++) {
 		Eigen::Vector3f point;
 		point.x() = GlobalMapShow->points[i].x;
 		point.y() = GlobalMapShow->points[i].y;
 		point.z() = GlobalMapShow->points[i].z;
-		show_map_points_.push_back(point);
+		show_map_points_.push_back(point); // TODO(jxl): 没有使用，可以删除
 	}
 	if (CloudGlobalMap_->points.size() == 0) {
-		std::cerr << "Failed to load map." << std::endl;
+		TRACE_ERR_CLASS("Failed to load map.");
 		return false;
 	}
 
 	std::vector<std::string> files;
 	files.emplace_back(path + std::string("data"));
-	files.emplace_back(path + std::string("Complementdata"));
+	// files.emplace_back(path + std::string("Complementdata"));
 	std::string line;
 
 	LoadData_.clear();
@@ -141,10 +137,10 @@ bool Localization::loadMap(std::string path) {
 	for (auto filename : files) {
 		std::ifstream file(filename);
 		if (!file) {
-			std::cerr << "Failed to open file " << filename << std::endl;
+			TRACE_ERR_CLASS("Failed to open file %s", filename.c_str());
 			continue;
 		} else {
-			std::cout << "load file " << filename << std::endl;
+			TRACE_INFO_CLASS("load file %s", filename.c_str());
 		}
 
 		while (std::getline(file, line)) {
@@ -175,7 +171,7 @@ bool Localization::loadMap(std::string path) {
 			int maxrow = values[index++];
 			int maxcol = values[index++];
 			if (values.size() - index != (maxrow * maxcol)) {
-				std::cout << " error :" << values.size() << " " << index << " " << maxrow * maxcol << std::endl;
+				TRACE_ERR_CLASS("sc data size not match, load sc data failed.");
 				return false;
 			}
 			readData.polarcontext.resize(maxrow, maxcol);
@@ -197,17 +193,17 @@ bool Localization::loadMap(std::string path) {
 	}
 	scManager_->buildRingKeyKDTree(polarcontext_invkeys_mat_, polarcontexts_); //用来全局重定位
 
-	std::cout << "get_load_data : " << LoadData_.size() << std::endl;
 	map_ready_ = true;
-	cout << "\033[1;32mLoad map success!\033[0m" << endl;
+	TRACE_INFO_CLASS("loadData size: %d", LoadData_.size());
+	TRACE_INFO_CLASS("Load map success!");
+
 	copyPointCloudManual(CloudGlobalMapIn_PointType_, CloudGlobalMapIn_); //对加载进来的全局点云降采样后，又赋值回去
-	// TODO(jxl): 没必要拷贝一次
+	// TODO(jxl): 没必要拷贝来拷贝去
 
 	// ndt_->setInputTarget(CloudGlobalMapIn_PointType_);
 	// icp_->setInputTarget(CloudGlobalMapIn_PointType_);
 	gicp_->setInputTarget(CloudGlobalMapIn_);
 
-	std::cout << "--------------------" << std::endl;
 	return true;
 }
 
@@ -216,10 +212,11 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 							bool use_pose_filter) {
 	static double odom2map_x_filter = 0.0;
 	static double odom2map_y_filter = 0.0;
-
 	static const double ratio = 1.0;
-	std::cout << "odomCloud:" << odomCloud->points.size() << std::endl;
-	std::cout << "CloudGlobalMapIn_:" << CloudGlobalMapIn_->points.size() << std::endl;
+
+	TRACE_INFO_CLASS("odomCloud size: %d", (int)odomCloud->points.size());
+	TRACE_INFO_CLASS("CloudGlobalMapIn size: %d", (int)CloudGlobalMapIn_->points.size());
+
 	if (!map_ready_) {
 		return false;
 	}
@@ -228,18 +225,17 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
 	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
 	PointCloudType::Ptr output_cloud(new PointCloudType());
-	std::cout << "..........----......" << std::endl;
 
 	if (!gicp_->hasConverged()) {
-		cout << RED << "gicp not converged " << RESET << endl;
+		TRACE_ERR_CLASS("gicp not converged.");
 		return false;
 	} else {
-		fit_score = gicp_->getFitnessScore();
+		fit_score = gicp_->getFitnessScore(); // TODO(jxl): 统计内点，还是全部点
 		if (fit_score < score_low_accuracy_thr) {
 			lastCorrectionOdomToMap_ = correctionOdomToMap_;
 			lastUpdateTime_ = curr_time_;
 
-			cout << GREEN << "gicp success with score " << gicp_->getFitnessScore() << RESET << endl;
+			TRACE_INFO_CLASS("gicp success with score %f < %f", fit_score, score_low_accuracy_thr);
 			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
 			curr_time_ = omp_get_wtime();
 
@@ -278,7 +274,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			// log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
 
 		} else {
-			cout << YELLOW << "gicp converged, score: " << fit_score << RESET << endl;
+			TRACE_INFO_CLASS("gicp success with score %f > %f", fit_score, score_low_accuracy_thr);
 		}
 
 		return true;
@@ -288,7 +284,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 									  double score) {
 	if (!map_ready_) {
-		cout << YELLOW << "map not ready" << RESET << endl;
+		TRACE_ERR_CLASS("map not ready");
 		return false;
 	}
 	Eigen::Vector3d current_euler = R2ypr(initial_rotate);
@@ -316,8 +312,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		double sc_dist = 1.0;
 		auto match = scManager_->detectClosestMatch(sc, ringkey, sectorkey, sc_dist);
 		if (match.first != -1) {
-			std::cout << "trans: " << t.first << " " << t.second;
-			std::cout << " score: " << sc_dist << std::endl;
+			TRACE_INFO_CLASS("trans: %f, %f,  score: %f", t.first, t.second, sc_dist);
 		}
 		if (sc_dist < min_dist) {
 			min_dist = sc_dist;
@@ -327,7 +322,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	}
 
 	double t1 = omp_get_wtime();
-	cout << GREEN << "search_trans cost time: " << (t1 - t0) * 1000 << " ms" << RESET << endl;
+	TRACE_INFO_CLASS("search_trans cost time: %f ms", (t1 - t0) * 1000);
 	int match_idx = best_match.first;
 
 	// ICP param-set
@@ -339,14 +334,15 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	icp.setRANSACIterations(0);
 
 	if (match_idx != -1) {
-		std::cout << "use index " << match_idx << std::endl;
+		TRACE_INFO_CLASS("use index: %d", match_idx);
 		Eigen::Matrix4d init_guess =
 			LoadData_[match_idx].pose.matrix(); // TODO(jxl): LoadData_和scManager_共同决定初值，原理？
 		Eigen::Vector3d euler = R2ypr(init_guess.block<3, 3>(0, 0));
 		// Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
 		euler[0] += -best_match.second;
-		std::cout << "rotate yaw: " << -best_match.second << std::endl;
+		TRACE_INFO_CLASS("rotate yaw:  %f degree", euler[0] * 180 / M_PI);
+
 		Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
 		init_guess.block<3, 3>(0, 0) = rotate;
 		euler = R2ypr(init_guess.block<3, 3>(0, 0));
@@ -359,9 +355,10 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		init_guess.coeffRef(1, 3) = init_guess.coeffRef(1, 3) + offset_in_map[1];
 		// init_guess.coeffRef(2, 3) = 0;
 
-		// std::cout << "initial yaw "<<euler[0]*180/M_PI<<" pitch "<<euler[1]*180/M_PI<< " roll
-		// "<<euler[2]*180/M_PI<<std::endl;
-		// std::cout << " trans "<<init_guess.block<3, 1>(0, 3).transpose()<<std::endl;
+		TRACE_INFO_CLASS("initial yaw: %f, pitch: %f, roll: %f", euler[0] * 180 / M_PI, euler[1] * 180 / M_PI,
+						 euler[2] * 180 / M_PI);
+		TRACE_INFO_CLASS("intial trans x: %f, y: %f, z: %f", init_guess.coeffRef(0, 3), init_guess.coeffRef(1, 3),
+						 init_guess.coeffRef(2, 3));
 
 		Eigen::Isometry3d testtransform(init_guess);
 		testMatchcloud_ = transformPointCloud(cloudIn, testtransform);
@@ -372,27 +369,29 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		icp.align(*unused_result, init_guess.cast<float>());
 
 		// 未收敛，或者匹配不够好
-		if (icp.hasConverged() == false || icp.getFitnessScore() > score) { // TODO add number in getFitnessScore
-			std::cout << "globalLocalization icp fail with score: " << icp.getFitnessScore() << std::endl;
+		if (icp.hasConverged() == false || icp.getFitnessScore() > score) { // TODO(jxl): 统计内点，还是全部点
+			TRACE_ERR_CLASS("globalLocalization icp fail with score: %f > %f", icp.getFitnessScore(), score);
 			return false;
 		} else {
-			cout << GREEN << "globalLocalization success with score: " << icp.getFitnessScore() << RESET << endl;
+			TRACE_ERR_CLASS("globalLocalization icp success with score: %f < %f", icp.getFitnessScore(), score);
 		}
 		Eigen::Isometry3d lidar_in_map;
 		lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
 
 		correctionOdomToMap_ = lidar_in_map * pose.inverse();
 		lastUpdateTime_ = omp_get_wtime();
-		// euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-		// std::cout << "final yaw"<<euler[0]<<" pitch "<<euler[1]<< " roll "<<euler[2];
-		// std::cout << "x "<<lidar_in_map.translation().x()<<" y "<<lidar_in_map.translation().y()<< " z
-		// "<<lidar_in_map.translation().z()<<std::endl;
+
+		auto updated_euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+		TRACE_INFO_CLASS("init lidar in map yaw: %f, pitch: %f, roll: %f", updated_euler[0] * 180 / M_PI,
+						 updated_euler[1] * 180 / M_PI, updated_euler[2] * 180 / M_PI);
+		TRACE_INFO_CLASS("init lidar in map trans x: %f, y: %f, z: %f", lidar_in_map.translation().x(),
+						 lidar_in_map.translation().y(), lidar_in_map.translation().z());
 
 		double t2 = omp_get_wtime();
-		cout << GREEN << "icp cost time: " << (t2 - t1) * 1000 << " ms" << RESET << endl;
+		TRACE_INFO_CLASS("icp cost time: %f ms", (t2 - t1) * 1000);
 		return true;
 	} else {
-		cout << "scancontext search fail, score {} " << match_idx << " " << min_dist << endl;
+		TRACE_ERR_CLASS("scancontext search fail, score: %f", min_dist);
 		return false;
 	}
 }

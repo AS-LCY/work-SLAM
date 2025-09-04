@@ -116,7 +116,6 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string
 child_frameid, ros::Publisher pub_odom)
 {
-	// cout<<"********************* pub odometry "<<endl;
 	nav_msgs::Odometry odom;
 	odom.header.frame_id = frameid;
 	odom.child_frame_id = child_frameid;
@@ -235,7 +234,6 @@ void LocalizationModule::publish_transform(const Eigen::Isometry3d& correction, 
 /*
 void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map)
 {
-  //  std::cout << lidar_in_map.translation().transpose()<<std::endl;
 	Eigen::Vector3d pos = lidar_in_map.translation();
 	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.matrix().block<3, 3>(0, 0));
 	nav_msgs::msg::Odometry transformToPub;
@@ -418,7 +416,6 @@ void LocalizationModule::show_keyframe(
 
 // void LocalizationModule::publish_odometry(const Eigen::Isometry3d lidar_in_odom, ros::Publisher pubOdomAftMapped)
 // {
-//     // cout<<"********************* pub odometry "<<endl;
 // 	nav_msgs::Odometry odomAftMapped;
 //     odomAftMapped.header.frame_id = "odom";
 //     odomAftMapped.child_frame_id = "lidar";
