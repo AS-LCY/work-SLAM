@@ -240,6 +240,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 }
 
 bool BackEnd::correctPoses() {
+	auto start = std::chrono::high_resolution_clock::now();
 	if (KeyPoint_->points.empty()) return false;
 	if (aLoopIsClosed_) {
 		// 清空里程计轨迹
@@ -430,7 +431,8 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyfra
 }
 
 bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
-									std::vector<ScInfo> input_vec_sc_info, std::vector<KeyPose> input_vec_key_poses,
+									std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
+									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses,
 									Eigen::Isometry3d T_map_odom) {
 	KeyPoses_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());
@@ -491,6 +493,7 @@ void BackEnd::performLoopClosure(double time) {
 	CopyKeyPoses_ = KeyPoses_;
 	mtxPose_.unlock();
 
+	auto loop_detected_start = std::chrono::high_resolution_clock::now();
 	// 当前关键帧索引，候选闭环匹配帧索引
 	int loopKeyCur;
 	int loopKeyPre;

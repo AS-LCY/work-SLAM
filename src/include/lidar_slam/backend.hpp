@@ -109,8 +109,9 @@ class BackEnd {
 	bool get_loaded_key_cloud_status() { return loaded_key_clouds_ready_; }
 
 	bool set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
-							   std::vector<ScInfo> input_vec_sc_info, std::vector<KeyPose> input_vec_key_poses,
-							   Eigen::Isometry3d trans_map_odom);
+							   std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
+							   std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses,
+							   Eigen::Isometry3d T_map_odom);
 
    private:
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);

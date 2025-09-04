@@ -939,8 +939,9 @@ bool LidarSlam::run() {
 			int kdtree_size_end = ikdtree_->size();
 			// std::cout <<"??? " <<aver_time_consu * (frame_num - 1) / frame_num << " "<<(t5 - t0) / frame_num<< "
 			// "<<frame_num<< std::endl;
-			aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t5 - t0) / frame_num;
-			aver_time_icp = aver_time_icp * (frame_num - 1) / frame_num + (t_update_end - t_update_start) / frame_num;
+			// aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t5 - t0) / frame_num;
+			// aver_time_icp = aver_time_icp * (frame_num - 1) / frame_num + (t_update_end - t_update_start) /
+			// frame_num;
 
 			//   printf("[ mapping ]: time: IMU process: %0.6f,kdtree size %d test %0.6f,test1 %0.6f, ave ICP: %0.6f,
 			//   map incre: %0.6f ave total: %0.6f \n" , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end,

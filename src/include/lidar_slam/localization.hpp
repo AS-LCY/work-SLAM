@@ -52,10 +52,10 @@ class Localization {
 		//  Eigen::Isometry3d isometry3d;
 		//  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap.matrix().block<3, 3>(0, 0).cast<double>();
 		// isometry3d.matrix().block<3, 1>(0, 3) = correctionOdomToMap.matrix().block<3, 1>(0, 3).cast<double>();
-		return correctionOdomToMap;
+		return correctionOdomToMap_;
 	}
-	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap; }
-	std::vector<ScInfo> getLoadKeyFrame() { return LoadData; }
+	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap_; }
+	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() { return LoadData_; }
 	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() {
 		if (!map_ready_) return nullptr;
 		return CloudGlobalMapIn_;
@@ -65,8 +65,8 @@ class Localization {
 	//    return CloudGlobalMapIn_;
 	// }
 
-	PointCloudType::Ptr getTestCloud() { return testMatchcloud; }
-	std::vector<Eigen::Vector3f>& getLoadMapPoints() {
+	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
+	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>>& getLoadMapPoints() {
 		// if (!map_ready_) return std::vector<Eigen::Vector3f>{};
 		return show_map_points_;
 	}
@@ -74,23 +74,23 @@ class Localization {
    private:
 	// 初始化正态分布(NDT)对象
 	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
-	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt;
-	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp;
+	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
+	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
 
 	KeyMat polarcontext_invkeys_mat_;
 	std::vector<Eigen::MatrixXd> polarcontexts_;
-	PointCloudType::Ptr CloudGlobalMap;
+	PointCloudType::Ptr CloudGlobalMap_;
 	PointCloudType::Ptr accumulateMap_;
 	std::vector<Eigen::Isometry3d> accumulateKeypose_;
-	PointCloudType::Ptr testMatchcloud;
-	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn;
-	PointCloudType::Ptr CloudGlobalMapIn_;
-	std::vector<ScInfo> LoadData;
-	std::shared_ptr<SCManager> scManager;
-	std::vector<Eigen::Vector3f> show_map_points;
+	PointCloudType::Ptr testMatchcloud_;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn_;
+	PointCloudType::Ptr CloudGlobalMapIn_PointType_;
+	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> LoadData_;
+	std::shared_ptr<SCManager> scManager_;
+	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> show_map_points_;
 
 	// pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>::Ptr fast_gicp;
-	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp; // TODO test gicp with normal
+	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_; // TODO test gicp with normal
 	// fast_gicp::FastGICP<PointType, PointType>::Ptr gicp; // TODO test gicp with normal
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
