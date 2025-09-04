@@ -107,6 +107,12 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 
 	kf_state.change_P(init_P);
 	last_imu_ = meas.imu.back();
+
+	if (N > MAX_INI_COUNT) {
+		TRACE_INFO_CLASS("IMU init done, grav norm: %f, (%f, %f, %f), bg: (%f, %f, %f) degree", init_state.grav.norm(),
+						 init_state.grav.x(), init_state.grav.y(), init_state.grav.z(), init_state.bg.x() * 180. / M_PI,
+						 init_state.bg.y() * 180. / M_PI, init_state.bg.z() * 180. / M_PI);
+	}
 }
 
 //反向传播

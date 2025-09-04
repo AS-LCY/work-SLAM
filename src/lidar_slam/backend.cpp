@@ -22,11 +22,11 @@ BackEnd::BackEnd(float dist, float angle, float loop_dist, float loop_time, int 
 
 	loopIcpScore_ = loop_icp_score;
 
-	parameters_.relinearizeThreshold = 0.01;
+	parameters_.relinearizeThreshold = 0.01; // TODO(jxl): 0.01 ~ 0.05; 阈值越小，精度越高，但计算量越大。
 	parameters_.relinearizeSkip = 1;
 
 	isam_ = new gtsam::ISAM2(parameters_);
-	downSizeFilterICP_.setLeafSize(0.4, 0.4, 0.4); // TODO param?
+	downSizeFilterICP_.setLeafSize(0.4, 0.4, 0.4); // TODO(jxl): 配置文件来设置
 	aLoopIsClosed_ = false;
 
 	//    ROS_INFO_STREAM(BOLDBLUE<<"loopIcpScore_: "<<loopIcpScore_<<RESET);
@@ -66,6 +66,7 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 		// 添加激光里程计因子
 		gtsam::noiseModel::Diagonal::shared_ptr odometryNoise =
 			gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+		// TODO(jxl): noise有点小，也要添加loss func
 		gtsam::Pose3 poseFrom(KeyPoses_.back().pose.matrix()); /// pre
 		gtsam::Pose3 poseTo(transformTobeMapped.matrix());	   // cur
 		// 参数：前一帧id，当前帧id，前一帧与当前帧的位姿变换（作为观测值），噪声协方差
@@ -92,7 +93,7 @@ void BackEnd::addLoopFactor() {
 	// ROS_INFO_STREAM(BOLDRED<<"addLoopFactor, loopIndexQueue_ size = " << loopIndexQueue_.size() <<"
 	// *************************** "<<RESET);
 	//  mtxLoopInfo_.lock(); // TODO this cause CPU high
-	std::unique_lock<std::mutex> lk(mtxLoopInfo_);
+	std::unique_lock<std::mutex> lk(mtxLoopInfo_); // TODO(jxl): 在函数一进来就应该就上锁
 	loopIndexQueue_.clear();
 	loopPoseQueue_.clear();
 	loopNoiseQueue_.clear();
@@ -100,16 +101,17 @@ void BackEnd::addLoopFactor() {
 	//   mtxLoopInfo_.unlock();
 }
 
+//在lio的线程中运行
 bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud,
 									 double time) {
 	// cout<<"debug: saveFrame: "<<endl;
 
 	// 计算当前帧与前一帧位姿变换，如果变化太小，不设为关键帧，反之设为关键帧
-	if (saveFrame(transformTobeMapped) == false) return false;
+	if (saveFrame(transformTobeMapped) == false) return false; //是否关键帧
 
 	// cout<<"debug: addOdomFactor: "<<endl;
 	// 激光里程计因子(from fast-lio),  输入的是frame_relative pose  帧间位姿(body 系下)
-	addOdomFactor(transformTobeMapped);
+	addOdomFactor(transformTobeMapped); // T_odom_baselink
 	//// GPS因子 (UTM -> WGS84)
 	// addGPSFactor();
 	//// 闭环因子 (rs-loop-detect)  基于欧氏距离的检测
@@ -217,7 +219,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 		KeyFrameCloud_.emplace_back(currentCLoud);
 	}
 	//   Eigen::Vector3d euler =  pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-	Eigen::Vector3d euler = R2ypr(pose.matrix().block<3, 3>(0, 0));
+	Eigen::Vector3d euler = R2ypr(pose.matrix().block<3, 3>(0, 0)); // TODO(jxl): 和eigen的接口计算原理一样，为何要重写
 	euler[0] = 0;
 	Eigen::Isometry3d Transform = Eigen::Isometry3d::Identity();
 	Transform.matrix().block<3, 3>(0, 0) = ypr2R(euler);
@@ -235,7 +237,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 	// newTransform.matrix().block<3, 3>(0, 0) = ypr2R(Eigen::Vector3d(0,pitch,roll));
 	// std::cout << "euler martrix "<< newTransform.matrix()<<std::endl;
 	gravityAlignedCLoud_.reset(new PointCloudType());
-	*gravityAlignedCLoud_ = *transformPointCloud(currentCLoud, Transform);
+	*gravityAlignedCLoud_ = *transformPointCloud(currentCLoud, Transform); //关键帧点云转成和重力对齐
 	scManager_.makeAndSaveScancontextAndKeys(*gravityAlignedCLoud_);
 }
 
@@ -324,6 +326,8 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 		int thisKeyInd = (int)subMapKeyPosesDS->points[i].intensity;
 		// *globalMapKeyFrames += *transformPointCloud(cornerCloudKeyFrames[thisKeyInd],
 		// &cloudKeyPoses6D->points[thisKeyInd]);
+
+		// TODO(jxl): KeyFrameCloud的锁，KeyPoses的锁
 		*subMapKeyFrames += *transformPointCloud(KeyFrameCloud_[thisKeyInd],
 												 KeyPoses_[thisKeyInd].pose); //  fast_lio only use surfCloud
 	}
@@ -430,6 +434,7 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyfra
 	*nearKeyframes = *cloud_temp;
 }
 
+// sec_mapping模式下，在启动后端线程之前，加载之前建图的meta信息以及全局定位初始化信息
 bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
 									std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
 									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses,
@@ -533,7 +538,7 @@ void BackEnd::performLoopClosure(double time) {
 	icp.setRANSACIterations(0);
 
 	// scan-to-map，调用icp匹配
-	icp.setInputSource(cureKeyframeCloud);
+	icp.setInputSource(cureKeyframeCloud); // source和target都是在world系下
 	icp.setInputTarget(prevKeyframeCloud);
 	PointCloudType::Ptr unused_result(new PointCloudType());
 	icp.align(*unused_result);
@@ -543,7 +548,8 @@ void BackEnd::performLoopClosure(double time) {
 	TRACE_INFO_CLASS("backend loop_edge match cost time: %f ms", double(loop_edge_match_duration.count()));
 
 	// 未收敛，或者匹配不够好
-	if (icp.hasConverged() == false || icp.getFitnessScore() > loopIcpScore_) return;
+	if (icp.hasConverged() == false || icp.getFitnessScore() > loopIcpScore_)
+		return; // TODO(jxl): 统计分数时，应该设置inlier阈值
 
 	std::cout << "RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "." << std::endl; // giseop
 	// ROS_INFO_STREAM(YELLOW<<"RS loop found! between " << loopKeyCur << " and " << loopKeyPre << "."  <<RESET);
@@ -805,8 +811,10 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr BackEnd::getCurrentRGBMap() {
 }
 
 PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
-	std::unique_lock<std::mutex> lk(mtxCurrentMap_);
+	std::unique_lock<std::mutex> lk(mtxCurrentMap_); // TODO(jxl): 该锁是锁show_map，show_index,
 	// PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
+
+	// TODO(jxl): mtxCloud_是锁KeyFrameCloud，KeyPoses也有自己的锁
 	if (KeyPoses_.size() == 0) return show_map_;
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);

@@ -27,7 +27,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	log_info_manager_->reset_log_info();
 	slam_run_status_.store(0);
 
-	sleep(1); // TODO(jxl): 要休眠1s吗
+	sleep(0.01); // TODO(jxl): 要休眠1s吗
 
 	// CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
 	// CPU_SET(0, &mask); // 将线程绑定到 cpu_id 核心
@@ -343,13 +343,17 @@ void LidarSlam::localizationThread() {
 					PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType());
 					{
 						std::unique_lock<std::mutex> lk(mtx_lidar_cloud_);
-						downSizeFilterCloud_test_.setInputCloud(undistortCloud_);
+						downSizeFilterCloud_test_.setInputCloud(undistortCloud_); // lidar系下的点云
 						downSizeFilterCloud_test_.filter(*FilteredUndistortCloud_test);
 					}
 
 					double t0 = omp_get_wtime();
 					globalLocalizationSuccess_ = localization_->globalLocalization(
 						FilteredUndistortCloud_test, T_odom_lidar_, p_imu_->initial_rotate_, score_thr);
+
+					// TODO(jxl): T_odom_lidar加锁，拷贝后解锁
+					// initial_rotate_可以拷贝出来再使用
+
 					// cout << "globalLocalizationSuccess_: " << globalLocalizationSuccess_ << endl;
 					double t1 = omp_get_wtime();
 					TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
@@ -365,16 +369,18 @@ void LidarSlam::localizationThread() {
 					global_localize_count_ = 0;
 					local_thrd_status_.store(3);
 
-					need_localize_ = false;
+					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
 					wait_time++;
 				}
+
+				// TODO(jxl): 这段代码可以不要，最外层有休眠
 				auto end = std::chrono::steady_clock::now();
 				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 				if (elapsed < period_relocal) {
 					std::this_thread::sleep_for(period_relocal - elapsed);
 				}
 				continue;
-			} else {
+			} else { //全局定位成功
 				if (wait_time >= period_local_sec) {
 					need_localize_ = true;
 					wait_time = 0;
@@ -517,7 +523,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					PointCloudType::Ptr temp(new PointCloudType());
 					{
 						std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-						pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp);
+						pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // TODO(jxl)：拷贝完后的temp点云没有使用?
 					}
 
 					// state.state("lost");
@@ -526,6 +532,9 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 						undistortCloud_, T_odom_lidar_, p_imu_->initial_rotate_, score_thr);
 					// cout << "globalLocalizationSuccess_: " << globalLocalizationSuccess_ << endl;
 					// cout << "global_localize_times_count: " << global_localize_count << endl;
+
+					// TODO(jxl): undistort_cloud， T_odom_lidar在run()线程中，需要加锁，拷贝后再释放
+					// initial_rotate_可以拷贝出来
 
 					if (globalLocalizationSuccess_) {
 						// m_status_ = M_STANDBY;
@@ -543,6 +552,10 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					secmap_relocal_thrd_status_.store(2); //重定位失败 =============================================
 				}
 			}
+
+			// TODO(jxl): sec_mapping模式下，重定位成功后，可以结束线程
+			// ...
+			// ...
 		}
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -671,7 +684,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 					// TODO(jxl): current_pose的base_time，update_time未更新
 
 					localization_base_.update_time = msg->time_stamp;
-					// TODO(jxl): localize的时间戳也更新了
+					// TODO(jxl): dt是应该更新，但是 localization_base_的时间戳不应该更新。
 				}
 			}
 		} else {													//(localize_t, curr_t)
@@ -688,7 +701,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 				// TODO(jxl): current_pose的base_time，update_time未更新
 
 				localization_base_.update_time = msg->time_stamp;
-				// TODO(jxl): localize的时间戳也更新了
+				// TODO(jxl): dt是应该更新，但是 localization_base_的时间戳不应该更新。
 			}
 		}
 	}
@@ -846,11 +859,11 @@ bool LidarSlam::run() {
 
 		state_point = kf_.get_x();
 		T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
-		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix();
+		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
 
-		localization_base_.imu_state = state_point;
-		localization_base_.base_time = lidar_end_time_;
+		localization_base_.imu_state = state_point;		//滤波器估计的imu的状态，更新localization_base
+		localization_base_.base_time = lidar_end_time_; // TODO(jxl): base_time多余
 		localization_base_.update_time = lidar_end_time_;
 
 		auto backend_start = std::chrono::high_resolution_clock::now();
@@ -864,7 +877,7 @@ bool LidarSlam::run() {
 
 				bool insert = back_end_->saveKeyFramesAndFactor(T_odom_lidar_, undistortCloud_,
 																lidar_end_time_); // TODO add transform
-				if (insert) {
+				if (insert) {													  //是关键帧
 					cout << YELLOW << "************************* backend: keyPosesCount: "
 						 << back_end_->getKeyframePoses().size() - 1 << RESET << endl;
 					back_end_->saveCurrentCloud(undistortCloud_,
@@ -874,19 +887,25 @@ bool LidarSlam::run() {
 						unoptimized_path_.emplace_back(getWheelInMap()); // TODO max size
 						if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
 					}
-					T_odom_lidar_ = back_end_->getCurrentPose().pose;
+
+					// TODO(jxl): 苗苗让后端不维护T_map_odom, 还是保持I，但是不可能啊
+					T_odom_lidar_ = back_end_->getCurrentPose().pose; // curr keyframe in map，是带了回环优化后的pose
 					T_odom_b = T_odom_lidar_ * T_b_lidar.inverse();
 					state_ikfom state_updated = kf_.get_x();
 					state_updated.pos = T_odom_b.translation();
 					state_updated.rot = Sophus::SO3d(T_odom_b.rotation());
 					// state_updated.rot =  Sophus::SO3(T_odom_b.rotation());
 
-					kf_.change_x(state_updated);
+					kf_.change_x(state_updated); // TODO(jxl): 强行把滤波器的状态改变，不对
 					new_key_cloud_arrived_ = true;
 				}
 
+				// TODO(jxl): 不是关键帧也会运行下面的逻辑
+				//...
+
 				// 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
 				bool LoopIsClosed = back_end_->correctPoses();
+				// TODO(jxl): correct_pose函数应该放到saveKeyFramesAndFactor()中去
 				{
 					std::unique_lock<std::mutex> lk(mtx_path_);
 					optimized_path_.clear();
@@ -896,7 +915,8 @@ bool LidarSlam::run() {
 						optimized_path_.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel_);
 					}
 				}
-				if (LoopIsClosed) {
+				if (LoopIsClosed) { // TODO(jxl):
+									// 更新前端的local_map，这么做讲不通啊，前端应该只提供odom_pose，后端来通过闭环检测和优化来维护T_map_odom
 					back_end_->recontructIKdTree(*ikdtree_, config_param_.ikdtree.kdTreeReconstructRadius,
 												 config_param_.ikdtree.kdTreeReconstructKeyFrameLeafSize,
 												 config_param_.ikdtree.kdTreeReconstructPointLeafSize);
@@ -920,7 +940,7 @@ bool LidarSlam::run() {
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();
 		{
-			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
+			std::unique_lock<std::mutex> lk(mtx_odom_cloud_); // TODO(jxl): undistortCloud的锁
 			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
 			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
 		}

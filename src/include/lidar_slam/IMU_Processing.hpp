@@ -1,5 +1,6 @@
 #ifndef IMU_PROCESSING_H
 #define IMU_PROCESSING_H
+#include <logTracer/tracer.h>
 #include <math.h>
 #include <omp.h>
 
@@ -68,6 +69,7 @@ auto set_pose6d(const double t, const Matrix<T, 3, 1>& a, const Matrix<T, 3, 1>&
 }
 
 class ImuProcess {
+	DECL_CLASSNAME(ImuProcess)
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
