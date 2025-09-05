@@ -151,7 +151,7 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, Poin
 void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose) {
 	auto start = std::chrono::high_resolution_clock::now();
 	PointCloudType::Ptr currentCLoud(new PointCloudType());
-	pcl::copyPointCloud(*points, *currentCLoud); // TODO(jxl): 没必要拷贝来拷贝去
+	pcl::copyPointCloud(*points, *currentCLoud);
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		KeyFrameCloud_.emplace_back(currentCLoud);

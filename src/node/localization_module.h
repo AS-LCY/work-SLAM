@@ -185,6 +185,7 @@ class LocalizationModule {
 	void publish_odometry_lidar_in_map(const Eigen::Isometry3d& lidar_in_map, lidar_slam::Localization_base curr_pose,
 									   const std::string& frameid, const std::string& child_frameid,
 									   ModuleStatus curr_running_module_status);
+	void publish_OdomToMap_tf(const Eigen::Isometry3d& T_map_odom);
 
 	void publish_odometry_in_map(const Eigen::Isometry3d& lidar_in_map, const std::string& frameid,
 								 const std::string& child_frameid);

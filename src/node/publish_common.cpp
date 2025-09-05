@@ -112,6 +112,24 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	br_.sendTransform(transform);
 }
 
+void LocalizationModule::publish_OdomToMap_tf(const Eigen::Isometry3d& T_map_odom) {
+	geometry_msgs::msg::TransformStamped transform;
+	transform.header.stamp = node_->now();
+	transform.header.frame_id = "map";
+	transform.child_frame_id = "odom";
+
+	transform.transform.translation.x = T_map_odom.translation().x();
+	transform.transform.translation.y = T_map_odom.translation().y();
+	transform.transform.translation.z = T_map_odom.translation().z();
+	Eigen::Quaterniond q(T_map_odom.rotation());
+	transform.transform.rotation.x = q.x();
+	transform.transform.rotation.y = q.y();
+	transform.transform.rotation.z = q.z();
+	transform.transform.rotation.w = q.w();
+
+	br_.sendTransform(transform);
+}
+
 /*
 void LocalizationModule::publish_odometry(const Eigen::Isometry3d isometry_3d, std::string frameid, std::string
 child_frameid, ros::Publisher pub_odom)

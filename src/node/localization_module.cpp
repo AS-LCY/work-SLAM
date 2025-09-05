@@ -238,7 +238,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		// }
 		// publish_cloud(slam_->get_kdtree_cloud(), "mapping_odom", pubKdtreeCloud);
 
-		publish_cloud(slam_->get_odom_cloud(), "mapping_odom", pubOdomCloud);
+		publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
 		visualizeLoopClosure(slam_->getloopIndex(),
 							 optimized_path_msg); // TODO(jxl): 只发布了闭环nodes和edges， 整个pose graph结构看不到
 		publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
@@ -539,6 +539,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		localization_status_is_ok(localization_status_.load())) {
 		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
 									  "base_link", curr_running_module_status);
+		publish_OdomToMap_tf(slam_->getOdomToMap());
 
 		// 配合robot-localization 节点
 		// Eigen::Isometry3d T_m_o_ = slam_->getLidarInMap() * T_lidar_baselink_ * T_o_b_.inverse();
@@ -552,6 +553,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 	if (is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())) {
 		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
 									  "base_link", curr_running_module_status);
+		publish_OdomToMap_tf(slam_->getOdomToMap());
 		// publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
 
 		// 配合robot-localization 节点
