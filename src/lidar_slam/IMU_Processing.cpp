@@ -171,7 +171,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 		Q.block<3, 3>(6, 6).diagonal() = cov_bias_gyr_;
 		Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc_;
 
-		kf_state.predict(dt, Q, in); // IMU前向传播，每次传播的时间间隔为dt
+		kf_state.predict(dt, Q, in); // IMU前向传播，每次传播的时间间隔为dt  把滤波器的状态往前预测传播
 
 		imu_state = kf_state.get_x();
 		angvel_last_ =

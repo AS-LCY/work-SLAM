@@ -592,19 +592,29 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 	last_timestamp_imu_ = curr_timestamp_imu;
 	imu_buffer_lock.unlock();
 
-	// TODO(jxl): globalLocalizationSuccess_要加锁，拷贝后释放掉锁
-	if (globalLocalizationSuccess_ || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-		if (current_pose_.base_time < localization_base_.base_time) { //(curr_t, localize_t)
+	std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+	auto localization_base_copy = localization_base_;
+	localization_base_lock.unlock();
 
-			current_pose_ = localization_base_;
-			// TODO(jxl): curr_pose只在imu回调中更新。
-			// TODO(jxl): 一般来说，不应该会出现curr < localize情况，出现时刻，位姿会跳变，时间戳相差多少？
+	std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+	auto curr_pose_copy = current_pose_;
+	current_pose_lock.unlock();
+
+	if (globalLocalizationSuccess_ || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
+		if (curr_pose_copy.update_time < localization_base_copy.update_time) { //(curr_time, localize_time)
+			const auto time_diff = (curr_pose_copy.update_time - localization_base_copy.update_time) * 1e3;
+			TRACE_ERR_CLASS("ERROR: latest imu predicted pose time < laser update pose time, %f < %f, time diff: %f ms",
+							curr_pose_copy.update_time, localization_base_copy.update_time, time_diff);
+
+			current_pose_lock.lock();
+			current_pose_ = localization_base_copy;
+			current_pose_lock.unlock();
 
 			imu_buffer_lock.lock();
 			for (auto it = imu_buffer_.begin(); it != imu_buffer_.end(); it++) {
 				const std::shared_ptr<livox_ros::ImuMsg>& msg = *it;
-				if (msg->time_stamp > localization_base_.update_time) {
-					double dt = msg->time_stamp - localization_base_.update_time;
+				if (msg->time_stamp > current_pose_.update_time) {
+					double dt = msg->time_stamp - current_pose_.update_time;
 					V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
 								 current_pose_.imu_state.bg;
 					V3D acc =
@@ -612,31 +622,31 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 						G_m_s2 / (p_imu_->mean_acc_.norm()); // msg中acc单位是g
 					acc =
 						current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
+
+					current_pose_lock.lock();
 					current_pose_.imu_state.pos += current_pose_.imu_state.vel * dt + 0.5 * acc * dt * dt;
 					current_pose_.imu_state.vel += acc * dt;
 					current_pose_.imu_state.rot = current_pose_.imu_state.rot * Sophus::SO3d::exp(angvel * dt);
-					// TODO(jxl): current_pose的base_time，update_time未更新
-
-					localization_base_.update_time = msg->time_stamp;
-					// TODO(jxl): dt是应该更新，但是 localization_base_的时间戳不应该更新。
+					current_pose_.update_time = msg->time_stamp;
+					current_pose_lock.unlock();
 				}
 			}
 			imu_buffer_lock.unlock();
-		} else {													//(localize_t, curr_t)
-			if (msg->time_stamp > localization_base_.update_time) { // TODO(jxl): bug，应该是和和curr_t作差
-				double dt = msg->time_stamp - localization_base_.update_time;
+		} else { //(localize_time, curr_time)
+			if (msg->time_stamp > current_pose_.update_time) {
+				double dt = msg->time_stamp - current_pose_.update_time;
 				V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
 							 current_pose_.imu_state.bg;
 				V3D acc = V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) *
 						  G_m_s2 / (p_imu_->mean_acc_.norm()); // msg中acc单位是g
 				acc = current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
+
+				current_pose_lock.lock();
 				current_pose_.imu_state.pos += current_pose_.imu_state.vel * dt + 0.5 * acc * dt * dt;
 				current_pose_.imu_state.vel += acc * dt;
 				current_pose_.imu_state.rot = current_pose_.imu_state.rot * Sophus::SO3d::exp(angvel * dt);
-				// TODO(jxl): current_pose的base_time，update_time未更新
-
-				localization_base_.update_time = msg->time_stamp;
-				// TODO(jxl): dt是应该更新，但是 localization_base_的时间戳不应该更新。
+				current_pose_.update_time = msg->time_stamp;
+				current_pose_lock.unlock();
 			}
 		}
 	}
@@ -765,9 +775,14 @@ bool LidarSlam::run() {
 		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
 
-		localization_base_.imu_state = state_point;		//滤波器估计的imu的状态，更新localization_base
-		localization_base_.base_time = lidar_end_time_; // TODO(jxl): base_time多余
+		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+		localization_base_.imu_state = state_point; //滤波器估计的imu的状态，更新localization_base
 		localization_base_.update_time = lidar_end_time_;
+		localization_base_lock.unlock();
+
+		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+		current_pose_ = localization_base_; // imu回调函数中基于更新后的位姿来重新预测位姿
+		current_pose_lock.unlock();
 
 		auto backend_start = std::chrono::high_resolution_clock::now();
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {

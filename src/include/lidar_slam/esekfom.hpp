@@ -104,6 +104,7 @@ class esekf {
 			PointType point_world;
 
 			V3D p_body(point_body.x, point_body.y, point_body.z);
+
 			//把Lidar坐标系的点先转到IMU坐标系，再根据前向传播估计的位姿x，转到世界坐标系
 			V3D p_global(x_.rot * (x_.offset_R_L_I * p_body + x_.offset_T_L_I) + x_.pos);
 			point_world.x = p_global(0);
