@@ -312,7 +312,6 @@ class LidarSlam {
 	// void relocalizationForMappingThread();
 
 	void global_localization_for_sec_mapping_thread();
-	void delete_log_file(double keep_time);
 
    private:
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -389,11 +388,8 @@ class LidarSlam {
 	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
 	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
 
-	std::deque<std::pair<double, Eigen::Isometry3d>> poses_buffer_; // TODO(jxl): 这个变量没有使用
-
 	bool thread_run_ = true;
 	bool globalLocalizationSuccess_ = false;
-	bool localization_wait_ = false; // TODO(jxl): 没有使用
 	bool loop_closure_wait_ = false; // TODO(jxl): 没有使用
 
 	Localization_base localization_base_; // 每次点云处理后更新，并作为current_pose 积分结果的base
@@ -404,7 +400,8 @@ class LidarSlam {
 	std::unique_ptr<std::thread> thread_ = nullptr;
 	std::unique_ptr<std::thread> global_localization_thread_ = nullptr;
 
-	mutex mtx_buffer_;
+	mutex mtx_imu_buffer_;
+	mutex mtx_lidar_buffer_;
 	mutex mtx_odom_cloud_;
 	mutex mtx_lidar_cloud_;
 	mutex mtx_obstacle_cloud_;

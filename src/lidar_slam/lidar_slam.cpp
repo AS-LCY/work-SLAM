@@ -161,9 +161,16 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 		TRACE_WARN_CLASS("lidar lose rate %f s", omp_get_wtime() - time_buffer_.front());
 	}
 
+	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
+	const auto last_timestamp_imu = last_timestamp_imu_;
+	imu_buffer_lock.unlock();
+
+	std::unique_lock<std::mutex> lidar_buffer_lock(mtx_lidar_buffer_);
 	if (!lidar_pushed_) {
-		meas.lidar = lidar_buffer_.front();									// lidar指针指向最旧的lidar数据
-		meas.lidar_beg_time = time_buffer_.front();							// 记录最早时间
+		meas.lidar = lidar_buffer_.front();			// lidar指针指向最旧的lidar数据
+		meas.lidar_beg_time = time_buffer_.front(); // 记录最早时间
+		lidar_buffer_lock.unlock();
+
 		lidar_mean_scantime_ = meas.lidar->points.back().curvature * 0.001; //在sampling_cloud()中curvature单位转成了ms
 		lidar_mean_scantime_ = (lidar_mean_scantime_ < 0.1 || lidar_mean_scantime_ > 0.15) ? 0.1 : lidar_mean_scantime_;
 		lidar_end_time_ = meas.lidar_beg_time + lidar_mean_scantime_;
@@ -171,39 +178,44 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 		lidar_pushed_ = true;
 	}
 
-	if (last_timestamp_imu_ < lidar_end_time_) {
-		TRACE_WARN_CLASS("last_timestamp_imu: %f < lidar_end_time: %f", last_timestamp_imu_, lidar_end_time_.load());
+	if (last_timestamp_imu < lidar_end_time_) {
+		TRACE_WARN_CLASS("last_timestamp_imu: %f < lidar_end_time: %f", last_timestamp_imu, lidar_end_time_.load());
 		return false;
 	}
 
-	/*** push imu data, and pop from imu buffer ***/
+	imu_buffer_lock.lock();
 	double imu_time = imu_buffer_.front()->time_stamp; // 最旧IMU时间
 	meas.imu.clear();
 
-	std::unique_lock<std::mutex> lk(mtx_buffer_);
 	while ((!imu_buffer_.empty()) && (imu_time < lidar_end_time_)) { //记录imu数据，imu时间小于当前帧lidar结束时间
 		imu_time = imu_buffer_.front()->time_stamp;
 		if (imu_time > lidar_end_time_) {
 			break;
 		}
 		meas.imu.push_back(imu_buffer_.front()); //记录当前lidar帧内的imu数据到meas.imu
-		imu_buffer_.pop_front();				 // TODO(jxl): 加锁
+		imu_buffer_.pop_front();
 	}
+	imu_buffer_lock.unlock();
 
 	if (meas.imu.empty()) {
 		lidar_pushed_ = false;
 		TRACE_WARN_CLASS("Measure.imu is empty.");
 		TRACE_WARN_CLASS("imu_buffer.front.time: %f, back.time: %f", imu_time, imu_buffer_.back()->time_stamp);
 		TRACE_WARN_CLASS("lidar_beg_time.time: %f, lidar_end_time.time: %f", meas.lidar_beg_time, meas.lidar_end_time);
-		lidar_buffer_.pop_front(); // TODO(jxl): 加锁
+
+		lidar_buffer_lock.lock();
+		lidar_buffer_.pop_front();
 		time_buffer_.pop_front();
+		lidar_buffer_lock.unlock();
 		return false;
 	}
 	log_info_manager_->slam_info.data[30] = meas.lidar->points.size();
 	log_info_manager_->slam_info.data[31] = lidar_buffer_.front()->points.size();
 
+	lidar_buffer_lock.lock();
 	lidar_buffer_.pop_front();
 	time_buffer_.pop_front();
+	lidar_buffer_lock.unlock();
 
 	lidar_pushed_ = false;
 
@@ -567,36 +579,38 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 
 void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 	static const int keep_lidar_num_before_curr = config_param_.lidar_preproc.keep_lidar_num_before_curr;
-	static const double jump_back_time_thr = -1.0;
 	if (reseting_) {
 		return;
 	}
 
-	// 出现的bug: 系统时间跳变，往回跳零点几秒，程序出错，slam 显示定位正常，但是定位已经不对
-	// 处理： 当时间跳回过去，跳变间隔在1秒以内，则跳过这几帧数据
-
 	double curr_time = cloud->header.stamp * 1.0 * 1e-6; // 转换为单位： second
 	//在msg2pcl_clip()中，pcl_header.stamp的单位是us
 
+	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
+	const double last_timestamp_imu = last_timestamp_imu_;
+	const bool imu_buffer_empty = imu_buffer_.empty();
+	imu_buffer_lock.unlock();
+
+	std::unique_lock<std::mutex> lidar_buffer_lock(mtx_lidar_buffer_);
 	if (curr_time < last_timestamp_lidar_) {
 		TRACE_WARN_CLASS("clear lidar buffer! curr lidar time: %f < last lidar time: %f", curr_time,
 						 last_timestamp_lidar_);
-		lidar_buffer_.clear(); // TODO(jxl): 应该只需要pop当前帧就行，而且lidar_buffer应该和imu_buffer使用不同的mtx。
+		lidar_buffer_.clear();
+		time_buffer_.clear();
 	}
 
-	const double time_diff_thresh = 0.2; // TODO(jxl): 原来是10s, 的阈值是否有点大， 而且也没做处理
-	const double time_diff = abs(last_timestamp_imu_ - curr_time);
-	if (!time_sync_en_ && time_diff > time_diff_thresh && !imu_buffer_.empty() && !lidar_buffer_.empty()) {
+	const double time_diff_thresh = 0.2;
+	const double time_diff = abs(last_timestamp_imu - curr_time);
+	if (!time_sync_en_ && time_diff > time_diff_thresh && !imu_buffer_empty && !lidar_buffer_.empty()) {
 		TRACE_WARN_CLASS("IMU and LiDAR not Synced, IMU time: %f, lidar time: %f, abs_diff: %f > thresh: %f",
-						 last_timestamp_imu_, curr_time, time_diff, time_diff_thresh);
+						 last_timestamp_imu, curr_time, time_diff, time_diff_thresh);
 	}
 
-	if (time_sync_en_ && !timediff_set_flg_ && abs(last_timestamp_imu_ - curr_time) > 1 && !imu_buffer_.empty()) {
+	if (time_sync_en_ && !timediff_set_flg_ && abs(last_timestamp_imu - curr_time) > 1 && !imu_buffer_empty) {
 		timediff_set_flg_ = true;
-		timediff_lidar_wrt_imu_ = curr_time + 0.1 - last_timestamp_imu_;
+		timediff_lidar_wrt_imu_ = curr_time + 0.1 - last_timestamp_imu;
 	}
 
-	std::unique_lock<std::mutex> lk(mtx_buffer_);
 	lidar_buffer_.push_back(cloud); //点云已经在驱动中转换成和base_link朝向一致，原点位置还是雷达安装位置
 	time_buffer_.push_back(curr_time);
 	last_timestamp_lidar_ = curr_time;
@@ -612,33 +626,10 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 }
 
 void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
-	static const double jump_back_time_thr = -1.0;
 	if (reseting_) {
 		return;
 	}
 	std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg(*msg_in));
-
-	// TODO(jxl): 这段代码没有多大作用，确认后删除
-	//  if (!config_param_.common.offline_mode) {
-	//  	if (!imu_file_shift_) {
-	//  		if (temp_imu_msg_.size() > 0) {
-	//  			for (auto msg : temp_imu_msg_) {
-	//  				imu_file_ << std::fixed << std::setprecision(9) << msg.time_stamp << " " <<
-	//  msg.angular_velocity.x()
-	//  						  << " " << msg.angular_velocity.y() << " " << msg.angular_velocity.z() << " "
-	//  						  << msg.linear_acceleration.x() << " " << msg.linear_acceleration.y() << " "
-	//  						  << msg.linear_acceleration.z() << std::endl;
-	//  			}
-	//  			temp_imu_msg_.clear();
-	//  		}
-	//  		imu_file_ << std::fixed << std::setprecision(9) << msg->time_stamp << " " << msg->angular_velocity.x()
-	//  				  << " " << msg->angular_velocity.y() << " " << msg->angular_velocity.z() << " "
-	//  				  << msg->linear_acceleration.x() << " " << msg->linear_acceleration.y() << " "
-	//  				  << msg->linear_acceleration.z() << std::endl;
-	//  	} else {
-	//  		temp_imu_msg_.push_back(*msg);
-	//  	}
-	//  }
 
 	// lidar 和 imu时间差过大，且开启时间同步, 纠正当前输入imu的时间
 	if (abs(timediff_lidar_wrt_imu_) > 0.1 && time_sync_en_) {
@@ -646,7 +637,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 	}
 	double curr_timestamp_imu = msg->time_stamp;
 
-	std::unique_lock<std::mutex> lk(mtx_buffer_); // TODO(jxl): 使用imu_buffer自己的mtx, 而且锁范围太大
+	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
 	if (curr_timestamp_imu < last_timestamp_imu_) {
 		imu_buffer_.clear();
 		TRACE_WARN_CLASS("clear imu buffer! curr imu time: %f < last imu time: %f", curr_timestamp_imu,
@@ -655,9 +646,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 		TRACE_WARN_CLASS("imu lose rate! imu diff: %f > thresh: %f", curr_timestamp_imu - last_timestamp_imu_, 0.1);
 	}
 	imu_buffer_.push_back(msg); // base_link下的acc，gyro
-
 	last_timestamp_imu_ = curr_timestamp_imu;
-	localization_wait_ = true; // TODO(jxl): 这个变量可以不要了
+	imu_buffer_lock.unlock();
 
 	// TODO(jxl): globalLocalizationSuccess_要加锁，拷贝后释放掉锁
 	if (globalLocalizationSuccess_ || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
@@ -667,6 +657,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 			// TODO(jxl): curr_pose只在imu回调中更新。
 			// TODO(jxl): 一般来说，不应该会出现curr < localize情况，出现时刻，位姿会跳变，时间戳相差多少？
 
+			imu_buffer_lock.lock();
 			for (auto it = imu_buffer_.begin(); it != imu_buffer_.end(); it++) {
 				const std::shared_ptr<livox_ros::ImuMsg>& msg = *it;
 				if (msg->time_stamp > localization_base_.update_time) {
@@ -687,6 +678,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 					// TODO(jxl): dt是应该更新，但是 localization_base_的时间戳不应该更新。
 				}
 			}
+			imu_buffer_lock.unlock();
 		} else {													//(localize_t, curr_t)
 			if (msg->time_stamp > localization_base_.update_time) { // TODO(jxl): bug，应该是和和curr_t作差
 				double dt = msg->time_stamp - localization_base_.update_time;
@@ -705,27 +697,6 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 			}
 		}
 	}
-
-	poses_buffer_.push_back(std::make_pair(curr_timestamp_imu, getLidarInOdom()));
-	if (poses_buffer_.size() > 200) {
-		poses_buffer_.pop_front();
-	}
-	localization_wait_ = false;
-}
-
-void LidarSlam::delete_log_file(double keep_time) { // about 100MB pr 60s
-	if (pcd_file_.size() < 10) {
-		return;
-	}
-	if (pcd_file_.back() - pcd_file_.front() > keep_time) {
-		std::string file = config_param_.common.save_log_dir + std::to_string(pcd_file_.front()) + ".pcd";
-		std::remove(file.c_str());
-		pcd_file_.pop_front();
-	}
-	imu_file_shift_ = true;
-	// trim_log_file(keep_time / 60.0 * 2 * 1024 * 1024,param.save_log_path +
-	// std::string("imu_data.txt"),imu_file_,pcd_file_.front());
-	imu_file_shift_ = false;
 }
 
 bool LidarSlam::run() {
@@ -735,12 +706,12 @@ bool LidarSlam::run() {
 	// std::cout << "debug: lidar slam main     Thread ID: " << thisId << std::endl;
 
 	/// 在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
-	static int frame_num = 0;
-	static double aver_time_consu = 0, aver_time_icp = 0, aver_time_incre = 0, aver_time_solve = 0;
-	double t0, t1, t2, t3, t4, t5, match_start, solve_start, run_start, run_end, t0_backend, t1_backend, t0_transform,
-		t1_transform;
+	// static int frame_num = 0;
+	// static double aver_time_consu = 0, aver_time_icp = 0, aver_time_incre = 0, aver_time_solve = 0;
+	// double t0, t1, t2, t3, t4, t5, match_start, solve_start, run_start, run_end, t0_backend, t1_backend,
+	// t0_transform, 	t1_transform;
 
-	run_start = omp_get_wtime();
+	auto run_start = std::chrono::high_resolution_clock::now();
 
 	if (sync_packages(Measures_)) { //在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
 		// TRACE_INFO_CLASS("imu lidar sync success");
@@ -932,7 +903,8 @@ bool LidarSlam::run() {
 			}
 		}
 
-		t1_backend = omp_get_wtime();
+		auto backend_end = std::chrono::high_resolution_clock::now();
+
 		// std::cout<<"test "<< R2ypr(T_odom_lidar_.matrix().block<3, 3>(0, 0)).transpose() << std::endl;
 		// if (!param.localization_mode){
 		// if (working_mode_==MAPPING || working_mode_ == SEC_MAPPING){
@@ -944,70 +916,53 @@ bool LidarSlam::run() {
 			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
 			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
 		}
-		t1_transform = omp_get_wtime();
-		t3 = omp_get_wtime();
 
 		/*** add the feature points to map kdtree ***/
 		FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_);
 		auto transform_cloud_end = std::chrono::high_resolution_clock::now();
 
-		t4 = omp_get_wtime();
-		ikdtree_->map_incremental(FilteredUndistortCloudInOdom, Nearest_Points, flg_EKF_inited);
-		t5 = omp_get_wtime();
-		{
-			frame_num++;
-			int kdtree_size_end = ikdtree_->size();
-			// std::cout <<"??? " <<aver_time_consu * (frame_num - 1) / frame_num << " "<<(t5 - t0) / frame_num<< "
-			// "<<frame_num<< std::endl;
-			// aver_time_consu = aver_time_consu * (frame_num - 1) / frame_num + (t5 - t0) / frame_num;
-			// aver_time_icp = aver_time_icp * (frame_num - 1) / frame_num + (t_update_end - t_update_start) /
-			// frame_num;
+		auto ikd_tree_update_start = std::chrono::high_resolution_clock::now();
+		ikdtree_->map_incremental(FilteredUndistortCloudInOdom, Nearest_Points,
+								  flg_EKF_inited); // add the feature points to map kdtree
+		auto ikd_tree_update_end = std::chrono::high_resolution_clock::now();
+		auto run_end = ikd_tree_update_end;
 
-			//   printf("[ mapping ]: time: IMU process: %0.6f,kdtree size %d test %0.6f,test1 %0.6f, ave ICP: %0.6f,
-			//   map incre: %0.6f ave total: %0.6f \n" , t1 - t0, kdtree_size_end, filter_time - t2,t3 - t_update_end,
-			//   aver_time_icp, t5 - t4, aver_time_consu);
-		}
-		run_end = omp_get_wtime();
-
-		if (run_end - run_start > config_param_.common.slam_lose_rate_time_thr) {
-			cout << RED << "lidar-slam    , time cost: " << (run_end - run_start) * 1000 << " ms, lose rate !!!!!!!"
-				 << RESET << endl;
-			// ROS_INFO_STREAM("p_imu_->Process, cloud deskew    , time cost: " << (t1-t0)*1000 << " ms;");
-			// ROS_INFO_STREAM("ikdtree_->lasermap_fov_segment   , time cost: " << (t2-t1)*1000 << " ms;");
-			// ROS_INFO_STREAM("lidar slam main process step1   , time cost: " << (t0_backend-t2)*1000 << " ms;");
-			// ROS_INFO_STREAM("lidar slam main update  time    , time cost: " << (t_update_end-t_update_start)*1000 <<
-			// " ms;"); ROS_INFO_STREAM("lidar slam main process         , time cost: " << (t3-t2)*1000 << " ms;");
-			// ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << "
-			// ms;"); ROS_INFO_STREAM("main: transform undistortCloud_  , time cost: " <<
-			// (t1_transform-t0_transform)*1000 << " ms;"); ROS_INFO_STREAM("transform FilteredUndistortCloud_, time
-			// cost: " << (t4-t3)*1000 << " ms;"); ROS_INFO_STREAM("ikdtree_->map_incremental        , time cost: " <<
-			// (t5-t4)*1000 << " ms;"); ROS_INFO_STREAM("feats_down_size: " << feats_down_size);
-			cout << "-------------------------------------------------- " << endl;
-		} else if (run_end - run_start > 0.07) {
-			cout << YELLOW << "lidar-slam    , time cost: " << (run_end - run_start) * 1000 << " ms -------------------"
-				 << RESET << endl;
-			// ROS_INFO_STREAM("p_imu_->Process, cloud deskew    , time cost: " << (t1-t0)*1000 << " ms;");
-			// ROS_INFO_STREAM("ikdtree_->lasermap_fov_segment   , time cost: " << (t2-t1)*1000 << " ms;");
-			// ROS_INFO_STREAM("lidar slam main process step1   , time cost: " << (t0_backend-t2)*1000 << " ms;");
-			// ROS_INFO_STREAM("lidar slam main update  time    , time cost: " << (t_update_end-t_update_start)*1000 <<
-			// " ms;"); ROS_INFO_STREAM("lidar slam main process         , time cost: " << (t3-t2)*1000 << " ms;");
-			// ROS_INFO_STREAM("main: lidar slam backend        , time cost: " << (t1_backend-t0_backend)*1000 << "
-			// ms;"); ROS_INFO_STREAM("main: transform undistortCloud_  , time cost: " <<
-			// (t1_transform-t0_transform)*1000 << " ms;"); ROS_INFO_STREAM("transform FilteredUndistortCloud_, time
-			// cost: " << (t4-t3)*1000 << " ms;"); ROS_INFO_STREAM("ikdtree_->map_incremental        , time cost: " <<
-			// (t5-t4)*1000 << " ms;"); ROS_INFO_STREAM("feats_down_size: " << feats_down_size);
-			// ROS_INFO_STREAM("-------------------------------------------------- " );
-		} else {
-			// ROS_INFO_STREAM(GREEN  <<"lidar-slam    , time cost: "<< (run_end - run_start)*1000<<" ms
-			// -------------------"<<RESET);
+		auto run_duration = double(std::chrono::duration_cast<std::chrono::milliseconds>(run_end - run_start).count());
+		const float& thresh = config_param_.common.slam_lose_rate_time_thr * 1e3; // ms
+		if (run_duration > thresh) {
+			auto pointcloud_deskew_duration = double(
+				std::chrono::duration_cast<std::chrono::milliseconds>(pointcloud_deskew_end - pointcloud_deskew_start)
+					.count());
+			auto ikdtree_lasermap_fov_segment_duration =
+				double(std::chrono::duration_cast<std::chrono::milliseconds>(ikdtree_lasermap_fov_segment_end -
+																			 pointcloud_deskew_end)
+						   .count());
+			auto filter_pointcloud_and_laser_update_duration =
+				double(std::chrono::duration_cast<std::chrono::milliseconds>(filter_pointcloud_and_laser_update_end -
+																			 ikdtree_lasermap_fov_segment_end)
+						   .count());
+			auto backend_duration =
+				double(std::chrono::duration_cast<std::chrono::milliseconds>(backend_end - backend_start).count());
+			auto transform_cloud_duration = double(
+				std::chrono::duration_cast<std::chrono::milliseconds>(transform_cloud_end - transform_cloud_start)
+					.count());
+			auto ikdtree_update_duration = double(
+				std::chrono::duration_cast<std::chrono::milliseconds>(ikd_tree_update_end - ikd_tree_update_start)
+					.count());
+			TRACE_INFO_CLASS("slam lose rate ! whole run() cost time: %f ms > thresh: %f", run_duration, thresh);
+			TRACE_INFO_CLASS("deskew point cloud cost time %f ms", pointcloud_deskew_duration);
+			TRACE_INFO_CLASS("ikdtree_lasermap_fov_segment cost time %f ms", ikdtree_lasermap_fov_segment_duration);
+			TRACE_INFO_CLASS("filter_pointcloud_and_laser_update cost time %f ms",
+							 filter_pointcloud_and_laser_update_duration);
+			TRACE_INFO_CLASS("backend cost time %f ms", backend_duration);
+			TRACE_INFO_CLASS("transform_cloud cost time %f ms", transform_cloud_duration);
+			TRACE_INFO_CLASS("ikdtree_update cost time %f ms", ikdtree_update_duration);
+			TRACE_INFO_CLASS("===============================\n");
 		}
 		lidar_no_point_count_ = 0;
 		return true;
 	} else {
 		TRACE_WARN_CLASS("sync measure failed !");
-		// delete_log_file(config_param_.common.log_keep_time);
-
-		// TODO(jxl): 同步失败，应该reset Measures_
 	}
 
 	return false;
