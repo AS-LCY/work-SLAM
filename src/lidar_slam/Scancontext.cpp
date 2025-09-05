@@ -202,8 +202,6 @@ void SCManager::makeAndSaveScancontextAndKeys(pcl::PointCloud<SCPointType>& _sca
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
 
-	// cout <<polarcontext_vkeys_.size() << endl;
-
 } // SCManager::makeAndSaveScancontextAndKeys
 
 void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
@@ -217,8 +215,7 @@ void SCManager::loadScancontextAndKeys(const Eigen::MatrixXd& polarcontext) {
 	polarcontext_vkeys_.push_back(sectorkey);
 	polarcontext_invkeys_mat_.push_back(polarcontext_invkey_vec);
 
-	cout << "load sc " << polarcontext_vkeys_.size() << endl;
-	// ROS_INFO_STREAM("load sc id: "<<polarcontext_vkeys_.size() - 1);
+	TRACE_INFO_CLASS("load sc %d", polarcontext_vkeys_.size());
 
 } // SCManager::loadScancontextAndKeys
 

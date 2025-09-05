@@ -24,21 +24,17 @@ bool CloudMap::load_map_data(std::string map_dir) {
 	map_data_ready_ = false;
 
 	if (!load_cloud_map(map_dir)) {
-		cout << "load cloud map failed!" << endl;
-		// ROS_ERROR_STREAM(RED << "load cloud map failed!" << RESET);
+		TRACE_WARN_CLASS("load cloud map failed!");
 		return false;
 	}
 	std::string keyframe_dir = map_dir + "/key_frame_cloud/";
 	if (!load_key_frames(keyframe_dir)) {
-		cout << "load key frame clouds failed!" << endl;
-		// ROS_ERROR_STREAM(RED << "load key frame clouds failed!" << RESET);
+		TRACE_WARN_CLASS("load key frame clouds failed!");
 		return false;
 	}
 
 	map_data_ready_ = true;
-	cout << "\033[1;32m************************* load all map_data success\033[0m, map_data_ready_ = true" << endl;
-	// ROS_INFO_STREAM(BOLDGREEN <<"************************* load all map_data success," <<RESET<<" map_data_ready_ =
-	// true");
+	TRACE_INFO_CLASS("load all map_data success");
 	return true;
 }
 

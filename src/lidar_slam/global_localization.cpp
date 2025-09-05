@@ -20,14 +20,13 @@ GlobalLocalization::~GlobalLocalization() {
 
 bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 										 double score_thr) {
-	/// check map data status
-	/// make ScanContext using loaded_sc_info
+	double localize_start = omp_get_wtime();
 	if (!global_map_ready_) {
-		TRACE_ERR_CLASS("global map not ready!");
+		TRACE_ERR_CLASS("sec_mapping: global map not ready!");
 		return false;
 	}
 	if (!sc_manager_ready_) {
-		TRACE_ERR_CLASS("sc manager not ready!");
+		TRACE_ERR_CLASS("sec_mapping: sc manager not ready!");
 		return false;
 	}
 
@@ -44,13 +43,15 @@ bool GlobalLocalization::global_localize(PointCloudType::Ptr cloud_in, Eigen::Is
 	Eigen::Matrix4d init_guess = cal_init_transform(initial_rotate, best_match, best_trans);
 	Eigen::Isometry3d test_transform(init_guess);					   /// debug
 	test_match_cloud_ = transformPointCloud(cloud_in, test_transform); /// debug
-
-	// result of global localization: global_odom_to_map_
-	if (!registration_icp(cloud_in, pose, init_guess, score_thr, global_odom_to_map_)) {
-		return false;
+	auto result = registration_icp(cloud_in, pose, init_guess, score_thr, global_odom_to_map_);
+	if (result) {
+		TRACE_INFO_CLASS("sec_mapping: global localization success!");
 	} else {
-		return true;
+		TRACE_ERR_CLASS("sec_mapping: global localization failed!");
 	}
+	double localize_end = omp_get_wtime();
+	TRACE_INFO_CLASS("sec_mapping: global_localize: %f ms", (localize_end - localize_start) * 1000);
+	return result;
 }
 
 bool GlobalLocalization::scancontex_search(PointCloudType::Ptr cloud_in, Matrix3d initial_rotate,
@@ -165,8 +166,7 @@ bool GlobalLocalization::registration_icp(PointCloudType::Ptr cloud_in,
 
 bool GlobalLocalization::set_global_map(PointCloudType::Ptr input_global_map) {
 	if (input_global_map->empty() || input_global_map->points.empty() || input_global_map->points.size() == 0) {
-		std::cout << " loaded global map empty!" << std::endl;
-		// ROS_WARN_STREAM(" loaded global map empty!");
+		TRACE_WARN_CLASS(" loaded global map empty!");
 		return false;
 	}
 

@@ -210,6 +210,7 @@ bool Localization::loadMap(std::string path) {
 bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& fit_score, double score_fail_thr,
 							double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set,
 							bool use_pose_filter) {
+	double localize_start = omp_get_wtime();
 	static double odom2map_x_filter = 0.0;
 	static double odom2map_y_filter = 0.0;
 	static const double ratio = 1.0;
@@ -276,6 +277,9 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 		} else {
 			TRACE_INFO_CLASS("gicp success with score %f > %f", fit_score, score_low_accuracy_thr);
 		}
+
+		double localize_end = omp_get_wtime();
+		TRACE_INFO_CLASS("localization cost time: %f ms", (localize_end - localize_start) * 1000);
 
 		return true;
 	}
