@@ -16,8 +16,7 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode, r
 	config_param_ = yaml_param;
 	feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
 
-	// TODO(jxl): 对T_lidar_wheel_的初始化
-	//...
+	T_lidar_wheel_ = yaml_param.extrinsic.T_lidar_wheel;
 
 	LidarSlam::reset(start_mode, node);
 }
