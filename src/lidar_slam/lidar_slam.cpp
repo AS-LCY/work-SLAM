@@ -600,6 +600,8 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 	auto curr_pose_copy = current_pose_;
 	current_pose_lock.unlock();
 
+	auto init_acc_norm = p_imu_->mean_acc_.norm();
+
 	if (globalLocalizationSuccess_ || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
 		if (curr_pose_copy.update_time < localization_base_copy.update_time) { //(curr_time, localize_time)
 			const auto time_diff = (curr_pose_copy.update_time - localization_base_copy.update_time) * 1e3;
@@ -619,7 +621,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 								 current_pose_.imu_state.bg;
 					V3D acc =
 						V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) *
-						G_m_s2 / (p_imu_->mean_acc_.norm()); // msg中acc单位是g
+						G_m_s2 / init_acc_norm; // msg中acc单位是g
 					acc =
 						current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
 
@@ -638,7 +640,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 				V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
 							 current_pose_.imu_state.bg;
 				V3D acc = V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) *
-						  G_m_s2 / (p_imu_->mean_acc_.norm()); // msg中acc单位是g
+						  G_m_s2 / init_acc_norm; // msg中acc单位是g
 				acc = current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
 
 				current_pose_lock.lock();

@@ -89,7 +89,7 @@ class ImuProcess {
 	V3D cov_bias_gyr_ = V3D(0, 0, 0);				 //角速度bias的协方差
 	V3D cov_bias_acc_ = V3D(0, 0, 0);				 //加速度bias的协方差
 	double first_lidar_time_ = 0.f;					 //当前帧第一个点云时间
-	V3D mean_acc_ = V3D(0, 0, 0);					 //加速度均值,用于计算方差
+	V3D mean_acc_ = V3D(0, 0, 1);					 //加速度均值,用于计算方差
 	Matrix3d initial_rotate_ = Matrix3d::Identity(); //初始旋转矩阵
 
    private:
