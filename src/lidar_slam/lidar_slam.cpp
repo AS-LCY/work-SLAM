@@ -739,8 +739,6 @@ bool LidarSlam::run() {
 			TRACE_INFO_CLASS("initiate  ikdtree! ");
 			return false;
 		}
-		int featsFromMapNum = ikdtree_->validnum();
-		int kdtree_size_st = ikdtree_->size();
 
 		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size);
 		if (feats_down_size < feats_down_size_thr_) {
@@ -766,6 +764,7 @@ bool LidarSlam::run() {
 			kdtreeCloud_->points = ikdtree_.PCL_Storage;
 			// publish_map(pubLaserCloudMap);
 		}*/
+
 		vector<PointVector> Nearest_Points;
 		Nearest_Points.resize(feats_down_size);
 		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
@@ -799,8 +798,8 @@ bool LidarSlam::run() {
 					back_end_->saveCurrentCloud(undistortCloud_,
 												getLidarInMap()); //注意这里只是为了取水平面，后端还是在odom坐标系
 					{
-						std::unique_lock<std::mutex> lk(mtx_path_); // TODO(jxl): 在同一个线程中，不用加锁
-						unoptimized_path_.emplace_back(getWheelInMap()); // TODO max size
+						std::unique_lock<std::mutex> lk(mtx_path_);
+						unoptimized_path_.emplace_back(getWheelInMap());
 						if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
 					}
 
@@ -827,7 +826,7 @@ bool LidarSlam::run() {
 					optimized_path_.clear();
 					std::vector<KeyPose> lidar_in_odom;
 					lidar_in_odom = back_end_->getKeyframePoses();
-					for (int i = 0; i < lidar_in_odom.size(); i++) { // TODO max size
+					for (int i = 0; i < lidar_in_odom.size(); i++) {
 						optimized_path_.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel_);
 					}
 				}
@@ -842,7 +841,7 @@ bool LidarSlam::run() {
 		} else if (working_mode_ == LOCALIZATION) {
 			{
 				std::unique_lock<std::mutex> lk(mtx_path_);
-				unoptimized_path_.emplace_back(getWheelInMap()); // TODO max size
+				unoptimized_path_.emplace_back(getWheelInMap());
 				if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
 			}
 		}
