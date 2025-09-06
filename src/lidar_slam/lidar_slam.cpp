@@ -323,19 +323,20 @@ void LidarSlam::localizationThread() {
 				} else {
 					TRACE_INFO_CLASS("start globalLocalization ... , point count: %d", temp->points.size());
 					PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType());
+					Matrix3d initial_rotate;
 					{
-						std::unique_lock<std::mutex> lk(mtx_lidar_cloud_);
+						std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
 						downSizeFilterCloud_test_.setInputCloud(undistortCloud_); // lidar系下的点云
 						downSizeFilterCloud_test_.filter(*FilteredUndistortCloud_test);
+						initial_rotate = p_imu_->initial_rotate_;
 					}
+					std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
+					auto T_odom_lidar_copy = T_odom_lidar_;
+					T_odom_lidar_lock.unlock();
 
 					double t0 = omp_get_wtime();
 					globalLocalizationSuccess_ = localization_->globalLocalization(
-						FilteredUndistortCloud_test, T_odom_lidar_, p_imu_->initial_rotate_, score_thr);
-
-					// TODO(jxl): T_odom_lidar加锁，拷贝后解锁
-					// initial_rotate_可以拷贝出来再使用
-
+						FilteredUndistortCloud_test, T_odom_lidar_copy, initial_rotate, score_thr);
 					double t1 = omp_get_wtime();
 					TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
 
@@ -482,17 +483,19 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					TRACE_WARN_CLASS("sec_mapping relocalizing: cloud empty ... ");
 				} else {
 					TRACE_INFO_CLASS("sec_mapping relocalizing: point count: %d", UndistortCloudInOdom_->points.size());
-					PointCloudType::Ptr temp(new PointCloudType());
-					{
-						std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-						pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // TODO(jxl)：拷贝完后的temp点云没有使用?
-					}
+					Matrix3d initial_rotate;
+					PointCloudType::Ptr undistort_cloud_copy(new PointCloudType());
+					std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+					pcl::copyPointCloud(*undistortCloud_, *undistort_cloud_copy);
+					initial_rotate = p_imu_->initial_rotate_;
+					undistort_cloud_lock.unlock();
+
+					std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
+					auto T_odom_lidar_copy = T_odom_lidar_;
+					T_odom_lidar_lock.unlock();
 
 					globalLocalizationSuccess_ = global_localization_->global_localize(
-						undistortCloud_, T_odom_lidar_, p_imu_->initial_rotate_, score_thr);
-
-					// TODO(jxl): undistort_cloud， T_odom_lidar在run()线程中，需要加锁，拷贝后再释放
-					// initial_rotate_可以拷贝出来
+						undistort_cloud_copy, T_odom_lidar_copy, initial_rotate, score_thr);
 
 					if (globalLocalizationSuccess_) {
 						TRACE_INFO_CLASS("sec_mapping relocalizing: global Localization Success");
@@ -682,7 +685,7 @@ bool LidarSlam::run() {
 		auto pointcloud_deskew_start = std::chrono::high_resolution_clock::now();
 		// 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
 		{
-			std::unique_lock<std::mutex> lk(mtx_lidar_cloud_);
+			std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_); //该锁同时管undistortCloud_和p_imu_
 			undistortCloud_->clear();
 			p_imu_->Process(Measures_, kf_, undistortCloud_); //雷达points在最后一个点时刻的laser_frame下
 			log_info_manager_->slam_info.data[11] = undistortCloud_->size();
@@ -692,10 +695,11 @@ bool LidarSlam::run() {
 		Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I)
 										.matrix()); // T_imu_laser, laser frame wrt imu
 		Eigen::Isometry3d T_odom_b(Sophus::SE3d(state_point.rot, state_point.pos).matrix());
-		{
-			std::unique_lock<std::mutex> lk(mtx_pose_);
-			T_odom_lidar_ = T_odom_b * T_b_lidar;
-		}
+
+		std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
+		T_odom_lidar_ = T_odom_b * T_b_lidar;
+		T_odom_lidar_lock.unlock();
+
 		auto pointcloud_deskew_end = std::chrono::high_resolution_clock::now();
 
 		if (undistortCloud_->empty() || (undistortCloud_ == nullptr)) {
@@ -774,7 +778,9 @@ bool LidarSlam::run() {
 		state_point = kf_.get_x();
 		T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
 		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
+		T_odom_lidar_lock.lock();
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
+		T_odom_lidar_lock.unlock();
 
 		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
 		localization_base_.imu_state = state_point; //滤波器估计的imu的状态，更新localization_base
@@ -792,7 +798,7 @@ bool LidarSlam::run() {
 			} else if (working_mode_ == SEC_MAPPING && !back_end_->get_loaded_key_cloud_status()) {
 				TRACE_WARN_CLASS("Waiting for loading key cloud ...");
 			} else {
-				bool insert = back_end_->saveKeyFramesAndFactor(T_odom_lidar_, undistortCloud_, lidar_end_time_);
+				bool insert = back_end_->saveKeyFramesAndFactor(T_odom_lidar_, lidar_end_time_);
 				if (insert) { //是关键帧
 					TRACE_INFO_CLASS("backend: keyPoses id: %d", back_end_->getKeyframePoses().size() - 1);
 					back_end_->saveCurrentCloud(undistortCloud_,
@@ -804,7 +810,10 @@ bool LidarSlam::run() {
 					}
 
 					// TODO(jxl): 苗苗让后端不维护T_map_odom, 还是保持I，但是不可能啊
+					T_odom_lidar_lock.lock();
 					T_odom_lidar_ = back_end_->getCurrentPose().pose; // curr keyframe in map，是带了回环优化后的pose
+					T_odom_lidar_lock.unlock();
+
 					T_odom_b = T_odom_lidar_ * T_b_lidar.inverse();
 					state_ikfom state_updated = kf_.get_x();
 					state_updated.pos = T_odom_b.translation();
@@ -849,7 +858,7 @@ bool LidarSlam::run() {
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();
 		{
-			std::unique_lock<std::mutex> lk(mtx_odom_cloud_); // TODO(jxl): undistortCloud的锁
+			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
 			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
 			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
 		}

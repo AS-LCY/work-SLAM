@@ -81,7 +81,7 @@ class BackEnd {
 	void saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
 	PointCloudType::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
-	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud, double time);
+	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, double time);
 	void performLoopClosure(double time);
 
 	// if start_index == end_index == 0; save all;

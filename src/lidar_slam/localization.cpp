@@ -345,7 +345,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		// Eigen::Vector3d euler = init_guess.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 
 		euler[0] += -best_match.second;
-		TRACE_INFO_CLASS("rotate yaw:  %f degree", euler[0] * 180 / M_PI);
+		TRACE_INFO_CLASS("rotate yaw:  %f degree", euler[0] * RAD2DEGREE);
 
 		Eigen::Matrix3d rotate = ypr2R(Eigen::Vector3d(euler[0], current_pitch, current_roll));
 		init_guess.block<3, 3>(0, 0) = rotate;
@@ -359,10 +359,10 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		init_guess.coeffRef(1, 3) = init_guess.coeffRef(1, 3) + offset_in_map[1];
 		// init_guess.coeffRef(2, 3) = 0;
 
-		TRACE_INFO_CLASS("initial yaw: %f, pitch: %f, roll: %f", euler[0] * 180 / M_PI, euler[1] * 180 / M_PI,
-						 euler[2] * 180 / M_PI);
-		TRACE_INFO_CLASS("intial trans x: %f, y: %f, z: %f", init_guess.coeffRef(0, 3), init_guess.coeffRef(1, 3),
-						 init_guess.coeffRef(2, 3));
+		TRACE_INFO_CLASS("scManager given initial yaw: %f, pitch: %f, roll: %f", euler[0] * RAD2DEGREE,
+						 euler[1] * RAD2DEGREE, euler[2] * RAD2DEGREE);
+		TRACE_INFO_CLASS("scManager given intial trans x: %f, y: %f, z: %f", init_guess.coeffRef(0, 3),
+						 init_guess.coeffRef(1, 3), init_guess.coeffRef(2, 3));
 
 		Eigen::Isometry3d testtransform(init_guess);
 		testMatchcloud_ = transformPointCloud(cloudIn, testtransform);
@@ -374,25 +374,31 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 
 		// 未收敛，或者匹配不够好
 		if (icp.hasConverged() == false || icp.getFitnessScore() > score) { // TODO(jxl): 统计内点，还是全部点
-			TRACE_ERR_CLASS("globalLocalization icp fail with score: %f > %f", icp.getFitnessScore(), score);
+			TRACE_WARN_CLASS("globalLocalization icp fail with score: %f > %f", icp.getFitnessScore(), score);
 			return false;
 		} else {
-			TRACE_ERR_CLASS("globalLocalization icp success with score: %f < %f", icp.getFitnessScore(), score);
+			TRACE_INFO_CLASS("\nglobalLocalization icp success with score: %f < %f", icp.getFitnessScore(), score);
 		}
 		Eigen::Isometry3d lidar_in_map;
 		lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
-
 		correctionOdomToMap_ = lidar_in_map * pose.inverse();
 		lastUpdateTime_ = omp_get_wtime();
 
+		Eigen::Vector3d T_map_odom_t = correctionOdomToMap_.translation();
+		Eigen::Vector3d T_map_odom_euler = correctionOdomToMap_.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 		auto updated_euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
-		TRACE_INFO_CLASS("init lidar in map yaw: %f, pitch: %f, roll: %f", updated_euler[0] * 180 / M_PI,
-						 updated_euler[1] * 180 / M_PI, updated_euler[2] * 180 / M_PI);
-		TRACE_INFO_CLASS("init lidar in map trans x: %f, y: %f, z: %f", lidar_in_map.translation().x(),
+
+		TRACE_INFO_CLASS("icp given init T_map_lidar yaw: %f, pitch: %f, roll: %f", updated_euler[0] * RAD2DEGREE,
+						 updated_euler[1] * RAD2DEGREE, updated_euler[2] * RAD2DEGREE);
+		TRACE_INFO_CLASS("icp given init T_map_lidar trans x: %f, y: %f, z: %f", lidar_in_map.translation().x(),
 						 lidar_in_map.translation().y(), lidar_in_map.translation().z());
 
+		TRACE_INFO_CLASS("\n icp given T_map_odom yaw: %f, pitch: %f, roll: %f", T_map_odom_euler[0] * RAD2DEGREE,
+						 T_map_odom_euler[1] * RAD2DEGREE, T_map_odom_euler[2] * RAD2DEGREE);
+		TRACE_INFO_CLASS("icp given T_map_odom trans x: %f, y: %f, z: %f", T_map_odom_t.x(), T_map_odom_t.y(),
+						 T_map_odom_t.z());
 		double t2 = omp_get_wtime();
-		TRACE_INFO_CLASS("icp cost time: %f ms", (t2 - t1) * 1000);
+		TRACE_INFO_CLASS("localization global init icp cost time: %f ms", (t2 - t1) * 1000);
 		return true;
 	} else {
 		TRACE_ERR_CLASS("scancontext search fail, score: %f", min_dist);

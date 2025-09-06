@@ -62,6 +62,9 @@ typedef Matrix3f M3F;
 #define BOLDCYAN "\033[1m\033[36m"	  /* Bold Cyan */
 #define BOLDWHITE "\033[1m\033[37m"	  /* Bold White */
 
+constexpr double RAD2DEGREE = 180.f / M_PI;
+constexpr double DEGREE2RAD = M_PI / 180.f;
+
 /*struct StatesGroup
 {
 	StatesGroup() {

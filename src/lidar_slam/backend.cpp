@@ -94,8 +94,7 @@ void BackEnd::addLoopFactor() {
 }
 
 //在lio的线程中运行
-bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, PointCloudType::Ptr lidar_cloud,
-									 double time) {
+bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, double time) {
 	if (!saveFrame(transformTobeMapped)) { //是否关键帧
 		return false;
 	}
