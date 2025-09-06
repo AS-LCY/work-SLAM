@@ -846,14 +846,14 @@ bool LidarSlam::run() {
 												 config_param_.ikdtree.kdTreeReconstructPointLeafSize);
 				}
 			}
-
-		} else if (working_mode_ == LOCALIZATION) {
-			{
-				std::unique_lock<std::mutex> lk(mtx_path_);
-				unoptimized_path_.emplace_back(getWheelInMap());
-				if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
-			}
 		}
+		// else if (working_mode_ == LOCALIZATION) {
+		// 	{
+		// 		std::unique_lock<std::mutex> lk(mtx_path_);
+		// 		unoptimized_path_.emplace_back(getWheelInMap());
+		// 		if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
+		// 	}
+		// }
 		auto backend_end = std::chrono::high_resolution_clock::now();
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();

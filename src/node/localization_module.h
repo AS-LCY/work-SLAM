@@ -167,9 +167,9 @@ class LocalizationModule {
 	void lidar_ros_callback(const PointCloud2::SharedPtr ros_msg);
 	// void chassis_callback(const ChassicData::SharedPtr msg_in);
 
-	void publish_unoptimized_path(
-		const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
-		const std::string& frame);
+	// void publish_unoptimized_path(
+	// 	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
+	// 	const std::string& frame);
 	void publish_optimized_path(const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
 								const std::string& frame);
 
@@ -378,6 +378,7 @@ class LocalizationModule {
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubKdtreeCloud = nullptr;
 	rclcpp::Publisher<Path>::SharedPtr pubOptimizedPath = nullptr;
 	rclcpp::Publisher<Path>::SharedPtr pubUnoptimizedPath = nullptr;
+	rclcpp::Publisher<Path>::SharedPtr pubBaseLinkMapPath = nullptr;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge = nullptr;
 	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap = nullptr;
@@ -391,6 +392,7 @@ class LocalizationModule {
 	// 路径消息
 	Path unoptimized_path_msg;
 	Path optimized_path_msg;
+	Path baselink_in_map_path_msg;
 
 	/// params load from yaml
 	lidar_slam::LidarSlamParam slam_param_;

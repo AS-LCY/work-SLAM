@@ -75,7 +75,7 @@ bool LocalizationModule::create_ROS_IO() {
 	// pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100);
 
 	// both 建图 & 定位
-	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(100));
+	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(20));
 	// T_map_baselink
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -101,7 +101,7 @@ bool LocalizationModule::create_ROS_IO() {
 	// TODO: 还需要区分哪些是建图或定位发布的
 	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
 
-	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/body_cloud", 20);
+	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/body_cloud", 10);
 	//转到和base_link系朝向一致的点云, 位置还在雷达位置处
 	// TODO(jxl): 可以把点云转到base_link位置处
 
@@ -118,9 +118,13 @@ bool LocalizationModule::create_ROS_IO() {
 	// pubKdtreeCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/kdtree_cloud", 10); //没有实际发布
 
 	pubOptimizedPath = node_->create_publisher<nav_msgs::msg::Path>(
-		"/optimized_path", 1000); // mapping或sec_mapping模式下，后端keyframe位姿在map系下
-	pubUnoptimizedPath =
-		node_->create_publisher<nav_msgs::msg::Path>("/unoptimized_path", 1000); //每一帧雷达pose在map系下
+		"/optimized_path", 10); // mapping或sec_mapping模式下，后端keyframe位姿在map系下
+
+	// pubUnoptimizedPath = node_->create_publisher<nav_msgs::msg::Path>(
+	// 	"/unoptimized_path", 10); //定位模式下：每一帧雷达pose在map系下； 建图模式下还是关键帧pose
+
+	pubBaseLinkMapPath = node_->create_publisher<nav_msgs::msg::Path>("/baselink_in_map_path", 10);
+	//(二次)建图，定位模式下，10hz的T_map_baselink
 
 	pubLoopConstraintEdge = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
 		"/flbot/mapping/loop_closure_constraints", 1); //建图模式下：只发布闭环nodes和edges，没有整体pose graph结构
@@ -241,7 +245,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
 		visualizeLoopClosure(slam_->getloopIndex(),
 							 optimized_path_msg); // TODO(jxl): 只发布了闭环nodes和edges， 整个pose graph结构看不到
-		publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
+		// publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
 		publish_optimized_path(slam_->get_optimized_path(), string("map"));
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
 			   localization_status_is_ok(localization_status_now)) {
@@ -513,53 +517,17 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
 	}
 
-	/*
-		geometry_msgs::msg::TransformStamped transform_o_b = initIdentityTransform();
-		try {
-			transform_o_b = tf_buffer_.lookupTransform(
-			"odom", "base_link", tf2::TimePointZero);
-		//   TRACE_INFO_CLASS(
-		//     "Transform: [%.2f, %.2f, %.2f] [%.2f, %.2f, %.2f, %.2f]",
-		//     transform_o_b.transform.translation.x,
-		//     transform_o_b.transform.translation.y,
-		//     transform_o_b.transform.translation.z,
-		//     transform_o_b.transform.rotation.x,
-		//     transform_o_b.transform.rotation.y,
-		//     transform_o_b.transform.rotation.z,
-		//     transform_o_b.transform.rotation.w);
-		} catch (tf2::TransformException &ex) {
-		  TRACE_WARN_CLASS( "%s", ex.what());
-		}
-
-		// Eigen::Isometry3d T_o_b_ = transformToEigen(transform_o_b);
-		Eigen::Isometry3d T_o_b_ = tf2::transformToEigen(transform_o_b.transform);
-	*/
-
 	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
 		localization_status_is_ok(localization_status_.load())) {
 		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
 									  "base_link", curr_running_module_status);
 		publish_OdomToMap_tf(slam_->getOdomToMap());
-
-		// 配合robot-localization 节点
-		// Eigen::Isometry3d T_m_o_ = slam_->getLidarInMap() * T_lidar_baselink_ * T_o_b_.inverse();
-
-		// publish_odometry_in_map(T_m_o_, "map", "odom");
-		// publish_odometry_in_map(slam_->getOdomToMap(), "map", "mapping_odom");
-
-		// publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
 	}
 
 	if (is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())) {
 		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
 									  "base_link", curr_running_module_status);
 		publish_OdomToMap_tf(slam_->getOdomToMap());
-		// publish_odometry(slam_->getLidarInOdom(), "odom", "lidar", pubOdomAftMapped);
-
-		// 配合robot-localization 节点
-		// Eigen::Isometry3d T_m_o_ = slam_->getLidarInMap() * T_lidar_baselink_ * T_o_b_.inverse();
-		// publish_odometry_in_map(T_m_o_, "map", "odom");
-		// publish_odometry_in_map(slam_->getOdomToMap(), "map", "mapping_odom");
 	}
 }
 
@@ -787,29 +755,29 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	}
 }
 
-void LocalizationModule::publish_unoptimized_path(
-	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
-	geometry_msgs::msg::PoseStamped msg;
+// void LocalizationModule::publish_unoptimized_path(
+// 	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
+// 	geometry_msgs::msg::PoseStamped msg;
 
-	unoptimized_path_msg.poses.clear();
-	unoptimized_path_msg.header.stamp = node_->now();
-	unoptimized_path_msg.header.frame_id = frame;
+// 	unoptimized_path_msg.poses.clear();
+// 	unoptimized_path_msg.header.stamp = node_->now();
+// 	unoptimized_path_msg.header.frame_id = frame;
 
-	for (int i = 0; i < path.size(); i++) {
-		msg.header.stamp = node_->now();
-		msg.header.frame_id = frame;
-		msg.pose.position.x = path[i].translation().x();
-		msg.pose.position.y = path[i].translation().y();
-		msg.pose.position.z = path[i].translation().z();
-		/*Eigen::Quaterniond quaternion = path[i].rotation();
-		msg.pose.orientation.x = quaternion.x();
-		msg.pose.orientation.y = quaternion.y();
-		msg.pose.orientation.z = quaternion.z();
-		msg.pose.orientation.w = quaternion.w();*/
-		unoptimized_path_msg.poses.push_back(msg);
-	}
-	pubUnoptimizedPath->publish(unoptimized_path_msg);
-}
+// 	for (int i = 0; i < path.size(); i++) {
+// 		msg.header.stamp = node_->now();
+// 		msg.header.frame_id = frame;
+// 		msg.pose.position.x = path[i].translation().x();
+// 		msg.pose.position.y = path[i].translation().y();
+// 		msg.pose.position.z = path[i].translation().z();
+// 		/*Eigen::Quaterniond quaternion = path[i].rotation();
+// 		msg.pose.orientation.x = quaternion.x();
+// 		msg.pose.orientation.y = quaternion.y();
+// 		msg.pose.orientation.z = quaternion.z();
+// 		msg.pose.orientation.w = quaternion.w();*/
+// 		unoptimized_path_msg.poses.push_back(msg);
+// 	}
+// 	pubUnoptimizedPath->publish(unoptimized_path_msg);
+// }
 
 void LocalizationModule::publish_optimized_path(
 	const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {

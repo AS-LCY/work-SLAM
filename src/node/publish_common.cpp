@@ -56,7 +56,7 @@ void LocalizationModule::publish_odometry_in_map(const Eigen::Isometry3d& odom_i
 
 void LocalizationModule::publish_odometry_lidar_in_map(
 	const Eigen::Isometry3d& lidar_in_map,	 // T_map_baselink
-	lidar_slam::Localization_base curr_pose, // T_odom_imu, imu和base_link朝向一致
+	lidar_slam::Localization_base curr_pose, // T_odom_imu, imu和base_link朝向一致, 200hz
 	const std::string& frameid,				 // map
 	const std::string& child_frameid,		 // base_link
 	ModuleStatus curr_running_module_status) {
@@ -78,13 +78,6 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	} else if (is_mapping_status(curr_running_module_status)) {
 		odomAftMapped.pose.covariance[1] = 2;
 	}
-
-	// Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
-	// Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
-	// iso_transform.linear() = mat;
-	// Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
-	// Eigen::Matrix3d rot = iso_transform_inv.linear();
-	// auto vel = rot * curr_pose.imu_state.vel;
 
 	auto vel = curr_pose.imu_state.rot.matrix().inverse() * curr_pose.imu_state.vel;
 
@@ -110,6 +103,21 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	transform.transform.rotation.z = odomAftMapped.pose.pose.orientation.z;
 
 	br_.sendTransform(transform);
+
+	// pub T_map_baselink path
+	baselink_in_map_path_msg.header.stamp = node_->now();
+	baselink_in_map_path_msg.header.frame_id = frameid;
+	geometry_msgs::msg::PoseStamped msg;
+	msg.header.stamp = node_->now();
+	msg.header.frame_id = child_frameid;
+	msg.pose = odomAftMapped.pose.pose;
+	baselink_in_map_path_msg.poses.push_back(msg);
+	auto path_size = baselink_in_map_path_msg.poses.size();
+	auto keep_path_length = 3 * 1000; // 10hz, 300s path
+	if (path_size > keep_path_length) {
+		baselink_in_map_path_msg.poses.clear();
+	}
+	pubBaseLinkMapPath->publish(baselink_in_map_path_msg);
 }
 
 void LocalizationModule::publish_OdomToMap_tf(const Eigen::Isometry3d& T_map_odom) {
