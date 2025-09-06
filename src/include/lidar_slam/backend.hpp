@@ -126,6 +126,19 @@ class BackEnd {
 	void loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyframes, const int& key, const int& searchNum,
 											const int _wrt_key);
 
+	inline bool checkPreviousLoopFailure(const int& key, const int& value) const {
+		if (failed_loop_indexs_.empty()) {
+			return false;
+		}
+		auto range = failed_loop_indexs_.equal_range(key);
+		for (auto it = range.first; it != range.second; ++it) {
+			if (it->second == value) {
+				return true;
+			}
+		}
+		return false;
+	};
+
    private:
 	bool loaded_key_clouds_ready_ = false;
 
@@ -144,6 +157,7 @@ class BackEnd {
 	int loopKeyframeSearchSkipKey_;
 	float loopIcpScore_ = 0.5;
 
+	std::multimap<int, int> failed_loop_indexs_;
 	map<int, int> loopIndexContainer_;
 	vector<pair<int, int>> loopIndexQueue_;
 	vector<gtsam::Pose3> loopPoseQueue_;

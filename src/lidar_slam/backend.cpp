@@ -391,6 +391,12 @@ void BackEnd::performLoopClosure(double time) {
 	if (!detectLoopClosureDistance(&loopKeyCur, &loopKeyPre, time)) {
 		return;
 	}
+
+	if (checkPreviousLoopFailure(loopKeyCur, loopKeyPre)) {
+		TRACE_DBG_CLASS("%d - %d has been loop matched failed, so no more match again!", loopKeyCur, loopKeyPre);
+		return;
+	}
+
 	TRACE_INFO_CLASS("potential detected loop between %d and %d.", loopKeyCur, loopKeyPre);
 	auto loop_detected_end = std::chrono::high_resolution_clock::now();
 	auto loop_detect_duration =
@@ -426,10 +432,15 @@ void BackEnd::performLoopClosure(double time) {
 	TRACE_INFO_CLASS("backend loop_edge match cost time: %f ms", double(loop_edge_match_duration.count()));
 
 	// 未收敛，或者匹配不够好
-	if (icp.hasConverged() == false || icp.getFitnessScore() > loopIcpScore_) {
+	if (icp.hasConverged() == false ||
+		icp.getFitnessScore() > loopIcpScore_) { // TODO(jxl): 统计分数时，应该设置inlier阈值
 		TRACE_WARN_CLASS("loop closure between %d and %d, icp hasConverged: %d, fitness score: %f > thresh: %f",
 						 loopKeyCur, loopKeyPre, icp.hasConverged(), icp.getFitnessScore(), loopIcpScore_);
-		return; // TODO(jxl): 统计分数时，应该设置inlier阈值
+
+		if (!checkPreviousLoopFailure(loopKeyCur, loopKeyPre)) {
+			failed_loop_indexs_.insert({ loopKeyCur, loopKeyPre });
+		}
+		return;
 	}
 
 	TRACE_INFO_CLASS("true loop found! between %d and %d.", loopKeyCur, loopKeyPre);
