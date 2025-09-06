@@ -79,7 +79,17 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 		odomAftMapped.pose.covariance[1] = 2;
 	}
 
-	auto vel = curr_pose.imu_state.rot.matrix().inverse() * curr_pose.imu_state.vel;
+	// Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
+	// Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
+	// iso_transform.linear() = mat;
+	// Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
+	// Eigen::Matrix3d rot = iso_transform_inv.linear();
+	// auto vel = rot * curr_pose.imu_state.vel;
+	auto vel = curr_pose.imu_state.rot.inverse() * curr_pose.imu_state.vel;
+	// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
+	TRACE_DBG_CLASS("before: %f, %f, %f\n", curr_pose.imu_state.vel.x(), curr_pose.imu_state.vel.y(),
+					curr_pose.imu_state.vel.z());
+	TRACE_DBG_CLASS("after: %f, %f, %f\n\n\n", vel.x(), vel.y(), vel.z());
 
 	odomAftMapped.twist.twist.linear.x = vel[0]; // baselink下的线速度
 	odomAftMapped.twist.twist.linear.y = vel[1];
