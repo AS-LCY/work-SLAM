@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(lidar_slam)
 
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+
 # 默认构建类型
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
@@ -29,6 +31,10 @@ else()
   # add_compile_definitions(X86_ARCH)
    # 修改X86架构优化部分，添加AVX支持
    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -mtune=native -funroll-loops -mavx")
+
+   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
+    "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2 -g -march=native -mtune=native -funroll-loops -mavx")
+
    add_compile_definitions(X86_ARCH)
    
    # 显式检查AVX支持
