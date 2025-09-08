@@ -131,7 +131,7 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, doub
 	thisPose3D.z = latestEstimate.translation().z();
 
 	thisPose3D.intensity = KeyPoint_->size(); // 索引
-	mtxPose_.lock();
+	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 	KeyPoint_->push_back(thisPose3D); //  新关键帧帧放入队列中
 
 	// cloudKeyPoses6D加入当前帧位姿
@@ -142,7 +142,6 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, doub
 	thisPose6D.pitch = latestEstimate.rotation().pitch();
 	thisPose6D.yaw = latestEstimate.rotation().yaw();
 	KeyPoses_.push_back(thisPose6D);
-	mtxPose_.unlock();
 
 	return true;
 }
@@ -170,7 +169,7 @@ bool BackEnd::correctPoses() {
 	if (KeyPoint_->points.empty()) return false;
 	if (aLoopIsClosed_) {
 		int numPoses = isamCurrentEstimate_.size();
-		mtxPose_.lock();
+		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 		for (int i = 0; i < numPoses; ++i) {
 			KeyPoint_->points[i].x = isamCurrentEstimate_.at<gtsam::Pose3>(i).translation().x();
 			KeyPoint_->points[i].y = isamCurrentEstimate_.at<gtsam::Pose3>(i).translation().y();
@@ -181,7 +180,7 @@ bool BackEnd::correctPoses() {
 			KeyPoses_[i].pitch = isamCurrentEstimate_.at<gtsam::Pose3>(i).rotation().pitch();
 			KeyPoses_[i].yaw = isamCurrentEstimate_.at<gtsam::Pose3>(i).rotation().yaw();
 		}
-		mtxPose_.unlock();
+		keyframe_poses_lock.unlock();
 		aLoopIsClosed_ = false;
 		show_index_ = 0;
 		std::unique_lock<std::mutex> lk(mtxCurrentMap_);
@@ -208,14 +207,15 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 	// kdtree查找最近一帧关键帧相邻的关键帧集合
 	std::vector<int> pointSearchIndGlobalMap;
 	std::vector<float> pointSearchSqDisGlobalMap;
-	mtxPose_.lock();
+	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+
 	kdtreeGlobalMapPoses->setInputCloud(KeyPoint_);
 	kdtreeGlobalMapPoses->radiusSearch(KeyPoint_->back(), kdTreeReconstructRadius, pointSearchIndGlobalMap,
 									   pointSearchSqDisGlobalMap, 0);
 
 	for (int i = 0; i < (int)pointSearchIndGlobalMap.size(); ++i)
 		subMapKeyPoses->push_back(KeyPoint_->points[pointSearchIndGlobalMap[i]]); //  subMap的pose集合
-	mtxPose_.unlock();
+	keyframe_poses_lock.unlock();
 
 	pcl::VoxelGrid<PointType> downSizeFilterSubMapKeyPoses;
 	downSizeFilterSubMapKeyPoses.setLeafSize(kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize,
@@ -375,12 +375,12 @@ void BackEnd::performLoopClosure(double time) {
 		return;
 	}
 
-	mtxPose_.lock();
+	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 	CopyKeyPoint_->clear();
 	*CopyKeyPoint_ = *KeyPoint_;
 	CopyKeyPoses_.clear();
 	CopyKeyPoses_ = KeyPoses_;
-	mtxPose_.unlock();
+	keyframe_poses_lock.unlock();
 
 	auto loop_detected_start = std::chrono::high_resolution_clock::now();
 
