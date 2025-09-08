@@ -101,7 +101,7 @@ bool LocalizationModule::create_ROS_IO() {
 	// TODO: 还需要区分哪些是建图或定位发布的
 	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
 
-	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/body_cloud", 10);
+	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/baselink_cloud", 10);
 	//转到和base_link系朝向一致的点云, 位置还在雷达位置处
 	// TODO(jxl): 可以把点云转到base_link位置处
 
@@ -230,7 +230,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 			// publish_cloud(slam_->get_odom_cloud(), "base_link", pubOdomCloud);
 			// TODO(jxl): odom系下的点云，怎么frame_id是base_link？先注释掉
 		}
-		publish_cloud(slam_->get_lidar_cloud(), "lidar", pubBodyCloud);
+		publish_cloud(slam_->get_baselink_cloud(), "base_link", pubBodyCloud);
 		// process_loginfo();
 	}
 

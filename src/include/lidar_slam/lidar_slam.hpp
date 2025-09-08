@@ -155,6 +155,15 @@ class LidarSlam {
 		return undistortCloud_;
 	}
 
+	inline PointCloudType::Ptr get_baselink_cloud() {
+		std::unique_lock<std::mutex> lk(mtx_lidar_cloud_);
+		PointCloudType::Ptr baselink_cloud;
+		baselink_cloud.reset(new PointCloudType());
+		baselink_cloud->resize(undistortCloud_->points.size());
+		baselink_cloud = transformPointCloud(undistortCloud_, T_lidar_wheel_.inverse());
+		return baselink_cloud;
+	}
+
 	inline PointCloudType::Ptr get_filter_lidar_cloud() {
 		std::unique_lock<std::mutex> lk(mtx_lidar_cloud_); // TODO(jxl): 用自己的mtx
 		return FilteredUndistortCloud_;
