@@ -365,7 +365,7 @@ class LidarSlam {
 	deque<PointCloudType::Ptr> lidar_buffer_; // 记录特征提取或间隔采样后的lidar（特征）数据
 	deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer_;
 
-	bool lidar_pushed_ = false;
+	// bool lidar_pushed_ = false;
 	atomic<double> lidar_end_time_;	   // < 当前帧雷达，帧结束的时间，update: sync_packages()
 	double lidar_mean_scantime_ = 0.0; // < 单帧点云的 time period
 	double first_lidar_time_ = 0.0;	   // 第一帧点云的时间
@@ -403,18 +403,18 @@ class LidarSlam {
 	std::unique_ptr<std::thread> thread_ = nullptr;
 	std::unique_ptr<std::thread> global_localization_thread_ = nullptr;
 
-	mutex mtx_imu_buffer_;
-	mutex mtx_lidar_buffer_;
+	std::mutex mtx_imu_buffer_;
+	std::mutex mtx_lidar_buffer_;
 
-	mutex mtx_odom_cloud_;
-	mutex mtx_lidar_cloud_;
-	mutex mtx_obstacle_cloud_;
+	std::mutex mtx_odom_cloud_;
+	std::mutex mtx_lidar_cloud_;
+	std::mutex mtx_obstacle_cloud_;
 
-	mutex mtx_localization_base_;
-	mutex mtx_current_pose_;
+	std::mutex mtx_localization_base_;
+	std::mutex mtx_current_pose_;
 
-	mutex mtx_path_;
-	mutex mtx_pose_;
+	std::mutex mtx_path_;
+	std::mutex mtx_pose_;
 
 	esekfom::esekf kf_;
 

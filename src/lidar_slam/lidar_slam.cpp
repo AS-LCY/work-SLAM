@@ -26,7 +26,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	log_info_manager_->reset_log_info();
 	slam_run_status_.store(0);
 
-	sleep(0.01); // TODO(jxl): 要休眠1s吗
+	sleep(1); // TODO(jxl): 要休眠1s吗
 
 	// CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
 	// CPU_SET(0, &mask); // 将线程绑定到 cpu_id 核心
@@ -36,7 +36,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	lidar_buffer_.clear(); //记录特征提取或间隔采样后的lidar（特征）数据
 	imu_buffer_.clear();
 
-	lidar_pushed_ = false;
+	// lidar_pushed_ = false;
 	lidar_end_time_ = 0;
 	lidar_mean_scantime_ = 0.0;
 	first_lidar_time_ = 0.0;
@@ -148,42 +148,66 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 
 bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	auto sync_start = std::chrono::high_resolution_clock::now();
-	if (lidar_buffer_.empty() || imu_buffer_.empty()) {
+
+	std::unique_lock<std::mutex> lidar_buffer_lock(mtx_lidar_buffer_);
+	bool lidar_buffer_empty = lidar_buffer_.empty();
+	lidar_buffer_lock.unlock();
+
+	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
+	bool imu_buffer_empty = imu_buffer_.empty();
+	imu_buffer_lock.unlock();
+
+	if (lidar_buffer_empty || imu_buffer_empty) {
+		TRACE_WARN_CLASS("lidar buffer empty: %d, imu buffer empty: %d", lidar_buffer_empty, imu_buffer_empty);
 		return false;
 	}
 	if (reseting_ == true) {
 		TRACE_INFO_CLASS("reseting true, sync packages return false!");
 		return false;
 	}
-	if (lidar_pushed_ &&
+
+	lidar_buffer_lock.lock();
+	if (!time_buffer_.empty() &&
 		omp_get_wtime() - time_buffer_.front() > 0.15) { // TODO(jxl): 应该是用系统或者bag中当前时刻去作差
 		TRACE_WARN_CLASS("lidar lose rate %f s", omp_get_wtime() - time_buffer_.front());
 	}
 
-	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
-	const auto last_timestamp_imu = last_timestamp_imu_;
-	imu_buffer_lock.unlock();
-
-	std::unique_lock<std::mutex> lidar_buffer_lock(mtx_lidar_buffer_);
-	if (!lidar_pushed_) {
+	assert(lidar_buffer_.size() == time_buffer_.size());
+	if (!lidar_buffer_.empty()) {
 		meas.lidar = lidar_buffer_.front();			// lidar指针指向最旧的lidar数据
 		meas.lidar_beg_time = time_buffer_.front(); // 记录最早时间
-		lidar_buffer_lock.unlock();
 
-		lidar_mean_scantime_ = meas.lidar->points.back().curvature * 0.001; //在sampling_cloud()中curvature单位转成了ms
-		lidar_mean_scantime_ = (lidar_mean_scantime_ < 0.1 || lidar_mean_scantime_ > 0.15) ? 0.1 : lidar_mean_scantime_;
-		lidar_end_time_ = meas.lidar_beg_time + lidar_mean_scantime_;
-		meas.lidar_end_time = lidar_end_time_;
-		lidar_pushed_ = true;
+		lidar_buffer_.pop_front();
+		time_buffer_.pop_front();
+	} else {
+		TRACE_WARN_CLASS("lidar buffer empty, sync failed");
+		return false;
 	}
+	lidar_buffer_lock.unlock();
+
+	lidar_mean_scantime_ = meas.lidar->points.back().curvature * 0.001; //在sampling_cloud()中curvature单位转成了ms
+	lidar_mean_scantime_ = (lidar_mean_scantime_ < 0.1 || lidar_mean_scantime_ > 0.15) ? 0.1 : lidar_mean_scantime_;
+	lidar_end_time_ = meas.lidar_beg_time + lidar_mean_scantime_;
+	meas.lidar_end_time = lidar_end_time_;
+
+	imu_buffer_lock.lock();
+	const auto last_timestamp_imu = last_timestamp_imu_;
+	imu_buffer_lock.unlock();
 
 	if (last_timestamp_imu < lidar_end_time_) {
 		TRACE_WARN_CLASS("last_timestamp_imu: %f < lidar_end_time: %f", last_timestamp_imu, lidar_end_time_.load());
 		return false;
 	}
 
+	double imu_time;
 	imu_buffer_lock.lock();
-	double imu_time = imu_buffer_.front()->time_stamp; // 最旧IMU时间
+	if (!imu_buffer_.empty()) {
+		imu_time = imu_buffer_.front()->time_stamp; // 最旧IMU时间
+	} else {
+		meas.imu.clear();
+		TRACE_WARN_CLASS("imu buffer empty, sync failed");
+		return false;
+	}
 	meas.imu.clear();
 
 	while ((!imu_buffer_.empty()) && (imu_time < lidar_end_time_)) { //记录imu数据，imu时间小于当前帧lidar结束时间
@@ -197,26 +221,14 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	imu_buffer_lock.unlock();
 
 	if (meas.imu.empty()) {
-		lidar_pushed_ = false;
 		TRACE_WARN_CLASS("Measure.imu is empty.");
 		TRACE_WARN_CLASS("imu_buffer.front.time: %f, back.time: %f", imu_time, imu_buffer_.back()->time_stamp);
 		TRACE_WARN_CLASS("lidar_beg_time.time: %f, lidar_end_time.time: %f", meas.lidar_beg_time, meas.lidar_end_time);
 
-		lidar_buffer_lock.lock();
-		lidar_buffer_.pop_front();
-		time_buffer_.pop_front();
-		lidar_buffer_lock.unlock();
 		return false;
 	}
 	log_info_manager_->slam_info.data[30] = meas.lidar->points.size();
-	log_info_manager_->slam_info.data[31] = lidar_buffer_.front()->points.size();
-
-	lidar_buffer_lock.lock();
-	lidar_buffer_.pop_front();
-	time_buffer_.pop_front();
-	lidar_buffer_lock.unlock();
-
-	lidar_pushed_ = false;
+	// log_info_manager_->slam_info.data[31] = lidar_buffer_.front()->points.size(); //跟[30]重复了
 
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
@@ -561,6 +573,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 	time_buffer_.push_back(curr_time);
 	last_timestamp_lidar_ = curr_time;
 
+	assert(lidar_buffer_.size() == time_buffer_.size());
 	while (lidar_buffer_.size() > keep_lidar_num_before_curr) {
 		TRACE_WARN_CLASS("lidar buffer size: %d > thresh: %d, pop front data!", lidar_buffer_.size(),
 						 keep_lidar_num_before_curr);
