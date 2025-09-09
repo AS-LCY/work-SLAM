@@ -381,7 +381,7 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (need_localize_) {
-					TRACE_INFO_CLASS("start localization ... ");
+					TRACE_INFO_CLASS("\n\nstart localization ...");
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
 					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr,

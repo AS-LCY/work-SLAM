@@ -219,12 +219,16 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	TRACE_INFO_CLASS("CloudGlobalMapIn size: %d", (int)CloudGlobalMapIn_->points.size());
 
 	if (!map_ready_) {
+		TRACE_WARN_CLASS("map not ready...");
 		return false;
 	}
 
 	gicp_->setInputSource(odomCloud);
+	TRACE_INFO_CLASS("set source cloud done");
 	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
 	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
+	TRACE_INFO_CLASS("match with offline map done");
+
 	PointCloudType::Ptr output_cloud(new PointCloudType());
 
 	if (!gicp_->hasConverged()) {
