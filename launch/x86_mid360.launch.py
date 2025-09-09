@@ -41,9 +41,10 @@ def generate_launch_description():
         executable='lidar_slam_node',
         name='localization_module',
         output='screen',
+        # prefix="gdb -ex run --args",
+        
         # parameters=[avia_config, camera_config],
         parameters=[mapping_config]
-        # prefix="gdb --args"
     )
     
     

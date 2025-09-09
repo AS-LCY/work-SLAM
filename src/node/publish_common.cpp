@@ -55,10 +55,10 @@ void LocalizationModule::publish_odometry_in_map(const Eigen::Isometry3d& odom_i
 }
 
 void LocalizationModule::publish_odometry_lidar_in_map(
-	const Eigen::Isometry3d& lidar_in_map,	 // T_map_baselink
-	lidar_slam::Localization_base curr_pose, // T_odom_imu, imu和base_link朝向一致, 200hz
-	const std::string& frameid,				 // map
-	const std::string& child_frameid,		 // base_link
+	const Eigen::Isometry3d& lidar_in_map,			 // T_map_baselink
+	const lidar_slam::Localization_base& T_odom_imu, // 10hz，T_odom_imu, imu和lidar和base_link朝向一致
+	const std::string& frameid,						 // map
+	const std::string& child_frameid,				 // base_link
 	ModuleStatus curr_running_module_status) {
 	nav_msgs::msg::Odometry odomAftMapped;
 	odomAftMapped.header.frame_id = frameid;
@@ -85,10 +85,10 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	// Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
 	// Eigen::Matrix3d rot = iso_transform_inv.linear();
 	// auto vel = rot * curr_pose.imu_state.vel;
-	auto vel = curr_pose.imu_state.rot.inverse() * curr_pose.imu_state.vel;
+	auto vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
 	// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
-	TRACE_DBG_CLASS("before: %f, %f, %f\n", curr_pose.imu_state.vel.x(), curr_pose.imu_state.vel.y(),
-					curr_pose.imu_state.vel.z());
+	TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
+					T_odom_imu.imu_state.vel.z());
 	TRACE_DBG_CLASS("after: %f, %f, %f\n\n\n", vel.x(), vel.y(), vel.z());
 
 	odomAftMapped.twist.twist.linear.x = vel[0]; // baselink下的线速度

@@ -208,32 +208,47 @@ class LidarSlam {
 		}
 	}
 
-	inline Eigen::Isometry3d getLidarInOdom() {
-		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-			std::unique_lock<std::mutex> lk(mtx_pose_);
-			return T_odom_lidar_;
-		} else if (working_mode_ == LOCALIZATION) { // TODO(jxl): curr_pose是lidar位置处的base_link位姿，
-													// 如果是其它雷达(lidar和imu旋转不是单位阵，会有问题)
-			std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
-			auto current_pose_copy = current_pose_;
-			current_pose_lock.unlock();
+	// inline Eigen::Isometry3d getLidarInOdom() {
+	// 	if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
+	// 		std::unique_lock<std::mutex> lk(mtx_pose_);
+	// 		return T_odom_lidar_; //10hz
+	// 	} else if (working_mode_ == LOCALIZATION) {
+	// 		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+	// 		auto current_pose_copy = current_pose_; //200hz
+	// 		current_pose_lock.unlock();
 
-			Eigen::Isometry3d T_odom_b(
-				Sophus::SE3d(current_pose_copy.imu_state.rot, current_pose_copy.imu_state.pos).matrix());
-			Eigen::Isometry3d T_b_lidar(
-				Sophus::SE3d(current_pose_copy.imu_state.offset_R_L_I, current_pose_copy.imu_state.offset_T_L_I)
-					.matrix());
-			Eigen::Isometry3d temp = T_odom_b * T_b_lidar;
-			return temp;
+	// 		Eigen::Isometry3d T_odom_b(
+	// 			Sophus::SE3d(current_pose_copy.imu_state.rot, current_pose_copy.imu_state.pos).matrix());
+	// 		Eigen::Isometry3d T_b_lidar(
+	// 			Sophus::SE3d(current_pose_copy.imu_state.offset_R_L_I, current_pose_copy.imu_state.offset_T_L_I)
+	// 				.matrix());
+	// 		Eigen::Isometry3d temp = T_odom_b * T_b_lidar;
+	// 		return temp;
+	// 	} else {
+	// 		Eigen::Isometry3d temp = Eigen::Isometry3d::Identity();
+	// 		return temp;
+	// 	}
+	// }
+
+	// jxl: 不管是建图还是定位，都是10hz的T_odom_lidar
+	inline Eigen::Isometry3d getLidarInOdom() {
+		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING || working_mode_ == LOCALIZATION) {
+			std::unique_lock<std::mutex> lk(mtx_pose_);
+			return T_odom_lidar_; // 10hz
 		} else {
-			Eigen::Isometry3d temp = Eigen::Isometry3d::Identity();
-			return temp;
+			TRACE_ERR_CLASS("In other mode, T_odom_lidar = I");
+			return Eigen::Isometry3d::Identity();
 		}
 	}
 
-	inline Localization_base get_current_pose() {
+	inline Localization_base get_current_pose() { // T_odom_imu, 200hz
 		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
 		return current_pose_;
+	}
+
+	inline Localization_base get_localization_base() { // T_odom_imu, 10hz
+		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+		return localization_base_;
 	}
 
 	inline double get_slam_time() const {
@@ -404,8 +419,8 @@ class LidarSlam {
 	bool globalLocalizationSuccess_ = false;
 	bool loop_closure_wait_ = false; // TODO(jxl): 没有使用
 
-	Localization_base localization_base_; // 每次点云处理后更新，并作为current_pose 积分结果的base
-	Localization_base current_pose_;
+	Localization_base localization_base_; // 10hz, T_odom_imu, 每次点云处理后更新，并作为current_pose 积分结果的base
+	Localization_base current_pose_; // 200hz, T_odom_imu
 
 	std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree_ = nullptr;
 

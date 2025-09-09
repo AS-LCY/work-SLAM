@@ -517,16 +517,14 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
 	}
 
-	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
-		localization_status_is_ok(localization_status_.load())) {
-		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
-									  "base_link", curr_running_module_status);
-		publish_OdomToMap_tf(slam_->getOdomToMap());
-	}
-
-	if (is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load())) {
-		publish_odometry_lidar_in_map(slam_->getLidarInMap() * T_lidar_baselink_, slam_->get_current_pose(), "map",
-									  "base_link", curr_running_module_status);
+	auto localization_ok = curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
+						   localization_status_is_ok(localization_status_.load());
+	auto mapping_ok = is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load());
+	if (localization_ok || mapping_ok) {
+		auto T_map_baselink = slam_->getLidarInMap() * T_lidar_baselink_;
+		auto T_odom_imu_updated = slam_->get_localization_base();
+		publish_odometry_lidar_in_map(T_map_baselink, T_odom_imu_updated, "map", "base_link",
+									  curr_running_module_status);
 		publish_OdomToMap_tf(slam_->getOdomToMap());
 	}
 }
