@@ -114,10 +114,10 @@
       time_cost_thr_print: 10.0 # unit: ms
 
     mapping:
-      acc_cov: 0.1 #TODO(jxl): 感觉这个参数有点大
-      gyr_cov: 0.1 #TODO(jxl): 感觉这个参数有点大
-      b_acc_cov: 0.0001 # 
-      b_gyr_cov: 0.0001 #
+      acc_cov: 0.017573468691815922
+      gyr_cov: 0.01524654486781841 
+      b_acc_cov: 0.00025566293746767606
+      b_gyr_cov: 0.0007414029109004667
 
       cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
 

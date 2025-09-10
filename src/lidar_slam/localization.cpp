@@ -381,7 +381,8 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 			TRACE_WARN_CLASS("globalLocalization icp fail with score: %f > %f", icp.getFitnessScore(), score);
 			return false;
 		} else {
-			TRACE_INFO_CLASS("\nglobalLocalization icp success with score: %f < %f", icp.getFitnessScore(), score);
+			TRACE_INFO_CLASS("\n");
+			TRACE_INFO_CLASS("globalLocalization icp success with score: %f < %f", icp.getFitnessScore(), score);
 		}
 		Eigen::Isometry3d lidar_in_map;
 		lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
@@ -397,7 +398,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		TRACE_INFO_CLASS("icp given init T_map_lidar trans x: %f, y: %f, z: %f", lidar_in_map.translation().x(),
 						 lidar_in_map.translation().y(), lidar_in_map.translation().z());
 
-		TRACE_INFO_CLASS("\n icp given T_map_odom yaw: %f, pitch: %f, roll: %f", T_map_odom_euler[0] * RAD2DEGREE,
+		TRACE_INFO_CLASS("icp given T_map_odom yaw: %f, pitch: %f, roll: %f", T_map_odom_euler[0] * RAD2DEGREE,
 						 T_map_odom_euler[1] * RAD2DEGREE, T_map_odom_euler[2] * RAD2DEGREE);
 		TRACE_INFO_CLASS("icp given T_map_odom trans x: %f, y: %f, z: %f", T_map_odom_t.x(), T_map_odom_t.y(),
 						 T_map_odom_t.z());
