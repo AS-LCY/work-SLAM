@@ -19,7 +19,8 @@ def generate_launch_description():
     mapping_config = os.path.join(
         get_package_share_directory('lidar_slam'),
         'config',
-        'param_slam_mid360_ros2.yaml'
+        # 'param_slam_mid360_ros2.yaml' #lds底盘
+        'param_slam_arm_chassis_mid360_ros2.yaml'
     )
     
     # camera_config = os.path.join(
