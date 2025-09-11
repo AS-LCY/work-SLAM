@@ -120,7 +120,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	if (thread_ != nullptr) {
 		thread_run_ = false;
 		thread_->join();
-		// show_thread_->join();
 		thread_run_ = true;
 		if (work_mode == SEC_MAPPING) {
 			global_localization_thread_->join();
@@ -367,13 +366,6 @@ void LidarSlam::localizationThread() {
 					wait_time++;
 				}
 
-				// TODO(jxl): 这段代码可以不要，最外层有休眠
-				auto end = std::chrono::steady_clock::now();
-				auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-				if (elapsed < period_relocal) {
-					std::this_thread::sleep_for(period_relocal - elapsed);
-				}
-				continue;
 			} else { //全局定位成功
 				if (wait_time >= period_local_sec) {
 					need_localize_ = true;
@@ -440,7 +432,6 @@ void LidarSlam::localizationThread() {
 
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
 		if (elapsed < period_relocal) {
 			std::this_thread::sleep_for(period_relocal - elapsed);
 		}
@@ -464,16 +455,10 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 			if (!globalLocalizationSuccess_) {
 				secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Relocalizing);
 				TRACE_WARN_CLASS("sec_mapping relocalization ing");
+
 				if (!cloud_map_manager_->get_map_data_status()) {
 					TRACE_WARN_CLASS("sec_mapping relocalizing: map not ready ... ");
-					auto end = std::chrono::steady_clock::now();
-					auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-					if (elapsed < period) {
-						std::this_thread::sleep_for(period - elapsed);
-					}
-					continue;
 				}
-
 				if (!global_localization_->get_global_map_ready()) {
 					if (!global_localization_->set_global_map(cloud_map_manager_->get_loaded_cloud_map())) {
 						TRACE_WARN_CLASS("sec_mapping relocalizing: map not ready (global-map) ... ");
@@ -859,13 +844,6 @@ bool LidarSlam::run() {
 				}
 			}
 		}
-		// else if (working_mode_ == LOCALIZATION) {
-		// 	{
-		// 		std::unique_lock<std::mutex> lk(mtx_path_);
-		// 		unoptimized_path_.emplace_back(getWheelInMap());
-		// 		if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
-		// 	}
-		// }
 		auto backend_end = std::chrono::high_resolution_clock::now();
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();

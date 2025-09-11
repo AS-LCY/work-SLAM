@@ -312,9 +312,9 @@ void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
 	nodes.type = visualization_msgs::msg::Marker::SPHERE_LIST;
 	nodes.action = visualization_msgs::msg::Marker::ADD;
 	nodes.pose.orientation.w = 1.0;
-	nodes.scale.x = 0.05;
-	nodes.scale.y = 0.05;
-	nodes.scale.z = 0.05;
+	nodes.scale.x = 0.1;
+	nodes.scale.y = 0.1;
+	nodes.scale.z = 0.1;
 	nodes.color.r = 0.0f;
 	nodes.color.g = 1.f;
 	nodes.color.b = 1.f;

@@ -120,11 +120,6 @@ class LocalizationModule {
 	using SecmapRelocalThrdStatus = common_status::SecmapRelocalThrdStatus;
 	using SlamRunStatus = common_status::SlamRunStatus;
 
-	// LocalizationModule(ModuleStatus init_status);
-	// explicit LocalizationModule(
-	//     rclcpp::Node::SharedPtr node,
-	//     ModuleStatus init_status
-	// );
 	LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatus init_status);
 	~LocalizationModule();
 
@@ -267,7 +262,7 @@ class LocalizationModule {
 	std::atomic<double> hb_time_cbk_lidar_;
 	std::atomic<double> hb_time_cbk_module_ctrl_;
 	std::atomic<double> hb_time_timer_slam_;
-	std::atomic<double> hb_time_timer_pose_;
+
 	// std::atomic<double> hb_time_thread_localize_;
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;
@@ -294,11 +289,6 @@ class LocalizationModule {
 
 	std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-	// 其他发布者
-	// rclcpp::Publisher<Odometry>::SharedPtr pubLidarInMap;
-	// rclcpp::Publisher<PointCloud2>::SharedPtr pubOdomCloud;
-	// rclcpp::Publisher<PointCloud2>::SharedPtr pubBodyCloud;
-
 	rclcpp::CallbackGroup::SharedPtr slam_callback_group_;
 	rclcpp::CallbackGroup::SharedPtr ctrl_callback_group_;
 
@@ -309,7 +299,7 @@ class LocalizationModule {
 	string curr_dir_; // localization_module CMake dir
 	bool localization_mode_ = false;
 	bool offline_mode_ = false; // unused
-	bool just_show_mode_ = false;
+
 	bool show_rviz_ = false;
 	bool fast_mode_ = false; // unused, 只有参数读入
 	string log_folder_;
@@ -333,9 +323,7 @@ class LocalizationModule {
 
 	std::atomic<LocalizationStatus> localization_status_{ LocalizationStatus::Inactive };
 
-	// other thread
-	std::thread show_thread_;
-	int show_load_map_ = 0;
+	bool global_map_pubed_ = false;
 
 	cpu_set_t cpu_mask_;
 

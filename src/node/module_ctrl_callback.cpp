@@ -335,7 +335,6 @@ bool LocalizationModule::start_localization(int map_id) {
 			local_node_status_.store(LocalNodeStatus::Inactive);
 			return false;
 		} else {
-			show_load_map_ = 0;
 			running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
 			local_node_status_.store(LocalNodeStatus::Normal);
 			return true;

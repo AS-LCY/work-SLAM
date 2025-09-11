@@ -25,7 +25,7 @@ Localization::Localization() {
 	icp_->setMaximumIterations(50);			  // 最大迭代次数
 	icp_->setTransformationEpsilon(1e-8);	  // 变换收敛阈值
 	icp_->setEuclideanFitnessEpsilon(1);	  // 误差收敛阈值
-	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离 //TODO(jxl)
+	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离 // TODO(jxl)
 
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
 	CloudGlobalMap_.reset(new PointCloudType());
@@ -224,7 +224,6 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	}
 
 	gicp_->setInputSource(odomCloud);
-	TRACE_INFO_CLASS("set source cloud done");
 	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
 	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
 	TRACE_INFO_CLASS("match with offline map done");

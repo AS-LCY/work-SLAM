@@ -65,27 +65,26 @@ bool LocalizationModule::create_ROS_IO() {
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
 
 	pub_localization_module_status_ = node_->create_publisher<fairland_msgs::msg::LocalizationModuleStatus>(
-		slam_param_.common.pub_topic_module_status, rclcpp::QoS(100));
+		slam_param_.common.pub_topic_module_status, rclcpp::QoS(10));
 
 	pub_localization_module_health_ = node_->create_publisher<fairland_msgs::msg::LocalizationModuleHealth>(
-		slam_param_.common.pub_topic_module_health, rclcpp::QoS(100));
+		slam_param_.common.pub_topic_module_health, rclcpp::QoS(10));
 
 	pub_log_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo,
-																		 rclcpp::QoS(100));
+																		 rclcpp::QoS(10));
 	// pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100);
 
 	// both 建图 & 定位
-	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(20));
-	// T_map_baselink
+	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(10));
+	// T_map_baselink(里面带线速度)
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =
-		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz  //TODO(jxl): 主线程应该多少ms周期运行
+		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz  // TODO(jxl): 主线程应该多少ms周期运行
 								 std::bind(&LocalizationModule::slam_dealt_timer, this), slam_callback_group_);
 
 	ctrl_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
-	// 创建订阅器
 	auto sub_options = rclcpp::SubscriptionOptions();
 	sub_options.callback_group = ctrl_callback_group_;
 	this->sub_mapping_ctrl_ = node_->create_subscription<std_msgs::msg::UInt32>(
@@ -93,17 +92,13 @@ bool LocalizationModule::create_ROS_IO() {
 		rclcpp::QoS(3), // 保持队列大小为3
 		std::bind(&LocalizationModule::localization_module_ctrl_callback, this, std::placeholders::_1), sub_options);
 
-	// only 建图
 	this->timer_module_status_ =
 		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
 								 std::bind(&LocalizationModule::pub_module_status_timer, this), ctrl_callback_group_);
 
-	// TODO: 还需要区分哪些是建图或定位发布的
 	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
 
-	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/flbot/localization/baselink_cloud", 10);
-	//转到和base_link系朝向一致的点云, 位置还在雷达位置处
-	// TODO(jxl): 可以把点云转到base_link位置处
+	pubBodyCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/baselink_cloud", 10);
 
 	// pub_body_cloud_filter_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
 	// 	"/flbot/localization/body_cloud_filter", 20); //没有实际发布
@@ -129,14 +124,13 @@ bool LocalizationModule::create_ROS_IO() {
 
 	pub_pose_graph_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/pose_graph/nodes_and_edges", 10);
 
-	pubLoopConstraintEdge = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
-		"/flbot/mapping/loop_closure_constraints", 1); //建图模式下：只发布闭环nodes和edges，没有整体pose graph结构
+	// pubLoopConstraintEdge = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
+	// 	"/flbot/mapping/loop_closure_constraints", 1); //建图模式下：只发布闭环nodes和edges，没有整体pose graph结构
 
-	pubKeyframePose = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/key_frame_pose", 1);
-	//在定位模式下，发布之前建图结束后加载的关键帧位姿。
-	// TODO(jxl): 定位模式下不关心关键帧，只有mapping或sec_mapping模式下才关心关键帧
+	// pubKeyframePose = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/key_frame_pose", 1);
+	// 在定位模式下，发布之前建图结束后加载的关键帧位姿。
 
-	pubLoadMap = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/Load_map", 1); //每隔20s发布一次加载的地图
+	pubLoadMap = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/Load_map", 1);
 
 	// pubRgbCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("rgb_cloud", 1); //没有发布
 	// pub_base_imu_ =
@@ -145,25 +139,7 @@ bool LocalizationModule::create_ROS_IO() {
 	return true;
 }
 
-void LocalizationModule::ros_spinner_start() {
-	// 创建多线程执行器
-	// auto executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-
-	// 添加节点到执行器
-	// executor->add_node(node_);
-
-	// 为不同模块创建回调组（替代ROS1的队列）
-	// auto slam_group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-	// auto ctrl_group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-	// auto filter_group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-	// auto health_group = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-
-	// 创建各模块的订阅/定时器时指定对应的回调组
-	// (通过前面提到的TimerOptions等方式)
-	// executor->spin();  // 主线程会停在这里
-	// 启动执行器（非阻塞）
-	// std::thread(‌:ml-search[executor] { executor->spin(); }).detach();
-}
+void LocalizationModule::ros_spinner_start() {}
 
 void LocalizationModule::slam_dealt_timer() { //主线程
 	if (slam_param_.common.cpu_id.size() > 0) {
@@ -200,78 +176,39 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		return;
 	}
 
-	if (curr_running_module_status == ModuleStatus::MODULE_MAPPING ||
-		curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING ||
-		curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-	}
-
-	if (show_load_map_ % 200 == 0 && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
-		(slam_->getLoadMap()) && (slam_->getLoadMap())->points.size() > 0) {
+	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) &&
+		(slam_->getLoadMap())->points.size() > 0 && pubLoadMap->get_subscription_count() > 0 && !global_map_pubed_) {
 		sensor_msgs::msg::PointCloud2 loadMap;
 		pcl::toROSMsg(*(slam_->getLoadMap()), loadMap);
 		loadMap.header.stamp = node_->now();
 		loadMap.header.frame_id = "map";
 		pubLoadMap->publish(loadMap);
-		// TODO(jxl): 定位模式下，每隔20s发布一次加载的地图，没必要。可以只发布一次来可视化，在debug模式下。
+		global_map_pubed_ = true;
 
-		show_keyframe(slam_->getLoadKeyFrame());
-		show_load_map_ = 0;
+		// show_keyframe(slam_->getLoadKeyFrame());
 	}
-	show_load_map_++;
-
-	if (just_show_mode_) {
-		return;
-	}
-
-	/********************************- run slam -********************************/
 
 	// running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
 	bool running_slam_flag = slam_->run();
-
 	if (running_slam_flag) {
-		if ((is_mapping_status(curr_running_module_status)) || slam_->isGloalLocalizationSuccess()) {
-			// publish_cloud(slam_->get_odom_cloud(), "base_link", pubOdomCloud);
-			// TODO(jxl): odom系下的点云，怎么frame_id是base_link？先注释掉
+		if (pubBodyCloud->get_subscription_count() > 0) {
+			publish_cloud(slam_->get_baselink_cloud(), "base_link", pubBodyCloud);
 		}
-		publish_cloud(slam_->get_baselink_cloud(), "base_link", pubBodyCloud);
+		if (pubOdomCloud->get_subscription_count() > 0) {
+			publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
+		}
 		// process_loginfo();
 	}
 
 	auto localization_status_now = localization_status_.load();
-	if (is_mapping_status(curr_running_module_status) &&
-		mapping_status_.load() == MappingStatus::Standby) { // m_standby
-		// if (slam_->get_new_key_cloud_arrived()) {
-		// 	publish_cloud(slam_->get_lidar_cloud(), "lidar", pub_key_cloud_);
-		// 	slam_->set_new_key_cloud_arrived(false);
-		// }
-		// publish_cloud(slam_->get_kdtree_cloud(), "mapping_odom", pubKdtreeCloud);
-
-		publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
-
-		visualizeLoopClosure(slam_->getloopIndex(),
-							 optimized_path_msg); // TODO(jxl): 只发布了闭环nodes和edges， 整个pose graph结构看不到
-
-		// publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
-
+	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == MappingStatus::Standby) {
 		if (pub_pose_graph_->get_subscription_count() > 0) {
 			const auto& keyframe_poses = slam_->getAllKeyframeBaselinkNodes(); // T_map_baselink
 			const auto& all_loop_edges = slam_->getAllLoopEdges();
 			visualizePoseGraph(keyframe_poses, all_loop_edges);
 		}
-
 		publish_optimized_path(slam_->get_optimized_path(), string("map"));
-	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
-			   localization_status_is_ok(localization_status_now)) {
-		if (slam_->isGloalLocalizationSuccess()) {
-			// publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
-			// TODO(jxl): 用新的接口发布T_map_lidar?
-		}
 	}
-
-	// if (show_rviz_){
-	//     publish_static_transform(slam_->getWheelInLidar());
-	//     publish_odometry(slam_->getLidarInOdom(), pubOdomAftMapped);
-	// }
 }
 
 //调试信息
@@ -330,7 +267,6 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	static const double imu_interval = 0.005;
 	static const double lidar_interval = 0.1;
 	static const double slam_interval = 0.1;
-	static const double pose_interval = 0.05;
 	static const double localize_interval = 1.0;
 	static const double loop_closure_interval = 1.0;
 	static const double secmap_relocalize_interval = 1.0;
@@ -347,31 +283,24 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	HealthStatus health_status_now = HealthStatus::AllOk;
 
 	auto curr_ros_time = node_->now();
-	double curr_time = rclcpp::Time(curr_ros_time).seconds(); //////////////////TODO::
+	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	double delay_imu = curr_time - hb_time_cbk_imu_.load();
 	double delay_lidar = curr_time - hb_time_cbk_lidar_.load();
 	double delay_slam = curr_time - hb_time_timer_slam_.load();
-	double delay_pose = curr_time - hb_time_timer_pose_.load();
 	bool hb_cbk_lidar = delay_lidar < lidar_interval * lidar_ratio ? true : false;
 	bool hb_cbk_imu = delay_imu < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = delay_slam < slam_interval * slam_ratio ? true : false;
-	bool hb_timer_pose = delay_pose < pose_interval * pose_ratio ? true : false;
 	bool hb_thread_localize = true;
 	bool hb_thread_loop_closure = true;
 	bool hb_thread_secmap_relocalize = true;
 	bool error_lidar_point_too_few = false;
 	bool error_livox_driver_failed = false;
 
-	// if(curr_running_module_status == ModuleStatus::MODULE_IDLE){
-	//     hb_cbk_lidar = 1;
-	//     hb_cbk_imu = 1;
-	// }
-
-	if (!hb_cbk_lidar || !hb_cbk_imu || !hb_timer_slam || !hb_timer_pose) {
+	if (!hb_cbk_lidar || !hb_cbk_imu || !hb_timer_slam) {
 		health_status_now = HealthStatus::ErrorStop;
 	}
 
-	// check thread in slam.cpp ******************************************************************
+	// check thread in slam.cpp
 	double localize_delay = 0.0;
 	double loop_closure_delay = 0.0;
 	double secmap_relocalize_delay = 0.0;
@@ -400,12 +329,13 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 			local_node_status_.store(LocalNodeStatus::LocalizeThreadDelay);
 		}
 	}
-	// check lidar driver **************************************************************
+
+	// check lidar driver
 	int orig_point_cloud_size = 0;
 	int sample_point_cloud_size = 0;
 	if (hb_cbk_lidar) {
 		orig_point_cloud_size = cloud_size_orig_.load();
-		sample_point_cloud_size = cloud_size_sample_.load();
+		sample_point_cloud_size = cloud_size_sample_.load(); // TODO(jxl): bug: 这些变量都没有被赋值！
 		if (orig_point_cloud_size < point_cloud_size_thr) {
 			error_lidar_point_too_few = true;
 		}
@@ -416,16 +346,16 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 		health_status_now = static_cast<HealthStatus>(std::max(2, static_cast<int>(health_status_now)));
 	}
 
-	// fill health msg *************************************************************************
+	// fill health msg
 	health_msg.cloud_size = orig_point_cloud_size;
 
-	log_info_manager_->slam_info.data[12] = orig_point_cloud_size;	 //
-	log_info_manager_->slam_info.data[14] = sample_point_cloud_size; //
+	log_info_manager_->slam_info.data[12] = orig_point_cloud_size;
+	log_info_manager_->slam_info.data[14] = sample_point_cloud_size;
 
 	health_msg.delay_cbk_lidar = delay_lidar;							 // unit: s
 	health_msg.delay_cbk_imu = delay_imu;								 // unit: s
 	health_msg.delay_timer_slam = delay_slam;							 // unit: s
-	health_msg.delay_timer_pose = delay_pose;							 // unit: s
+	health_msg.delay_timer_pose = 0.;									 // unit: s
 	health_msg.delay_thread_localize = localize_delay;					 // unit: s
 	health_msg.delay_thread_loop_closure = loop_closure_delay;			 // unit: s
 	health_msg.delay_thread_secmap_relocalize = secmap_relocalize_delay; // unit: s
@@ -433,7 +363,7 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	health_msg.hb_cbk_lidar = hb_cbk_lidar;								  // value: [0] or [1]
 	health_msg.hb_cbk_imu = hb_cbk_imu;									  // value: [0] or [1]
 	health_msg.hb_timer_slam = hb_timer_slam;							  // value: [0] or [1]
-	health_msg.hb_timer_pose = hb_timer_pose;							  // value: [0] or [1]
+	health_msg.hb_timer_pose = true;									  // value: [0] or [1]
 	health_msg.hb_thread_localize = hb_thread_localize;					  // value: [0] or [1]
 	health_msg.hb_thread_loop_closure = hb_thread_loop_closure;			  // value: [0] or [1]
 	health_msg.hb_thread_secmap_relocalize = hb_thread_secmap_relocalize; // value: [0] or [1]
@@ -522,10 +452,10 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		map_saved_.store(0);
 	}
 
-	if (status_msg.localization_status != 0 && status_msg.localization_status != 3) {
+	if (status_msg.localization_status != 0 && status_msg.localization_status != 3) { // Inactive = 0, Normal = 3,
 		TRACE_WARN_CLASS("[Status Timer]: localization_status: %d", int(status_msg.localization_status));
 	}
-	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) {
+	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) { // Inactive = 0, Standby = 3,
 		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
 	}
 
@@ -628,6 +558,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	if (node_status == MappingNodeStatus::Inactive) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
 		mapping_status_.store(MappingStatus::Inactive);
+		return;
 	} else if (node_status == MappingNodeStatus::Normal) {
 		if (slam_run_status == SlamRunStatus::Normal) {
 			if (curr_running_module_status == ModuleStatus::MODULE_MAPPING) {
@@ -643,26 +574,22 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 			status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
 			mapping_status_.store(MappingStatus::Failed);
 		}
+		return;
 	} else if (node_status == MappingNodeStatus::LidarCallbackDelay) {
 		TRACE_WARN_CLASS("lidar cbk delay !!!");
-		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
-		mapping_status_.store(MappingStatus::Failed);
 	} else if (node_status == MappingNodeStatus::SecMapRelocalThreadDelay) {
 		TRACE_ERR_CLASS("secmap-relocal thread delay  !!!");
-		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
-		mapping_status_.store(MappingStatus::Failed);
 	} else if (node_status == MappingNodeStatus::LoopClosureThreadDelay) {
 		TRACE_ERR_CLASS("loop_closure_thread_delay  !!!");
-		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
-		mapping_status_.store(MappingStatus::Failed);
 	} else {
 		TRACE_ERR_CLASS("mapping status error, set to Failed");
 		TRACE_ERR_CLASS("node_status:%s ", magic_enum::enum_name(node_status));
 		TRACE_ERR_CLASS("slam_run_status: :%s ", magic_enum::enum_name(slam_run_status));
 		TRACE_ERR_CLASS("secmap_relocal_thrd_status::%s ", magic_enum::enum_name(secmap_relocal_thrd_status));
-		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
-		mapping_status_.store(MappingStatus::Failed);
 	}
+	status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+	mapping_status_.store(MappingStatus::Failed);
+	return;
 }
 
 void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg) {
@@ -844,7 +771,7 @@ bool LocalizationModule::module_member_init() {
 	hb_time_cbk_imu_.store(curr_time);
 	hb_time_cbk_module_ctrl_.store(curr_time);
 	hb_time_timer_slam_.store(curr_time);
-	hb_time_timer_pose_.store(curr_time);
+
 	// hb_time_thread_localize_.store(curr_time);
 	hb_time_thread_loop_closure_.store(curr_time);
 	hb_time_thread_secmap_relocalize_.store(curr_time);
