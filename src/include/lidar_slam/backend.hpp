@@ -60,16 +60,6 @@
 
 namespace lidar_slam {
 
-// struct KeyPose
-// {
-//     Eigen::Isometry3d pose;
-//     int  index;
-//     double time;
-//     double roll;
-//     double pitch;
-//     double yaw;
-// }; // moved to data_struct_define.h
-
 class BackEnd {
 	DECL_CLASSNAME(BackEnd)
    public:
@@ -90,8 +80,6 @@ class BackEnd {
 	bool correctPoses();
 	void recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeReconstructRadius,
 						   float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize);
-
-	// PointCloudType::Ptr getObstacleMap(Eigen::Isometry3d T_map_odom,double min_height,double max_height);/// 没用上
 
 	KeyPose getCurrentPose() { return KeyPoses_.back(); }
 
@@ -115,8 +103,6 @@ class BackEnd {
 
    private:
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);
-	// bool create_directory_if_not_exists(const std::string &directoryPath);
-	// bool mkdir_p(const std::string &dir_path, mode_t mode);
 
 	void addOdomFactor(Eigen::Isometry3d transformTobeMapped);
 	void addLoopFactor();

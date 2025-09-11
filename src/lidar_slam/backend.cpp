@@ -33,6 +33,7 @@ BackEnd::BackEnd(float dist, float angle, float loop_dist, float loop_time, int 
 }
 
 BackEnd::~BackEnd() {}
+
 bool BackEnd::saveFrame(Eigen::Isometry3d transformTobeMapped) {
 	if (KeyPoint_->points.empty()) return true;
 	Eigen::Affine3f transBetween;
@@ -70,8 +71,10 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 }
 
 void BackEnd::addLoopFactor() {
-	if (loopIndexQueue_.empty()) return;
-	// 闭环队列
+	if (loopIndexQueue_.empty()) {
+		return;
+	}
+
 	for (int i = 0; i < (int)loopIndexQueue_.size(); ++i) {
 		// 闭环边对应两帧的索引
 		int indexFrom = loopIndexQueue_[i].first; //   cur
@@ -82,8 +85,6 @@ void BackEnd::addLoopFactor() {
 		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
 	}
 
-	// ROS_INFO_STREAM(BOLDRED<<"addLoopFactor, loopIndexQueue_ size = " << loopIndexQueue_.size() <<"
-	// *************************** "<<RESET);
 	//  mtxLoopInfo_.lock(); // TODO this cause CPU high
 	std::unique_lock<std::mutex> lk(mtxLoopInfo_); // TODO(jxl): 在函数一进来就应该就上锁
 	loopIndexQueue_.clear();
