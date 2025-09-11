@@ -24,7 +24,7 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode, r
 void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
 	log_info_manager_->reset_log_info();
-	slam_run_status_.store(0);
+	slam_run_status_.store(SlamRunStatus::Inactive);
 
 	sleep(1); // TODO(jxl): 要休眠1s吗
 
@@ -322,11 +322,11 @@ void LidarSlam::localizationThread() {
 			pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp);
 		}
 
-		if (local_thrd_status_.load() == 2) { // 重定位失败
+		if (local_thrd_status_.load() == LocalizationStatus::RelocalizeFailed) {
 			TRACE_WARN_CLASS("global Localization failed: time out ");
 		} else {
 			if (!globalLocalizationSuccess_) {
-				local_thrd_status_.store(1); // 重定位中
+				local_thrd_status_.store(LocalizationStatus::Relocalizing);
 
 				if (!getLoadMap()) {
 					TRACE_WARN_CLASS("globalLocalization failed: map not ready ... ");
@@ -356,12 +356,12 @@ void LidarSlam::localizationThread() {
 				}
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
 					TRACE_WARN_CLASS("global Localization failed: time out ");
-					local_thrd_status_.store(2);
+					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
 				}
 				if (globalLocalizationSuccess_) {
 					TRACE_INFO_CLASS("global Localization Success");
 					global_localize_count_ = 0;
-					local_thrd_status_.store(3);
+					local_thrd_status_.store(LocalizationStatus::Normal);
 
 					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
 					wait_time++;
@@ -389,7 +389,7 @@ void LidarSlam::localizationThread() {
 												odom2map_delta_thr, odom2map_delta_set, use_pose_filter)) {
 						log_info_manager_->slam_info.data[3] = 1; // if converge
 						if (fit_score < fgicp_score_low_accuracy_thr) {
-							local_thrd_status_.store(3);
+							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
 							gicp_low_acc_count = 0;
 
@@ -404,25 +404,22 @@ void LidarSlam::localizationThread() {
 											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
 						} else {
 							gicp_fail_count++;
-							gicp_low_acc_count++;
-							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_low_acc_count: %d, gicp_fail_count: %d",
-											 fit_score, fgicp_score_fail_thr, gicp_low_acc_count, gicp_fail_count);
+							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
+											 fgicp_score_fail_thr, gicp_fail_count);
 						}
 					} else { // 未收敛
 						log_info_manager_->slam_info.data[3] = 0;
 						gicp_fail_count++;
-						gicp_low_acc_count++;
-						TRACE_WARN_CLASS("fast gicp not converged, gicp_low_acc_count: %d, gicp_fail_count: %d",
-										 gicp_low_acc_count, gicp_fail_count);
+						TRACE_WARN_CLASS("fast gicp not converged,  gicp_fail_count: %d", gicp_fail_count);
 					}
 
 					if (gicp_fail_count >= fgicp_fail_count_thr ||
 						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败
-						local_thrd_status_.store(5);
+						local_thrd_status_.store(LocalizationStatus::Failed);
 						TRACE_INFO_CLASS("localization failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
 										 gicp_fail_count, gicp_low_acc_count);
 					} else if (gicp_fail_count >= 1 || gicp_low_acc_count >= 2) {
-						local_thrd_status_.store(4);
+						local_thrd_status_.store(LocalizationStatus::LowAccuracy);
 					}
 
 					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
@@ -461,11 +458,11 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 	while (thread_run_ && reseting_ == false) {
 		hb_time_thread_secmap_relocalize_.store(rclcpp::Clock().now().seconds());
 		auto start = std::chrono::steady_clock::now();
-		if (secmap_relocal_thrd_status_.load() == 2) { // 重定位失败
+		if (secmap_relocal_thrd_status_.load() == SecmapRelocalThrdStatus::RelocalizeFailed) {
 			TRACE_WARN_CLASS("sec_mapping relocalization failed: time out ");
 		} else {
 			if (!globalLocalizationSuccess_) {
-				secmap_relocal_thrd_status_.store(1); //重定位中
+				secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Relocalizing);
 				TRACE_WARN_CLASS("sec_mapping relocalization ing");
 				if (!cloud_map_manager_->get_map_data_status()) {
 					TRACE_WARN_CLASS("sec_mapping relocalizing: map not ready ... ");
@@ -513,14 +510,14 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					if (globalLocalizationSuccess_) {
 						TRACE_INFO_CLASS("sec_mapping relocalizing: global Localization Success");
 						global_localize_count_ = 0;
-						secmap_relocal_thrd_status_.store(3); //重定位成功 =============================================
+						secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Normal);
 					} else {
 						global_localize_count++;
 					}
 				}
 				if (global_localize_count > global_localize_times) {
 					TRACE_WARN_CLASS("sec_mapping relocalization failed: time out ");
-					secmap_relocal_thrd_status_.store(2); //重定位失败 =============================================
+					secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::RelocalizeFailed);
 				}
 			}
 
@@ -719,7 +716,7 @@ bool LidarSlam::run() {
 		if (undistortCloud_->empty() || (undistortCloud_ == nullptr)) {
 			lidar_no_point_count_++;
 			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
-				slam_run_status_.store(2);
+				slam_run_status_.store(SlamRunStatus::SlamFail);
 			}
 			TRACE_WARN_CLASS("No point, skip this scan!");
 			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
@@ -762,7 +759,7 @@ bool LidarSlam::run() {
 		if (feats_down_size < feats_down_size_thr_) {
 			lidar_no_point_count_++;
 			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
-				slam_run_status_.store(2);
+				slam_run_status_.store(SlamRunStatus::SlamFail);
 			}
 			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
 			TRACE_WARN_CLASS("Too few points: %d < thresh: %d, skip this scan!", feats_down_size, feats_down_size_thr_);
@@ -770,7 +767,7 @@ bool LidarSlam::run() {
 		} else {
 			lidar_no_point_count_ = 0;
 			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
-			slam_run_status_.store(1);
+			slam_run_status_.store(SlamRunStatus::Normal);
 		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size);
 

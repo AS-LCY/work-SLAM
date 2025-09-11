@@ -65,6 +65,60 @@ typedef Matrix3f M3F;
 constexpr double RAD2DEGREE = 180.f / M_PI;
 constexpr double DEGREE2RAD = M_PI / 180.f;
 
+namespace common_status {
+enum class LocalizationStatus : int {
+	Inactive = 0,		  // l_inactive
+	Relocalizing = 1,	  // l_relocalizing
+	RelocalizeFailed = 2, // l_relocalize failed
+	Normal = 3,			  // l_normal
+	LowAccuracy = 4,	  // l_low_accuracy
+	Failed = 5			  // l_failed
+};
+
+enum class MappingStatus : int {
+	Inactive = 0,		  // m_inactive
+	Relocalizing = 1,	  // m_relocalizing
+	RelocalizeFailed = 2, // m_relocalize failed
+	Standby = 3,		  // m_standby
+	CreatingEle = 4,	  // m_creating_ele (not used)
+	Failed = 5			  // m_failed
+};
+
+enum class LocalNodeStatus : int {
+	Inactive = 0,			// inactive
+	Normal = 1,				// normal
+	LidarCallbackDelay = 2, // lidar cbk delay
+	LocalizeThreadDelay = 3 // localize thread delay
+};
+
+enum class MappingNodeStatus : int {
+	Inactive = 0,				  // inactive
+	Normal = 1,					  // normal
+	LidarCallbackDelay = 2,		  // lidar cbk delay
+	SecMapRelocalThreadDelay = 3, // secmap-relocal thread delay
+	LoopClosureThreadDelay = 4	  // loop_closure_thread_delay
+};
+
+enum class HealthStatus : int {
+	AllOk = 0,	   // all ok
+	ErrorStop = 1, // error, stop pub tf & odom
+	ErrorReset = 2 // error, reset slam to IDLE
+};
+
+enum class SlamRunStatus : int {
+	Inactive = 0, // inactive
+	Normal = 1,	  // normal
+	SlamFail = 2  // slam fail: cloud no enough point
+};
+
+enum class SecmapRelocalThrdStatus : int {
+	Inactive = 0,		  // inactive
+	Relocalizing = 1,	  // relocalizing
+	RelocalizeFailed = 2, // relocalize failed
+	Normal = 3			  // normal
+};
+} // namespace common_status
+
 /*struct StatesGroup
 {
 	StatesGroup() {

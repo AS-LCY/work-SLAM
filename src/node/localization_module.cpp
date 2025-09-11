@@ -235,7 +235,8 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	}
 
 	auto localization_status_now = localization_status_.load();
-	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == 3) { // m_standby
+	if (is_mapping_status(curr_running_module_status) &&
+		mapping_status_.load() == MappingStatus::Standby) { // m_standby
 		// if (slam_->get_new_key_cloud_arrived()) {
 		// 	publish_cloud(slam_->get_lidar_cloud(), "lidar", pub_key_cloud_);
 		// 	slam_->set_new_key_cloud_arrived(false);
@@ -312,8 +313,8 @@ void LocalizationModule::process_loginfo() {
 }*/
 
 // 调试信息（健康状态）， 不影响程序运行
-int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_status,
-											  fairland_msgs::msg::LocalizationModuleHealth& health_msg) {
+common_status::HealthStatus LocalizationModule::check_fill_health_msg(
+	ModuleStatus curr_running_module_status, fairland_msgs::msg::LocalizationModuleHealth& health_msg) {
 	static const double imu_interval = 0.005;
 	static const double lidar_interval = 0.1;
 	static const double slam_interval = 0.1;
@@ -331,8 +332,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 	static const int point_cloud_size_thr = 600;
 
 	// check ROS IO status **********************************************************************
-	int health_status_now = 0;
-	// health_status_.store(0); // reset to status ok
+	HealthStatus health_status_now = HealthStatus::AllOk;
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds(); //////////////////TODO::
@@ -356,7 +356,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 	// }
 
 	if (!hb_cbk_lidar || !hb_cbk_imu || !hb_timer_slam || !hb_timer_pose) {
-		health_status_now = 1;
+		health_status_now = HealthStatus::ErrorStop;
 	}
 
 	// check thread in slam.cpp ******************************************************************
@@ -367,8 +367,8 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 		loop_closure_delay = curr_time - slam_->get_hb_time_thread_loop_closure();
 		hb_thread_loop_closure = loop_closure_delay < loop_closure_interval * loop_closure_ratio ? true : false;
 		if (!hb_thread_loop_closure) {
-			health_status_now = std::max(1, health_status_now);
-			mapping_node_status_.store(4); // 0: inactive
+			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
+			mapping_node_status_.store(MappingNodeStatus::LoopClosureThreadDelay);
 		}
 	} else if (curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING) {
 		loop_closure_delay = curr_time - slam_->get_hb_time_thread_loop_closure();
@@ -377,15 +377,15 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 		hb_thread_secmap_relocalize =
 			secmap_relocalize_delay < secmap_relocalize_interval * secmap_relocalize_ratio ? true : false;
 		if (!hb_thread_loop_closure || !hb_thread_secmap_relocalize) {
-			health_status_now = std::max(1, health_status_now);
-			mapping_node_status_.store(4); // 0: inactive
+			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
+			mapping_node_status_.store(MappingNodeStatus::LoopClosureThreadDelay);
 		}
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
 		localize_delay = curr_time - slam_->get_hb_time_thread_localize();
 		hb_thread_localize = localize_delay < localize_interval * localize_ratio ? true : false;
 		if (!hb_thread_localize) {
-			health_status_now = std::max(1, health_status_now);
-			local_node_status_.store(3); // 0: inactive
+			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
+			local_node_status_.store(LocalNodeStatus::LocalizeThreadDelay);
 		}
 	}
 	// check lidar driver **************************************************************
@@ -401,7 +401,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 	if (slam_param_.lidar_preproc.lidar_type == 1 && orig_point_cloud_size == 96) {
 		TRACE_ERR_CLASS("livox driver error, cloud-size: 96");
 		error_livox_driver_failed = true;
-		health_status_now = std::max(2, health_status_now);
+		health_status_now = static_cast<HealthStatus>(std::max(2, static_cast<int>(health_status_now)));
 	}
 
 	// fill health msg *************************************************************************
@@ -429,7 +429,7 @@ int LocalizationModule::check_fill_health_msg(ModuleStatus curr_running_module_s
 	health_msg.error_lidar_point_too_few = error_lidar_point_too_few; // value: [0] or [1]
 	health_msg.error_livox_driver_failed = error_livox_driver_failed; // value: [0] or [1]
 
-	health_msg.health_status = health_status_now;
+	health_msg.health_status = static_cast<int>(health_status_now);
 
 	return health_status_now;
 }
@@ -441,7 +441,7 @@ void LocalizationModule::pub_module_status_timer() {
 	auto curr_ros_time = node_->now();
 
 	fairland_msgs::msg::LocalizationModuleHealth health_msg;
-	int health_status_now = check_fill_health_msg(curr_running_module_status, health_msg);
+	HealthStatus health_status_now = check_fill_health_msg(curr_running_module_status, health_msg);
 	health_msg.header.stamp = curr_ros_time;
 	health_msg.header.frame_id = "base_link";
 	health_status_.store(health_status_now);
@@ -532,129 +532,124 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_status,
 											  fairland_msgs::msg::LocalizationModuleStatus& status_msg) {
 	if (curr_running_module_status != ModuleStatus::MODULE_LOCALIZATION) {
-		status_msg.localization_status = int(LocalizationStatus::L_INACTIVE);
-		localization_status_.store(0); // inactive
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
+		localization_status_.store(LocalizationStatus::Inactive);
 		return;
 	}
 
 	auto last_local_status = localization_status_.load();
-	if (last_local_status == 2 || last_local_status == 5) {
-		status_msg.localization_status = last_local_status;
-		log_info_manager_->slam_info.data[2] = last_local_status;
+	if (last_local_status == LocalizationStatus::RelocalizeFailed || last_local_status == LocalizationStatus::Failed) {
+		status_msg.localization_status = static_cast<int>(last_local_status);
+		log_info_manager_->slam_info.data[2] = static_cast<int>(last_local_status);
 		return;
 	}
 
-	int node_status = local_node_status_.load();
-	int local_thrd_status = slam_->get_local_thrd_status();
-	int slam_run_status = slam_->get_slam_run_status();
+	auto node_status = local_node_status_.load();
+	auto local_thrd_status = slam_->get_local_thrd_status();
+	auto slam_run_status = slam_->get_slam_run_status();
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
-		if (node_status == 2 || node_status == 3) {
-			node_status = 1;
+		if (node_status == LocalNodeStatus::LidarCallbackDelay || node_status == LocalNodeStatus::LocalizeThreadDelay) {
+			node_status = LocalNodeStatus::Normal;
 		}
 	}
 
-	if (node_status == 0) {
-		status_msg.localization_status = int(LocalizationStatus::L_INACTIVE);
-		localization_status_.store(0);
-	} else if (node_status == 1) {	// node_status = normal
-		if (slam_run_status == 1) { // slam_run_status = normal
-			status_msg.localization_status = local_thrd_status;
+	if (node_status == LocalNodeStatus::Inactive) {
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
+		localization_status_.store(LocalizationStatus::Inactive);
+	} else if (node_status == LocalNodeStatus::Normal) {
+		if (slam_run_status == SlamRunStatus::Normal) {
+			status_msg.localization_status = static_cast<int>(local_thrd_status);
 			localization_status_.store(local_thrd_status); // 与 定位线程的状态一致
-		} else if (slam_run_status == 2) {				   //
-			status_msg.localization_status = int(LocalizationStatus::L_FAILED);
-			localization_status_.store(5); // 定位失败
-		} else {
-			// ROS_ERROR_STREAM("node_status: 1, slam_run_status: " << slam_run_status);
-			// status_msg.localization_status = fairland_msgs::LocalizationModuleStatus::L_FAILED;
-			// localization_status_.store(5); // 定位失败
+		} else if (slam_run_status == SlamRunStatus::SlamFail) {
+			status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+			localization_status_.store(LocalizationStatus::Failed);
 		}
-	} else if (node_status == 2) { // lidar cbk delay
+	} else if (node_status == LocalNodeStatus::LidarCallbackDelay) {
 		TRACE_ERR_CLASS("lidar cbk delay !!!");
-		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
-		localization_status_.store(5); // 定位失败
-	} else if (node_status == 3) {	   // localize thread delay
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		localization_status_.store(LocalizationStatus::Failed);
+	} else if (node_status == LocalNodeStatus::LocalizeThreadDelay) {
 		TRACE_ERR_CLASS("localize thread delay  !!!");
-		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
-		localization_status_.store(5); // 定位失败
-	} else {
-		TRACE_ERR_CLASS("status error, set to L_FAILED");
-		TRACE_ERR_CLASS("node_status: %d", node_status);
-		TRACE_ERR_CLASS("slam_run_status:%d", slam_run_status);
-		TRACE_ERR_CLASS("local_thrd_status:%d", local_thrd_status);
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		localization_status_.store(LocalizationStatus::Failed);
+		TRACE_ERR_CLASS("localization status error, set to Failed");
+		TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
+		TRACE_ERR_CLASS("slam_run_status:%s", magic_enum::enum_name(slam_run_status));
+		TRACE_ERR_CLASS("local_thrd_status:%s", magic_enum::enum_name(local_thrd_status));
 
-		status_msg.localization_status = int(LocalizationStatus::L_FAILED);
-		localization_status_.store(5); // 定位失败
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		localization_status_.store(LocalizationStatus::Failed);
 	}
 
-	log_info_manager_->slam_info.data[2] = localization_status_.load();
+	log_info_manager_->slam_info.data[2] = static_cast<int>(localization_status_.load());
 }
 
 void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status,
 											  fairland_msgs::msg::LocalizationModuleStatus& status_msg) {
 	if (curr_running_module_status != ModuleStatus::MODULE_MAPPING &&
 		curr_running_module_status != ModuleStatus::MODULE_SEC_MAPPING) {
-		status_msg.mapping_status = int(MappingStatus::M_INACTIVE);
-		mapping_status_.store(0);
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
+		mapping_status_.store(MappingStatus::Inactive);
 		return;
 	}
 
 	auto last_mapping_status = mapping_status_.load();
-	if (last_mapping_status == 2 || last_mapping_status == 5) {
-		status_msg.mapping_status = last_mapping_status;
-		// log_info_manager_->slam_info.data[2]= last_mapping_status;
+	if (last_mapping_status == MappingStatus::RelocalizeFailed || last_mapping_status == MappingStatus::Failed) {
+		status_msg.mapping_status = static_cast<int>(last_mapping_status);
+		// log_info_manager_->slam_info.data[2]= static_cast<int>(last_mapping_status);
 		return;
 	}
 
-	int node_status = mapping_node_status_.load();
-	int slam_run_status = slam_->get_slam_run_status();
-	int secmap_relocal_thrd_status = slam_->get_secmap_relocal_thrd_status();
+	auto node_status = mapping_node_status_.load();
+	auto slam_run_status = slam_->get_slam_run_status();
+	auto secmap_relocal_thrd_status = slam_->get_secmap_relocal_thrd_status();
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
-		if (node_status == 2 || node_status == 3 || node_status == 4) {
-			node_status = 1;
+		if (node_status == MappingNodeStatus::LidarCallbackDelay ||
+			node_status == MappingNodeStatus::SecMapRelocalThreadDelay ||
+			node_status == MappingNodeStatus::LoopClosureThreadDelay) {
+			node_status = MappingNodeStatus::Normal;
 		}
 	}
 
-	if (node_status == 0) {
-		status_msg.mapping_status = int(MappingStatus::M_INACTIVE);
-		mapping_status_.store(0);
-	} else if (node_status == 1) {	// node_status = normal
-		if (slam_run_status == 1) { // slam_run_status = normal
+	if (node_status == MappingNodeStatus::Inactive) {
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
+		mapping_status_.store(MappingStatus::Inactive);
+	} else if (node_status == MappingNodeStatus::Normal) {
+		if (slam_run_status == SlamRunStatus::Normal) {
 			if (curr_running_module_status == ModuleStatus::MODULE_MAPPING) {
-				status_msg.mapping_status = int(MappingStatus::M_STANDBY);
-				mapping_status_.store(3);
+				status_msg.mapping_status = static_cast<int>(MappingStatus::Standby);
+				mapping_status_.store(MappingStatus::Standby);
 			} else if (curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING) {
-				status_msg.mapping_status = secmap_relocal_thrd_status;
-				mapping_status_.store(secmap_relocal_thrd_status);
+				status_msg.mapping_status = static_cast<int>(secmap_relocal_thrd_status);
+				MappingStatus mapping_status =
+					magic_enum::enum_cast<MappingStatus>(static_cast<int>(secmap_relocal_thrd_status)).value();
+				mapping_status_.store(mapping_status);
 			}
-		} else if (slam_run_status == 2) {
-			status_msg.mapping_status = int(MappingStatus::M_FAILED);
-			mapping_status_.store(5);
-		} else {
-			// ROS_ERROR_STREAM("node_status: 1, slam_run_status: " << slam_run_status);
-			// status_msg.mapping_status = fairland_msgs::LocalizationModuleStatus::M_FAILED;
-			// mapping_status_.store(5); // 建图失败
+		} else if (slam_run_status == SlamRunStatus::SlamFail) {
+			status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+			mapping_status_.store(MappingStatus::Failed);
 		}
-	} else if (node_status == 2) { // lidar cbk delay
+	} else if (node_status == MappingNodeStatus::LidarCallbackDelay) {
 		TRACE_WARN_CLASS("lidar cbk delay !!!");
-		status_msg.mapping_status = int(MappingStatus::M_FAILED);
-		mapping_status_.store(5);
-	} else if (node_status == 3) { // localize thread delay
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+		mapping_status_.store(MappingStatus::Failed);
+	} else if (node_status == MappingNodeStatus::SecMapRelocalThreadDelay) {
 		TRACE_ERR_CLASS("secmap-relocal thread delay  !!!");
-		status_msg.mapping_status = int(MappingStatus::M_FAILED);
-		mapping_status_.store(5);
-	} else if (node_status == 4) { // loop_closure_thread_delay
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+		mapping_status_.store(MappingStatus::Failed);
+	} else if (node_status == MappingNodeStatus::LoopClosureThreadDelay) {
 		TRACE_ERR_CLASS("loop_closure_thread_delay  !!!");
-		status_msg.mapping_status = int(MappingStatus::M_FAILED);
-		mapping_status_.store(5);
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+		mapping_status_.store(MappingStatus::Failed);
 	} else {
-		TRACE_ERR_CLASS("status error, set to M_FAILED");
-		TRACE_ERR_CLASS("node_status:%d ", node_status);
-		TRACE_ERR_CLASS("slam_run_status: :%d ", slam_run_status);
-		TRACE_ERR_CLASS("secmap_relocal_thrd_status::%d ", secmap_relocal_thrd_status);
-		status_msg.mapping_status = int(MappingStatus::M_FAILED);
-		mapping_status_.store(5);
+		TRACE_ERR_CLASS("mapping status error, set to Failed");
+		TRACE_ERR_CLASS("node_status:%s ", magic_enum::enum_name(node_status));
+		TRACE_ERR_CLASS("slam_run_status: :%s ", magic_enum::enum_name(slam_run_status));
+		TRACE_ERR_CLASS("secmap_relocal_thrd_status::%s ", magic_enum::enum_name(secmap_relocal_thrd_status));
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
+		mapping_status_.store(MappingStatus::Failed);
 	}
 }
 
@@ -842,13 +837,13 @@ bool LocalizationModule::module_member_init() {
 	hb_time_thread_loop_closure_.store(curr_time);
 	hb_time_thread_secmap_relocalize_.store(curr_time);
 
-	health_status_.store(-1);
+	health_status_.store(HealthStatus::AllOk);
 
-	mapping_node_status_.store(0);
-	local_node_status_.store(0);
+	mapping_node_status_.store(MappingNodeStatus::Inactive);
+	local_node_status_.store(LocalNodeStatus::Inactive);
 
-	mapping_status_.store(0);
-	localization_status_.store(0);
+	mapping_status_.store(MappingStatus::Inactive);
+	localization_status_.store(LocalizationStatus::Inactive);
 	running_module_status_.store(ModuleStatus::MODULE_IDLE);
 
 	// cloud_preproc_ptr_.reset(new PointCloudType());

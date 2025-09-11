@@ -134,7 +134,7 @@ bool LocalizationModule::start_mapping(int map_id) {
 		running_module_status_.store(ModuleStatus::MODULE_STARTING_SLAM);
 		make_slam_obj(slam_param_, set_status);
 		running_module_status_.store(ModuleStatus::MODULE_MAPPING);
-		mapping_node_status_.store(1); // 1: normal
+		mapping_node_status_.store(MappingNodeStatus::Normal);
 		return true;
 	} else if (is_mapping_status(running_module_status_now)) {
 		TRACE_INFO_CLASS("skip, already running mapping now");
@@ -181,7 +181,7 @@ bool LocalizationModule::start_second_mapping(int map_id) {
 			return false;
 		} else { // start_second_mapping success
 			running_module_status_.store(ModuleStatus::MODULE_SEC_MAPPING);
-			mapping_node_status_.store(1); // 1: normal
+			mapping_node_status_.store(MappingNodeStatus::Normal);
 			return true;
 		}
 	} else if (is_mapping_status(running_module_status_now)) {
@@ -210,8 +210,7 @@ bool LocalizationModule::stop_mapping_without_saving_map() {
 		TRACE_INFO_CLASS("mapping stopped without saving map!");
 
 		running_module_status_.store(ModuleStatus::MODULE_IDLE);
-		mapping_node_status_.store(0); // 0: inactive
-
+		mapping_node_status_.store(MappingNodeStatus::Inactive);
 		return true;
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
 			   running_module_status_now == ModuleStatus::MODULE_LOCALIZATION) {
@@ -235,16 +234,16 @@ bool LocalizationModule::stop_mapping() {
 	auto mapping_status_now = mapping_status_.load();
 	ModuleStatus set_status = ModuleStatus::MODULE_IDLE;
 	if (is_mapping_status(running_module_status_now)) {
-		if (mapping_status_now == 3) { // m_standby
+		if (mapping_status_now == MappingStatus::Standby) {
 			running_module_status_.store(ModuleStatus::MODULE_STOPPING_SLAM);
 			TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
-			TRACE_INFO_CLASS("\033[1;32mstart saving map data\033[0m");
+			TRACE_INFO_CLASS("start saving map data");
 			std::string pcd_dir = slam_param_.common.cloud_map_directory;
 			const auto resolution = slam_param_.mapping.save_map_resolution;
 			if (!slam_->save_map(pcd_dir, resolution, 0, 0)) {
 				TRACE_ERR_CLASS("save map data failed!");
 			} else {
-				TRACE_INFO_CLASS("\033[1;32msave map data success!\033[0m");
+				TRACE_INFO_CLASS("save map data success!");
 			}
 
 			save_extrinsic_to_file();
@@ -258,10 +257,10 @@ bool LocalizationModule::stop_mapping() {
 			release_slam_obj();
 			TRACE_INFO_CLASS("mapping stopped !");
 			running_module_status_.store(ModuleStatus::MODULE_IDLE);
-			mapping_node_status_.store(0); // 0: inactive
+			mapping_node_status_.store(MappingNodeStatus::Inactive);
 
 			return true;
-		} else if (mapping_status_now == 4) { // m_creating_ele (not used)
+		} else if (mapping_status_now == MappingStatus::CreatingEle) { // (not used)
 			TRACE_INFO_CLASS("mapping_status: %d", mapping_status_.load());
 			TRACE_INFO_CLASS("skip, please finish current map-element, or delete it first !");
 			return false;
@@ -333,12 +332,12 @@ bool LocalizationModule::start_localization(int map_id) {
 			release_slam_obj();
 
 			running_module_status_.store(ModuleStatus::MODULE_IDLE);
-			local_node_status_.store(0); // 0 = INACTIVE
+			local_node_status_.store(LocalNodeStatus::Inactive);
 			return false;
 		} else {
 			show_load_map_ = 0;
 			running_module_status_.store(ModuleStatus::MODULE_LOCALIZATION);
-			local_node_status_.store(1); // 1 = NORMAL
+			local_node_status_.store(LocalNodeStatus::Normal);
 			return true;
 		}
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION &&
@@ -373,7 +372,7 @@ bool LocalizationModule::stop_localization() {
 
 		// update module-status
 		running_module_status_.store(ModuleStatus::MODULE_IDLE);
-		local_node_status_.store(0);
+		local_node_status_.store(LocalNodeStatus::Inactive);
 
 		return true;
 	} else if (running_module_status_now == ModuleStatus::MODULE_IDLE ||
@@ -468,7 +467,7 @@ bool LocalizationModule::make_slam_obj(lidar_slam::LidarSlamParam yaml_param, Mo
 	TRACE_INFO_CLASS("Making obj(lidar_slam) --- with: set_slam_mode = %s",
 					 lidar_slam::print_SlamWorkMode(set_slam_mode).c_str());
 	slam_ = std::make_unique<lidar_slam::LidarSlam>(yaml_param, set_slam_mode, node_);
-	TRACE_INFO_CLASS("\033[1;32mMake obj(lidar_slam) successfully !\033[0m");
+	TRACE_INFO_CLASS("Make obj(lidar_slam) successfully !");
 	return true;
 }
 
@@ -483,9 +482,9 @@ void LocalizationModule::release_slam_obj() {
 	temp_slam = nullptr;
 
 	running_module_status_.store(ModuleStatus::MODULE_IDLE);
-	mapping_node_status_.store(0); // 0: inactive
-	local_node_status_.store(0);   // 0: inactive
-	TRACE_INFO_CLASS("\033[1;32mlidar_slam stopped !\033[0m");
+	mapping_node_status_.store(MappingNodeStatus::Inactive);
+	local_node_status_.store(LocalNodeStatus::Inactive);
+	TRACE_INFO_CLASS("lidar_slam stopped !");
 	releasing_slam_flag_ = false;
 }
 
@@ -510,7 +509,8 @@ bool LocalizationModule::make_map_directory_name(int map_id) {
 	return true;
 }
 
-bool LocalizationModule::need_start_localization(ModuleStatus running_module_status_now, int localiztion_status_now) {
+bool LocalizationModule::need_start_localization(ModuleStatus running_module_status_now,
+												 LocalizationStatus localiztion_status_now) {
 	if (running_module_status_now == ModuleStatus::MODULE_IDLE) {
 		return true;
 	} else if (running_module_status_now == ModuleStatus::MODULE_LOCALIZATION &&
@@ -521,29 +521,31 @@ bool LocalizationModule::need_start_localization(ModuleStatus running_module_sta
 	}
 }
 
-bool LocalizationModule::localization_status_is_ok(int localiztion_status_now) {
-	if (localiztion_status_now == 3 || localiztion_status_now == 4) {
+bool LocalizationModule::localization_status_is_ok(LocalizationStatus localiztion_status_now) {
+	if (localiztion_status_now == LocalizationStatus::Normal ||
+		localiztion_status_now == LocalizationStatus::LowAccuracy) {
 		return true;
 	} else {
 		return false;
 	}
 }
-bool LocalizationModule::localization_status_is_failed(int localiztion_status_now) {
-	if (localiztion_status_now == 2 || localiztion_status_now == 5) {
+bool LocalizationModule::localization_status_is_failed(LocalizationStatus localiztion_status_now) {
+	if (localiztion_status_now == LocalizationStatus::RelocalizeFailed ||
+		localiztion_status_now == LocalizationStatus::Failed) {
 		return true;
 	} else {
 		return false;
 	}
 }
-bool LocalizationModule::mapping_status_is_ok(int mapping_status_now) {
-	if (mapping_status_now == 3) {
+bool LocalizationModule::mapping_status_is_ok(MappingStatus mapping_status_now) {
+	if (mapping_status_now == MappingStatus::Standby) {
 		return true;
 	} else {
 		return false;
 	}
 }
-bool LocalizationModule::mapping_status_is_failed(int mapping_status_now) {
-	if (mapping_status_now == 2 || mapping_status_now == 5) {
+bool LocalizationModule::mapping_status_is_failed(MappingStatus mapping_status_now) {
+	if (mapping_status_now == MappingStatus::RelocalizeFailed || mapping_status_now == MappingStatus::Failed) {
 		return true;
 	} else {
 		return false;

@@ -49,6 +49,7 @@
 #include "lidar/livox/ros_livox_datatype_def.h"
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "node/log_info_manager.hpp"
 #include "node/module_param_def.h"
 #include "node/module_status_def.h"
@@ -75,6 +76,7 @@ using namespace std_msgs::msg;
 using namespace sensor_msgs::msg;
 using namespace lidar_slam;
 using namespace fairland_msgs::msg;
+
 // ROS2 消息类型别名
 using PointCloud2 = sensor_msgs::msg::PointCloud2;
 using Odometry = nav_msgs::msg::Odometry;
@@ -110,6 +112,14 @@ class LocalizationModule {
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+	using HealthStatus = common_status::HealthStatus;
+	using LocalizationStatus = common_status::LocalizationStatus;
+	using LocalNodeStatus = common_status::LocalNodeStatus;
+	using MappingNodeStatus = common_status::MappingNodeStatus;
+	using MappingStatus = common_status::MappingStatus;
+	using SecmapRelocalThrdStatus = common_status::SecmapRelocalThrdStatus;
+	using SlamRunStatus = common_status::SlamRunStatus;
+
 	// LocalizationModule(ModuleStatus init_status);
 	// explicit LocalizationModule(
 	//     rclcpp::Node::SharedPtr node,
@@ -120,11 +130,11 @@ class LocalizationModule {
 
    private:
 	bool is_mapping_status(ModuleStatus status);
-	bool need_start_localization(ModuleStatus running_module_status_now, int localiztion_status_now);
-	bool localization_status_is_ok(int localiztion_status_now);
-	bool localization_status_is_failed(int localiztion_status_now);
-	bool mapping_status_is_ok(int mapping_status_now);
-	bool mapping_status_is_failed(int mapping_status_now);
+	bool need_start_localization(ModuleStatus running_module_status_now, LocalizationStatus localiztion_status_now);
+	bool localization_status_is_ok(LocalizationStatus localiztion_status_now);
+	bool localization_status_is_failed(LocalizationStatus localiztion_status_now);
+	bool mapping_status_is_ok(MappingStatus mapping_status_now);
+	bool mapping_status_is_failed(MappingStatus mapping_status_now);
 
 	bool module_member_init();
 	bool load_lidar_slam_param();
@@ -212,7 +222,8 @@ class LocalizationModule {
 	// void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
 
 	// 检查并填充健康消息
-	int check_fill_health_msg(ModuleStatus curr_running_module_status, LocalizationModuleHealth& health_msg);
+	common_status::HealthStatus check_fill_health_msg(ModuleStatus curr_running_module_status,
+													  LocalizationModuleHealth& health_msg);
 
 	// 检查并填充模块状态消息
 	void check_fill_module_status_msg(ModuleStatus curr_running_module_status, LocalizationModuleStatus& status_msg);
@@ -246,28 +257,9 @@ class LocalizationModule {
    private:
 	rclcpp::Node::SharedPtr node_;
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// module status    //
-	/*************************************************** */
-	/** @local_node_status_:
-	 * 0: inactive
-	 * 1: normal
-	 * 2: lidar cbk delay
-	 * 3: localize thread delay
-	 */
-	std::atomic<int> local_node_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
+	std::atomic<LocalNodeStatus> local_node_status_{ LocalNodeStatus::Inactive };
+	std::atomic<MappingNodeStatus> mapping_node_status_{ MappingNodeStatus::Inactive };
 
-	/*************************************************** */
-	/** @mapping_node_status_:
-	 * 0: inactive
-	 * 1: normal
-	 * 2: lidar cbk delay
-	 * 3: secmap-relocal thread delay
-	 * 4: loop_closure_thread_delay
-	 */
-	std::atomic<int> mapping_node_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 各线程、callback、timer heartbeat
 	std::atomic<double> hb_time_cbk_imu_;
 	std::atomic<double> hb_time_cbk_lidar_;
@@ -277,18 +269,13 @@ class LocalizationModule {
 	// std::atomic<double> hb_time_thread_localize_;
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;
-	// -------------------------------------
-	/** @health_status_:
-	 * 0: all ok
-	 * 1: error, stop pub tf & odom
-	 * 2: error, reset slam to IDLE
-	 */
-	std::atomic<int> health_status_;
+
+	std::atomic<HealthStatus> health_status_{ HealthStatus::AllOk };
 
 	std::atomic<int> cloud_size_orig_{ 0 };
 	std::atomic<int> cloud_size_sample_{ 0 };
 	std::atomic<int> cloud_size_feat_{ 0 };
-	// -----------------------------------------------------
+
 	Eigen::Isometry3d T_lidar_baselink_;
 
 	// ROS2 接口
@@ -328,19 +315,10 @@ class LocalizationModule {
 	// show thread
 	// lidar_slam::Control_status control_status_;
 
-	// 模块 localization module
+	// 运行模式
 	static std::atomic<ModuleStatus> running_module_status_;
 
-	// 建图 *******************************************
-	/** @mapping_status_:
-	 * 0: m_inactive
-	 * 1: m_relocalize ing
-	 * 2: m_relocalize failed
-	 * 3: m_standby
-	 * 4: m_creating_ele (not used)
-	 * 5: m_failed
-	 */
-	std::atomic<int> mapping_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
+	std::atomic<MappingStatus> mapping_status_{ MappingStatus::Inactive };
 
 	/** @map_saved_:
 	 * 0: map not saved yet
@@ -351,16 +329,7 @@ class LocalizationModule {
 	// int start_index_ = -1; // not used now, 目前不涉及创建元素的操作
 	// int end_index_ = -1; // not used now, 目前不涉及创建元素的操作
 
-	// 定位 *******************************************
-	/** @localization_status_:
-	 * 0: l_inactive
-	 * 1: l_relocalize ing
-	 * 2: l_relocalize failed
-	 * 3: l_normal
-	 * 4: l_low_accuracy
-	 * 5: l_failed
-	 */
-	std::atomic<int> localization_status_{ 0 }; // TODO(jxl): int改为enum class, 更具有可读性
+	std::atomic<LocalizationStatus> localization_status_{ LocalizationStatus::Inactive };
 
 	// other thread
 	std::thread show_thread_;

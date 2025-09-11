@@ -102,6 +102,14 @@ class LidarSlam {
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+	using HealthStatus = common_status::HealthStatus;
+	using LocalizationStatus = common_status::LocalizationStatus;
+	using LocalNodeStatus = common_status::LocalNodeStatus;
+	using MappingNodeStatus = common_status::MappingNodeStatus;
+	using MappingStatus = common_status::MappingStatus;
+	using SecmapRelocalThrdStatus = common_status::SecmapRelocalThrdStatus;
+	using SlamRunStatus = common_status::SlamRunStatus;
+
 	LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode, rclcpp::Node::SharedPtr node); // new added
 	LidarSlam() = delete;
 	LidarSlam(const LidarSlam&) = delete;
@@ -327,9 +335,9 @@ class LidarSlam {
 	double get_hb_time_thread_loop_closure() { return hb_time_thread_loop_closure_.load(); }
 	double get_hb_time_thread_secmap_relocalize() { return hb_time_thread_secmap_relocalize_.load(); }
 
-	int get_local_thrd_status() { return local_thrd_status_.load(); }
-	int get_slam_run_status() { return slam_run_status_.load(); }
-	int get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
+	LocalizationStatus get_local_thrd_status() { return local_thrd_status_.load(); }
+	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
+	SecmapRelocalThrdStatus get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
 
    private:
 	bool sync_packages(MeasureGroup& meas);
@@ -341,37 +349,10 @@ class LidarSlam {
 	void global_localization_for_sec_mapping_thread();
 
    private:
-	////////////////////////////////////////////////////////////////////////////////////////////////////
-	/// slam status    //
-	/*************************************************** */
-	/** @local_thrd_status_:
-	 * 0: inactive
-	 * 1: relocalize ing
-	 * 2: relocalize failed
-	 * 3: normal
-	 * 4: local low accuracy
-	 * 5: local failed
-	 */
-	std::atomic<int> local_thrd_status_{ 0 };
+	std::atomic<LocalizationStatus> local_thrd_status_{ LocalizationStatus::Inactive };
+	std::atomic<SlamRunStatus> slam_run_status_{ SlamRunStatus::Inactive };
+	std::atomic<SecmapRelocalThrdStatus> secmap_relocal_thrd_status_{ SecmapRelocalThrdStatus::Inactive };
 
-	/*************************************************** */
-	/** @slam_run_status_:
-	 * 0: inactive
-	 * 1: normal
-	 * 2: slam fail: cloud no enough point
-	 */
-	std::atomic<int> slam_run_status_{ 0 };
-
-	/*************************************************** */
-	/** @secmap_relocal_thrd_status_:
-	 * 0: inactive
-	 * 1: relocalize ing
-	 * 2: relocalize failed
-	 * 3: normal
-	 */
-	std::atomic<int> secmap_relocal_thrd_status_{ 0 };
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////
 	// 各 线程、callback、timer heartbeat
 	std::atomic<double> hb_time_thread_localize_;		   // status = LOCALIZATION
 	std::atomic<double> hb_time_thread_loop_closure_;	   // status = MAPPING or SEC_MAPPING
