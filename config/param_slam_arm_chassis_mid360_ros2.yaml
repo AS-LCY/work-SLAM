@@ -90,7 +90,7 @@
       blind_distance: 0.5
       max_distance: 70.0
       z_range: [-5.0, 20.0]
-      keep_lidar_num_before_curr: 1 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
+      keep_lidar_num_before_curr: 3 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
       # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
       cloud_size_to_keep: 3500
       # feature_enabled: false  # default to false
@@ -110,10 +110,10 @@
       time_cost_thr_print: 10.0 # unit: ms
 
     mapping:
-      acc_cov: 0.1 # 用于IMU_Processing
-      gyr_cov: 0.1 # 同上
-      b_acc_cov: 0.0001 # 同上
-      b_gyr_cov: 0.0001 # 同上  
+      acc_cov: 0.017573468691815922
+      gyr_cov: 0.01524654486781841 
+      b_acc_cov: 0.00025566293746767606
+      b_gyr_cov: 0.0007414029109004667 
       cloud_leaf_size: 0.5
       key_frame_distance: 1.0   # unit: m     # 大于此距离为关键帧
       key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧

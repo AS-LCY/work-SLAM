@@ -92,7 +92,7 @@
       max_distance: 70.0
       z_range: [-5.0, 20.0] #TODO(jxl): z > 20m点被过滤掉了
 
-      keep_lidar_num_before_curr: 1 #TODO(jxl): buffer阈值有点太小
+      keep_lidar_num_before_curr: 3 #TODO(jxl): buffer阈值有点太小
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
       # feature_enabled: false  # default to false
