@@ -296,6 +296,109 @@ void LocalizationModule::publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_
 }
 */
 
+void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
+											const std::vector<std::pair<int, int>>& loop_edges) {
+	visualization_msgs::msg::MarkerArray markerArray;
+	static size_t nodes_id = 0;
+	static size_t edges_id = 0;
+
+	// 1. 节点 Marker 初始化
+	visualization_msgs::msg::Marker nodes;
+	nodes.lifetime = rclcpp::Duration(0, 0);
+	nodes.header.frame_id = "map";
+	nodes.header.stamp = node_->now();
+	nodes.ns = "pose_graph_nodes";
+	nodes.id = nodes_id++;
+	nodes.type = visualization_msgs::msg::Marker::SPHERE_LIST;
+	nodes.action = visualization_msgs::msg::Marker::ADD;
+	nodes.pose.orientation.w = 1.0;
+	nodes.scale.x = 0.05;
+	nodes.scale.y = 0.05;
+	nodes.scale.z = 0.05;
+	nodes.color.r = 0.0f;
+	nodes.color.g = 1.f;
+	nodes.color.b = 1.f;
+	nodes.color.a = 1.f; //透明度
+
+	// 2. 边 Marker 初始化（关键帧之间的边 + 闭环边）
+	visualization_msgs::msg::Marker edges;
+	edges.lifetime = rclcpp::Duration(0, 0);
+	edges.header.frame_id = "map";
+	edges.header.stamp = node_->now();
+	edges.ns = "pose_graph_edges";
+	edges.id = edges_id++;
+	edges.type = visualization_msgs::msg::Marker::LINE_LIST;
+	edges.action = visualization_msgs::msg::Marker::ADD;
+	edges.pose.orientation.w = 1.0;
+	edges.scale.x = 0.01; // 线宽
+
+	static int view_start_node_id = 0;
+	static int view_start_loop_id = 0;
+
+	for (int i = view_start_node_id; i < (int)poses.size(); i++) {
+		geometry_msgs::msg::Point p;
+		p.x = poses[i].pose.translation().x();
+		p.y = poses[i].pose.translation().y();
+		p.z = poses[i].pose.translation().z();
+		nodes.points.push_back(p);
+
+		// 如果不是第一个节点，发布与前一帧的边
+		if (i > 0) {
+			geometry_msgs::msg::Point p_prev;
+			p_prev.x = poses[i - 1].pose.translation().x();
+			p_prev.y = poses[i - 1].pose.translation().y();
+			p_prev.z = poses[i - 1].pose.translation().z();
+
+			edges.points.push_back(p_prev);
+			edges.points.push_back(p);
+
+			std_msgs::msg::ColorRGBA color;
+			color.r = 1.f;
+			color.g = 1.f;
+			color.b = 1.f;
+			color.a = 1.f;
+			edges.colors.push_back(color);
+			edges.colors.push_back(color);
+		}
+	}
+
+	// 4. 添加新增的闭环边
+	for (int i = view_start_loop_id; i < (int)loop_edges.size(); i++) {
+		int id1 = loop_edges[i].first;
+		int id2 = loop_edges[i].second;
+		if (id1 >= poses.size() || id2 >= poses.size()) continue;
+
+		geometry_msgs::msg::Point p1, p2;
+		p1.x = poses[id1].pose.translation().x();
+		p1.y = poses[id1].pose.translation().y();
+		p1.z = poses[id1].pose.translation().z();
+
+		p2.x = poses[id2].pose.translation().x();
+		p2.y = poses[id2].pose.translation().y();
+		p2.z = poses[id2].pose.translation().z();
+
+		edges.points.push_back(p1);
+		edges.points.push_back(p2);
+
+		std_msgs::msg::ColorRGBA color;
+		color.r = 0.0f;
+		color.g = 1.0f;
+		color.b = 0.0f;
+		color.a = 1.0f;
+		edges.colors.push_back(color);
+		edges.colors.push_back(color);
+	}
+
+	// 5. 打包到 MarkerArray 并发布
+	markerArray.markers.push_back(nodes);
+	markerArray.markers.push_back(edges);
+	pub_pose_graph_->publish(markerArray);
+
+	// 6. 更新索引，下次调用时只绘制新增的
+	view_start_node_id = poses.size();
+	view_start_loop_id = loop_edges.size();
+}
+
 void LocalizationModule::visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg) {
 	string odometryFrame = "odom";
 

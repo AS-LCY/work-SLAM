@@ -85,7 +85,15 @@ class BackEnd {
 
 	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
 
-	std::vector<KeyPose> getKeyframePoses() { return KeyPoses_; }
+	inline std::vector<KeyPose> getKeyframePoses() {
+		return KeyPoses_; // TODO(jxl): 上锁
+	}
+
+	inline std::vector<std::pair<int, int>> getAllLoopEdges() {
+		std::unique_lock<std::mutex> lk(mtxLoopInfo_);
+		return all_loop_edges_;
+	}
+
 	int getCurrentPoseIndex() {
 		int temp_index = int(KeyPoses_.size()) - 1;
 		int curr_index = temp_index < 0 ? 0 : temp_index;
@@ -127,6 +135,8 @@ class BackEnd {
 
    private:
 	bool loaded_key_clouds_ready_ = false;
+
+	std::vector<std::pair<int, int>> all_loop_edges_;
 
 	pcl::PointCloud<PointType>::Ptr KeyPoint_;
 	std::vector<KeyPose> KeyPoses_;

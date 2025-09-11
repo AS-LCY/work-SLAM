@@ -71,6 +71,7 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 }
 
 void BackEnd::addLoopFactor() {
+	std::unique_lock<std::mutex> lk(mtxLoopInfo_);
 	if (loopIndexQueue_.empty()) {
 		return;
 	}
@@ -83,15 +84,14 @@ void BackEnd::addLoopFactor() {
 		gtsam::Pose3 poseBetween = loopPoseQueue_[i];
 		gtsam::noiseModel::Diagonal::shared_ptr noiseBetween = loopNoiseQueue_[i];
 		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
+
+		all_loop_edges_.emplace_back(indexFrom, indexTo); // for view in rviz
 	}
 
-	//  mtxLoopInfo_.lock(); // TODO this cause CPU high
-	std::unique_lock<std::mutex> lk(mtxLoopInfo_); // TODO(jxl): 在函数一进来就应该就上锁
 	loopIndexQueue_.clear();
 	loopPoseQueue_.clear();
 	loopNoiseQueue_.clear();
 	aLoopIsClosed_ = true;
-	//   mtxLoopInfo_.unlock();
 }
 
 //在lio的线程中运行
@@ -167,8 +167,10 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 
 bool BackEnd::correctPoses() {
 	auto start = std::chrono::high_resolution_clock::now();
-	if (KeyPoint_->points.empty()) return false;
-	if (aLoopIsClosed_) {
+	if (KeyPoint_->points.empty()) {
+		return false;
+	}
+	if (aLoopIsClosed_) { // TODO(jxl): 加锁
 		int numPoses = isamCurrentEstimate_.size();
 		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 		for (int i = 0; i < numPoses; ++i) {
@@ -182,7 +184,7 @@ bool BackEnd::correctPoses() {
 			KeyPoses_[i].yaw = isamCurrentEstimate_.at<gtsam::Pose3>(i).rotation().yaw();
 		}
 		keyframe_poses_lock.unlock();
-		aLoopIsClosed_ = false;
+		aLoopIsClosed_ = false; // TODO(jxl): 加锁
 		show_index_ = 0;
 		std::unique_lock<std::mutex> lk(mtxCurrentMap_);
 		show_map_->clear();
@@ -410,7 +412,8 @@ void BackEnd::performLoopClosure(double time) {
 		// 提取当前关键帧特征点集合，降采样
 		loopFindNearKeyframes(cureKeyframeCloud, loopKeyCur, 0); //  将cur keyframe 转换到world系下
 		// 提取闭环匹配关键帧前后相邻若干帧的关键帧特征点集合，降采样
-		loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre, 20); //  选取historyKeyframeSearchNum个keyframe拼成submap
+		loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre,
+							  20); //  选取historyKeyframeSearchNum个keyframe拼成submap
 	}
 
 	// ICP Settings zx gicp ?
@@ -597,8 +600,8 @@ void BackEnd::performLoopClosure(double time) {
 
 		  int base_key = 0;
 		 // loopFindNearKeyframesWithRespectTo(cureKeyframeCloud, loopKeyCur, 0, base_key); // giseop
-		 // loopFindNearKeyframesWithRespectTo(prevKeyframeCloud, loopKeyPre, historyKeyframeSearchNum, base_key); //
-  giseop
+		 // loopFindNearKeyframesWithRespectTo(prevKeyframeCloud, loopKeyPre, historyKeyframeSearchNum, base_key);
+  // giseop
 			 // 提取当前关键帧特征点集合，降采样
 		  loopFindNearKeyframes(cureKeyframeCloud, loopKeyCur, 0);
   // 提取闭环匹配关键帧前后相邻若干帧的关键帧特征点集合，降采样
@@ -611,10 +614,8 @@ void BackEnd::performLoopClosure(double time) {
 
 	  // ICP Settings
 	  static pcl::IterativeClosestPoint<PointType, PointType> icp;
-	  icp.setMaxCorrespondenceDistance(150); // giseop , use a value can cover 2*historyKeyframeSearchNum range in meter
-	  icp.setMaximumIterations(100);
-	  icp.setTransformationEpsilon(1e-6);
-	  icp.setEuclideanFitnessEpsilon(1e-6);
+	  icp.setMaxCorrespondenceDistance(150); // giseop , use a value can cover 2*historyKeyframeSearchNum range in
+  meter icp.setMaximumIterations(100); icp.setTransformationEpsilon(1e-6); icp.setEuclideanFitnessEpsilon(1e-6);
 	  icp.setRANSACIterations(0);
 
 	  // Align clouds
@@ -626,7 +627,8 @@ void BackEnd::performLoopClosure(double time) {
 	  // TODO icp align with initial
 
 	  if (icp.hasConverged() == false || icp.getFitnessScore() > historyKeyframeFitnessScore) {
-		  std::cout << "ICP fitness test failed (" << icp.getFitnessScore() << " > " << historyKeyframeFitnessScore <<
+		  std::cout << "ICP fitness test failed (" << icp.getFitnessScore() << " > " << historyKeyframeFitnessScore
+  <<
   "). Reject this SC loop." << std::endl; return; } else { std::cout << "ICP fitness test passed (" <<
   icp.getFitnessScore() << " < " << historyKeyframeFitnessScore << "). Add this SC loop." << std::endl;
 	  }
@@ -665,14 +667,14 @@ void BackEnd::performLoopClosure(double time) {
 	  // giseop, robust kernel for a SC loop
 	 // float robustNoiseScore = 0.5; // constant is ok...
 	 // gtsam::Vector robustNoiseVector6(6);
-	  //robustNoiseVector6 << robustNoiseScore, robustNoiseScore, robustNoiseScore, robustNoiseScore, robustNoiseScore,
-  robustNoiseScore;
+	  //robustNoiseVector6 << robustNoiseScore, robustNoiseScore, robustNoiseScore, robustNoiseScore,
+  robustNoiseScore, robustNoiseScore;
 	 // gtsam::noiseModel::Diagonal::shared_ptr robustConstraintNoise =
   gtsam::noiseModel::Diagonal::Variances(robustNoiseVector6);
 	//  gtsam::noiseModel::Base::shared_ptr robustConstraintNoise;
 	 // robustConstraintNoise = gtsam::noiseModel::Robust::Create(
-	   //   gtsam::noiseModel::mEstimator::Cauchy::Create(1), // optional: replacing Cauchy by DCS or GemanMcClure, but
-  with a good front-end loop detector, Cauchy is empirically enough.
+	   //   gtsam::noiseModel::mEstimator::Cauchy::Create(1), // optional: replacing Cauchy by DCS or GemanMcClure,
+  but with a good front-end loop detector, Cauchy is empirically enough.
 		//  gtsam::noiseModel::Diagonal::Variances(robustNoiseVector6)
 	//  ); // - checked it works. but with robust kernel, map modification may be delayed (i.e,. requires more
   true-positive loop factors)

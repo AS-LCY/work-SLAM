@@ -118,13 +118,16 @@ bool LocalizationModule::create_ROS_IO() {
 	// pubKdtreeCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/kdtree_cloud", 10); //没有实际发布
 
 	pubOptimizedPath = node_->create_publisher<nav_msgs::msg::Path>(
-		"/optimized_path", 10); // mapping或sec_mapping模式下，后端keyframe位姿在map系下
+		"/keyframe_baselink_in_map_path",
+		10); // mapping或sec_mapping模式下，根据后端keyframe位姿(lidar位姿)在map系下，计算出的T_map_baselink
 
 	// pubUnoptimizedPath = node_->create_publisher<nav_msgs::msg::Path>(
 	// 	"/unoptimized_path", 10); //定位模式下：每一帧雷达pose在map系下； 建图模式下还是关键帧pose
 
 	pubBaseLinkMapPath = node_->create_publisher<nav_msgs::msg::Path>("/baselink_in_map_path", 10);
 	//(二次)建图，定位模式下，10hz的T_map_baselink
+
+	pub_pose_graph_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/pose_graph/nodes_and_edges", 10);
 
 	pubLoopConstraintEdge = node_->create_publisher<visualization_msgs::msg::MarkerArray>(
 		"/flbot/mapping/loop_closure_constraints", 1); //建图模式下：只发布闭环nodes和edges，没有整体pose graph结构
@@ -244,9 +247,18 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		// publish_cloud(slam_->get_kdtree_cloud(), "mapping_odom", pubKdtreeCloud);
 
 		publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
+
 		visualizeLoopClosure(slam_->getloopIndex(),
 							 optimized_path_msg); // TODO(jxl): 只发布了闭环nodes和edges， 整个pose graph结构看不到
+
 		// publish_unoptimized_path(slam_->get_unoptimized_path(), string("map"));
+
+		if (pub_pose_graph_->get_subscription_count() > 0) {
+			const auto& keyframe_poses = slam_->getAllKeyframeBaselinkNodes(); // T_map_baselink
+			const auto& all_loop_edges = slam_->getAllLoopEdges();
+			visualizePoseGraph(keyframe_poses, all_loop_edges);
+		}
+
 		publish_optimized_path(slam_->get_optimized_path(), string("map"));
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
 			   localization_status_is_ok(localization_status_now)) {
@@ -677,7 +689,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 		curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
 		curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM) {
 		return;
-	} // TODO(jxl): 这里的逻辑是什么
+	}
 
 	double t0 = omp_get_wtime();
 	auto start = std::chrono::system_clock::now();
@@ -697,7 +709,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
 	if ((t1 - t0) * 1000 > time_cost_thr_print) { // 10ms
-		TRACE_INFO_CLASS("lidar-callback, time cost: %f ms --------", (t100 - t0) * 1000);
+		TRACE_DBG_CLASS("lidar pre_process, time cost: %f ms --------", (t100 - t0) * 1000);
 	}
 }
 

@@ -214,6 +214,8 @@ class LocalizationModule {
 
 	void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
 
+	void visualizePoseGraph(const std::vector<KeyPose>& poses, const std::vector<std::pair<int, int>>& loop_edges);
+
 	void show_keyframe(
 		const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe);
 
@@ -357,6 +359,8 @@ class LocalizationModule {
 	rclcpp::Publisher<Imu>::SharedPtr pub_base_imu_ = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pub_key_cloud_ = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pub_body_cloud_filter_ = nullptr;
+
+	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_pose_graph_ = nullptr;
 
 	// 路径消息
 	Path unoptimized_path_msg;

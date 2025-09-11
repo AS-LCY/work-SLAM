@@ -193,6 +193,16 @@ class LidarSlam {
 	}
 	inline std::map<int, int> getloopIndex() const { return back_end_->getloopIndex(); }
 
+	inline std::vector<std::pair<int, int>> getAllLoopEdges() { return back_end_->getAllLoopEdges(); }
+	inline std::vector<KeyPose> getAllKeyframeNodes() { return back_end_->getKeyframePoses(); }
+	inline std::vector<KeyPose> getAllKeyframeBaselinkNodes() {
+		auto poses = back_end_->getKeyframePoses();
+		for (auto& p : poses) {
+			p.pose = p.pose * T_lidar_wheel_;
+		}
+		return poses;
+	}
+
 	// TODO(jxl)：T_map_odom不应该是常量，在建图，二次建图模式下由后端维护。定位模式下，由和离线地图匹配模块维护
 	inline Eigen::Isometry3d getOdomToMap() const {
 		if (working_mode_ == LOCALIZATION) {
