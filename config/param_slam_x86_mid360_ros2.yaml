@@ -29,11 +29,11 @@
       pub_topic_slipping: "/flbot/localization_module/slipping_old"
       receive_lidar_freq: 10 # unit: hz
       slam_lose_rate_time_thr: 0.12 # unit: second
+
       lidar_no_point_count_thr:  10
       check_delay: false
       feats_down_size_thr: 200 # 降采样后的点个数不能小于200个
       use_pose_filter: false
-      # cpu_id: []
       cpu_id: [4, 5]
 
     extrinsic:    
@@ -97,7 +97,7 @@
 
       # feature_enabled: false  # default to false
       extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
-      point_filter_num: 6 # 每隔多少个点采样一个点
+      point_filter_num: 6 # 每隔多少个点采样一个点, # 没有起作用
       ring_filter_num: 1  # 这个参数没有起作用
 
       leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数

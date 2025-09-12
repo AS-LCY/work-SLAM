@@ -271,7 +271,6 @@ class LocalizationModule {
 
 	std::atomic<int> cloud_size_orig_{ 0 };
 	std::atomic<int> cloud_size_sample_{ 0 };
-	std::atomic<int> cloud_size_feat_{ 0 };
 
 	Eigen::Isometry3d T_lidar_baselink_;
 

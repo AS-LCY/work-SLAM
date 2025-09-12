@@ -277,7 +277,7 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	static const int localize_ratio = 3;
 	static const int loop_closure_ratio = 3;
 	static const int secmap_relocalize_ratio = 3;
-	static const int point_cloud_size_thr = 600;
+	static const int point_cloud_size_thr = slam_param_.common.feats_down_size_thr;
 
 	// check ROS IO status **********************************************************************
 	HealthStatus health_status_now = HealthStatus::AllOk;
@@ -335,7 +335,7 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	int sample_point_cloud_size = 0;
 	if (hb_cbk_lidar) {
 		orig_point_cloud_size = cloud_size_orig_.load();
-		sample_point_cloud_size = cloud_size_sample_.load(); // TODO(jxl): bug: 这些变量都没有被赋值！
+		sample_point_cloud_size = cloud_size_sample_.load();
 		if (orig_point_cloud_size < point_cloud_size_thr) {
 			error_lidar_point_too_few = true;
 		}
@@ -595,6 +595,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg) {
 	static const int cloud_size_to_keep = slam_param_.lidar_preproc.cloud_size_to_keep;
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
+	cloud_size_orig_.store(ros_msg->height * ros_msg->width);
 
 	static double last_lidar_hb = hb_time_cbk_lidar_;
 	hb_time_cbk_lidar_.store(node_->now().seconds());
@@ -627,6 +628,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	cloud_preproc_ptr->points.reserve(ring_count * col_count);
 	lidar_ptr_->pre_process(ros_msg, cloud_preproc_ptr); // 降采样，去NAN
 	int cloud_preproc_size = cloud_preproc_ptr->points.size();
+	cloud_size_sample_.store(cloud_preproc_size);
 
 	double t1 = omp_get_wtime();
 	slam_->lidar_pcl_cbk(cloud_preproc_ptr); // 传入降采样后的点云给算法
