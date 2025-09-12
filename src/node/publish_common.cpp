@@ -64,10 +64,38 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	odomAftMapped.header.frame_id = frameid;
 	odomAftMapped.child_frame_id = child_frameid;
 	odomAftMapped.header.stamp = node_->now(); // TODO(jxl): 不应该是now时间，应该是用的哪个msg计算的pose，就是哪个时间
+
+	static Eigen::Quaterniond q_last = Eigen::Quaterniond::Identity();
+	static double q_time_last = rclcpp::Time(node_->now()).seconds();
+	static bool first_pub = true;
+	double q_time_curr = rclcpp::Time(node_->now()).seconds();
 	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
 	odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
 	odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
 	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
+	quaternion.normalize();
+
+	if (first_pub) {
+		first_pub = false;
+	} else {
+		double dt = q_time_curr - q_time_last;
+		assert(dt != 0.f);
+		Eigen::Quaterniond dq = q_last.inverse() * quaternion;
+		dq.normalize();
+		Eigen::AngleAxisd dq_angle_axis(dq);
+		double dq_angle = dq_angle_axis.angle();
+		Eigen::Vector3d dq_axis = dq_angle_axis.axis();
+		if (dq_angle > M_PI) { // 防止数值不稳定 (当角度接近 0 时)
+			dq_angle -= 2 * M_PI;
+		}
+		Eigen::Vector3d gyro = (dq_angle / dt) * dq_axis;
+		odomAftMapped.twist.twist.angular.x = gyro.x() - T_odom_imu.imu_state.bg.x();
+		odomAftMapped.twist.twist.angular.y = gyro.y() - T_odom_imu.imu_state.bg.y();
+		odomAftMapped.twist.twist.angular.z = gyro.z() - T_odom_imu.imu_state.bg.z(); //和imu的gyro可以做校验
+	}
+	q_last = quaternion;
+	q_time_last = q_time_curr;
+
 	odomAftMapped.pose.pose.orientation.x = quaternion.x();
 	odomAftMapped.pose.pose.orientation.y = quaternion.y();
 	odomAftMapped.pose.pose.orientation.z = quaternion.z();
@@ -78,13 +106,6 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	} else if (is_mapping_status(curr_running_module_status)) {
 		odomAftMapped.pose.covariance[1] = 2;
 	}
-
-	// Eigen::Isometry3d iso_transform = Eigen::Isometry3d::Identity();
-	// Eigen::Matrix3d mat = curr_pose.imu_state.rot.matrix();
-	// iso_transform.linear() = mat;
-	// Eigen::Isometry3d iso_transform_inv = iso_transform.inverse();
-	// Eigen::Matrix3d rot = iso_transform_inv.linear();
-	// auto vel = rot * curr_pose.imu_state.vel;
 	auto vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
 	// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
 	TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
@@ -94,6 +115,14 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	odomAftMapped.twist.twist.linear.x = vel[0]; // baselink下的线速度
 	odomAftMapped.twist.twist.linear.y = vel[1];
 	odomAftMapped.twist.twist.linear.z = vel[2];
+
+	//输出ba, bg到twist的diag cov来可视化
+	odomAftMapped.twist.covariance[0] = T_odom_imu.imu_state.ba.x();  // (0,0)
+	odomAftMapped.twist.covariance[7] = T_odom_imu.imu_state.ba.y();  // (1,1)
+	odomAftMapped.twist.covariance[14] = T_odom_imu.imu_state.ba.z(); // (2,2)
+	odomAftMapped.twist.covariance[21] = T_odom_imu.imu_state.bg.x(); // (3,3)
+	odomAftMapped.twist.covariance[28] = T_odom_imu.imu_state.bg.y(); // (4,4)
+	odomAftMapped.twist.covariance[35] = T_odom_imu.imu_state.bg.z(); // (5,5)
 
 	// log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
 	log_info_manager_->slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
