@@ -27,7 +27,7 @@
   <depend>tf2_eigen</depend>
   
   <!-- 自定义消息依赖（假设已迁移到ROS2） -->
-  <depend>fairland_msgs</depend>
+  <depend>flbot_msgs</depend>
   
   <!-- 第三方库依赖 -->
   <depend>boost</depend>

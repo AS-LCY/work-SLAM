@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigen>
 
-#include "fairland_msgs/msg/livox_custom_msg.hpp"
+#include "flbot_msgs/msg/livox_custom_msg.hpp"
 
 namespace livox_ros {
 
@@ -22,8 +22,8 @@ typedef enum {
 	kLivoxImuMsg = 3,
 } TransferType;
 
-// using CustomMsg = fairland_msgs::LivoxCustomMsg;
-// using CustomPoint = fairland_msgs::LivoxCustomPoint;
+// using CustomMsg = flbot_msgs::LivoxCustomMsg;
+// using CustomPoint = flbot_msgs::LivoxCustomPoint;
 
 /** Type-Definitions based on ROS versions */
 /*using Publisher = ros::Publisher;

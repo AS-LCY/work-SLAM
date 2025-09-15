@@ -32,7 +32,7 @@ LocalizationFusion::~LocalizationFusion() { ros::shutdown(); }
 
 bool LocalizationFusion::create_ROS_IO() {
 	// sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(sub_imu_topic_, 2000, &LocalizationFusion::imu_msg_callback, this);
-	// sub_chassis_ = nh_.subscribe<fairland_msgs::chassic_data>(sub_chassis_topic_, 100,
+	// sub_chassis_ = nh_.subscribe<flbot_msgs::chassic_data>(sub_chassis_topic_, 100,
 	// &LocalizationFusion::chassis_msg_callback, this); sub_slam_odom_ =
 	// nh_.subscribe<nav_msgs::Odometry>(sub_slam_odom_topic_, 100, &LocalizationFusion::slam_odometry_callback, this);
 
@@ -41,14 +41,14 @@ bool LocalizationFusion::create_ROS_IO() {
 	sub_slam_odom_ = nh_.subscribe(sub_slam_odom_topic_, 100, &LocalizationFusion::slam_odometry_callback, this);
 
 	pub_fusion_odom_ = nh_.advertise<nav_msgs::Odometry>(pub_localization_topic_, 100);
-	// pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(pub_slipping_topic_, 100);
+	// pub_slip_ = nh_.advertise<flbot_msgs::NameValues>(pub_slipping_topic_, 100);
 	pub_slip_ = nh_.advertise<std_msgs::Float64MultiArray>(pub_slipping_topic_, 100);
 	pub_info_ = nh_.advertise<std_msgs::Float64MultiArray>("/flbot/localization_fusion/info", 100);
 
 	return true;
 }
 
-void LocalizationFusion::chassis_msg_callback(const fairland_msgs::chassic_data::ConstPtr& chassis_msg_in) {
+void LocalizationFusion::chassis_msg_callback(const flbot_msgs::chassic_data::ConstPtr& chassis_msg_in) {
 	ROS_INFO_STREAM_ONCE(YELLOW << "Received chassis msg" << RESET);
 	std::unique_lock<std::mutex> lock(mutex_);
 	is_chassis_rcv_ = true;
@@ -144,7 +144,7 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
 	pub_localiztion(status_tmp_);
 
 	// pub slipping
-	// fairland_msgs::NameValues slip_msg;
+	// flbot_msgs::NameValues slip_msg;
 	std_msgs::Float64MultiArray slip_msg;
 	fill_slipping_msg(slip_msg, slam_odom_msg_.header.stamp, slip_flag);
 	pub_slip_.publish(slip_msg);
@@ -169,7 +169,7 @@ int LocalizationFusion::detect_slipping(nav_msgs::Odometry curr_odom) {
 
 void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp,
 										   int slip_flag) {
-	// fairland_msgs::NameValue slip_val;
+	// flbot_msgs::NameValue slip_val;
 	// slip_val.name = "slipping";
 	// slip_val.value = slip_flag;
 
@@ -187,9 +187,9 @@ void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping
 	slipping_msg.data.push_back(slam_odom_stamp.toSec());
 }
 
-// void LocalizationFusion::fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int
+// void LocalizationFusion::fill_slipping_msg(flbot_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int
 // slip_flag){
-//     fairland_msgs::NameValue slip_val;
+//     flbot_msgs::NameValue slip_val;
 //     slip_val.name = "slipping";
 //     slip_val.value = slip_flag;
 
@@ -198,7 +198,7 @@ void LocalizationFusion::fill_slipping_msg(std_msgs::Float64MultiArray& slipping
 //     slipping_msg.values.push_back(slip_val);
 // }
 
-void LocalizationFusion::pub_localiztion(fairland_msgs::LocalizationPoseData cur_status) {
+void LocalizationFusion::pub_localiztion(flbot_msgs::LocalizationPoseData cur_status) {
 	nav_msgs::Odometry fusion_odom;
 	fusion_odom.header = cur_status.header;
 	fusion_odom.header.frame_id = "map";
@@ -244,8 +244,8 @@ void LocalizationFusion::pub_fusion_info(double time_last) {
 }
 
 void LocalizationFusion::compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg,
-										fairland_msgs::chassic_data chassis_msg,
-										fairland_msgs::LocalizationPoseData* status_msg) {
+										flbot_msgs::chassic_data chassis_msg,
+										flbot_msgs::LocalizationPoseData* status_msg) {
 	// if(!ekf_use_chassis_){
 	//     chassis_msg.ac_linear_velocity = slam_speed_;
 	// }

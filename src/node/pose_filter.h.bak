@@ -10,8 +10,8 @@
 
 #include "lidar_slam/common_lib.h"
 
-#include "fairland_msgs/chassic_data.h"
-#include "fairland_msgs/LocalizationModuleLogInfo.h"
+#include "flbot_msgs/chassic_data.h"
+#include "flbot_msgs/LocalizationModuleLogInfo.h"
 
 #include "node/log_info_manager.hpp"
 #include "node/module_param_def.h"
@@ -31,7 +31,7 @@ public:
     bool lidar_init(Eigen::Isometry3d init_pose);
     bool chassis_init();
     void update_lidar(/*double lidar_time,*/ Eigen::Isometry3d curr_lidar_orig);
-    void update_chassis(const fairland_msgs::chassic_data &chassis_msg);
+    void update_chassis(const flbot_msgs::chassic_data &chassis_msg);
     bool run_filter(double k_chassis);
     bool filter_reset();
 
@@ -72,7 +72,7 @@ private:
 
     // chassis
     std::mutex chassis_mtx_;
-    fairland_msgs::chassic_data cur_chassis_msg_;
+    flbot_msgs::chassic_data cur_chassis_msg_;
     double last_chassis_time_ = 0.0;
     double chassis_x_ = 0;
     double chassis_y_ = 0;

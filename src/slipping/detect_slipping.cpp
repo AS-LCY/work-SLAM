@@ -103,7 +103,7 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int& slip_flag) {
 
 bool DetectSlipping::detect_by_chassis_and_imu() { return true; }
 
-void DetectSlipping::update_chassis(fairland_msgs::chassic_data cur_chassis_msg) {
+void DetectSlipping::update_chassis(flbot_msgs::chassic_data cur_chassis_msg) {
 	// ///////////////////////////////////////////////////////////////////////////
 	// for detect slip
 	static double last_time = cur_chassis_msg.header.stamp.toSec();
@@ -274,7 +274,7 @@ void DetectSlipping::init_lidar_queue() {
 void DetectSlipping::init_chassis_queue() {
 	// std::queue container does not have a clear member function
 	// clear queue: Swap with an empty queue;
-	std::queue<fairland_msgs::chassic_data>().swap(chassis_que_);
+	std::queue<flbot_msgs::chassic_data>().swap(chassis_que_);
 	chassis_sum_dist_ = 0;
 }
 

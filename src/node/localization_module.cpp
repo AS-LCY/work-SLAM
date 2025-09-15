@@ -64,15 +64,15 @@ bool LocalizationModule::create_ROS_IO() {
 		rclcpp::QoS(2000), // ROS2中使用QoS替代简单的队列大小
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
 
-	pub_localization_module_status_ = node_->create_publisher<fairland_msgs::msg::LocalizationModuleStatus>(
+	pub_localization_module_status_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleStatus>(
 		slam_param_.common.pub_topic_module_status, rclcpp::QoS(10));
 
-	pub_localization_module_health_ = node_->create_publisher<fairland_msgs::msg::LocalizationModuleHealth>(
+	pub_localization_module_health_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleHealth>(
 		slam_param_.common.pub_topic_module_health, rclcpp::QoS(10));
 
 	pub_log_ = node_->create_publisher<std_msgs::msg::Float64MultiArray>(slam_param_.common.pub_topic_module_loginfo,
 																		 rclcpp::QoS(10));
-	// pub_slip_ = nh_.advertise<fairland_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100);
+	// pub_slip_ = nh_.advertise<flbot_msgs::NameValues>(slam_param_.common.pub_topic_slipping, 100);
 
 	// both 建图 & 定位
 	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(10));
@@ -263,7 +263,7 @@ void LocalizationModule::process_loginfo() {
 
 // 调试信息（健康状态）， 不影响程序运行
 common_status::HealthStatus LocalizationModule::check_fill_health_msg(
-	ModuleStatus curr_running_module_status, fairland_msgs::msg::LocalizationModuleHealth& health_msg) {
+	ModuleStatus curr_running_module_status, flbot_msgs::msg::LocalizationModuleHealth& health_msg) {
 	static const double imu_interval = 0.005;
 	static const double lidar_interval = 0.1;
 	static const double slam_interval = 0.1;
@@ -382,13 +382,13 @@ void LocalizationModule::pub_module_status_timer() {
 	auto curr_running_module_status = running_module_status_.load();
 	auto curr_ros_time = node_->now();
 
-	fairland_msgs::msg::LocalizationModuleHealth health_msg;
+	flbot_msgs::msg::LocalizationModuleHealth health_msg;
 	HealthStatus health_status_now = check_fill_health_msg(curr_running_module_status, health_msg);
 	health_msg.header.stamp = curr_ros_time;
 	health_msg.header.frame_id = "base_link";
 	health_status_.store(health_status_now);
 
-	fairland_msgs::msg::LocalizationModuleStatus status_msg;
+	flbot_msgs::msg::LocalizationModuleStatus status_msg;
 	check_fill_module_status_msg(curr_running_module_status, status_msg);
 	status_msg.header.stamp = curr_ros_time;
 	status_msg.header.frame_id = "base_link";
@@ -424,7 +424,7 @@ geometry_msgs::msg::TransformStamped initIdentityTransform() {
 }
 
 void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_module_status,
-													  fairland_msgs::msg::LocalizationModuleStatus& status_msg) {
+													  flbot_msgs::msg::LocalizationModuleStatus& status_msg) {
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE) {
 		status_msg.module_status = int(ModuleStatus_o::IDLE);
 	} else if (is_mapping_status(curr_running_module_status)) {
@@ -472,7 +472,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 }
 
 void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_status,
-											  fairland_msgs::msg::LocalizationModuleStatus& status_msg) {
+											  flbot_msgs::msg::LocalizationModuleStatus& status_msg) {
 	if (curr_running_module_status != ModuleStatus::MODULE_LOCALIZATION) {
 		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
 		localization_status_.store(LocalizationStatus::Inactive);
@@ -528,7 +528,7 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 }
 
 void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status,
-											  fairland_msgs::msg::LocalizationModuleStatus& status_msg) {
+											  flbot_msgs::msg::LocalizationModuleStatus& status_msg) {
 	if (curr_running_module_status != ModuleStatus::MODULE_MAPPING &&
 		curr_running_module_status != ModuleStatus::MODULE_SEC_MAPPING) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);

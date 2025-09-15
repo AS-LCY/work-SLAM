@@ -38,12 +38,12 @@
 #include <Eigen/Core>
 
 // Custom messages
-#include "fairland_msgs/msg/chassic_data.hpp"
-#include "fairland_msgs/msg/livox_custom_msg.hpp"
-#include "fairland_msgs/msg/localization_module_health.hpp"
-#include "fairland_msgs/msg/localization_module_log_info.hpp"
-#include "fairland_msgs/msg/localization_module_status.hpp"
-#include "fairland_msgs/msg/name_values.hpp"
+#include "flbot_msgs/msg/chassis_data.hpp"
+#include "flbot_msgs/msg/livox_custom_msg.hpp"
+#include "flbot_msgs/msg/localization_module_health.hpp"
+#include "flbot_msgs/msg/localization_module_log_info.hpp"
+#include "flbot_msgs/msg/localization_module_status.hpp"
+#include "flbot_msgs/msg/name_values.hpp"
 
 // Project headers
 #include "lidar/livox/ros_livox_datatype_def.h"
@@ -75,7 +75,7 @@ using namespace pcl;
 using namespace std_msgs::msg;
 using namespace sensor_msgs::msg;
 using namespace lidar_slam;
-using namespace fairland_msgs::msg;
+using namespace flbot_msgs::msg;
 
 // ROS2 消息类型别名
 using PointCloud2 = sensor_msgs::msg::PointCloud2;
@@ -86,11 +86,11 @@ using UInt32 = std_msgs::msg::UInt32;
 using Float64MultiArray = std_msgs::msg::Float64MultiArray;
 
 // 自定义消息类型别名
-using LivoxCustomMsg = fairland_msgs::msg::LivoxCustomMsg;
-using LocalizationModuleStatus = fairland_msgs::msg::LocalizationModuleStatus;
-using LocalizationModuleHealth = fairland_msgs::msg::LocalizationModuleHealth;
-using NameValues = fairland_msgs::msg::NameValues;
-using ChassicData = fairland_msgs::msg::ChassicData;
+using LivoxCustomMsg = flbot_msgs::msg::LivoxCustomMsg;
+using LocalizationModuleStatus = flbot_msgs::msg::LocalizationModuleStatus;
+using LocalizationModuleHealth = flbot_msgs::msg::LocalizationModuleHealth;
+using NameValues = flbot_msgs::msg::NameValues;
+using ChassisData = flbot_msgs::msg::ChassisData;
 
 enum SlamCtrlCmd {
 	START_MAPPING = 1000,
@@ -170,7 +170,7 @@ class LocalizationModule {
 
 	void imu_callback(Imu::SharedPtr msg_in);
 	void lidar_ros_callback(const PointCloud2::SharedPtr ros_msg);
-	// void chassis_callback(const ChassicData::SharedPtr msg_in);
+	// void chassis_callback(const ChassisData::SharedPtr msg_in);
 
 	// void publish_unoptimized_path(
 	// 	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
@@ -216,7 +216,7 @@ class LocalizationModule {
 
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
 
-	// void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg);
+	// void fill_slipping_msg(flbot_msgs::NameValues& slipping_msg);
 
 	// 检查并填充健康消息
 	common_status::HealthStatus check_fill_health_msg(ModuleStatus curr_running_module_status,

@@ -12,7 +12,7 @@ PoseFilter::PoseFilter(/* args */){
 PoseFilter::~PoseFilter(){
 }
 
-void PoseFilter::update_chassis(const fairland_msgs::chassic_data &chassis_msg){
+void PoseFilter::update_chassis(const flbot_msgs::chassic_data &chassis_msg){
     /// param  /// TODO: 参数化    
     static const double chassis_period = 0.02; // unit: second
     static const double time_interval_reset_thr = 0.5; // unit: second 

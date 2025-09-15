@@ -87,9 +87,9 @@ ament_auto_find_build_dependencies()
 #   tf2_ros
 #   image_transport
 #   pcl_conversions
-#   fairland_msgs
+#   flbot_msgs
 # )
-find_package(fairland_msgs REQUIRED)
+find_package(flbot_msgs REQUIRED)
 
 
 find_package(logTracer REQUIRED)
@@ -194,7 +194,7 @@ ament_auto_add_executable(lidar_slam_node
 target_link_libraries(lidar_slam_node 
   lidar_slam
   lidar_preproc
-  # fairland_msgs
+  # flbot_msgs
 )
 
 # 通用数学库

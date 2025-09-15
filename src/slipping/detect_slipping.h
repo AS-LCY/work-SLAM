@@ -7,8 +7,8 @@
 #include <mutex>
 #include <queue>
 
-#include "fairland_msgs/LocalizationModuleLogInfo.h"
-#include "fairland_msgs/chassic_data.h"
+#include "flbot_msgs/LocalizationModuleLogInfo.h"
+#include "flbot_msgs/chassic_data.h"
 #include "fusion_node/fusion_param.hpp"
 #include "lidar_slam/common_lib.h"
 #include "node/common_ros.hpp"
@@ -27,7 +27,7 @@ class DetectSlipping {
 	bool detect_by_chassis_and_lidar(int& slip_flag);
 	bool detect_by_chassis_and_imu();
 
-	void update_chassis(fairland_msgs::chassic_data cur_chassis_msg);
+	void update_chassis(flbot_msgs::chassic_data cur_chassis_msg);
 	void update_lidar_by_segment(geometry_msgs::PoseStamped pose);
 	void update_lidar_by_distance(geometry_msgs::PoseStamped pose);
 	void update_imu(sensor_msgs::Imu);
@@ -55,7 +55,7 @@ class DetectSlipping {
 	std::queue<double> dist_que_;
 	std::queue<geometry_msgs::PoseStamped> pose_que_;
 	std::queue<sensor_msgs::Imu> imu_que_;
-	std::queue<fairland_msgs::chassic_data> chassis_que_;
+	std::queue<flbot_msgs::chassic_data> chassis_que_;
 
 	std::mutex chassis_que_mtx_;
 

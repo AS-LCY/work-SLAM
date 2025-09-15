@@ -22,9 +22,9 @@
 #include <logTracer/tracer.h>
 
 #include "ekf_fusion/ekf_localization_fusion.h"
-#include "fairland_msgs/LocalizationPoseData.h"
-#include "fairland_msgs/NameValues.h"
-#include "fairland_msgs/chassic_data.h"
+#include "flbot_msgs/LocalizationPoseData.h"
+#include "flbot_msgs/NameValues.h"
+#include "flbot_msgs/chassic_data.h"
 #include "fusion_param.hpp"
 #include "node/log_info_manager.hpp"
 #include "slipping/detect_slipping.h"
@@ -44,7 +44,7 @@ class LocalizationFusion {
 	bool create_ROS_IO();
 
 	// callbacks
-	void chassis_msg_callback(const fairland_msgs::chassic_data::ConstPtr& chassis_msg_in);
+	void chassis_msg_callback(const flbot_msgs::chassic_data::ConstPtr& chassis_msg_in);
 	void slam_odometry_callback(const nav_msgs::Odometry::ConstPtr& slam_odometry_in);
 	void imu_msg_callback(const sensor_msgs::Imu::ConstPtr& imu_msg_in);
 
@@ -52,13 +52,13 @@ class LocalizationFusion {
 
 	void check_slam_odometry(nav_msgs::Odometry slam_odom);
 	void compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg,
-						fairland_msgs::chassic_data chassis_msg, fairland_msgs::LocalizationPoseData* status_msg);
-	void pub_localiztion(fairland_msgs::LocalizationPoseData cur_status);
+						flbot_msgs::chassic_data chassis_msg, flbot_msgs::LocalizationPoseData* status_msg);
+	void pub_localiztion(flbot_msgs::LocalizationPoseData cur_status);
 	void pub_fusion_info(double time_last);
 
 	// slipping detect
 	int detect_slipping(nav_msgs::Odometry curr_odom);
-	// void fill_slipping_msg(fairland_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
+	// void fill_slipping_msg(flbot_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
 	void fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
 
    public:
@@ -86,10 +86,10 @@ class LocalizationFusion {
 	double time_lost_thr_ = 3.0; // unit: second
 	bool ekf_use_chassis_ = true;
 
-	fairland_msgs::LocalizationPoseData last_status_;
-	fairland_msgs::LocalizationPoseData status_tmp_;
-	fairland_msgs::LocalizationPoseData status_origin_; ///< the origin status message
-	fairland_msgs::LocalizationPoseData status_lf_;		///< the lfed status message
+	flbot_msgs::LocalizationPoseData last_status_;
+	flbot_msgs::LocalizationPoseData status_tmp_;
+	flbot_msgs::LocalizationPoseData status_origin_; ///< the origin status message
+	flbot_msgs::LocalizationPoseData status_lf_;	 ///< the lfed status message
 
 	ros::NodeHandle nh_;
 	ros::Subscriber sub_imu_;
@@ -104,9 +104,9 @@ class LocalizationFusion {
 	std::string pub_localization_topic_;
 	std::string pub_slipping_topic_;
 
-	fairland_msgs::chassic_data chassis_msg_; ///< the chassis message
-	nav_msgs::Odometry slam_odom_msg_;		  ///< the gnss message
-	sensor_msgs::Imu imu_msg_;				  ///< the imu message
+	flbot_msgs::chassic_data chassis_msg_; ///< the chassis message
+	nav_msgs::Odometry slam_odom_msg_;	   ///< the gnss message
+	sensor_msgs::Imu imu_msg_;			   ///< the imu message
 };
 
 } // namespace localization_module

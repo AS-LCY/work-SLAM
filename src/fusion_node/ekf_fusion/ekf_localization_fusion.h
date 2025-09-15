@@ -13,8 +13,8 @@
 // #include <visualization_msgs/MarkerArray.h>
 
 // 另一个节点中定义
-#include "fairland_msgs/LocalizationPoseData.h"
-#include "fairland_msgs/chassic_data.h"
+#include "flbot_msgs/LocalizationPoseData.h"
+#include "flbot_msgs/chassic_data.h"
 #include "fusion_node/common/numerical_process.h"
 #include "fusion_node/common/print_color.h"
 #include "fusion_node/common/quaternion.h"
@@ -32,7 +32,7 @@ class EkfLocalizationFusion {
 
 	/// @brief init function when localization fusion needs initialization
 	/// @param status the LeadgenStatus message in
-	void init(const fairland_msgs::LocalizationPoseData& status);
+	void init(const flbot_msgs::LocalizationPoseData& status);
 
 	void reset();
 
@@ -40,8 +40,8 @@ class EkfLocalizationFusion {
 	/// @return return true if is init, otherwise return false
 	bool is_init();
 
-	void localization_fusion_core(const fairland_msgs::LocalizationPoseData& status,
-								  fairland_msgs::LocalizationPoseData* status_out);
+	void localization_fusion_core(const flbot_msgs::LocalizationPoseData& status,
+								  flbot_msgs::LocalizationPoseData* status_out);
 
    private:
 	void set_localizationfusion_input();
@@ -54,7 +54,7 @@ class EkfLocalizationFusion {
    public:
    private:
 	std::shared_ptr<PoseEKF> ekf_ptr_; ///< the ekf pointer
-	fairland_msgs::LocalizationPoseData pose_msg_;
+	flbot_msgs::LocalizationPoseData pose_msg_;
 
 	EkfGatingParams gating_params_;
 	bool use_ekf_yaw_ = false;
