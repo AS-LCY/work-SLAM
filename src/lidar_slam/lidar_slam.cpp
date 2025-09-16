@@ -59,9 +59,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	FilteredUndistortCloud_.reset(new PointCloudType());
 	kdtreeCloud_.reset(new PointCloudType());
 
-	// ObstacleCloud_.reset(new PointCloudType());
-	// FilteredObstacleCloud_.reset(new PointCloudType());
-
 	/// mapping 相关
 	unoptimized_path_.clear();
 	optimized_path_.clear();
@@ -76,24 +73,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	auto cloud_leaf_size_test = config_param_.lidar_preproc.leafsize;
 	downSizeFilterCloud_test_.setLeafSize(cloud_leaf_size_test, cloud_leaf_size_test, cloud_leaf_size_test);
 
-	auto key_frame_distance = config_param_.mapping.key_frame_distance;
-	auto key_frame_angle = config_param_.mapping.key_frame_angle;
-	auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
-	auto loopSearchTimeDiff = config_param_.mapping.loopSearchTimeDiff;
-	auto loopSearchSkipKey = config_param_.mapping.loopSearchSkipKey;
-	auto loopIcpScore = config_param_.mapping.loopIcpScore;
-
-	back_end_.reset(new BackEnd(key_frame_distance, key_frame_angle, loopSearchDistance, loopSearchTimeDiff,
-								loopSearchSkipKey, loopIcpScore));
-
-	/// sec_mapping & localizaiton
-	globalLocalizationSuccess_ = false;
-	global_localize_count_ = 0;
-
-	// ikdtree_
-	ikdtree_.reset(new KD_TREE<pcl::PointXYZINormal>());
-	kf_ = esekfom::esekf();
-
 	// lidar & imu 预处理
 	const auto blind_distance = config_param_.lidar_preproc.blind_distance;
 	const auto point_filter_num = config_param_.lidar_preproc.point_filter_num;
@@ -104,8 +83,31 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	const auto b_gyr_cov = config_param_.mapping.b_gyr_cov;
 	const auto b_acc_cov = config_param_.mapping.b_acc_cov;
 
-	const auto extrinT = config_param_.extrinsic.extrinT;
+	const auto extrinT = config_param_.extrinsic.extrinT; // T_imu_lidar
 	const auto extrinR = config_param_.extrinsic.extrinR;
+
+	// construct T_imu_lidar
+	Eigen::Isometry3d T_imu_lidar = Eigen::Isometry3d::Identity();
+	T_imu_lidar.linear() = extrinR;
+	T_imu_lidar.translation() = extrinT;
+
+	auto key_frame_distance = config_param_.mapping.key_frame_distance;
+	auto key_frame_angle = config_param_.mapping.key_frame_angle;
+	auto loopSearchDistance = config_param_.mapping.loopSearchDistance;
+	auto loopSearchTimeDiff = config_param_.mapping.loopSearchTimeDiff;
+	auto loopSearchSkipKey = config_param_.mapping.loopSearchSkipKey;
+	auto loopIcpScore = config_param_.mapping.loopIcpScore;
+
+	back_end_.reset(new BackEnd(T_imu_lidar.inverse(), key_frame_distance, key_frame_angle, loopSearchDistance,
+								loopSearchTimeDiff, loopSearchSkipKey, loopIcpScore));
+
+	/// sec_mapping & localizaiton
+	globalLocalizationSuccess_ = false;
+	global_localize_count_ = 0;
+
+	// ikdtree_
+	ikdtree_.reset(new KD_TREE<pcl::PointXYZINormal>());
+	kf_ = esekfom::esekf();
 
 	p_imu_.reset(new ImuProcess());
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
@@ -157,7 +159,7 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	imu_buffer_lock.unlock();
 
 	if (lidar_buffer_empty || imu_buffer_empty) {
-		TRACE_WARN_CLASS("lidar buffer empty: %d, imu buffer empty: %d", lidar_buffer_empty, imu_buffer_empty);
+		// TRACE_WARN_CLASS("lidar buffer empty: %d, imu buffer empty: %d", lidar_buffer_empty, imu_buffer_empty);
 		return false;
 	}
 	if (reseting_ == true) {
@@ -241,8 +243,8 @@ void LidarSlam::sec_mapping_loopClosureThread() {
 	const std::chrono::milliseconds period(1000 / frequency);
 	while (thread_run_ && reseting_ == false) {
 		hb_time_thread_loop_closure_.store(rclcpp::Clock().now().seconds());
-
 		auto start = std::chrono::steady_clock::now();
+
 		// 对于二次建图，重定位成功之前，不进行回环检测
 		if (!globalLocalizationSuccess_) {
 			//.... do nothing
@@ -250,12 +252,8 @@ void LidarSlam::sec_mapping_loopClosureThread() {
 			auto loaded_keyframe_clouds = cloud_map_manager_->get_loaded_keyframe_clouds();
 			auto loaded_keyframe_poses = cloud_map_manager_->get_loaded_keyframe_poses();
 			auto loaded_sc_info = cloud_map_manager_->get_load_sc_info_();
-			auto global_odom_to_map = global_localization_->get_global_odom_to_map();
-
-			//////// TODO bug here
 			if (cloud_map_manager_->get_map_data_status()) {
-				back_end_->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_sc_info, loaded_keyframe_poses,
-												 global_odom_to_map);
+				back_end_->set_loaded_key_clouds(loaded_keyframe_clouds, loaded_sc_info, loaded_keyframe_poses);
 			}
 		} else {
 			back_end_->performLoopClosure(lidar_end_time_); //  回环检测
@@ -361,7 +359,8 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("global Localization Success");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::Normal);
-
+					init_T_map_odom_ = localization_->getOdomToMap();
+					T_map_odom_ = init_T_map_odom_;
 					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
 					wait_time++;
 				}
@@ -384,7 +383,7 @@ void LidarSlam::localizationThread() {
 							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
 							gicp_low_acc_count = 0;
-
+							T_map_odom_ = localization_->getOdomToMap();
 							need_localize_ = false;
 							wait_time++;
 							TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
@@ -496,6 +495,8 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 						TRACE_INFO_CLASS("sec_mapping relocalizing: global Localization Success");
 						global_localize_count_ = 0;
 						secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Normal);
+						init_T_map_odom_ = global_localization_->get_global_odom_to_map();
+						T_map_odom_ = init_T_map_odom_;
 					} else {
 						global_localize_count++;
 					}
@@ -756,15 +757,6 @@ bool LidarSlam::run() {
 		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size);
 
-		/* if (true) // If you need to see map point, change to "if(true)" //zx delete this publish
-		{
-			PointVector().swap(ikdtree_.PCL_Storage);
-			ikdtree_.flatten(ikdtree_.Root_Node, ikdtree_.PCL_Storage, NOT_RECORD);
-			kdtreeCloud_->clear();
-			kdtreeCloud_->points = ikdtree_.PCL_Storage;
-			// publish_map(pubLaserCloudMap);
-		}*/
-
 		vector<PointVector> Nearest_Points;
 		Nearest_Points.resize(feats_down_size);
 		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
@@ -795,7 +787,7 @@ bool LidarSlam::run() {
 				TRACE_WARN_CLASS("Waiting for loading key cloud ...");
 			} else {
 				//后端优化的位姿是T_map_lidar
-				bool insert = back_end_->saveKeyFramesAndFactor(T_odom_lidar_, lidar_end_time_);
+				bool insert = back_end_->saveKeyFramesAndFactor(init_T_map_odom_, T_odom_lidar_, lidar_end_time_);
 				if (insert) { //是关键帧
 					TRACE_INFO_CLASS("backend: keyPoses id: %d", back_end_->getKeyframePoses().size() - 1);
 					back_end_->saveCurrentCloud(undistortCloud_,
@@ -805,42 +797,16 @@ bool LidarSlam::run() {
 						unoptimized_path_.emplace_back(getWheelInMap());
 						if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
 					}
-
-					// TODO(jxl): 苗苗让后端不维护T_map_odom, 还是保持I，但是不可能啊
-					T_odom_lidar_lock.lock();
-					T_odom_lidar_ = back_end_->getCurrentPose().pose; // curr keyframe in map，是带了回环优化后的pose
-					T_odom_lidar_lock.unlock();
-
-					T_odom_b = T_odom_lidar_ * T_b_lidar.inverse();
-					state_ikfom state_updated = kf_.get_x();
-					state_updated.pos = T_odom_b.translation();
-					state_updated.rot = Sophus::SO3d(T_odom_b.rotation());
-					// state_updated.rot =  Sophus::SO3(T_odom_b.rotation());
-
-					kf_.change_x(state_updated); // TODO(jxl): 强行把滤波器的状态改变，不对
-					new_key_cloud_arrived_ = true;
 				}
 
-				// TODO(jxl): 不是关键帧也会运行下面的逻辑
-				//...
-
-				// 更新因子图中所有变量节点的位姿，也就是所有历史关键帧的位姿，更新里程计轨迹， 重构ikdtree
-				bool LoopIsClosed = back_end_->correctPoses();
-				// TODO(jxl): correct_pose函数应该放到saveKeyFramesAndFactor()中去
 				{
 					std::unique_lock<std::mutex> lk(mtx_path_);
 					optimized_path_.clear();
-					std::vector<KeyPose> lidar_in_odom;
-					lidar_in_odom = back_end_->getKeyframePoses();
-					for (int i = 0; i < lidar_in_odom.size(); i++) {
-						optimized_path_.emplace_back(getOdomToMap() * lidar_in_odom[i].pose * T_lidar_wheel_);
+					std::vector<KeyPose> lidar_in_map;
+					lidar_in_map = back_end_->getKeyframePoses();
+					for (int i = 0; i < lidar_in_map.size(); i++) {
+						optimized_path_.emplace_back(lidar_in_map[i].pose * T_lidar_wheel_);
 					}
-				}
-				if (LoopIsClosed) { // TODO(jxl):
-									// 更新前端的local_map，这么做讲不通啊，前端应该只提供odom_pose，后端来通过闭环检测和优化来维护T_map_odom
-					back_end_->recontructIKdTree(*ikdtree_, config_param_.ikdtree.kdTreeReconstructRadius,
-												 config_param_.ikdtree.kdTreeReconstructKeyFrameLeafSize,
-												 config_param_.ikdtree.kdTreeReconstructPointLeafSize);
 				}
 			}
 		}

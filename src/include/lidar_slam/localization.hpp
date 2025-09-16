@@ -39,41 +39,29 @@ class Localization {
 	Localization();
 	~Localization();
 	bool loadMap(std::string path);
-	// bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double score_thr, double odom2map_delta_thr, double
-	// odom2map_delta_set, bool use_filter);
+
 	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& score, double score_fail_thr,
 				  double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set,
 				  bool use_pose_filter);
-	// bool localize(PointCloudType::Ptr odomCloud, double &score, double score_fail_thr, double score_low_accuracy_thr,
-	// double odom2map_delta_thr, double odom2map_delta_set, bool use_pose_filter);
+
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
-	Eigen::Isometry3d getOdomToMap() {
-		//  Eigen::Isometry3d isometry3d;
-		//  isometry3d.matrix().block<3, 3>(0, 0) = correctionOdomToMap.matrix().block<3, 3>(0, 0).cast<double>();
-		// isometry3d.matrix().block<3, 1>(0, 3) = correctionOdomToMap.matrix().block<3, 1>(0, 3).cast<double>();
-		return correctionOdomToMap_;
-	}
+
+	Eigen::Isometry3d getOdomToMap() { return correctionOdomToMap_; }
 	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap_; }
+
 	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() { return LoadData_; }
 	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() {
 		if (!map_ready_) return nullptr;
 		return CloudGlobalMapIn_;
 	}
-	// PointCloudType::Ptr getLoadMap(){
-	//    if (!map_ready_) return nullptr;
-	//    return CloudGlobalMapIn_;
-	// }
 
 	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
 	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>>& getLoadMapPoints() {
-		// if (!map_ready_) return std::vector<Eigen::Vector3f>{};
 		return show_map_points_;
 	}
 
    private:
-	// 初始化正态分布(NDT)对象
-	// pcl::NormalDistributionsTransform<pcl::PointXYZI, pcl::PointXYZI>::Ptr ndt;
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
 	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
 
@@ -89,9 +77,7 @@ class Localization {
 	std::shared_ptr<SCManager> scManager_;
 	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> show_map_points_;
 
-	// pcl::Registration<pcl::PointXYZI, pcl::PointXYZI>::Ptr fast_gicp;
-	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_; // TODO test gicp with normal
-	// fast_gicp::FastGICP<PointType, PointType>::Ptr gicp; // TODO test gicp with normal
+	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
 	bool map_ready_;

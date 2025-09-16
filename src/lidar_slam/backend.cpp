@@ -1,6 +1,9 @@
 #include "lidar_slam/backend.hpp"
 namespace lidar_slam {
-BackEnd::BackEnd(float dist, float angle, float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score) {
+BackEnd::BackEnd(const Eigen::Isometry3d& T_lidar_imu, float dist, float angle, float loop_dist, float loop_time,
+				 int loop_skip_key, float loop_icp_score) {
+	T_lidar_imu_ = T_lidar_imu;
+
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());
 	CopyKeyPoint_.reset(new pcl::PointCloud<PointType>());
 	show_map_.reset(new pcl::PointCloud<PointType>());
@@ -35,9 +38,11 @@ BackEnd::BackEnd(float dist, float angle, float loop_dist, float loop_time, int 
 BackEnd::~BackEnd() {}
 
 bool BackEnd::saveFrame(Eigen::Isometry3d transformTobeMapped) {
-	if (KeyPoint_->points.empty()) return true;
+	if (OdomKeyPoses_.empty()) {
+		return true;
+	}
 	Eigen::Affine3f transBetween;
-	Eigen::Isometry3d temp = KeyPoses_.back().pose.inverse() * transformTobeMapped;
+	Eigen::Isometry3d temp = OdomKeyPoses_.back().pose.inverse() * transformTobeMapped;
 	transBetween = temp.cast<float>();
 	float x, y, z, roll, pitch, yaw;
 	pcl::getTranslationAndEulerAngles(transBetween, x, y, z, roll, pitch, yaw);
@@ -95,12 +100,18 @@ void BackEnd::addLoopFactor() {
 }
 
 //在lio的线程中运行
-bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, double time) {
+bool BackEnd::saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, Eigen::Isometry3d transformTobeMapped,
+									 double time) {
 	if (!saveFrame(transformTobeMapped)) { //是否关键帧
 		return false;
 	}
 
-	addOdomFactor(transformTobeMapped); // T_odom_lidar
+	// save odom poses
+	auto ypr = transformTobeMapped.rotation().eulerAngles(2, 1, 0);
+	KeyPose odom_pose(transformTobeMapped, KeyPoint_->size(), time, ypr(2), ypr(1), ypr(0));
+	OdomKeyPoses_.emplace_back(odom_pose);
+
+	addOdomFactor(init_T_map_odom * transformTobeMapped); // init_T_map_lidar
 	// addGPSFactor();
 
 	addLoopFactor();
@@ -130,7 +141,6 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, doub
 	thisPose3D.x = latestEstimate.translation().x();
 	thisPose3D.y = latestEstimate.translation().y();
 	thisPose3D.z = latestEstimate.translation().z();
-
 	thisPose3D.intensity = KeyPoint_->size(); // 索引
 	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 	KeyPoint_->push_back(thisPose3D); //  新关键帧帧放入队列中
@@ -144,6 +154,18 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, doub
 	thisPose6D.yaw = latestEstimate.rotation().yaw();
 	KeyPoses_.push_back(thisPose6D);
 
+	const auto latest_optimized_pose = thisPose6D.pose; // T_map_lidar
+	keyframe_poses_lock.unlock();
+
+	assert(thisPose6D.index == OdomKeyPoses_.back().index);
+	std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+	T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
+	T_map_odom_lock.unlock();
+
+	if (aLoopIsClosed_) {
+		correctPoses(); //更新历史的关键帧位姿
+	}
+
 	return true;
 }
 
@@ -155,6 +177,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		KeyFrameCloud_.emplace_back(currentCLoud);
 	}
+
 	//   Eigen::Vector3d euler =  pose.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 	Eigen::Vector3d euler = R2ypr(pose.matrix().block<3, 3>(0, 0)); // TODO(jxl): 和eigen的接口计算原理一样，为何要重写
 	euler[0] = 0;
@@ -183,7 +206,14 @@ bool BackEnd::correctPoses() {
 			KeyPoses_[i].pitch = isamCurrentEstimate_.at<gtsam::Pose3>(i).rotation().pitch();
 			KeyPoses_[i].yaw = isamCurrentEstimate_.at<gtsam::Pose3>(i).rotation().yaw();
 		}
+		auto latest_optimized_pose = KeyPoses_[numPoses - 1].pose;
 		keyframe_poses_lock.unlock();
+
+		assert(OdomKeyPoses_.size() == numPoses);
+		std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+		T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
+		T_map_odom_lock.unlock();
+
 		aLoopIsClosed_ = false; // TODO(jxl): 加锁
 		show_index_ = 0;
 		std::unique_lock<std::mutex> lk(mtxCurrentMap_);
@@ -326,28 +356,21 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyfra
 // sec_mapping模式下，在启动后端线程之前，加载之前建图的meta信息以及全局定位初始化信息
 bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
 									std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
-									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses,
-									Eigen::Isometry3d T_map_odom) {
+									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses) {
 	KeyPoses_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());
-
 	KeyFrameCloud_.assign(input_vec_key_clouds.begin(), input_vec_key_clouds.end());
-
-	// 加载的 pose 是当前 map 坐标系下的，T_map_lidar = input_key_pose
-	// 需要将其转换到 当前的 odom 坐标系下，T_odom_lidar（未知量）
-	// T_map_odom： 传入的这个值是重定位结果
 	TRACE_INFO_CLASS("loaded_key_poses size: %d", input_vec_key_poses.size());
 
 	int i = 0;
 	for (auto& kp : input_vec_key_poses) {
 		Eigen::Isometry3d T_map_lidar = kp.pose;
-		Eigen::Isometry3d T_odom_lidar = T_map_odom.inverse() * T_map_lidar;
-		Eigen::Vector3d euler = R2ypr(T_odom_lidar.matrix().block<3, 3>(0, 0));
+		Eigen::Vector3d euler = R2ypr(T_map_lidar.matrix().block<3, 3>(0, 0));
 
-		addOdomFactor(T_odom_lidar);
+		addOdomFactor(T_map_lidar);
 
 		KeyPose temp_pose;
-		temp_pose.pose = T_odom_lidar;
+		temp_pose.pose = T_map_lidar;
 		temp_pose.index = kp.index;
 		temp_pose.time = kp.time;
 		temp_pose.yaw = euler[0];
@@ -356,10 +379,10 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
 		KeyPoses_.push_back(temp_pose);
 
 		PointType temp_pnt;
-		temp_pnt.x = T_odom_lidar.translation().x();
-		temp_pnt.y = T_odom_lidar.translation().y();
-		temp_pnt.z = T_odom_lidar.translation().z();
-		KeyPoint_->points.push_back(temp_pnt);
+		temp_pnt.x = T_map_lidar.translation().x();
+		temp_pnt.y = T_map_lidar.translation().y();
+		temp_pnt.z = T_map_lidar.translation().z();
+		KeyPoint_->push_back(temp_pnt);
 
 		////// saveCurrentCloud(KeyFrameCloud_[i], T_map_lidar);
 		scManager_.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
@@ -681,7 +704,7 @@ void BackEnd::performLoopClosure(double time) {
 
 	  // Add pose constraint
 	  mtx.lock();
-	  loopIndexQueue_.push_back(make_pair(loopKeyCur, loopKeyPre));
+	  loopIndeytxQueue_.push_back(make_pair(loopKeyCur, loopKeyPre));
 	  loopPoseQueue_.push_back(poseFrom.between(poseTo));
 	  loopNoiseQueue_.push_back(constraintNoise);
 	  mtx.unlock();
@@ -696,20 +719,24 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr BackEnd::getCurrentRGBMap() {
 	return show_rgb_map_;
 }
 
-PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
+PointCloudType::Ptr BackEnd::getCurrentMap() {
 	std::unique_lock<std::mutex> lk(mtxCurrentMap_); // TODO(jxl): 该锁是锁show_map，show_index,
 	// PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
 
 	// TODO(jxl): mtxCloud_是锁KeyFrameCloud，KeyPoses也有自己的锁
-	if (KeyPoses_.size() == 0) return show_map_;
+	if (KeyPoses_.size() == 0) {
+		return show_map_;
+	}
+
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		std::unique_lock<std::mutex> lk2(mtxPose_);
 		int size = min((int)KeyPoses_.size(), (int)KeyFrameCloud_.size());
 		for (int i = show_index_; i < size; i++) {
-			*show_map_ += *transformPointCloud(KeyFrameCloud_[i], T_map_odom * KeyPoses_[i].pose);
+			*show_map_ += *transformPointCloud(KeyFrameCloud_[i], KeyPoses_[i].pose);
 		}
 	}
+
 	show_index_ = (int)KeyPoses_.size() - 1;
 	double resolution = 0.1;
 	pcl::VoxelGrid<PointType> downSizeFilter;
@@ -719,8 +746,7 @@ PointCloudType::Ptr BackEnd::getCurrentMap(Eigen::Isometry3d T_map_odom) {
 	return show_map_;
 }
 
-bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
-					  int end_index) {
+bool BackEnd::saveMap(string saveMapDirectory, double resolution, int start_index, int end_index) {
 	if (KeyPoses_.empty() || KeyPoses_.size() == 0) {
 		TRACE_ERR_CLASS("key frame empty");
 		return false;
@@ -771,12 +797,13 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, Eigen::Isometr
 	std::string key_frame_cloud_path = "";
 	for (int i = start; i <= end; i++) {
 		// 生成地图
-		*globalMapCloud += *transformPointCloud(KeyFrameCloud_[i], T_map_odom * KeyPoses_[i].pose);
+		*globalMapCloud += *transformPointCloud(KeyFrameCloud_[i], KeyPoses_[i].pose);
 
 		// ScanContex 信息组合获取
 		ScInfo info;
 		info.id = i;
-		info.pose = T_map_odom * KeyPoses_[i].pose;
+		info.pose = KeyPoses_[i].pose;
+
 		info.polarcontext = scManager_.getSc(i);
 		infos[i] = info;
 

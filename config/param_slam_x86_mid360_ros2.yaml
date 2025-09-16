@@ -38,8 +38,9 @@
 
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
-      extrinsic_T: [ 0.0, -0.02329, 0.04412 ] 
-      extrinsic_R: [ 0.0,  0.0,  0.0]  # unit(degree), yaw, pitch, roll  
+      extrinsic_T: [ 0.0, -0.02329, 0.04412 ]   # T_imu_lidar
+      extrinsic_R: [ 0.0,  0.0,  0.0]  # unit(degree), yaw, pitch, roll
+
       extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
       #这个参数和上面的extrinsic_R是逆的关系
 

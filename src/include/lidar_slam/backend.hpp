@@ -65,28 +65,36 @@ class BackEnd {
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	BackEnd(float dist, float angle, float loop_dist, float loop_time, int loop_skip_key, float loop_icp_score);
+	BackEnd(const Eigen::Isometry3d& T_lidar_imu, float dist, float angle, float loop_dist, float loop_time,
+			int loop_skip_key, float loop_icp_score);
 	~BackEnd();
 
 	void saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
-	PointCloudType::Ptr getCurrentMap(Eigen::Isometry3d T_map_odom);
+	PointCloudType::Ptr getCurrentMap();
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
-	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, double time);
+	bool saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, Eigen::Isometry3d transformTobeMapped,
+								double time);
 	void performLoopClosure(double time);
 
 	// if start_index == end_index == 0; save all;
-	bool saveMap(std::string saveMapDirectory, double resolution, Eigen::Isometry3d T_map_odom, int start_index,
-				 int end_index);
+	bool saveMap(std::string saveMapDirectory, double resolution, int start_index, int end_index);
 	bool correctPoses();
 	void recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeReconstructRadius,
 						   float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize);
 
-	KeyPose getCurrentPose() { return KeyPoses_.back(); }
-
-	// void UpdateImage(const cv::Mat &image,Eigen::Isometry3d pose);
+	KeyPose getCurrentPose() {
+		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+		return KeyPoses_.back();
+	}
 
 	inline std::vector<KeyPose> getKeyframePoses() {
-		return KeyPoses_; // TODO(jxl): 上锁
+		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+		return KeyPoses_;
+	}
+
+	inline Eigen::Isometry3d getOdomToMap() {
+		std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+		return T_map_odom_;
 	}
 
 	inline std::vector<std::pair<int, int>> getAllLoopEdges() {
@@ -106,8 +114,7 @@ class BackEnd {
 
 	bool set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
 							   std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
-							   std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses,
-							   Eigen::Isometry3d T_map_odom);
+							   std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses);
 
    private:
 	bool saveFrame(Eigen::Isometry3d transformTobeMapped);
@@ -131,7 +138,7 @@ class BackEnd {
 			}
 		}
 		return false;
-	};
+	}
 
    private:
 	bool loaded_key_clouds_ready_ = false;
@@ -143,7 +150,8 @@ class BackEnd {
 	pcl::PointCloud<PointType>::Ptr CopyKeyPoint_;
 	std::vector<KeyPose> CopyKeyPoses_;
 	std::vector<PointCloudType::Ptr> KeyFrameCloud_;
-	PointCloudType::Ptr show_map_;
+	std::vector<KeyPose> OdomKeyPoses_;
+	PointCloudType::Ptr show_map_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr show_rgb_map_;
 
 	float keyframeDistThreshold_;  //  判断是否为关键帧的距离阈值
@@ -165,7 +173,7 @@ class BackEnd {
 	gtsam::Values isamCurrentEstimate_;
 	gtsam::ISAM2Params parameters_;
 
-	bool aLoopIsClosed_;
+	bool aLoopIsClosed_ = false;
 	int show_index_ = 0;
 
 	SCManager scManager_;
@@ -178,6 +186,11 @@ class BackEnd {
 	std::mutex mtxLoopInfo_;
 	std::mutex mtxCurrentMap_;
 	std::mutex mtxCurrentRGBMap_;
+
+	Eigen::Isometry3d T_map_odom_ = Eigen::Isometry3d::Identity();
+	std::mutex mtxTmapOdom_;
+
+	Eigen::Isometry3d T_lidar_imu_ = Eigen::Isometry3d::Identity();
 };
 } // namespace lidar_slam
 

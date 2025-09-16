@@ -6,7 +6,7 @@
 #include <pcl/point_types.h>
 #include <sys/stat.h>
 
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 
 using namespace std;
 using namespace Eigen;
@@ -215,6 +215,16 @@ T rad2deg(T radians) {
 template <typename T>
 T deg2rad(T degrees) {
 	return degrees * PI_M / 180.0;
+}
+
+inline void print_pose(const Eigen::Isometry3d& T) {
+	Eigen::Vector3d t = T.translation();
+	Eigen::Vector3d ypr = T.rotation().eulerAngles(2, 1, 0);
+	double yaw = ypr[0] * 180.0 / M_PI;
+	double pitch = ypr[1] * 180.0 / M_PI;
+	double roll = ypr[2] * 180.0 / M_PI;
+	TRACE_INFO("Translation (x, y, z): %f, %f, %f", t.x(), t.y(), t.z());
+	TRACE_INFO("Rotation (yaw, pitch, roll) [deg]:  %f, %f, %f", yaw, pitch, roll);
 }
 
 /* comment

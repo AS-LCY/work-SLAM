@@ -83,12 +83,10 @@ struct Localization_base {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	state_ikfom imu_state;
-	// double base_time = 0;
 	double update_time = 0;
 
 	Localization_base() {
 		imu_state = state_ikfom();
-		// base_time = 0;
 		update_time = 0;
 	}
 };
@@ -134,7 +132,7 @@ class LidarSlam {
 		if (working_mode_ == LOCALIZATION) {
 			return true;
 		} else if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-			return back_end_->saveMap(saveMapDirectory, resolution, getOdomToMap(), start_index, end_index);
+			return back_end_->saveMap(saveMapDirectory, resolution, start_index, end_index);
 		} else {
 			return true;
 		}
@@ -203,50 +201,14 @@ class LidarSlam {
 		return poses;
 	}
 
-	// TODO(jxl)：T_map_odom不应该是常量，在建图，二次建图模式下由后端维护。定位模式下，由和离线地图匹配模块维护
-	inline Eigen::Isometry3d getOdomToMap() const {
+	inline Eigen::Isometry3d getOdomToMap() {
 		if (working_mode_ == LOCALIZATION) {
-			return localization_->getOdomToMap();
-		} else if (working_mode_ == MAPPING) {
-			Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
-			transform.matrix().block<3, 3>(0, 0) = p_imu_->initial_rotate_;
-			return transform;
-		} else if (working_mode_ == SEC_MAPPING) {
-			return global_localization_->get_global_odom_to_map();
+			T_map_odom_ = localization_->getOdomToMap();
 		} else {
-			return Eigen::Isometry3d::Identity();
+			T_map_odom_ = back_end_->getOdomToMap();
 		}
+		return T_map_odom_;
 	}
-
-	inline Eigen::Isometry3d getLastOdomToMap() const {
-		if (working_mode_ == LOCALIZATION) {
-			return localization_->getLastOdomToMap();
-		} else {
-			return Eigen::Isometry3d::Identity();
-		}
-	}
-
-	// inline Eigen::Isometry3d getLidarInOdom() {
-	// 	if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
-	// 		std::unique_lock<std::mutex> lk(mtx_pose_);
-	// 		return T_odom_lidar_; //10hz
-	// 	} else if (working_mode_ == LOCALIZATION) {
-	// 		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
-	// 		auto current_pose_copy = current_pose_; //200hz
-	// 		current_pose_lock.unlock();
-
-	// 		Eigen::Isometry3d T_odom_b(
-	// 			Sophus::SE3d(current_pose_copy.imu_state.rot, current_pose_copy.imu_state.pos).matrix());
-	// 		Eigen::Isometry3d T_b_lidar(
-	// 			Sophus::SE3d(current_pose_copy.imu_state.offset_R_L_I, current_pose_copy.imu_state.offset_T_L_I)
-	// 				.matrix());
-	// 		Eigen::Isometry3d temp = T_odom_b * T_b_lidar;
-	// 		return temp;
-	// 	} else {
-	// 		Eigen::Isometry3d temp = Eigen::Isometry3d::Identity();
-	// 		return temp;
-	// 	}
-	// }
 
 	// jxl: 不管是建图还是定位，都是10hz的T_odom_lidar
 	inline Eigen::Isometry3d getLidarInOdom() {
@@ -291,14 +253,12 @@ class LidarSlam {
 
 	inline bool isGloalLocalizationSuccess() const { return globalLocalizationSuccess_; }
 
-	inline Eigen::Isometry3d getLidarInMap() { //插值
+	inline Eigen::Isometry3d getLidarInMap() {
 		Eigen::Isometry3d T_map_lidar = getOdomToMap() * getLidarInOdom();
 		return T_map_lidar;
 	}
 
-	inline Eigen::Isometry3d getWheelInMap() {
-		return getLidarInMap() * T_lidar_wheel_; //插值
-	}
+	inline Eigen::Isometry3d getWheelInMap() { return getLidarInMap() * T_lidar_wheel_; }
 	inline Eigen::Isometry3d getWheelInLidar() const { return T_lidar_wheel_; }
 	inline std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() const {
 		return localization_->getLoadKeyFrame();
@@ -312,34 +272,10 @@ class LidarSlam {
 		else
 			return temp;
 	}
-	inline PointCloudType::Ptr getCurrentMap() const { return back_end_->getCurrentMap(getOdomToMap()); }
+	inline PointCloudType::Ptr getCurrentMap() { return back_end_->getCurrentMap(); }
 	inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap() const { return back_end_->getCurrentRGBMap(); }
 
-	// PointCloudType::Ptr getObstacleCloud()
-	// {
-	//     return ObstacleCloud_;
-	// }
-	// PointCloudType::Ptr getFilteredObstacleCloud()
-	// {
-	//     std::unique_lock<std::mutex> lk(mtx_obstacle_cloud_);
-	//     return FilteredObstacleCloud_;
-	// }
-
 	inline double get_lidar_time() const { return lidar_end_time_; }
-
-	// string print_SlamWorkMode(SlamWorkMode e){
-	//     switch (e){
-	//     CASE_STR(MAPPING);
-	//     CASE_STR(SEC_MAPPING);
-	//     CASE_STR(LOCALIZATION);
-	//     default:
-	//         break;
-	//     }
-	//     return "UNKNOW_SlamWorkMode!";
-	// }
-
-	void set_new_key_cloud_arrived(bool flag) { new_key_cloud_arrived_ = flag; }
-	bool get_new_key_cloud_arrived() { return new_key_cloud_arrived_; }
 
 	double get_hb_time_thread_localize() { return hb_time_thread_localize_.load(); }
 	double get_hb_time_thread_loop_closure() { return hb_time_thread_loop_closure_.load(); }
@@ -372,7 +308,6 @@ class LidarSlam {
 	LidarSlamParam config_param_;
 	int feats_down_size_thr_ = 100;
 	bool flag_keep_only_last_lidar_ = true;
-	bool new_key_cloud_arrived_ = false;
 
 	bool need_localize_ = true;
 
@@ -439,11 +374,6 @@ class LidarSlam {
 	std::unique_ptr<GlobalLocalization> global_localization_ = nullptr;
 	std::unique_ptr<CloudMap> cloud_map_manager_ = nullptr;
 
-	// stop local thread 专用
-	// std::condition_variable cv_stop_local_;
-	// std::mutex mtx_stop_thread_;
-	// bool flag_stop_thread_ = false;
-
 	PointCloudType::Ptr UndistortCloudInOdom_;
 	PointCloudType::Ptr undistortCloud_; // lidar 系
 	PointCloudType::Ptr FilteredUndistortCloud_;
@@ -452,22 +382,19 @@ class LidarSlam {
 	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;
 
 	PointCloudType::Ptr kdtreeCloud_;
-	// PointCloudType::Ptr ObstacleCloud_; // disable ObstacleCloud_ by pmm
+
 	PointCloudType::Ptr FilteredObstacleCloud_;
 
 	SlamWorkMode working_mode_ = UNKNOWN;
-	// LocalizationStatus l_status_ = L_INACTIVE;
-	// MappingStatus m_status_ = M_INACTIVE;
-	// bool second_mapping_need_global_localization_ = false;
-
-	// LocalizationStatus l_local_thread_status_ = L_INACTIVE;
-	// LocalizationStatus l_slam_thread_status_ = L_INACTIVE;
 
 	int global_localize_count_ = 0;
 	int lidar_no_point_count_ = 0;
 	localization_module::LocalizationModuleLogInfoManager* log_info_manager_;
 
 	// cpu_set_t mask;
+
+	Eigen::Isometry3d init_T_map_odom_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_map_odom_ = Eigen::Isometry3d::Identity();
 };
 
 } // namespace lidar_slam
