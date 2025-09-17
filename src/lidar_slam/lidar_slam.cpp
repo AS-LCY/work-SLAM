@@ -286,8 +286,8 @@ void LidarSlam::loopClosureThread() {
 
 void LidarSlam::localizationThread() {
 	const int frequency = 1.0; // 频率为1Hz
-	auto period_relocal = std::chrono::milliseconds(1000);
-	const float period_local_sec = config_param_.localization.fgicp_peroid_sec; // 频率为2Hz
+	auto period_relocal = std::chrono::milliseconds(1000 / frequency);
+	const float period_local_sec = config_param_.localization.fgicp_peroid_sec;
 	const auto score_thr = config_param_.re_localization.score_thr;
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
@@ -370,7 +370,7 @@ void LidarSlam::localizationThread() {
 					wait_time = 0;
 				}
 
-				if (need_localize_) {
+				if (need_localize_) { // 1hz循环一次，每60s定位一次
 					TRACE_INFO_CLASS("\n\n");
 					TRACE_INFO_CLASS("start localization ...");
 					double fit_score = 0.0; // gicp_fit_score

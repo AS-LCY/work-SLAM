@@ -5,7 +5,7 @@ Localization::Localization() {
 	log_info_manager_.reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	gicp_->setNumThreads(1); // TODO(jxl)
+	gicp_->setNumThreads(2);
 	gicp_->setTransformationEpsilon(0.01);
 	gicp_->setMaximumIterations(64);
 	gicp_->setMaxCorrespondenceDistance(2.0); // TODO(jxl)
@@ -27,8 +27,6 @@ Localization::Localization() {
 	icp_->setMaxCorrespondenceDistance(0.05); // 最大对应点距离 // TODO(jxl)
 
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-	CloudGlobalMap_.reset(new PointCloudType());
-	accumulateMap_.reset(new PointCloudType());
 	testMatchcloud_.reset(new PointCloudType());
 	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
@@ -67,69 +65,33 @@ void copyPointCloudManual(const PointCloudType::Ptr& src, pcl::PointCloud<pcl::P
 
 bool Localization::loadMap(std::string path) {
 	map_ready_ = false;
-	CloudGlobalMap_.reset(new PointCloudType());
 	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
-	show_map_points_.clear();
-	PointCloudType::Ptr TempMap(new PointCloudType());
 
 	std::string cloud_map_file_path = path + std::string("cloud_map.pcd");
 	std::ifstream cloud_file(cloud_map_file_path);
 	if (cloud_file && cloud_file.good()) {
-		if (pcl::io::loadPCDFile(cloud_map_file_path, *TempMap) == -1) {
+		if (pcl::io::loadPCDFile(cloud_map_file_path, *CloudGlobalMapIn_PointType_) == -1) {
 			TRACE_ERR_CLASS("Failed to load PCD file %s", cloud_map_file_path.c_str());
 			return false;
 		}
-		*CloudGlobalMap_ = *TempMap;
 		TRACE_INFO_CLASS("load map from : %s", cloud_map_file_path.c_str());
-		TRACE_INFO_CLASS("cloud validity: %d", CloudGlobalMap_->is_dense);
 	}
 
-	// no ComplementMap.pcd
-	// std::string ComplementMap_file_path = path + std::string("ComplementMap.pcd");
-	// std::ifstream map_file(ComplementMap_file_path);
-	// if (map_file && map_file.good()) {
-	// 	TempMap->points.clear();
-	// 	pcl::io::loadPCDFile(ComplementMap_file_path, *TempMap);
-	// 	*CloudGlobalMap_ += *TempMap;
-	//  TRACE_INFO_CLASS("load map from : %s", ComplementMap_file_path.c_str());
-	// }
-
-	pcl::copyPointCloud(*CloudGlobalMap_, *CloudGlobalMapIn_PointType_); // TODO(jxl): 没必要拷贝来拷贝去
-	pcl::VoxelGrid<PointType> downSizeFilter;
-	PointCloudType::Ptr GlobalMapShow(new PointCloudType());
-	double min_voxel_size = 0.1;
-	if (CloudGlobalMap_->points.size() < 100000.0)
-		downSizeFilter.setLeafSize(0.5, 0.5, 0.5); // for global map visualization
-	else {
-		min_voxel_size = min(0.3 * CloudGlobalMap_->points.size() / 100000.0, 1.0);
-		downSizeFilter.setLeafSize(min_voxel_size, min_voxel_size, min_voxel_size); // for global map visualization
-	}
-	downSizeFilter.setInputCloud(CloudGlobalMapIn_PointType_);
-	downSizeFilter.filter(*GlobalMapShow);
-
-	for (int i = 0; i < GlobalMapShow->points.size(); i++) {
-		Eigen::Vector3f point;
-		point.x() = GlobalMapShow->points[i].x;
-		point.y() = GlobalMapShow->points[i].y;
-		point.z() = GlobalMapShow->points[i].z;
-		show_map_points_.push_back(point); // TODO(jxl): 没有使用，可以删除
-	}
-	if (CloudGlobalMap_->points.size() == 0) {
+	if (CloudGlobalMapIn_PointType_->points.size() == 0) {
 		TRACE_ERR_CLASS("Failed to load map.");
 		return false;
 	}
 
 	std::vector<std::string> files;
 	files.emplace_back(path + std::string("data"));
-	// files.emplace_back(path + std::string("Complementdata"));
 	std::string line;
 
 	LoadData_.clear();
 	polarcontext_invkeys_mat_.clear();
 	polarcontexts_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-	accumulateMap_->points.clear();
+
 	accumulateKeypose_.clear();
 	scManager_.reset(new SCManager()); // TODO：是否每次加载地图都需要 重置ScanContex，即重定位
 
@@ -196,8 +158,7 @@ bool Localization::loadMap(std::string path) {
 	TRACE_INFO_CLASS("loadData size: %d", LoadData_.size());
 	TRACE_INFO_CLASS("Load map success!");
 
-	copyPointCloudManual(CloudGlobalMapIn_PointType_, CloudGlobalMapIn_); //对加载进来的全局点云降采样后，又赋值回去
-	// TODO(jxl): 没必要拷贝来拷贝去
+	copyPointCloudManual(CloudGlobalMapIn_PointType_, CloudGlobalMapIn_);
 
 	// ndt_->setInputTarget(CloudGlobalMapIn_PointType_);
 	// icp_->setInputTarget(CloudGlobalMapIn_PointType_);
@@ -242,27 +203,27 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
 			curr_time_ = omp_get_wtime();
 
-			double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-			Eigen::Affine3d affine_transform(lastCorrectionOdomToMap_);
-			pcl::getTranslationAndEulerAngles(affine_transform, last_x, last_y, last_z, last_roll, last_pitch,
-											  last_yaw);
-			double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-			Eigen::Affine3d affine_transform_co(correctionOdomToMap_);
-			pcl::getTranslationAndEulerAngles(affine_transform_co, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
-											  curr_yaw);
-			double abs_dx = std::abs(curr_x - last_x);
-			double abs_dy = std::abs(curr_y - last_y);
+			// double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
+			// Eigen::Affine3d affine_transform(lastCorrectionOdomToMap_);
+			// pcl::getTranslationAndEulerAngles(affine_transform, last_x, last_y, last_z, last_roll, last_pitch,
+			// 								  last_yaw);
+			// double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
+			// Eigen::Affine3d affine_transform_co(correctionOdomToMap_);
+			// pcl::getTranslationAndEulerAngles(affine_transform_co, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
+			// 								  curr_yaw);
+			// double abs_dx = std::abs(curr_x - last_x);
+			// double abs_dy = std::abs(curr_y - last_y);
 
-			if (!filter_init_) {
-				odom2map_x_filter = correctionOdomToMap_.translation().x();
-				odom2map_y_filter = correctionOdomToMap_.translation().y();
-				filter_init_ = true;
-			} else { // ratio = 1.0
-				odom2map_x_filter = ratio * correctionOdomToMap_.translation().x() + (1 - ratio) * odom2map_x_filter;
-				odom2map_y_filter = ratio * correctionOdomToMap_.translation().y() + (1 - ratio) * odom2map_y_filter;
-				correctionOdomToMap_.translation().x() = odom2map_x_filter;
-				correctionOdomToMap_.translation().y() = odom2map_y_filter;
-			}
+			// if (!filter_init_) {
+			// 	odom2map_x_filter = correctionOdomToMap_.translation().x();
+			// 	odom2map_y_filter = correctionOdomToMap_.translation().y();
+			// 	filter_init_ = true;
+			// } else { // ratio = 1.0
+			// 	odom2map_x_filter = ratio * correctionOdomToMap_.translation().x() + (1 - ratio) * odom2map_x_filter;
+			// 	odom2map_y_filter = ratio * correctionOdomToMap_.translation().y() + (1 - ratio) * odom2map_y_filter;
+			// 	correctionOdomToMap_.translation().x() = odom2map_x_filter;
+			// 	correctionOdomToMap_.translation().y() = odom2map_y_filter;
+			// }
 
 			// // update log_info (log_info_manager_) 暂时注释掉，后期再补充
 			// log_info_manager_.log_info.odom2map_dtime  = curr_time_ - lastUpdateTime_;
@@ -370,7 +331,7 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		testMatchcloud_ = transformPointCloud(cloudIn, testtransform);
 
 		icp.setInputSource(cloudIn);
-		icp.setInputTarget(CloudGlobalMap_);
+		icp.setInputTarget(CloudGlobalMapIn_PointType_);
 		PointCloudType::Ptr unused_result(new PointCloudType());
 		icp.align(*unused_result, init_guess.cast<float>());
 

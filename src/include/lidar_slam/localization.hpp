@@ -48,36 +48,31 @@ class Localization {
 							double score);
 
 	Eigen::Isometry3d getOdomToMap() { return correctionOdomToMap_; }
-	Eigen::Isometry3d getLastOdomToMap() { return lastCorrectionOdomToMap_; }
 
 	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() { return LoadData_; }
 	pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() {
-		if (!map_ready_) return nullptr;
+		if (!map_ready_) {
+			return nullptr;
+		}
 		return CloudGlobalMapIn_;
 	}
 
 	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
-	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>>& getLoadMapPoints() {
-		return show_map_points_;
-	}
 
    private:
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
 	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
+	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_;
 
 	KeyMat polarcontext_invkeys_mat_;
 	std::vector<Eigen::MatrixXd> polarcontexts_;
-	PointCloudType::Ptr CloudGlobalMap_;
-	PointCloudType::Ptr accumulateMap_;
+
 	std::vector<Eigen::Isometry3d> accumulateKeypose_;
 	PointCloudType::Ptr testMatchcloud_;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr CloudGlobalMapIn_;
 	PointCloudType::Ptr CloudGlobalMapIn_PointType_;
 	std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> LoadData_;
 	std::shared_ptr<SCManager> scManager_;
-	std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> show_map_points_;
-
-	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_;
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
 	bool map_ready_;

@@ -80,7 +80,7 @@ bool LocalizationModule::create_ROS_IO() {
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =
-		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz  // TODO(jxl): 主线程应该多少ms周期运行
+		node_->create_wall_timer(std::chrono::milliseconds(80), // 100ms = 10Hz
 								 std::bind(&LocalizationModule::slam_dealt_timer, this), slam_callback_group_);
 
 	ctrl_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);

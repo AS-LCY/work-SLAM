@@ -247,10 +247,6 @@ class LidarSlam {
 
 	inline pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() const { return localization_->getLoadMap(); }
 
-	inline std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>>& getLoadMapPoints() const {
-		return localization_->getLoadMapPoints();
-	}
-
 	inline bool isGloalLocalizationSuccess() const { return globalLocalizationSuccess_; }
 
 	inline Eigen::Isometry3d getLidarInMap() {
