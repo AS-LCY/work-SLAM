@@ -174,7 +174,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 	PointCloudType::Ptr currentCLoud(new PointCloudType());
 	pcl::copyPointCloud(*points, *currentCLoud);
 	{
-		std::unique_lock<std::mutex> lk(mtxCloud_);
+		std::unique_lock<std::mutex> keyframe_clouds_lock(mtxCloud_);
 		KeyFrameCloud_.emplace_back(currentCLoud);
 	}
 
@@ -193,7 +193,7 @@ bool BackEnd::correctPoses() {
 	if (KeyPoint_->points.empty()) {
 		return false;
 	}
-	if (aLoopIsClosed_) { // TODO(jxl): 加锁
+	if (aLoopIsClosed_) {
 		int numPoses = isamCurrentEstimate_.size();
 		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 		for (int i = 0; i < numPoses; ++i) {
@@ -214,10 +214,12 @@ bool BackEnd::correctPoses() {
 		T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
 		T_map_odom_lock.unlock();
 
-		aLoopIsClosed_ = false; // TODO(jxl): 加锁
+		aLoopIsClosed_ = false;
+
+		std::unique_lock<std::mutex> show_map_lock(mtxCurrentMap_);
 		show_index_ = 0;
-		std::unique_lock<std::mutex> lk(mtxCurrentMap_);
 		show_map_->clear();
+		show_map_lock.unlock();
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -257,6 +259,7 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 	downSizeFilterSubMapKeyPoses.filter(*subMapKeyPosesDS); //  subMap poses  downsample
 
 	// 提取局部相邻关键帧对应的特征点云
+
 	for (int i = 0; i < (int)subMapKeyPosesDS->size(); ++i) {
 		int thisKeyInd = (int)subMapKeyPosesDS->points[i].intensity;
 
@@ -359,7 +362,10 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
 									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses) {
 	KeyPoses_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());
+
+	std::unique_lock<std::mutex> keyframe_clouds_lock(mtxCloud_);
 	KeyFrameCloud_.assign(input_vec_key_clouds.begin(), input_vec_key_clouds.end());
+	keyframe_clouds_lock.unlock(); //其他对该变量的操作都在闭环检测线程
 	TRACE_INFO_CLASS("loaded_key_poses size: %d", input_vec_key_poses.size());
 
 	int i = 0;
@@ -384,7 +390,6 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
 		temp_pnt.z = T_map_lidar.translation().z();
 		KeyPoint_->push_back(temp_pnt);
 
-		////// saveCurrentCloud(KeyFrameCloud_[i], T_map_lidar);
 		scManager_.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
 	}
 
@@ -720,14 +725,12 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr BackEnd::getCurrentRGBMap() {
 }
 
 PointCloudType::Ptr BackEnd::getCurrentMap() {
-	std::unique_lock<std::mutex> lk(mtxCurrentMap_); // TODO(jxl): 该锁是锁show_map，show_index,
-	// PointCloudType::Ptr globalSurfCloudDS(new PointCloudType());
-
 	// TODO(jxl): mtxCloud_是锁KeyFrameCloud，KeyPoses也有自己的锁
 	if (KeyPoses_.size() == 0) {
 		return show_map_;
 	}
 
+	std::unique_lock<std::mutex> show_map_lock(mtxCurrentMap_);
 	{
 		std::unique_lock<std::mutex> lk(mtxCloud_);
 		std::unique_lock<std::mutex> lk2(mtxPose_);
