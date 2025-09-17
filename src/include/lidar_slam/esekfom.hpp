@@ -21,13 +21,12 @@ const double epsi = 0.001; // ESKF迭代时，如果dx<epsi 认为收敛
 namespace esekfom {
 using namespace Eigen;
 
-// TODO(jxl): 这四个变量很占内存
-static PointCloudType::Ptr normvec(new PointCloudType(100000, 1));
-//特征点在地图中对应的平面参数(平面的单位法向量,以及当前点到平面距离)
-
-static PointCloudType::Ptr laserCloudOri(new PointCloudType(100000, 1)); //有效特征点
-static PointCloudType::Ptr corr_normvect(new PointCloudType(100000, 1)); //有效特征点对应点法相量
-static bool point_selected_surf[100000] = { 1 };						 //判断是否是有效特征点
+static int guess_points_num = 4000; // raw value: 100000
+static PointCloudType::Ptr normvec(
+	new PointCloudType(guess_points_num, 1)); //特征点在地图中对应的平面参数(平面的单位法向量,以及当前点到平面距离)
+static PointCloudType::Ptr laserCloudOri(new PointCloudType(guess_points_num, 1)); //有效特征点
+static PointCloudType::Ptr corr_normvect(new PointCloudType(guess_points_num, 1)); //有效特征点对应点法相量
+static std::vector<bool> point_selected_surf{ guess_points_num, false };		   //判断是否是有效特征点
 
 struct dyn_share_datastruct {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -94,6 +93,9 @@ class esekf {
 		int feats_down_size = feats_down_body->points.size();
 		laserCloudOri->clear();
 		corr_normvect->clear();
+		laserCloudOri->resize(feats_down_size);
+		corr_normvect->resize(feats_down_size);
+		point_selected_surf.resize(feats_down_size, false);
 
 		double t1 = omp_get_wtime();
 		omp_set_num_threads(MP_PROC_NUM);
