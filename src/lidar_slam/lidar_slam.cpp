@@ -496,6 +496,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 						secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Normal);
 						init_T_map_odom_ = global_localization_->get_global_odom_to_map();
 						T_map_odom_ = init_T_map_odom_;
+						break;
 					} else {
 						global_localize_count++;
 					}
@@ -505,10 +506,6 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::RelocalizeFailed);
 				}
 			}
-
-			// TODO(jxl): sec_mapping模式下，重定位成功后，可以结束线程
-			// ...
-			// ...
 		}
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
