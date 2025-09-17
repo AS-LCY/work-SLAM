@@ -7,9 +7,8 @@ ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true), start_tim
 	init_iter_num_ = 1;
 	Q = process_noise_cov(); //调用use-ikfom.hpp里面的process_noise_cov初始化噪声协方差
 
-	cov_acc_ = V3D(0.1, 0.1, 0.1); //加速度协方差初始化
-	cov_gyr_ = V3D(0.1, 0.1, 0.1); //角速度协方差初始化
-	// TODO(jxl): 初始值给的有点大
+	cov_acc_ = V3D(1e-4, 1e-4, 1e-4); //加速度协方差初始化
+	cov_gyr_ = V3D(1e-5, 1e-5, 1e-5); //角速度协方差初始化
 
 	cov_bias_gyr_ = V3D(0.0001, 0.0001, 0.0001); //角速度bias协方差初始化
 	cov_bias_acc_ = V3D(0.0001, 0.0001, 0.0001); //加速度bias协方差初始化
@@ -59,7 +58,7 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 		const auto& gyr_acc = meas.imu.front()->angular_velocity;	 // IMU初始时刻的角速度
 		mean_acc_ << imu_acc[0], imu_acc[1], imu_acc[2];			 //第一帧加速度值作为初始化均值
 		mean_gyr_ << gyr_acc[0], gyr_acc[1], gyr_acc[2];			 //第一帧角速度值作为初始化均值
-		first_lidar_time_ = meas.lidar_beg_time; //将当前IMU帧对应的lidar起始时间 作为初始时间
+		// first_lidar_time_ = meas.lidar_beg_time; //将当前IMU帧对应的lidar起始时间 作为初始时间
 	}
 
 	// TODO(jxl): 添加静止判断
@@ -82,9 +81,10 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 
 	state_ikfom init_state = kf_state.get_x();				  //在esekfom.hpp获得x_的状态
 	init_state.grav = -mean_acc_ / mean_acc_.norm() * G_m_s2; //得平均测量的单位方向向量 * 重力加速度预设值
+	init_state.rot = Sophus::SO3d(initial_rotate_);
+	//初始角度设置，比如在斜坡上启动建图
 
-	// init_state.rot = Sophus::SO3d(R0);
-	// TODO(jxl): 初始角度应该要设置，比如在斜坡上启动建图, init_state.rot = Sophus::SO3d(initial_rotate_);
+	auto init_ypr = initial_rotate_.eulerAngles(2, 1, 0);
 
 	init_state.bg = mean_gyr_; //静止角速度测量作为陀螺仪偏差
 
@@ -100,18 +100,20 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 	init_P(18, 18) = init_P(19, 19) = init_P(20, 20) = 0.001;	// ba
 	init_P(21, 21) = init_P(22, 22) = init_P(23, 23) = 0.00001; // g^w
 
-	// TODO(jxl):
-	//  init_P.block<3, 3>(0, 0) = 1e-5 * Eigen::Matrix3d::Identity();	 // P
-	//  init_P.block<3, 3>(3, 3) = 1e-5 * Eigen::Matrix3d::Identity();	 // Q
-	//  init_P.block<3, 3>(12, 12) = 1e-5 * Eigen::Matrix3d::Identity(); // V
+	init_P.block<3, 3>(0, 0) = 1e-5 * Eigen::Matrix3d::Identity();	 // P
+	init_P.block<3, 3>(3, 3) = 1e-5 * Eigen::Matrix3d::Identity();	 // Q
+	init_P.block<3, 3>(12, 12) = 1e-5 * Eigen::Matrix3d::Identity(); // V
 
 	kf_state.change_P(init_P);
 	last_imu_ = meas.imu.back();
 
 	if (N > MAX_INI_COUNT) {
-		TRACE_INFO_CLASS("IMU init done, grav norm: %f, (%f, %f, %f), bg: (%f, %f, %f) degree", init_state.grav.norm(),
-						 init_state.grav.x(), init_state.grav.y(), init_state.grav.z(), init_state.bg.x() * 180. / M_PI,
-						 init_state.bg.y() * 180. / M_PI, init_state.bg.z() * 180. / M_PI);
+		TRACE_INFO_CLASS(
+			"IMU init done, grav norm: %f, (%f, %f, %f), bg: (%f, %f, %f) degree, init rot: yaw, pitch, roll = (%f, "
+			"%f, %f)",
+			init_state.grav.norm(), init_state.grav.x(), init_state.grav.y(), init_state.grav.z(),
+			init_state.bg.x() * RAD2DEGREE, init_state.bg.y() * RAD2DEGREE, init_state.bg.z() * RAD2DEGREE,
+			init_ypr.x() * RAD2DEGREE, init_ypr.y() * RAD2DEGREE, init_ypr.z() * RAD2DEGREE);
 	}
 }
 
@@ -166,8 +168,8 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 
 		in.acc = acc_avr; // 两帧IMU的中值作为输入in  用于前向传播
 		in.gyro = angvel_avr;
-		Q.block<3, 3>(0, 0).diagonal() = cov_gyr_; // TODO(jxl): 可以直接用cov_gyr_scale_
-		Q.block<3, 3>(3, 3).diagonal() = cov_acc_; // TODO(jxl): 可以直接用cov_acc_scale_
+		Q.block<3, 3>(0, 0).diagonal() = cov_gyr_scale_;
+		Q.block<3, 3>(3, 3).diagonal() = cov_acc_scale_;
 		Q.block<3, 3>(6, 6).diagonal() = cov_bias_gyr_;
 		Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc_;
 
@@ -247,8 +249,6 @@ void ImuProcess::Process(const MeasureGroup& meas, esekfom::esekf& kf_state, Poi
 	if (imu_need_init_) {
 		IMU_init(meas, kf_state, init_iter_num_); //如果开头几帧  需要初始化IMU参数
 
-		imu_need_init_ = true;
-
 		last_imu_ = meas.imu.back();
 
 		state_ikfom imu_state = kf_state.get_x();
@@ -257,7 +257,7 @@ void ImuProcess::Process(const MeasureGroup& meas, esekfom::esekf& kf_state, Poi
 			cov_acc_ *= pow(G_m_s2 / mean_acc_.norm(), 2);
 			imu_need_init_ = false;
 
-			cov_acc_ = cov_acc_scale_; // 初始化用的是cov_acc，即V3D(0.1, 0.1, 0.1)，然后初始化完成后切换到cov_acc_scale
+			cov_acc_ = cov_acc_scale_; // 初始化完成后切换到cov_acc_scale
 			cov_gyr_ = cov_gyr_scale_;
 			printf("IMU Initial Done\n");
 		}

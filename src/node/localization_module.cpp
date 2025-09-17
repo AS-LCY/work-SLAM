@@ -142,6 +142,8 @@ bool LocalizationModule::create_ROS_IO() {
 void LocalizationModule::ros_spinner_start() {}
 
 void LocalizationModule::slam_dealt_timer() { //主线程
+	double t0 = omp_get_wtime();
+
 	if (slam_param_.common.cpu_id.size() > 0) {
 		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
 		if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
@@ -208,6 +210,14 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 			visualizePoseGraph(keyframe_poses, all_loop_edges);
 		}
 		publish_optimized_path(slam_->get_optimized_path(), string("map"));
+	}
+
+	double t1 = omp_get_wtime();
+	auto elapsed = (t1 - t0) * 1000; // ms
+	double period_relocal = 100;	 // ms
+	if (elapsed < period_relocal) {
+		// TRACE_INFO_CLASS("main slam_dealt_timer cost time: %f ms", elapsed);
+		std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(period_relocal - elapsed)));
 	}
 }
 

@@ -26,8 +26,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	log_info_manager_->reset_log_info();
 	slam_run_status_.store(SlamRunStatus::Inactive);
 
-	sleep(1); // TODO(jxl): 要休眠1s吗
-
 	// CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
 	// CPU_SET(0, &mask); // 将线程绑定到 cpu_id 核心
 
@@ -337,8 +335,9 @@ void LidarSlam::localizationThread() {
 						std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
 						downSizeFilterCloud_test_.setInputCloud(undistortCloud_); // lidar系下的点云
 						downSizeFilterCloud_test_.filter(*FilteredUndistortCloud_test);
-						initial_rotate = p_imu_->initial_rotate_;
 					}
+					initial_rotate = p_imu_->get_initial_rotate();
+
 					std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
 					auto T_odom_lidar_copy = T_odom_lidar_;
 					T_odom_lidar_lock.unlock();
@@ -481,8 +480,8 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					PointCloudType::Ptr undistort_cloud_copy(new PointCloudType());
 					std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
 					pcl::copyPointCloud(*undistortCloud_, *undistort_cloud_copy);
-					initial_rotate = p_imu_->initial_rotate_;
 					undistort_cloud_lock.unlock();
+					initial_rotate = p_imu_->get_initial_rotate();
 
 					std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
 					auto T_odom_lidar_copy = T_odom_lidar_;
@@ -600,7 +599,7 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 	auto curr_pose_copy = current_pose_;
 	current_pose_lock.unlock();
 
-	auto init_acc_norm = p_imu_->mean_acc_.norm();
+	auto init_acc_norm = p_imu_->get_stationary_mean_acc().norm();
 
 	if (globalLocalizationSuccess_ || working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
 		if (curr_pose_copy.update_time < localization_base_copy.update_time) { //(curr_time, localize_time)
@@ -664,8 +663,10 @@ bool LidarSlam::run() {
 		static double last_lidar_time = Measures_.lidar_beg_time;
 
 		if (flg_first_scan_) {
-			first_lidar_time_ = Measures_.lidar_beg_time;  //记录第一帧绝对时间
-			p_imu_->first_lidar_time_ = first_lidar_time_; //记录第一帧绝对时间
+			first_lidar_time_ = Measures_.lidar_beg_time;
+			p_imu_->first_lidar_time_ = first_lidar_time_;
+			// call set func set_first_lidar_time() will crash, not figure out?
+
 			flg_first_scan_ = false;
 			return false;
 		}
@@ -680,13 +681,20 @@ bool LidarSlam::run() {
 		last_lidar_time = Measures_.lidar_beg_time;
 
 		auto pointcloud_deskew_start = std::chrono::high_resolution_clock::now();
+
+		PointCloudType::Ptr pre_undistortCloud_;
+		pre_undistortCloud_.reset(new PointCloudType());
+		pre_undistortCloud_->clear();
+		p_imu_->Process(Measures_, kf_, pre_undistortCloud_);
 		// 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
-		{
-			std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_); //该锁同时管undistortCloud_和p_imu_
-			undistortCloud_->clear();
-			p_imu_->Process(Measures_, kf_, undistortCloud_); //雷达points在最后一个点时刻的laser_frame下
-			log_info_manager_->slam_info.data[11] = undistortCloud_->size();
-		}
+		// 雷达points在最后一个点时刻的laser_frame下
+
+		std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+		undistortCloud_ = pre_undistortCloud_;
+		undistort_cloud_lock.unlock();
+
+		log_info_manager_->slam_info.data[11] = undistortCloud_->size();
+
 		state_ikfom state_point;
 		state_point = kf_.get_x(); // 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
 		Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I)

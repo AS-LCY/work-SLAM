@@ -82,19 +82,27 @@ class ImuProcess {
 	Eigen::Matrix<double, 12, 12> Q; //噪声协方差矩阵  对应论文式(8)中的Q
 	void Process(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& pcl_un_);
 
+	double first_lidar_time_ = 0.f; //当前帧第一个点云时间
+	double set_first_lidar_time(const double first_lidar_time) {
+		std::unique_lock<std::mutex> lock(mtx_first_lidar_time_);
+		first_lidar_time_ = first_lidar_time;
+	}
+
+	V3D get_stationary_mean_acc() { return mean_acc_; }
+	Matrix3d get_initial_rotate() { return initial_rotate_; }
+
+   private:
+	void IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, int& N);
+	void UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_in_out);
+
 	V3D cov_acc_ = V3D(0, 0, 0);					 //加速度测量协方差
 	V3D cov_gyr_ = V3D(0, 0, 0);					 //角速度测量协方差
 	V3D cov_acc_scale_ = V3D(0, 0, 0);				 //外部传入的 初始加速度协方差
 	V3D cov_gyr_scale_ = V3D(0, 0, 0);				 //外部传入的 初始角速度协方差
 	V3D cov_bias_gyr_ = V3D(0, 0, 0);				 //角速度bias的协方差
 	V3D cov_bias_acc_ = V3D(0, 0, 0);				 //加速度bias的协方差
-	double first_lidar_time_ = 0.f;					 //当前帧第一个点云时间
 	V3D mean_acc_ = V3D(0, 0, 1);					 //加速度均值,用于计算方差
 	Matrix3d initial_rotate_ = Matrix3d::Identity(); //初始旋转矩阵
-
-   private:
-	void IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, int& N);
-	void UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_in_out);
 
 	PointCloudType::Ptr cur_pcl_un_;			  //当前帧点云未去畸变
 	std::shared_ptr<livox_ros::ImuMsg> last_imu_; // 上一帧imu
@@ -110,5 +118,7 @@ class ImuProcess {
 	int init_iter_num_ = 1;
 	bool b_first_frame_ = true; //是否是第一帧
 	bool imu_need_init_ = true; //是否需要初始化imu
+
+	std::mutex mtx_first_lidar_time_;
 };
 #endif
