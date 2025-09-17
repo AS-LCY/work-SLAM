@@ -10,7 +10,7 @@ bool LidarPreprocMid360::pre_process(const sensor_msgs::msg::PointCloud2::Shared
 									 PointCloudType::Ptr& pcl_xyzin_out) {
 	if (extract_cloud_method_ == 0) {
 		cloud_dense_->clear();
-		msg2pcl_clip(ros_msg_in, cloud_dense_); // TODO(jxl): 能直接使用pcl的接口转换吗？
+		msg2pcl_clip(ros_msg_in, cloud_dense_);
 
 		pcl_xyzin_out->clear();
 		sampling_cloud(cloud_dense_, pcl_xyzin_out);
@@ -102,7 +102,7 @@ bool LidarPreprocMid360::set_param(rclcpp::Node::SharedPtr node) {
 	return true;
 }
 
-// TODO(jxl): 注释掉了
+// 注释掉了
 //  bool LidarPreprocMid360::pre_process(const std::shared_ptr<livox_ros::LidarMsg> msg, PointCloudType::Ptr
 //  pcl_cld_out){
 //      const int extract_cloud_method = param_.extract_cloud_method;

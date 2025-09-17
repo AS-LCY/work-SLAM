@@ -49,13 +49,11 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	timediff_set_flg_ = false; // 标记是否已经进行了时间补偿
 
 	Measures_ = MeasureGroup();
-	temp_imu_msg_.clear();
 
 	/// 点云 reset
 	UndistortCloudInOdom_.reset(new PointCloudType());
 	undistortCloud_.reset(new PointCloudType()); // lidar 系
 	FilteredUndistortCloud_.reset(new PointCloudType());
-	kdtreeCloud_.reset(new PointCloudType());
 
 	/// mapping 相关
 	unoptimized_path_.clear();
@@ -63,7 +61,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	T_odom_lidar_ = Eigen::Isometry3d::Identity();
 	localization_base_ = Localization_base();
 	current_pose_ = Localization_base();
-	imu_file_shift_ = false;
 
 	auto cloud_leaf_size = config_param_.mapping.cloud_leaf_size;
 	downSizeFilterCloud_.setLeafSize(cloud_leaf_size, cloud_leaf_size, cloud_leaf_size);
@@ -166,8 +163,7 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	}
 
 	lidar_buffer_lock.lock();
-	if (!time_buffer_.empty() &&
-		omp_get_wtime() - time_buffer_.front() > 0.15) { // TODO(jxl): 应该是用系统或者bag中当前时刻去作差
+	if (!time_buffer_.empty() && omp_get_wtime() - time_buffer_.front() > 0.15) {
 		TRACE_WARN_CLASS("lidar lose rate %f s", omp_get_wtime() - time_buffer_.front());
 	}
 
@@ -726,7 +722,7 @@ bool LidarSlam::run() {
 		downSizeFilterCloud_.setInputCloud(undistortCloud_);
 		downSizeFilterCloud_.filter(*FilteredUndistortCloud_);
 		int feats_down_size = FilteredUndistortCloud_->points.size(); //当前帧降采样后点数
-		log_info_manager_.slam_info.data[13] = feats_down_size;		  //
+		log_info_manager_.slam_info.data[13] = feats_down_size;
 		PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType());
 
 		/*** initialize the map kdtree ***/

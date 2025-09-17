@@ -170,17 +170,11 @@ class LidarSlam {
 		return baselink_cloud;
 	}
 
-	inline PointCloudType::Ptr get_filter_lidar_cloud() {
-		std::unique_lock<std::mutex> lk(mtx_lidar_cloud_); // TODO(jxl): 用自己的mtx
-		return FilteredUndistortCloud_;
-	}
-
 	inline PointCloudType::Ptr get_odom_cloud() {
 		std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
 		return UndistortCloudInOdom_;
 	}
 
-	inline PointCloudType::Ptr get_kdtree_cloud() const { return kdtreeCloud_; }
 	inline std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_unoptimized_path() {
 		std::unique_lock<std::mutex> lk(mtx_path_);
 		return unoptimized_path_;
@@ -286,7 +280,6 @@ class LidarSlam {
 	void loopClosureThread();
 	void sec_mapping_loopClosureThread();
 	void localizationThread();
-	// void relocalizationForMappingThread();
 
 	void global_localization_for_sec_mapping_thread();
 
@@ -325,13 +318,8 @@ class LidarSlam {
 	bool timediff_set_flg_ = false; // 标记是否已经进行了时间补偿
 	bool reseting_ = false;
 
-	bool imu_file_shift_ = false; // TODO(jxl): 这个变量没有使用
 	std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> unoptimized_path_;
 	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> optimized_path_;
-	std::vector<livox_ros::ImuMsg> temp_imu_msg_; // TODO(jxl): 这个变量没有使用
-
-	std::deque<double> pcd_file_; // TODO(jxl): 这个变量没有使用
-	std::ofstream localization_file_;
 
 	MeasureGroup Measures_;
 	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
@@ -339,7 +327,6 @@ class LidarSlam {
 
 	bool thread_run_ = true;
 	bool globalLocalizationSuccess_ = false;
-	bool loop_closure_wait_ = false; // TODO(jxl): 没有使用
 
 	Localization_base localization_base_; // 10hz, T_odom_imu, 每次点云处理后更新，并作为current_pose 积分结果的base
 	Localization_base current_pose_; // 200hz, T_odom_imu
@@ -376,10 +363,6 @@ class LidarSlam {
 
 	pcl::VoxelGrid<PointType> downSizeFilterCloud_;
 	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;
-
-	PointCloudType::Ptr kdtreeCloud_;
-
-	PointCloudType::Ptr FilteredObstacleCloud_;
 
 	SlamWorkMode working_mode_ = UNKNOWN;
 
