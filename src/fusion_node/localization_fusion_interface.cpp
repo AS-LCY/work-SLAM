@@ -14,8 +14,10 @@ LocalizationFusion::LocalizationFusion() {
 	ekf_fusion_ptr_ = std::make_shared<EkfLocalizationFusion>();
 	slipping_ptr_.reset(new DetectSlipping());
 
-	log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
-	log_info_manager_->reset_log_info();
+	// log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
+	// log_info_manager_.reset_log_info();
+
+	log_info_manager_.reset_log_info();
 
 	if (!create_ROS_IO()) {
 		ROS_ERROR("Create ROS-IO failed!");
@@ -53,7 +55,7 @@ void LocalizationFusion::chassis_msg_callback(const flbot_msgs::chassic_data::Co
 	std::unique_lock<std::mutex> lock(mutex_);
 	is_chassis_rcv_ = true;
 	chassis_msg_ = *chassis_msg_in;
-	log_info_manager_->fusion_info.data[11] = chassis_msg_in->ac_linear_velocity; // 11: chassis_vel
+	log_info_manager_.fusion_info.data[11] = chassis_msg_in->ac_linear_velocity; // 11: chassis_vel
 
 	if (slipping_ptr_->get_lidar_queue_init()) {
 		slipping_ptr_->update_chassis(chassis_msg_);
@@ -75,7 +77,7 @@ void LocalizationFusion::slam_odometry_callback(const nav_msgs::Odometry::ConstP
 	static double time_last = ros::Time::now().toSec();
 	std::unique_lock<std::mutex> lock(mutex_);
 	slam_odom_msg_ = *slam_odometry_in;
-	log_info_manager_->fusion_info.data[12] = slam_odometry_in->twist.twist.linear.x; // 12: slam_vel_x
+	log_info_manager_.fusion_info.data[12] = slam_odometry_in->twist.twist.linear.x; // 12: slam_vel_x
 
 	// if (!is_imu_rcv_){
 	//     ROS_WARN_STREAM_ONCE(YELLOW<<"IMU data not received yet "<<RESET);
@@ -235,12 +237,12 @@ void LocalizationFusion::pub_localiztion(flbot_msgs::LocalizationPoseData cur_st
 void LocalizationFusion::pub_fusion_info(double time_last) {
 	static double time_now = ros::Time::now().toSec();
 
-	log_info_manager_->fusion_info.data[0] = time_now;
-	log_info_manager_->fusion_info.data[1] = time_now - time_last;
+	log_info_manager_.fusion_info.data[0] = time_now;
+	log_info_manager_.fusion_info.data[1] = time_now - time_last;
 
-	pub_info_.publish(log_info_manager_->fusion_info);
-	// log_info_manager_->fusion_info.data.clear();
-	// log_info_manager_->fusion_info.data.resize(20);
+	pub_info_.publish(log_info_manager_.fusion_info);
+	// log_info_manager_.fusion_info.data.clear();
+	// log_info_manager_.fusion_info.data.resize(20);
 }
 
 void LocalizationFusion::compose_status(int slip_flag, nav_msgs::Odometry slam_odom, sensor_msgs::Imu imu_msg,

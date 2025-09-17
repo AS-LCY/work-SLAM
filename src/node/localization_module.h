@@ -359,7 +359,8 @@ class LocalizationModule {
 
 	static std::atomic<double> livox_cbk_update_time_;
 
-	LocalizationModuleLogInfoManager* log_info_manager_;
+	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
+		localization_module::LocalizationModuleLogInfoManager::getInstance();
 
 	// lidar ptr
 	std::shared_ptr<LidarPreprocParent> lidar_ptr_;
@@ -369,6 +370,9 @@ class LocalizationModule {
 	tf2_ros::Buffer tf_buffer_;
 	tf2_ros::TransformListener tf_listener_;
 };
+
+// localization_module::LocalizationModuleLogInfoManager& LocalizationModule::log_info_manager_ =
+// 	localization_module::LocalizationModuleLogInfoManager::getInstance();
 
 } // namespace localization_module
 

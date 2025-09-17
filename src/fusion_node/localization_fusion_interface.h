@@ -62,7 +62,7 @@ class LocalizationFusion {
 	void fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
 
    public:
-	LocalizationModuleLogInfoManager* log_info_manager_;
+	static LocalizationModuleLogInfoManager& log_info_manager_;
 
    private:
 	std::mutex mutex_; ///< the only mutex
@@ -108,6 +108,9 @@ class LocalizationFusion {
 	nav_msgs::Odometry slam_odom_msg_;	   ///< the gnss message
 	sensor_msgs::Imu imu_msg_;			   ///< the imu message
 };
+
+LocalizationModuleLogInfoManager& LocalizationFusion::log_info_manager_ =
+	LocalizationModuleLogInfoManager::getInstance();
 
 } // namespace localization_module
 

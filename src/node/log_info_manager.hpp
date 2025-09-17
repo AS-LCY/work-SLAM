@@ -1,3 +1,6 @@
+
+#pragma once
+
 #ifndef LOCALIZATION_MODULE_LOG_INFO_MANAGER_H
 #define LOCALIZATION_MODULE_LOG_INFO_MANAGER_H
 
@@ -13,17 +16,14 @@ class LocalizationModuleLogInfoManager {
    private:
 	LocalizationModuleLogInfoManager(){};
 	~LocalizationModuleLogInfoManager(){};
-	LocalizationModuleLogInfoManager(const LocalizationModuleLogInfoManager&);
+	LocalizationModuleLogInfoManager(const LocalizationModuleLogInfoManager&) = delete;
 	LocalizationModuleLogInfoManager& operator=(const LocalizationModuleLogInfoManager&) = delete;
 
    public:
-	static LocalizationModuleLogInfoManager* getInstance() {
-		static LocalizationModuleLogInfoManager* instance;
-		if (instance == nullptr) {
-			instance = new LocalizationModuleLogInfoManager();
-		}
+	static LocalizationModuleLogInfoManager& getInstance() {
+		static LocalizationModuleLogInfoManager instance;
 		return instance;
-	};
+	}
 
 	std_msgs::msg::Float64MultiArray slam_info;
 	std_msgs::msg::Float64MultiArray fusion_info;

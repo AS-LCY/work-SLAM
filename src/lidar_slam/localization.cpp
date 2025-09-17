@@ -2,8 +2,7 @@
 #include "lidar_slam/localization.hpp"
 namespace lidar_slam {
 Localization::Localization() {
-	log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
-	log_info_manager_->reset_log_info();
+	log_info_manager_.reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
 	gicp_->setNumThreads(1); // TODO(jxl)
@@ -266,16 +265,16 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 			}
 
 			// // update log_info (log_info_manager_) 暂时注释掉，后期再补充
-			// log_info_manager_->log_info.odom2map_dtime  = curr_time_ - lastUpdateTime_;
-			// log_info_manager_->log_info.pose_odom2map.position.x = curr_x;
-			// log_info_manager_->log_info.pose_odom2map.position.y = curr_y;
-			// log_info_manager_->log_info.pose_odom2map.position.z = curr_z;
-			// log_info_manager_->log_info.odom2map_dxyz.x = curr_x - last_x;
-			// log_info_manager_->log_info.odom2map_dxyz.y = curr_y - last_y;
-			// log_info_manager_->log_info.odom2map_dxyz.z = curr_z - last_z;
-			// log_info_manager_->log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
-			// log_info_manager_->log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
-			// log_info_manager_->log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
+			// log_info_manager_.log_info.odom2map_dtime  = curr_time_ - lastUpdateTime_;
+			// log_info_manager_.log_info.pose_odom2map.position.x = curr_x;
+			// log_info_manager_.log_info.pose_odom2map.position.y = curr_y;
+			// log_info_manager_.log_info.pose_odom2map.position.z = curr_z;
+			// log_info_manager_.log_info.odom2map_dxyz.x = curr_x - last_x;
+			// log_info_manager_.log_info.odom2map_dxyz.y = curr_y - last_y;
+			// log_info_manager_.log_info.odom2map_dxyz.z = curr_z - last_z;
+			// log_info_manager_.log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
+			// log_info_manager_.log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
+			// log_info_manager_.log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
 
 		} else {
 			TRACE_INFO_CLASS("gicp success with score %f > %f", fit_score, score_low_accuracy_thr);

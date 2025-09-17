@@ -11,16 +11,15 @@ DetectSlipping::DetectSlipping(/* args */) {
 
 	reset();
 
-	log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
-	log_info_manager_->reset_log_info();
+	log_info_manager_.reset_log_info();
 }
 
 DetectSlipping::~DetectSlipping() {}
 
 bool DetectSlipping::detect_by_chassis_and_lidar(int& slip_flag) {
 	// ROS_INFO_STREAM("detect_by_chassis_and_lidar 0");
-	log_info_manager_->fusion_info.data[2] = 0; // 2: slip_flag
-	log_info_manager_->fusion_info.data[3] = 0; // 3: slip_count
+	log_info_manager_.fusion_info.data[2] = 0; // 2: slip_flag
+	log_info_manager_.fusion_info.data[3] = 0; // 3: slip_count
 	// ROS_INFO_STREAM("detect_by_chassis_and_lidar 1");
 
 	if (!lidar_queue_init_ || !chassis_queue_init_) {
@@ -79,13 +78,13 @@ bool DetectSlipping::detect_by_chassis_and_lidar(int& slip_flag) {
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
-	log_info_manager_->fusion_info.data[2] = slip_flag;				 // 2: slip_flag
-	log_info_manager_->fusion_info.data[3] = slipping_count_;		 // 3: slip_count
-	log_info_manager_->fusion_info.data[4] = slipping_dist;			 // 4: slipping_dist
-	log_info_manager_->fusion_info.data[5] = chassis_que_time_range; // 5: chassis_queue_time_range
-	log_info_manager_->fusion_info.data[6] = curr_chassis_dist;		 // 6: chassis_queue_sum_dist
-	log_info_manager_->fusion_info.data[7] = lidar_que_time_range;	 // 7: lidar_queue_time_range
-	log_info_manager_->fusion_info.data[8] = lidar_sum_dist_;		 // 8: lidar_queue_sum_dist
+	log_info_manager_.fusion_info.data[2] = slip_flag;				// 2: slip_flag
+	log_info_manager_.fusion_info.data[3] = slipping_count_;		// 3: slip_count
+	log_info_manager_.fusion_info.data[4] = slipping_dist;			// 4: slipping_dist
+	log_info_manager_.fusion_info.data[5] = chassis_que_time_range; // 5: chassis_queue_time_range
+	log_info_manager_.fusion_info.data[6] = curr_chassis_dist;		// 6: chassis_queue_sum_dist
+	log_info_manager_.fusion_info.data[7] = lidar_que_time_range;	// 7: lidar_queue_time_range
+	log_info_manager_.fusion_info.data[8] = lidar_sum_dist_;		// 8: lidar_queue_sum_dist
 	// // 2: slip_flag
 	// // 3: slip_count
 	// // 4: slipping_dist

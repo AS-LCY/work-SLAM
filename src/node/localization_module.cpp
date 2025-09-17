@@ -156,7 +156,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	hb_time_timer_slam_.store(node_->now().seconds());
 	double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
 
-	log_info_manager_->slam_info.data[29] = slam_timer_interval;
+	log_info_manager_.slam_info.data[29] = slam_timer_interval;
 	last_slam_hb = hb_time_timer_slam_.load();
 
 	if (slam_timer_interval < 0) {
@@ -239,20 +239,20 @@ void LocalizationModule::process_loginfo() {
 	Eigen::Isometry3d last_lidar_in_odom_baselink = lidar_in_odom_inv * last_lidar_in_odom;
 	Eigen::Isometry3d curr_lidar_in_odom_baselink = lidar_in_odom_inv * curr_lidar_in_odom;
 
-	// log_info_manager_->slam_info.data[19] = curr_lidar_in_odom_baselink.translation().x() -
+	// log_info_manager_.slam_info.data[19] = curr_lidar_in_odom_baselink.translation().x() -
 	last_lidar_in_odom_baselink.translation().x();
-	// log_info_manager_->slam_info.data[20] = curr_lidar_in_odom_baselink.translation().y() -
+	// log_info_manager_.slam_info.data[20] = curr_lidar_in_odom_baselink.translation().y() -
 	last_lidar_in_odom_baselink.translation().y();
-	// log_info_manager_->slam_info.data[21] = curr_lidar_in_map_baselink.translation().x() -
+	// log_info_manager_.slam_info.data[21] = curr_lidar_in_map_baselink.translation().x() -
 	last_lidar_in_map_baselink.translation().x();
-	// log_info_manager_->slam_info.data[22] = curr_lidar_in_map_baselink.translation().y() -
+	// log_info_manager_.slam_info.data[22] = curr_lidar_in_map_baselink.translation().y() -
 	last_lidar_in_map_baselink.translation().y();
 
-	log_info_manager_->slam_info.data[19] = curr_lidar_in_odom.translation().x() - last_lidar_in_odom.translation().x();
-	log_info_manager_->slam_info.data[20] = curr_lidar_in_odom.translation().y() - last_lidar_in_odom.translation().y();
+	log_info_manager_.slam_info.data[19] = curr_lidar_in_odom.translation().x() - last_lidar_in_odom.translation().x();
+	log_info_manager_.slam_info.data[20] = curr_lidar_in_odom.translation().y() - last_lidar_in_odom.translation().y();
 
-	log_info_manager_->slam_info.data[21] = curr_lidar_in_map.translation().x() - last_lidar_in_map.translation().x();
-	log_info_manager_->slam_info.data[22] = curr_lidar_in_map.translation().y() - last_lidar_in_map.translation().y();
+	log_info_manager_.slam_info.data[21] = curr_lidar_in_map.translation().x() - last_lidar_in_map.translation().x();
+	log_info_manager_.slam_info.data[22] = curr_lidar_in_map.translation().y() - last_lidar_in_map.translation().y();
 
 	// # 19: baseframe_slam_dx   # 车身 坐标系下, dx
 	// # 20: baseframe_slam_dy   # 车身 坐标系下, dy
@@ -263,8 +263,8 @@ void LocalizationModule::process_loginfo() {
 	// // Eigen::Isometry3d lidar_in_map_inv = curr_lidar_in_map.inverse();
 	// Eigen::Isometry3d curr_odom_to_map = slam_->getOdomToMap();
 	// Eigen::Isometry3d curr_odom_to_map_baselink = lidar_in_map_inv * curr_odom_to_map;
-	// log_info_manager_->slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
-	// log_info_manager_->slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
+	// log_info_manager_.slam_info.data[17] = curr_odom_to_map_baselink.translation().x();
+	// log_info_manager_.slam_info.data[18] = curr_odom_to_map_baselink.translation().y();
 
 	// update
 	last_lidar_in_odom = curr_lidar_in_odom;
@@ -359,8 +359,8 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	// fill health msg
 	health_msg.cloud_size = orig_point_cloud_size;
 
-	log_info_manager_->slam_info.data[12] = orig_point_cloud_size;
-	log_info_manager_->slam_info.data[14] = sample_point_cloud_size;
+	log_info_manager_.slam_info.data[12] = orig_point_cloud_size;
+	log_info_manager_.slam_info.data[14] = sample_point_cloud_size;
 
 	health_msg.delay_cbk_lidar = delay_lidar;							 // unit: s
 	health_msg.delay_cbk_imu = delay_imu;								 // unit: s
@@ -405,7 +405,7 @@ void LocalizationModule::pub_module_status_timer() {
 
 	pub_localization_module_status_->publish(status_msg);
 	pub_localization_module_health_->publish(health_msg);
-	pub_log_->publish(log_info_manager_->slam_info);
+	pub_log_->publish(log_info_manager_.slam_info);
 }
 
 //局部函数
@@ -492,7 +492,7 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 	auto last_local_status = localization_status_.load();
 	if (last_local_status == LocalizationStatus::RelocalizeFailed || last_local_status == LocalizationStatus::Failed) {
 		status_msg.localization_status = static_cast<int>(last_local_status);
-		log_info_manager_->slam_info.data[2] = static_cast<int>(last_local_status);
+		log_info_manager_.slam_info.data[2] = static_cast<int>(last_local_status);
 		return;
 	}
 
@@ -534,7 +534,7 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		localization_status_.store(LocalizationStatus::Failed);
 	}
 
-	log_info_manager_->slam_info.data[2] = static_cast<int>(localization_status_.load());
+	log_info_manager_.slam_info.data[2] = static_cast<int>(localization_status_.load());
 }
 
 void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_status,
@@ -549,7 +549,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	auto last_mapping_status = mapping_status_.load();
 	if (last_mapping_status == MappingStatus::RelocalizeFailed || last_mapping_status == MappingStatus::Failed) {
 		status_msg.mapping_status = static_cast<int>(last_mapping_status);
-		// log_info_manager_->slam_info.data[2]= static_cast<int>(last_mapping_status);
+		// log_info_manager_.slam_info.data[2]= static_cast<int>(last_mapping_status);
 		return;
 	}
 
@@ -609,7 +609,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 
 	static double last_lidar_hb = hb_time_cbk_lidar_;
 	hb_time_cbk_lidar_.store(node_->now().seconds());
-	log_info_manager_->slam_info.data[23] = hb_time_cbk_lidar_ - last_lidar_hb;
+	log_info_manager_.slam_info.data[23] = hb_time_cbk_lidar_ - last_lidar_hb;
 	last_lidar_hb = hb_time_cbk_lidar_;
 
 	if (slam_param_.common.cpu_id.size() > 0) {
@@ -802,8 +802,7 @@ bool LocalizationModule::module_member_init() {
 	auto col_count = slam_param_.lidar_preproc.cloud_column_count;
 	// cloud_preproc_ptr_->points.reserve(ring_count * col_count);
 
-	log_info_manager_ = LocalizationModuleLogInfoManager::getInstance();
-	log_info_manager_->reset_log_info();
+	log_info_manager_.reset_log_info();
 
 	// lidar reset , after param load
 	lidar_ptr_ = LidarPreprocFactory::new_lidar_preproc(slam_param_.lidar_preproc.lidar_type, node_);

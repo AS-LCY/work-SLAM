@@ -44,7 +44,8 @@ class DetectSlipping {
 	bool load_params();
 
    public:
-	LocalizationModuleLogInfoManager* log_info_manager_;
+	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
+		localization_module::LocalizationModuleLogInfoManager::getInstance();
 
    private:
 	// param

@@ -389,7 +389,8 @@ class LidarSlam {
 
 	int global_localize_count_ = 0;
 	int lidar_no_point_count_ = 0;
-	localization_module::LocalizationModuleLogInfoManager* log_info_manager_;
+	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
+		localization_module::LocalizationModuleLogInfoManager::getInstance();
 
 	// cpu_set_t mask;
 

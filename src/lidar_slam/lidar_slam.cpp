@@ -22,8 +22,8 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode, r
 }
 
 void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
-	log_info_manager_ = localization_module::LocalizationModuleLogInfoManager::getInstance();
-	log_info_manager_->reset_log_info();
+	log_info_manager_.reset_log_info();
+
 	slam_run_status_.store(SlamRunStatus::Inactive);
 
 	// CPU_ZERO(&mask); // 初始化 CPU 亲和性集合，将其设置为零
@@ -226,8 +226,8 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 
 		return false;
 	}
-	log_info_manager_->slam_info.data[30] = meas.lidar->points.size();
-	// log_info_manager_->slam_info.data[31] = lidar_buffer_.front()->points.size(); //跟[30]重复了
+	log_info_manager_.slam_info.data[30] = meas.lidar->points.size();
+	// log_info_manager_.slam_info.data[31] = lidar_buffer_.front()->points.size(); //跟[30]重复了
 
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
@@ -377,7 +377,7 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
 					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr,
 												odom2map_delta_thr, odom2map_delta_set, use_pose_filter)) {
-						log_info_manager_->slam_info.data[3] = 1; // if converge
+						log_info_manager_.slam_info.data[3] = 1; // if converge
 						if (fit_score < fgicp_score_low_accuracy_thr) {
 							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
@@ -398,7 +398,7 @@ void LidarSlam::localizationThread() {
 											 fgicp_score_fail_thr, gicp_fail_count);
 						}
 					} else { // 未收敛
-						log_info_manager_->slam_info.data[3] = 0;
+						log_info_manager_.slam_info.data[3] = 0;
 						gicp_fail_count++;
 						TRACE_WARN_CLASS("fast gicp not converged,  gicp_fail_count: %d", gicp_fail_count);
 					}
@@ -415,12 +415,12 @@ void LidarSlam::localizationThread() {
 					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
 					Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
 
-					log_info_manager_->slam_info.data[17] = curr_odom_to_map.translation().x();
-					log_info_manager_->slam_info.data[18] = curr_odom_to_map.translation().y();
+					log_info_manager_.slam_info.data[17] = curr_odom_to_map.translation().x();
+					log_info_manager_.slam_info.data[18] = curr_odom_to_map.translation().y();
 
-					log_info_manager_->slam_info.data[4] = fit_score;
-					log_info_manager_->slam_info.data[5] = gicp_fail_count;
-					log_info_manager_->slam_info.data[6] = gicp_low_acc_count;
+					log_info_manager_.slam_info.data[4] = fit_score;
+					log_info_manager_.slam_info.data[5] = gicp_fail_count;
+					log_info_manager_.slam_info.data[6] = gicp_low_acc_count;
 
 				} else {
 					wait_time++;
@@ -671,13 +671,13 @@ bool LidarSlam::run() {
 			return false;
 		}
 
-		// log_info_manager_->slam_info.data[13]= -100;
-		// log_info_manager_->slam_info.data[15]= -100;
-		log_info_manager_->slam_info.data[24] = Measures_.lidar_beg_time - last_lidar_time;
-		log_info_manager_->slam_info.data[25] = Measures_.lidar_beg_time;
-		log_info_manager_->slam_info.data[26] = Measures_.lidar_end_time - Measures_.lidar_beg_time;
-		log_info_manager_->slam_info.data[27] = Measures_.imu.front()->time_stamp - Measures_.lidar_beg_time;
-		log_info_manager_->slam_info.data[28] = Measures_.imu.back()->time_stamp - Measures_.lidar_beg_time;
+		// log_info_manager_.slam_info.data[13]= -100;
+		// log_info_manager_.slam_info.data[15]= -100;
+		log_info_manager_.slam_info.data[24] = Measures_.lidar_beg_time - last_lidar_time;
+		log_info_manager_.slam_info.data[25] = Measures_.lidar_beg_time;
+		log_info_manager_.slam_info.data[26] = Measures_.lidar_end_time - Measures_.lidar_beg_time;
+		log_info_manager_.slam_info.data[27] = Measures_.imu.front()->time_stamp - Measures_.lidar_beg_time;
+		log_info_manager_.slam_info.data[28] = Measures_.imu.back()->time_stamp - Measures_.lidar_beg_time;
 		last_lidar_time = Measures_.lidar_beg_time;
 
 		auto pointcloud_deskew_start = std::chrono::high_resolution_clock::now();
@@ -693,7 +693,7 @@ bool LidarSlam::run() {
 		undistortCloud_ = pre_undistortCloud_;
 		undistort_cloud_lock.unlock();
 
-		log_info_manager_->slam_info.data[11] = undistortCloud_->size();
+		log_info_manager_.slam_info.data[11] = undistortCloud_->size();
 
 		state_ikfom state_point;
 		state_point = kf_.get_x(); // 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
@@ -713,8 +713,8 @@ bool LidarSlam::run() {
 				slam_run_status_.store(SlamRunStatus::SlamFail);
 			}
 			TRACE_WARN_CLASS("No point, skip this scan!");
-			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
-			log_info_manager_->slam_info.data[13] = 0;
+			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
+			log_info_manager_.slam_info.data[13] = 0;
 			return false;
 		}
 
@@ -729,7 +729,7 @@ bool LidarSlam::run() {
 		downSizeFilterCloud_.setInputCloud(undistortCloud_);
 		downSizeFilterCloud_.filter(*FilteredUndistortCloud_);
 		int feats_down_size = FilteredUndistortCloud_->points.size(); //当前帧降采样后点数
-		log_info_manager_->slam_info.data[13] = feats_down_size;	  //
+		log_info_manager_.slam_info.data[13] = feats_down_size;		  //
 		PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType());
 
 		/*** initialize the map kdtree ***/
@@ -755,12 +755,12 @@ bool LidarSlam::run() {
 			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
 				slam_run_status_.store(SlamRunStatus::SlamFail);
 			}
-			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
+			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
 			TRACE_WARN_CLASS("Too few points: %d < thresh: %d, skip this scan!", feats_down_size, feats_down_size_thr_);
 			return false;
 		} else {
 			lidar_no_point_count_ = 0;
-			log_info_manager_->slam_info.data[15] = lidar_no_point_count_;
+			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
 			slam_run_status_.store(SlamRunStatus::Normal);
 		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size);

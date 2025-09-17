@@ -125,7 +125,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	odomAftMapped.twist.covariance[35] = T_odom_imu.imu_state.bg.z(); // (5,5)
 
 	// log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
-	log_info_manager_->slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
+	log_info_manager_.slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
 
 	pubOdomAftMapped->publish(odomAftMapped);
 

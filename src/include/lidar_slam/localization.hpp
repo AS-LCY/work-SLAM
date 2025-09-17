@@ -87,7 +87,9 @@ class Localization {
 
 	double lastUpdateTime_ = 0.0f;
 	double curr_time_ = 0.0f;
-	localization_module::LocalizationModuleLogInfoManager* log_info_manager_;
+	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
+		localization_module::LocalizationModuleLogInfoManager::getInstance();
 };
+
 } // namespace lidar_slam
 #endif
