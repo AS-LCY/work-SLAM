@@ -141,6 +141,25 @@ class BackEnd {
 		return false;
 	}
 
+	gtsam::noiseModel::Diagonal::shared_ptr makeOdometryNoise(double roll_deg, double pitch_deg, double yaw_deg,
+															  double tx_m, double ty_m, double tz_m) {
+		double roll_rad = roll_deg * DEGREE2RAD;
+		double pitch_rad = pitch_deg * DEGREE2RAD;
+		double yaw_rad = yaw_deg * DEGREE2RAD;
+
+		// 转换为方差 σ²
+		double roll_var = roll_rad * roll_rad;
+		double pitch_var = pitch_rad * pitch_rad;
+		double yaw_var = yaw_rad * yaw_rad;
+		double tx_var = tx_m * tx_m;
+		double ty_var = ty_m * ty_m;
+		double tz_var = tz_m * tz_m;
+
+		// 构造噪声模型（注意 Pose3 的 LocalCoordinates 顺序是 [rot, trans]）
+		return gtsam::noiseModel::Diagonal::Variances(
+			(gtsam::Vector(6) << roll_var, pitch_var, yaw_var, tx_var, ty_var, tz_var).finished());
+	}
+
    private:
 	bool loaded_key_clouds_ready_ = false;
 
@@ -166,7 +185,10 @@ class BackEnd {
 	map<int, int> loopIndexContainer_;
 	vector<pair<int, int>> loopIndexQueue_;
 	vector<gtsam::Pose3> loopPoseQueue_;
-	vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue_;
+
+	// vector<gtsam::noiseModel::Diagonal::shared_ptr> loopNoiseQueue_;
+	vector<gtsam::noiseModel::Robust::shared_ptr> loopNoiseQueue_;
+	gtsam::noiseModel::Diagonal::shared_ptr odom_noise_ptr_;
 
 	gtsam::NonlinearFactorGraph gtSAMgraph_;
 	gtsam::ISAM2* isam_;

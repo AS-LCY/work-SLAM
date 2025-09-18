@@ -33,6 +33,15 @@ BackEnd::BackEnd(const Eigen::Isometry3d& T_lidar_imu, float dist, float angle, 
 	aLoopIsClosed_ = false;
 
 	gravityAlignedCLoud_.reset(new PointCloudType());
+
+	double rot_roll_error_sigma = 0.5f;	 // degree
+	double rot_pitch_error_sigma = 0.5f; // degree
+	double rot_yaw_error_sigma = 0.5f;	 // degree
+	double trans_x_error_sigma = 0.03;	 // m
+	double trans_y_error_sigma = 0.03;	 // m
+	double trans_z_error_sigma = 0.03;	 // m
+	odom_noise_ptr_ = makeOdometryNoise(rot_roll_error_sigma, rot_pitch_error_sigma, rot_yaw_error_sigma,
+										trans_x_error_sigma, trans_y_error_sigma, trans_z_error_sigma);
 }
 
 BackEnd::~BackEnd() {}
@@ -61,17 +70,13 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 
 		initialEstimate_.insert(0, gtsam::Pose3(transformTobeMapped.matrix()));
 	} else {
-		gtsam::noiseModel::Diagonal::shared_ptr odometryNoise =
-			gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
-		// TODO(jxl): noise有点小，也要添加loss func
-
 		std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 		gtsam::Pose3 poseFrom(KeyPoses_.back().pose.matrix()); /// pre
 		keyposes_read_lock.unlock();
 		gtsam::Pose3 poseTo(transformTobeMapped.matrix()); // cur
 		// 参数：前一帧id，当前帧id，前一帧与当前帧的位姿变换（作为观测值），噪声协方差
 		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(KeyPoint_->size() - 1, KeyPoint_->size(),
-														   poseFrom.between(poseTo), odometryNoise));
+														   poseFrom.between(poseTo), odom_noise_ptr_));
 		// 变量节点设置初始值
 		initialEstimate_.insert(KeyPoint_->size(), poseTo);
 	}
@@ -89,7 +94,7 @@ void BackEnd::addLoopFactor() {
 		int indexTo = loopIndexQueue_[i].second;  //    pre
 		// 闭环边的位姿变换
 		gtsam::Pose3 poseBetween = loopPoseQueue_[i];
-		gtsam::noiseModel::Diagonal::shared_ptr noiseBetween = loopNoiseQueue_[i];
+		auto noiseBetween = loopNoiseQueue_[i];
 		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(indexFrom, indexTo, poseBetween, noiseBetween));
 
 		all_loop_edges_.emplace_back(indexFrom, indexTo); // for view in rviz
@@ -514,11 +519,16 @@ void BackEnd::performLoopClosure(double time) {
 	gtsam::noiseModel::Diagonal::shared_ptr constraintNoise = gtsam::noiseModel::Diagonal::Variances(Vector6);
 	TRACE_INFO_CLASS("loop closure noise score: %f", noiseScore);
 
+	double huber_k = 1.f; // 当残差 > 1° 时开始线性
+	// 当残差 > 0.05 m 时开始线性, 小于 σ 的误差用二次损失，保证拟合精度。
+	auto huber = gtsam::noiseModel::mEstimator::Huber::Create(huber_k);
+	auto robustConstraintNoise = gtsam::noiseModel::Robust::Create(huber, constraintNoise);
+
 	// 添加闭环因子需要的数据
 	std::unique_lock<std::mutex> lk(mtxLoopInfo_);
 	loopIndexQueue_.push_back(make_pair(loopKeyCur, loopKeyPre));
 	loopPoseQueue_.push_back(poseFrom.between(poseTo));
-	loopNoiseQueue_.push_back(constraintNoise);
+	loopNoiseQueue_.push_back(robustConstraintNoise);
 	loopIndexContainer_[loopKeyCur] = loopKeyPre; //   使用hash map 存储回环对
 }
 
@@ -749,7 +759,6 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr BackEnd::getCurrentRGBMap() {
 }
 
 PointCloudType::Ptr BackEnd::getCurrentMap() {
-	// TODO(jxl): mtxCloud_是锁KeyFrameCloud，KeyPoses也有自己的锁
 	if (KeyPoses_.size() == 0) {
 		return show_map_;
 	}
