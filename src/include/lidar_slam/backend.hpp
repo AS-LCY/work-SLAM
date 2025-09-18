@@ -4,6 +4,7 @@
 #include <omp.h>
 
 #include <mutex>
+#include <shared_mutex>
 // #include <math.h> // ikd_Tree.h 中已包含
 #include <unistd.h>
 
@@ -83,12 +84,12 @@ class BackEnd {
 						   float kdTreeReconstructKeyFrameLeafSize, double kdTreeReconstructPointLeafSize);
 
 	KeyPose getCurrentPose() {
-		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+		std::unique_lock<std::shared_mutex> keyframe_poses_lock(mtxPose_);
 		return KeyPoses_.back();
 	}
 
 	inline std::vector<KeyPose> getKeyframePoses() {
-		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+		std::unique_lock<std::shared_mutex> keyframe_poses_lock(mtxPose_);
 		return KeyPoses_;
 	}
 
@@ -181,8 +182,9 @@ class BackEnd {
 	pcl::VoxelGrid<PointType> downSizeFilterICP_;
 	PointCloudType::Ptr gravityAlignedCLoud_;
 
-	std::mutex mtxPose_;
-	std::mutex mtxCloud_;
+	std::shared_mutex mtxPose_;
+	std::shared_mutex mtxPose_copy_;
+	std::shared_mutex mtxCloud_;
 	std::mutex mtxLoopInfo_;
 	std::mutex mtxCurrentMap_;
 	std::mutex mtxCurrentRGBMap_;

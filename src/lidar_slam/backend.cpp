@@ -65,8 +65,10 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 			gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
 		// TODO(jxl): noise有点小，也要添加loss func
 
+		std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 		gtsam::Pose3 poseFrom(KeyPoses_.back().pose.matrix()); /// pre
-		gtsam::Pose3 poseTo(transformTobeMapped.matrix());	   // cur
+		keyposes_read_lock.unlock();
+		gtsam::Pose3 poseTo(transformTobeMapped.matrix()); // cur
 		// 参数：前一帧id，当前帧id，前一帧与当前帧的位姿变换（作为观测值），噪声协方差
 		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(KeyPoint_->size() - 1, KeyPoint_->size(),
 														   poseFrom.between(poseTo), odometryNoise));
@@ -142,7 +144,8 @@ bool BackEnd::saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, E
 	thisPose3D.y = latestEstimate.translation().y();
 	thisPose3D.z = latestEstimate.translation().z();
 	thisPose3D.intensity = KeyPoint_->size(); // 索引
-	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+
+	std::unique_lock<std::shared_mutex> keyframe_poses_lock(mtxPose_);
 	KeyPoint_->push_back(thisPose3D); //  新关键帧帧放入队列中
 
 	// cloudKeyPoses6D加入当前帧位姿
@@ -174,7 +177,7 @@ void BackEnd::saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pos
 	PointCloudType::Ptr currentCLoud(new PointCloudType());
 	pcl::copyPointCloud(*points, *currentCLoud);
 	{
-		std::unique_lock<std::mutex> keyframe_clouds_lock(mtxCloud_);
+		std::unique_lock<std::shared_mutex> keyframe_clouds_lock(mtxCloud_);
 		KeyFrameCloud_.emplace_back(currentCLoud);
 	}
 
@@ -195,7 +198,7 @@ bool BackEnd::correctPoses() {
 	}
 	if (aLoopIsClosed_) {
 		int numPoses = isamCurrentEstimate_.size();
-		std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+		std::unique_lock<std::shared_mutex> keyframe_poses_lock(mtxPose_);
 		for (int i = 0; i < numPoses; ++i) {
 			KeyPoint_->points[i].x = isamCurrentEstimate_.at<gtsam::Pose3>(i).translation().x();
 			KeyPoint_->points[i].y = isamCurrentEstimate_.at<gtsam::Pose3>(i).translation().y();
@@ -242,15 +245,15 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 	// kdtree查找最近一帧关键帧相邻的关键帧集合
 	std::vector<int> pointSearchIndGlobalMap;
 	std::vector<float> pointSearchSqDisGlobalMap;
-	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
 
+	std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 	kdtreeGlobalMapPoses->setInputCloud(KeyPoint_);
 	kdtreeGlobalMapPoses->radiusSearch(KeyPoint_->back(), kdTreeReconstructRadius, pointSearchIndGlobalMap,
 									   pointSearchSqDisGlobalMap, 0);
 
 	for (int i = 0; i < (int)pointSearchIndGlobalMap.size(); ++i)
 		subMapKeyPoses->push_back(KeyPoint_->points[pointSearchIndGlobalMap[i]]); //  subMap的pose集合
-	keyframe_poses_lock.unlock();
+	keyposes_read_lock.unlock();
 
 	pcl::VoxelGrid<PointType> downSizeFilterSubMapKeyPoses;
 	downSizeFilterSubMapKeyPoses.setLeafSize(kdTreeReconstructKeyFrameLeafSize, kdTreeReconstructKeyFrameLeafSize,
@@ -259,14 +262,15 @@ void BackEnd::recontructIKdTree(KD_TREE<PointType>& ikdtree, double kdTreeRecons
 	downSizeFilterSubMapKeyPoses.filter(*subMapKeyPosesDS); //  subMap poses  downsample
 
 	// 提取局部相邻关键帧对应的特征点云
-
+	std::shared_lock<std::shared_mutex> keyframe_clouds_read_lock(mtxCloud_);
+	keyposes_read_lock.lock();
 	for (int i = 0; i < (int)subMapKeyPosesDS->size(); ++i) {
 		int thisKeyInd = (int)subMapKeyPosesDS->points[i].intensity;
-
-		// TODO(jxl): KeyFrameCloud的锁，KeyPoses的锁
-		*subMapKeyFrames += *transformPointCloud(KeyFrameCloud_[thisKeyInd],
-												 KeyPoses_[thisKeyInd].pose); //  fast_lio only use surfCloud
+		*subMapKeyFrames += *transformPointCloud(KeyFrameCloud_[thisKeyInd], KeyPoses_[thisKeyInd].pose);
 	}
+	keyframe_clouds_read_lock.unlock();
+	keyposes_read_lock.unlock();
+
 	// 降采样，发布
 	pcl::VoxelGrid<PointType> downSizeFilterGlobalMapKeyFrames; // for global map visualization
 	downSizeFilterGlobalMapKeyFrames.setLeafSize(kdTreeReconstructPointLeafSize, kdTreeReconstructPointLeafSize,
@@ -295,9 +299,13 @@ bool BackEnd::detectLoopClosureDistance(int* latestID, int* closestID, double ti
 	std::vector<int> pointSearchIndLoop;	 //  候选关键帧索引
 	std::vector<float> pointSearchSqDisLoop; //  候选关键帧距离
 	pcl::KdTreeFLANN<PointType>::Ptr kdtreeHistoryKeyPoses(new pcl::KdTreeFLANN<PointType>());
+
+	std::shared_lock<std::shared_mutex> keyframe_poses_copy_read_lock(mtxPose_copy_);
 	kdtreeHistoryKeyPoses->setInputCloud(CopyKeyPoint_); //  历史帧构建kdtree
 	kdtreeHistoryKeyPoses->radiusSearch(CopyKeyPoint_->back(), loopKeyframeSearchRadius_, pointSearchIndLoop,
 										pointSearchSqDisLoop, 0);
+	keyframe_poses_copy_read_lock.unlock();
+
 	// 在候选关键帧集合中，找到与当前帧时间相隔较远的帧，设为候选匹配帧
 	for (int i = 0; i < (int)pointSearchIndLoop.size(); ++i) {
 		int id = pointSearchIndLoop[i];
@@ -319,14 +327,18 @@ void BackEnd::loopFindNearKeyframes(PointCloudType::Ptr& nearKeyframes, const in
 	// 提取key索引的关键帧前后相邻若干帧的关键帧特征点集合
 	nearKeyframes->clear();
 	int cloudSize = CopyKeyPoses_.size();
-	auto keyframes_size = KeyFrameCloud_.size();
 
+	std::shared_lock<std::shared_mutex> keyframe_clouds_read_lock(mtxCloud_);
+	std::shared_lock<std::shared_mutex> keyframe_poses_copy_read_lock(mtxPose_copy_);
+	auto keyframes_size = KeyFrameCloud_.size();
 	for (int i = -searchNum; i <= searchNum; ++i) {
 		int keyNear = key + i;
 		if (keyNear < 0 || keyNear >= cloudSize) continue;
 		if (keyNear < 0 || keyNear >= keyframes_size) continue;
 		*nearKeyframes += *transformPointCloud(KeyFrameCloud_[keyNear], CopyKeyPoses_[keyNear].pose);
 	}
+	keyframe_clouds_read_lock.unlock();
+	keyframe_poses_copy_read_lock.unlock();
 
 	if (nearKeyframes->empty()) return;
 
@@ -340,12 +352,16 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyfra
 												 const int& searchNum, const int _wrt_key) {
 	// extract near keyframes
 	nearKeyframes->clear();
+	std::shared_lock<std::shared_mutex> keyframe_clouds_read_lock(mtxCloud_);
+	std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 	int cloudSize = KeyPoses_.size();
 	for (int i = -searchNum; i <= searchNum; ++i) {
 		int keyNear = key + i;
 		if (keyNear < 0 || keyNear >= cloudSize) continue;
 		*nearKeyframes += *transformPointCloud(KeyFrameCloud_[keyNear], KeyPoses_[_wrt_key].pose);
 	}
+	keyframe_clouds_read_lock.unlock();
+	keyposes_read_lock.unlock();
 
 	if (nearKeyframes->empty()) return;
 
@@ -360,14 +376,17 @@ void BackEnd::loopFindNearKeyframesWithRespectTo(PointCloudType::Ptr& nearKeyfra
 bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_key_clouds,
 									std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> input_vec_sc_info,
 									std::vector<KeyPose, Eigen::aligned_allocator<KeyPose>> input_vec_key_poses) {
+	std::unique_lock<std::shared_mutex> keyframe_poses_lock(mtxPose_);
 	KeyPoses_.clear();
 	KeyPoint_.reset(new pcl::PointCloud<PointType>());
+	keyframe_poses_lock.unlock();
 
-	std::unique_lock<std::mutex> keyframe_clouds_lock(mtxCloud_);
+	std::unique_lock<std::shared_mutex> keyframe_clouds_lock(mtxCloud_);
 	KeyFrameCloud_.assign(input_vec_key_clouds.begin(), input_vec_key_clouds.end());
 	keyframe_clouds_lock.unlock(); //其他对该变量的操作都在闭环检测线程
 	TRACE_INFO_CLASS("loaded_key_poses size: %d", input_vec_key_poses.size());
 
+	keyframe_poses_lock.lock();
 	int i = 0;
 	for (auto& kp : input_vec_key_poses) {
 		Eigen::Isometry3d T_map_lidar = kp.pose;
@@ -392,6 +411,7 @@ bool BackEnd::set_loaded_key_clouds(std::vector<PointCloudType::Ptr> input_vec_k
 
 		scManager_.loadScancontextAndKeys(input_vec_sc_info[i].polarcontext);
 	}
+	keyframe_poses_lock.unlock();
 
 	isam_->update(gtSAMgraph_, initialEstimate_);
 	gtSAMgraph_.resize(0);
@@ -406,12 +426,12 @@ void BackEnd::performLoopClosure(double time) {
 		return;
 	}
 
-	std::unique_lock<std::mutex> keyframe_poses_lock(mtxPose_);
+	std::unique_lock<std::shared_mutex> keyframe_poses_copy_lock(mtxPose_copy_);
 	CopyKeyPoint_->clear();
 	*CopyKeyPoint_ = *KeyPoint_;
 	CopyKeyPoses_.clear();
 	CopyKeyPoses_ = KeyPoses_;
-	keyframe_poses_lock.unlock();
+	keyframe_poses_copy_lock.unlock();
 
 	auto loop_detected_start = std::chrono::high_resolution_clock::now();
 
@@ -480,10 +500,14 @@ void BackEnd::performLoopClosure(double time) {
 	float x, y, z, roll, pitch, yaw;
 	Eigen::Affine3f correctionLidarFrame;
 	correctionLidarFrame = icp.getFinalTransformation();
+
+	std::shared_lock<std::shared_mutex> keyframe_poses_copy_read_lock(mtxPose_copy_);
 	Eigen::Affine3f tWrong = CopyKeyPoses_[loopKeyCur].pose.cast<float>(); // 闭环优化前当前帧位姿
 	Eigen::Affine3f tCorrect = correctionLidarFrame * tWrong;			   // 闭环优化后当前帧位姿
 	gtsam::Pose3 poseFrom = gtsam::Pose3(tCorrect.matrix().cast<double>());
 	gtsam::Pose3 poseTo = gtsam::Pose3(CopyKeyPoses_[loopKeyPre].pose.matrix().cast<double>());
+	keyframe_poses_copy_read_lock.unlock();
+
 	gtsam::Vector Vector6(6);
 	float noiseScore = icp.getFitnessScore();
 	Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
@@ -732,12 +756,14 @@ PointCloudType::Ptr BackEnd::getCurrentMap() {
 
 	std::unique_lock<std::mutex> show_map_lock(mtxCurrentMap_);
 	{
-		std::unique_lock<std::mutex> lk(mtxCloud_);
-		std::unique_lock<std::mutex> lk2(mtxPose_);
+		std::shared_lock<std::shared_mutex> keyframe_clouds_read_lock(mtxCloud_);
+		std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 		int size = min((int)KeyPoses_.size(), (int)KeyFrameCloud_.size());
 		for (int i = show_index_; i < size; i++) {
 			*show_map_ += *transformPointCloud(KeyFrameCloud_[i], KeyPoses_[i].pose);
 		}
+		keyframe_clouds_read_lock.unlock();
+		keyposes_read_lock.unlock();
 	}
 
 	show_index_ = (int)KeyPoses_.size() - 1;
@@ -798,6 +824,8 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, int start_inde
 		}
 	}
 	std::string key_frame_cloud_path = "";
+	std::shared_lock<std::shared_mutex> keyframe_clouds_read_lock(mtxCloud_);
+	std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
 	for (int i = start; i <= end; i++) {
 		// 生成地图
 		*globalMapCloud += *transformPointCloud(KeyFrameCloud_[i], KeyPoses_[i].pose);
@@ -814,6 +842,8 @@ bool BackEnd::saveMap(string saveMapDirectory, double resolution, int start_inde
 		key_frame_cloud_path = save_key_frame_cloud_dir + std::to_string(i) + ".pcd";
 		int success = pcl::io::savePCDFileBinary(key_frame_cloud_path, *KeyFrameCloud_[i]);
 	}
+	keyframe_clouds_read_lock.unlock();
+	keyposes_read_lock.unlock();
 	TRACE_INFO_CLASS("Save resolution:  %f", resolution);
 
 	pcl::VoxelGrid<PointType> downSizeFilter;
