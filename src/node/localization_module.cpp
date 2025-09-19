@@ -496,9 +496,14 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		return;
 	}
 
-	auto node_status = local_node_status_.load();
-	auto local_thrd_status = slam_->get_local_thrd_status();
-	auto slam_run_status = slam_->get_slam_run_status();
+	auto node_status = local_node_status_.load(); //加载地图成功后，Normal；其他时候为Inactive
+
+	auto local_thrd_status = slam_->get_local_thrd_status(); //和离线地图匹配情况
+	// RelocalizeFailed, Relocalizing, Normal, LowAccuracy, Failed
+
+	auto slam_run_status = slam_->get_slam_run_status(); // lio状态
+	// SlamFail(降采样后点个数小于阈值)，否则为Normal
+
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
 		if (node_status == LocalNodeStatus::LidarCallbackDelay || node_status == LocalNodeStatus::LocalizeThreadDelay) {
@@ -519,19 +524,17 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		}
 	} else if (node_status == LocalNodeStatus::LidarCallbackDelay) {
 		TRACE_ERR_CLASS("lidar cbk delay !!!");
-		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		localization_status_.store(LocalizationStatus::Failed);
+		// status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		// localization_status_.store(LocalizationStatus::Failed);
 	} else if (node_status == LocalNodeStatus::LocalizeThreadDelay) {
 		TRACE_ERR_CLASS("localize thread delay  !!!");
-		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		localization_status_.store(LocalizationStatus::Failed);
-		TRACE_ERR_CLASS("localization status error, set to Failed");
+		// status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		// localization_status_.store(LocalizationStatus::Failed);
+		// TRACE_ERR_CLASS("localization status error, set to Failed");
+
 		TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
 		TRACE_ERR_CLASS("slam_run_status:%s", magic_enum::enum_name(slam_run_status));
 		TRACE_ERR_CLASS("local_thrd_status:%s", magic_enum::enum_name(local_thrd_status));
-
-		status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		localization_status_.store(LocalizationStatus::Failed);
 	}
 
 	log_info_manager_.slam_info.data[2] = static_cast<int>(localization_status_.load());

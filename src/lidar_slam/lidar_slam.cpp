@@ -373,7 +373,7 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
 					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr,
 												odom2map_delta_thr, odom2map_delta_set, use_pose_filter)) {
-						log_info_manager_.slam_info.data[3] = 1; // if converge
+						log_info_manager_.slam_info.data[3] = 1; // converge
 						if (fit_score < fgicp_score_low_accuracy_thr) {
 							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
@@ -388,6 +388,10 @@ void LidarSlam::localizationThread() {
 							gicp_low_acc_count++;
 							TRACE_WARN_CLASS("fit_score: %f, in range [%f, %f], gicp_low_acc_count = %d ", fit_score,
 											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
+							local_thrd_status_.store(LocalizationStatus::LowAccuracy);
+							T_map_odom_ = localization_->getOdomToMap();
+							need_localize_ = true;
+							wait_time = 0;
 						} else {
 							gicp_fail_count++;
 							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
@@ -404,8 +408,9 @@ void LidarSlam::localizationThread() {
 						local_thrd_status_.store(LocalizationStatus::Failed);
 						TRACE_INFO_CLASS("localization failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
 										 gicp_fail_count, gicp_low_acc_count);
-					} else if (gicp_fail_count >= 1 || gicp_low_acc_count >= 2) {
-						local_thrd_status_.store(LocalizationStatus::LowAccuracy);
+
+						globalLocalizationSuccess_ = false; // 停车，进入重定位状态
+						TRACE_INFO_CLASS("next loop enter relocalization mode");
 					}
 
 					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
@@ -533,11 +538,18 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 		time_buffer_.clear();
 	}
 
-	const double time_diff_thresh = 0.2;
+	const double time_diff_thresh = 0.15;
 	const double time_diff = abs(last_timestamp_imu - curr_time);
+	auto now = std::chrono::system_clock::now();
+	auto epoch = now.time_since_epoch();
+	double curr_systime = std::chrono::duration<double>(epoch).count();
 	if (!time_sync_en_ && time_diff > time_diff_thresh && !imu_buffer_empty && !lidar_buffer_.empty()) {
-		TRACE_WARN_CLASS("IMU and LiDAR not Synced, IMU time: %f, lidar time: %f, abs_diff: %f > thresh: %f",
-						 last_timestamp_imu, curr_time, time_diff, time_diff_thresh);
+		TRACE_WARN_CLASS("IMU and LiDAR not Synced! curr system time: %f, latest imu time: %f, curr lidar time: %f",
+						 curr_systime, last_timestamp_imu, curr_time);
+		TRACE_INFO_CLASS("curr_system_time - latest_imu_time = %f ms", (curr_systime - last_timestamp_imu) * 1e3);
+		TRACE_INFO_CLASS("curr_system_time - curr_lidar_time = %f ms", (curr_systime - curr_time) * 1e3);
+		TRACE_INFO_CLASS("latest_imu_time - curr_lidar_time = %f ms, exceed thresh = %f",
+						 (last_timestamp_imu - curr_time) * 1e3, time_diff_thresh * 1e3);
 	}
 
 	if (time_sync_en_ && !timediff_set_flg_ && abs(last_timestamp_imu - curr_time) > 1 && !imu_buffer_empty) {
@@ -755,6 +767,7 @@ bool LidarSlam::run() {
 			lidar_no_point_count_ = 0;
 			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
 			slam_run_status_.store(SlamRunStatus::Normal);
+			// TODO(jxl): 应该根据滤波器状态，imu和lidar时延来判断lio状态
 		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size);
 
