@@ -179,7 +179,7 @@ class LocalizationModule {
 								const std::string& frame);
 
 	// 发布点云
-	void publish_cloud(PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
+	void publish_cloud(const double& cloud_time, PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
 					   rclcpp::Publisher<PointCloud2>::SharedPtr pub);
 
 	// 发布里程计
@@ -187,32 +187,32 @@ class LocalizationModule {
 						  const std::string& child_frameid, rclcpp::Publisher<Odometry>::SharedPtr pub);
 
 	// 发布地图中的激光雷达位姿
-	void publish_odometry_lidar_in_map(const Eigen::Isometry3d& lidar_in_map,
+	void publish_odometry_lidar_in_map(const double& lidar_in_map_time, const Eigen::Isometry3d& lidar_in_map,
 									   const lidar_slam::Localization_base& T_odom_imu, const std::string& frameid,
 									   const std::string& child_frameid, ModuleStatus curr_running_module_status);
-	void publish_OdomToMap_tf(const Eigen::Isometry3d& T_map_odom);
+	void publish_OdomToMap_tf(const double& lidar_in_map_time, const Eigen::Isometry3d& T_map_odom);
 
-	void publish_odometry_in_map(const Eigen::Isometry3d& lidar_in_map, const std::string& frameid,
-								 const std::string& child_frameid);
+	// void publish_odometry_in_map(const Eigen::Isometry3d& lidar_in_map, const std::string& frameid,
+	// 							 const std::string& child_frameid);
 	void process_loginfo();
 
 	// 发布测试点云
-	void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode);
+	// void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode);
 
-	void publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar);
+	// void publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar);
 
 	// 发布动态变换
-	void publish_transform(const Eigen::Isometry3d& correction, const std::string& parent, const std::string& child);
+	// void publish_transform(const Eigen::Isometry3d& correction, const std::string& parent, const std::string& child);
 
 	// 发布激光雷达到地图的变换
 	// void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map);
 
-	void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
+	// void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
 
 	void visualizePoseGraph(const std::vector<KeyPose>& poses, const std::vector<std::pair<int, int>>& loop_edges);
 
-	void show_keyframe(
-		const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe);
+	// void show_keyframe(
+	// 	const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe);
 
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
 

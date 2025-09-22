@@ -39,7 +39,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 	int ctrl_type = msg->data / 100 * 100;
 	auto curr_cmd = static_cast<SlamCtrlCmd>(ctrl_type);
 	TRACE_INFO_CLASS("Received Ctrl Msg: %d", msg->data);
-	TRACE_INFO_CLASS("Received Ctrl Cmd: %d", print_SlamCtrlCmd(curr_cmd));
+	// TRACE_INFO_CLASS("Received Ctrl Cmd: %d", print_SlamCtrlCmd(curr_cmd));
 
 	int map_id = msg->data % 100;
 	if (map_id == 0) {

@@ -161,24 +161,22 @@ class LidarSlam {
 		return undistortCloud_;
 	}
 
-	inline PointCloudType::Ptr get_baselink_cloud() {
+	inline PointCloudType::Ptr get_baselink_cloud(double& cloud_time) {
 		std::unique_lock<std::mutex> lk(mtx_lidar_cloud_);
 		PointCloudType::Ptr baselink_cloud;
 		baselink_cloud.reset(new PointCloudType());
 		baselink_cloud->resize(undistortCloud_->points.size());
 		baselink_cloud = transformPointCloud(undistortCloud_, T_lidar_wheel_.inverse());
+		cloud_time = T_odom_lidar_time_;
 		return baselink_cloud;
 	}
 
-	inline PointCloudType::Ptr get_odom_cloud() {
+	inline PointCloudType::Ptr get_odom_cloud(double& cloud_time) {
 		std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
+		cloud_time = T_odom_lidar_time_;
 		return UndistortCloudInOdom_;
 	}
 
-	inline std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_unoptimized_path() {
-		std::unique_lock<std::mutex> lk(mtx_path_);
-		return unoptimized_path_;
-	}
 	inline std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_optimized_path() {
 		std::unique_lock<std::mutex> lk(mtx_path_);
 		return optimized_path_;
@@ -205,9 +203,10 @@ class LidarSlam {
 	}
 
 	// jxl: 不管是建图还是定位，都是10hz的T_odom_lidar
-	inline Eigen::Isometry3d getLidarInOdom() {
+	inline Eigen::Isometry3d getLidarInOdom(double& T_odom_lidar_time) {
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING || working_mode_ == LOCALIZATION) {
 			std::unique_lock<std::mutex> lk(mtx_pose_);
+			T_odom_lidar_time = T_odom_lidar_time_;
 			return T_odom_lidar_; // 10hz
 		} else {
 			TRACE_ERR_CLASS("In other mode, T_odom_lidar = I");
@@ -237,18 +236,22 @@ class LidarSlam {
 		}
 	}
 
-	inline Eigen::Isometry3d getWheelInOdom() { return getLidarInOdom() * T_lidar_wheel_; }
+	inline Eigen::Isometry3d getWheelInOdom(double& T_odom_lidar_time) {
+		return getLidarInOdom(T_odom_lidar_time) * T_lidar_wheel_;
+	}
 
 	inline pcl::PointCloud<pcl::PointXYZI>::Ptr getLoadMap() const { return localization_->getLoadMap(); }
 
 	inline bool isGloalLocalizationSuccess() const { return globalLocalizationSuccess_; }
 
-	inline Eigen::Isometry3d getLidarInMap() {
-		Eigen::Isometry3d T_map_lidar = getOdomToMap() * getLidarInOdom();
+	inline Eigen::Isometry3d getLidarInMap(double& T_odom_lidar_time) {
+		Eigen::Isometry3d T_map_lidar = getOdomToMap() * getLidarInOdom(T_odom_lidar_time);
 		return T_map_lidar;
 	}
 
-	inline Eigen::Isometry3d getWheelInMap() { return getLidarInMap() * T_lidar_wheel_; }
+	inline Eigen::Isometry3d getWheelInMap(double& T_odom_lidar_time) {
+		return getLidarInMap(T_odom_lidar_time) * T_lidar_wheel_;
+	}
 	inline Eigen::Isometry3d getWheelInLidar() const { return T_lidar_wheel_; }
 	inline std::vector<ScInfo, Eigen::aligned_allocator<ScInfo>> getLoadKeyFrame() const {
 		return localization_->getLoadKeyFrame();
@@ -318,11 +321,11 @@ class LidarSlam {
 	bool timediff_set_flg_ = false; // 标记是否已经进行了时间补偿
 	bool reseting_ = false;
 
-	std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> unoptimized_path_;
 	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> optimized_path_;
 
 	MeasureGroup Measures_;
 	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
+	double T_odom_lidar_time_ = 0.f;
 	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
 
 	bool thread_run_ = true;

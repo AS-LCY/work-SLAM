@@ -56,7 +56,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	FilteredUndistortCloud_.reset(new PointCloudType());
 
 	/// mapping 相关
-	unoptimized_path_.clear();
 	optimized_path_.clear();
 	T_odom_lidar_ = Eigen::Isometry3d::Identity();
 	localization_base_ = Localization_base();
@@ -413,7 +412,8 @@ void LidarSlam::localizationThread() {
 						TRACE_INFO_CLASS("next loop enter relocalization mode");
 					}
 
-					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap();
+					double T_odom_lidar_time = 0.f;
+					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap(T_odom_lidar_time);
 					Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
 
 					log_info_manager_.slam_info.data[17] = curr_odom_to_map.translation().x();
@@ -708,6 +708,7 @@ bool LidarSlam::run() {
 
 		std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
+		T_odom_lidar_time_ = Measures_.lidar_end_time;
 		T_odom_lidar_lock.unlock();
 
 		auto pointcloud_deskew_end = std::chrono::high_resolution_clock::now();
@@ -782,6 +783,7 @@ bool LidarSlam::run() {
 		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
 		T_odom_lidar_lock.lock();
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
+		T_odom_lidar_time_ = Measures_.lidar_end_time;
 		T_odom_lidar_lock.unlock();
 
 		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
@@ -804,13 +806,10 @@ bool LidarSlam::run() {
 				bool insert = back_end_->saveKeyFramesAndFactor(init_T_map_odom_, T_odom_lidar_, lidar_end_time_);
 				if (insert) { //是关键帧
 					TRACE_INFO_CLASS("backend: keyPoses id: %d", back_end_->getKeyframePoses().size() - 1);
-					back_end_->saveCurrentCloud(undistortCloud_,
-												getLidarInMap()); //注意这里只是为了取水平面，后端还是在odom坐标系
-					{
-						std::unique_lock<std::mutex> lk(mtx_path_);
-						unoptimized_path_.emplace_back(getWheelInMap());
-						if (unoptimized_path_.size() > 200) unoptimized_path_.pop_front();
-					}
+					double not_used_T_odom_lidar_time = 0.f;
+					back_end_->saveCurrentCloud(
+						undistortCloud_,
+						getLidarInMap(not_used_T_odom_lidar_time)); //注意这里只是为了取水平面，后端还是在odom坐标系
 				}
 
 				{
@@ -866,14 +865,14 @@ bool LidarSlam::run() {
 				std::chrono::duration_cast<std::chrono::milliseconds>(ikd_tree_update_end - ikd_tree_update_start)
 					.count());
 			TRACE_INFO_CLASS("slam lose rate ! whole run() cost time: %f ms > thresh: %f", run_duration, thresh);
-			TRACE_INFO_CLASS("deskew point cloud cost time %f ms", pointcloud_deskew_duration);
-			TRACE_INFO_CLASS("ikdtree_lasermap_fov_segment cost time %f ms", ikdtree_lasermap_fov_segment_duration);
-			TRACE_INFO_CLASS("filter_pointcloud_and_laser_update cost time %f ms",
+			// TRACE_INFO_CLASS("deskew point cloud cost time %f ms", pointcloud_deskew_duration);
+			// TRACE_INFO_CLASS("ikdtree_lasermap_fov_segment cost time %f ms", ikdtree_lasermap_fov_segment_duration);
+			TRACE_INFO_CLASS("filter_pointcloud_and_laser_update cost time %f ms\n",
 							 filter_pointcloud_and_laser_update_duration);
-			TRACE_INFO_CLASS("backend cost time %f ms", backend_duration);
-			TRACE_INFO_CLASS("transform_cloud cost time %f ms", transform_cloud_duration);
-			TRACE_INFO_CLASS("ikdtree_update cost time %f ms", ikdtree_update_duration);
-			TRACE_INFO_CLASS("===============================\n");
+			// TRACE_INFO_CLASS("backend cost time %f ms", backend_duration);
+			// TRACE_INFO_CLASS("transform_cloud cost time %f ms", transform_cloud_duration);
+			// TRACE_INFO_CLASS("ikdtree_update cost time %f ms", ikdtree_update_duration);
+			// TRACE_INFO_CLASS("===============================\n");
 		}
 		lidar_no_point_count_ = 0;
 		return true;

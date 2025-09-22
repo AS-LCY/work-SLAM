@@ -61,8 +61,9 @@ bool LocalizationModule::create_ROS_IO() {
 
 	sub_imu_ = node_->create_subscription<sensor_msgs::msg::Imu>(
 		slam_param_.lidar_preproc.sub_imu_topic,
-		rclcpp::QoS(2000), // ROS2中使用QoS替代简单的队列大小
+		rclcpp::QoS(400), // ROS2中使用QoS替代简单的队列大小
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
+	// TODO(jxl): imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
 
 	pub_localization_module_status_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleStatus>(
 		slam_param_.common.pub_topic_module_status, rclcpp::QoS(10));
@@ -194,10 +195,14 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	bool running_slam_flag = slam_->run();
 	if (running_slam_flag) {
 		if (pubBodyCloud->get_subscription_count() > 0) {
-			publish_cloud(slam_->get_baselink_cloud(), "base_link", pubBodyCloud);
+			double cloud_time = 0.f;
+			auto cloud = slam_->get_baselink_cloud(cloud_time);
+			publish_cloud(cloud_time, cloud, "base_link", pubBodyCloud);
 		}
 		if (pubOdomCloud->get_subscription_count() > 0) {
-			publish_cloud(slam_->get_odom_cloud(), "odom", pubOdomCloud);
+			double cloud_time = 0.f;
+			auto cloud = slam_->get_odom_cloud(cloud_time);
+			publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
 		}
 		// process_loginfo();
 	}
@@ -300,6 +305,7 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	bool hb_cbk_lidar = delay_lidar < lidar_interval * lidar_ratio ? true : false;
 	bool hb_cbk_imu = delay_imu < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = delay_slam < slam_interval * slam_ratio ? true : false;
+
 	bool hb_thread_localize = true;
 	bool hb_thread_loop_closure = true;
 	bool hb_thread_secmap_relocalize = true;
@@ -473,11 +479,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 						   localization_status_is_ok(localization_status_.load());
 	auto mapping_ok = is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load());
 	if (localization_ok || mapping_ok) {
-		auto T_map_baselink = slam_->getLidarInMap() * T_lidar_baselink_;
+		double T_odom_lidar_time = 0.f;
+		auto T_map_baselink = slam_->getLidarInMap(T_odom_lidar_time) * T_lidar_baselink_;
 		auto T_odom_imu_updated = slam_->get_localization_base();
-		publish_odometry_lidar_in_map(T_map_baselink, T_odom_imu_updated, "map", "base_link",
+		publish_odometry_lidar_in_map(T_odom_lidar_time, T_map_baselink, T_odom_imu_updated, "map", "base_link",
 									  curr_running_module_status);
-		publish_OdomToMap_tf(slam_->getOdomToMap());
+		publish_OdomToMap_tf(T_odom_lidar_time, slam_->getOdomToMap());
 	}
 }
 
@@ -675,21 +682,6 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 
 	msg->angular_velocity << ang_after[0], ang_after[1], ang_after[2];
 	msg->linear_acceleration << acc_after[0], acc_after[1], acc_after[2];
-
-	// sensor_msgs::msg::Imu imu_in_base = *msg_in;
-	// imu_in_base.header.frame_id = "base_link";
-	// imu_in_base.angular_velocity.x = msg->angular_velocity.x();
-	// imu_in_base.angular_velocity.y = msg->angular_velocity.y();
-	// imu_in_base.angular_velocity.z = msg->angular_velocity.z();
-	// imu_in_base.linear_acceleration.x = msg->linear_acceleration.x();
-	// imu_in_base.linear_acceleration.y = msg->linear_acceleration.y();
-	// imu_in_base.linear_acceleration.z = msg->linear_acceleration.z();
-	// pub_base_imu_->publish(imu_in_base);
-
-	////////////////////////////////////////////////////////////////////////////////
-	// detect slip
-
-	////////////////////////////////////////////////////////////////////////////////
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
