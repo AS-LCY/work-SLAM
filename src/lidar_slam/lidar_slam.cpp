@@ -317,13 +317,14 @@ void LidarSlam::localizationThread() {
 		} else {
 			if (!globalLocalizationSuccess_) {
 				local_thrd_status_.store(LocalizationStatus::Relocalizing);
+				TRACE_INFO_CLASS("localization status = Relocalizing");
 
 				if (!getLoadMap()) {
-					TRACE_WARN_CLASS("globalLocalization failed: map not ready ... ");
+					TRACE_WARN_CLASS("global localization failed: map not ready ... ");
 				} else if (!temp || temp->points.size() == 0) {
 					TRACE_WARN_CLASS("globalLocalization failed: cloud empty ... ");
 				} else {
-					TRACE_INFO_CLASS("start globalLocalization ... , point count: %d", temp->points.size());
+					TRACE_INFO_CLASS("start global localization ... , point count: %d", temp->points.size());
 					PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType());
 					Matrix3d initial_rotate;
 					{
@@ -346,11 +347,12 @@ void LidarSlam::localizationThread() {
 					global_localize_count_++;
 				}
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
-					TRACE_WARN_CLASS("global Localization failed: time out ");
+					TRACE_WARN_CLASS("global localization failed: time out \n");
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
+					TRACE_INFO_CLASS("localization status = RelocalizeFailed");
 				}
 				if (globalLocalizationSuccess_) {
-					TRACE_INFO_CLASS("global Localization Success");
+					TRACE_INFO_CLASS("global localization success, localization status = Normal");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::Normal);
 					init_T_map_odom_ = localization_->getOdomToMap();
@@ -382,6 +384,7 @@ void LidarSlam::localizationThread() {
 							wait_time++;
 							TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
 											 fgicp_score_low_accuracy_thr);
+							TRACE_INFO_CLASS("localization status = Normal");
 
 						} else if (fit_score < fgicp_score_fail_thr) {
 							gicp_low_acc_count++;
@@ -389,8 +392,9 @@ void LidarSlam::localizationThread() {
 											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
 							local_thrd_status_.store(LocalizationStatus::LowAccuracy);
 							T_map_odom_ = localization_->getOdomToMap();
-							need_localize_ = true;
-							wait_time = 0;
+							TRACE_INFO_CLASS("localization status = low accuracy");
+							// need_localize_ = true;
+							// wait_time = 0;
 						} else {
 							gicp_fail_count++;
 							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
@@ -405,7 +409,7 @@ void LidarSlam::localizationThread() {
 					if (gicp_fail_count >= fgicp_fail_count_thr ||
 						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败
 						local_thrd_status_.store(LocalizationStatus::Failed);
-						TRACE_INFO_CLASS("localization failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
+						TRACE_INFO_CLASS("localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
 										 gicp_fail_count, gicp_low_acc_count);
 
 						globalLocalizationSuccess_ = false; // 停车，进入重定位状态
@@ -864,7 +868,7 @@ bool LidarSlam::run() {
 			auto ikdtree_update_duration = double(
 				std::chrono::duration_cast<std::chrono::milliseconds>(ikd_tree_update_end - ikd_tree_update_start)
 					.count());
-			TRACE_INFO_CLASS("slam lose rate ! whole run() cost time: %f ms > thresh: %f", run_duration, thresh);
+			// TRACE_INFO_CLASS("slam lose rate ! whole run() cost time: %f ms > thresh: %f", run_duration, thresh);
 			// TRACE_INFO_CLASS("deskew point cloud cost time %f ms", pointcloud_deskew_duration);
 			// TRACE_INFO_CLASS("ikdtree_lasermap_fov_segment cost time %f ms", ikdtree_lasermap_fov_segment_duration);
 			TRACE_INFO_CLASS("filter_pointcloud_and_laser_update cost time %f ms\n",
