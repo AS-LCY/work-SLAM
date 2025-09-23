@@ -269,7 +269,7 @@ class LidarSlam {
 	inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap() const { return back_end_->getCurrentRGBMap(); }
 
 	inline double get_lidar_time() const { return lidar_end_time_; }
-
+	double get_lio_cost_time() { return lio_cost_time_.load(); }
 	double get_hb_time_thread_localize() { return hb_time_thread_localize_.load(); }
 	double get_hb_time_thread_loop_closure() { return hb_time_thread_loop_closure_.load(); }
 	double get_hb_time_thread_secmap_relocalize() { return hb_time_thread_secmap_relocalize_.load(); }
@@ -378,6 +378,8 @@ class LidarSlam {
 
 	Eigen::Isometry3d init_T_map_odom_ = Eigen::Isometry3d::Identity();
 	Eigen::Isometry3d T_map_odom_ = Eigen::Isometry3d::Identity();
+
+	std::atomic<double> lio_cost_time_{ 0.f };
 };
 
 } // namespace lidar_slam

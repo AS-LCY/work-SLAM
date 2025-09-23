@@ -143,6 +143,11 @@ bool LocalizationModule::create_ROS_IO() {
 void LocalizationModule::ros_spinner_start() {}
 
 void LocalizationModule::slam_dealt_timer() { //主线程
+	if (!slam_) {
+		TRACE_DBG_CLASS("slam_ not initialized yet, main thread return");
+		return;
+	}
+
 	double t0 = omp_get_wtime();
 
 	if (slam_param_.common.cpu_id.size() > 0) {
@@ -363,16 +368,20 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 		health_status_now = static_cast<HealthStatus>(std::max(2, static_cast<int>(health_status_now)));
 	}
 
+	double lio_cost_time = slam_->get_lio_cost_time();
+
 	// fill health msg
 	health_msg.cloud_size = orig_point_cloud_size;
 
 	log_info_manager_.slam_info.data[12] = orig_point_cloud_size;
 	log_info_manager_.slam_info.data[14] = sample_point_cloud_size;
 
-	health_msg.delay_cbk_lidar = delay_lidar * 1e3;						 // unit: ms
-	health_msg.delay_cbk_imu = delay_imu * 1e3;							 // unit: ms
-	health_msg.delay_timer_slam = lidar_msg_interval_ * 1e3;			 // unit: ms
-	health_msg.delay_timer_pose = imu_msg_interval_ * 1e3;				 // unit: ms
+	health_msg.delay_cbk_lidar = delay_lidar * 1e3;			   // unit: ms
+	health_msg.delay_cbk_imu = delay_imu * 1e3;				   // unit: ms
+	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
+	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
+	health_msg.lio_cost_time = lio_cost_time * 1e3;			   // unit: ms
+
 	health_msg.delay_thread_localize = localize_delay;					 // unit: s
 	health_msg.delay_thread_loop_closure = loop_closure_delay;			 // unit: s
 	health_msg.delay_thread_secmap_relocalize = secmap_relocalize_delay; // unit: s
@@ -395,7 +404,11 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 
 // 发布健康状态，节点工作状态（重点）
 void LocalizationModule::pub_module_status_timer() {
-	// ******************************************************************************************
+	if (!slam_) {
+		TRACE_DBG_CLASS("slam_ not initialized yet, pub status thread return");
+		return;
+	}
+
 	auto curr_running_module_status = running_module_status_.load();
 	auto curr_ros_time = node_->now();
 

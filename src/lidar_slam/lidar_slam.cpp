@@ -848,6 +848,8 @@ bool LidarSlam::run() {
 
 		auto run_duration = double(std::chrono::duration_cast<std::chrono::milliseconds>(run_end - run_start).count());
 		const float& thresh = config_param_.common.slam_lose_rate_time_thr * 1e3; // ms
+		double lio_cost_time_copy = run_duration / 1000.f;
+		lio_cost_time_.store(lio_cost_time_copy);
 		if (run_duration > thresh) {
 			auto pointcloud_deskew_duration = double(
 				std::chrono::duration_cast<std::chrono::milliseconds>(pointcloud_deskew_end - pointcloud_deskew_start)
