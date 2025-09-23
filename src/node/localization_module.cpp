@@ -8,7 +8,7 @@
 namespace localization_module {
 
 std::atomic<ModuleStatus> LocalizationModule::running_module_status_(ModuleStatus::MODULE_IDLE);
-std::atomic<double> LocalizationModule::livox_cbk_update_time_(0.0);
+// std::atomic<double> LocalizationModule::livox_cbk_update_time_(0.0);
 
 LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatus init_status)
 	: node_(node), br_(node_), tf_buffer_(node_->get_clock()), tf_listener_(tf_buffer_) {
@@ -163,7 +163,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	if (slam_timer_interval < 0) {
 		TRACE_ERR_CLASS("slam main thread time jump back, this_time - last_time = %.3f seconds", slam_timer_interval);
 	}
-	if (slam_timer_interval > 0.5) { //两次loop之间时间超过0.5s
+	if (slam_timer_interval > 0.3) { //两次loop之间时间超过0.5s
 		TRACE_ERR_CLASS("slam main thread time jump to future, this_time - last_time = %.3f seconds",
 						slam_timer_interval);
 	}
@@ -285,13 +285,14 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	static const double localize_interval = 1.0;
 	static const double loop_closure_interval = 1.0;
 	static const double secmap_relocalize_interval = 1.0;
-	static const int imu_ratio = 20; // 20
-	static const int lidar_ratio = 3;
-	static const int slam_ratio = 3;
-	static const int pose_ratio = 3;
-	static const int localize_ratio = 3;
-	static const int loop_closure_ratio = 3;
-	static const int secmap_relocalize_ratio = 3;
+
+	static const int imu_ratio = 10;
+	static const int lidar_ratio = 2;
+	static const int slam_ratio = 2;
+
+	static const int localize_ratio = 2;
+	static const int loop_closure_ratio = 2;
+	static const int secmap_relocalize_ratio = 2;
 	static const int point_cloud_size_thr = slam_param_.common.feats_down_size_thr;
 
 	// check ROS IO status **********************************************************************
@@ -299,12 +300,13 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
-	double delay_imu = curr_time - hb_time_cbk_imu_.load();
-	double delay_lidar = curr_time - hb_time_cbk_lidar_.load();
-	double delay_slam = curr_time - hb_time_timer_slam_.load();
-	bool hb_cbk_lidar = delay_lidar < lidar_interval * lidar_ratio ? true : false;
-	bool hb_cbk_imu = delay_imu < imu_interval * imu_ratio ? true : false;
-	bool hb_timer_slam = delay_slam < slam_interval * slam_ratio ? true : false;
+	double delay_imu = curr_time - hb_time_cbk_imu_.load();		//当前时刻和最新imu消息时间差
+	double delay_lidar = curr_time - hb_time_cbk_lidar_.load(); //当前时刻和最新lidar消息时间差
+	double delay_slam = curr_time - hb_time_timer_slam_.load(); //当前时刻和最新主线程时间差
+
+	bool hb_cbk_lidar = std::fabs(delay_lidar) < lidar_interval * lidar_ratio ? true : false;
+	bool hb_cbk_imu = std::fabs(delay_imu) < imu_interval * imu_ratio ? true : false;
+	bool hb_timer_slam = std::fabs(delay_slam) < slam_interval * slam_ratio ? true : false;
 
 	bool hb_thread_localize = true;
 	bool hb_thread_loop_closure = true;
@@ -322,7 +324,8 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	double secmap_relocalize_delay = 0.0;
 	if (curr_running_module_status == ModuleStatus::MODULE_MAPPING) {
 		loop_closure_delay = curr_time - slam_->get_hb_time_thread_loop_closure();
-		hb_thread_loop_closure = loop_closure_delay < loop_closure_interval * loop_closure_ratio ? true : false;
+		hb_thread_loop_closure =
+			std::fabs(loop_closure_delay) < loop_closure_interval * loop_closure_ratio ? true : false;
 		if (!hb_thread_loop_closure) {
 			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
 			mapping_node_status_.store(MappingNodeStatus::LoopClosureThreadDelay);
@@ -330,16 +333,17 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	} else if (curr_running_module_status == ModuleStatus::MODULE_SEC_MAPPING) {
 		loop_closure_delay = curr_time - slam_->get_hb_time_thread_loop_closure();
 		secmap_relocalize_delay = curr_time - slam_->get_hb_time_thread_secmap_relocalize();
-		hb_thread_loop_closure = loop_closure_delay < loop_closure_interval * loop_closure_ratio ? true : false;
+		hb_thread_loop_closure =
+			std::fabs(loop_closure_delay) < loop_closure_interval * loop_closure_ratio ? true : false;
 		hb_thread_secmap_relocalize =
-			secmap_relocalize_delay < secmap_relocalize_interval * secmap_relocalize_ratio ? true : false;
+			std::fabs(secmap_relocalize_delay) < secmap_relocalize_interval * secmap_relocalize_ratio ? true : false;
 		if (!hb_thread_loop_closure || !hb_thread_secmap_relocalize) {
 			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
 			mapping_node_status_.store(MappingNodeStatus::LoopClosureThreadDelay);
 		}
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
 		localize_delay = curr_time - slam_->get_hb_time_thread_localize();
-		hb_thread_localize = localize_delay < localize_interval * localize_ratio ? true : false;
+		hb_thread_localize = std::fabs(localize_delay) < localize_interval * localize_ratio ? true : false;
 		if (!hb_thread_localize) {
 			health_status_now = static_cast<HealthStatus>(std::max(1, static_cast<int>(health_status_now)));
 			local_node_status_.store(LocalNodeStatus::LocalizeThreadDelay);
@@ -347,15 +351,12 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	}
 
 	// check lidar driver
-	int orig_point_cloud_size = 0;
-	int sample_point_cloud_size = 0;
-	if (hb_cbk_lidar) {
-		orig_point_cloud_size = cloud_size_orig_.load();
-		sample_point_cloud_size = cloud_size_sample_.load();
-		if (orig_point_cloud_size < point_cloud_size_thr) {
-			error_lidar_point_too_few = true;
-		}
+	int orig_point_cloud_size = cloud_size_orig_.load();
+	int sample_point_cloud_size = cloud_size_sample_.load();
+	if (orig_point_cloud_size < point_cloud_size_thr) {
+		error_lidar_point_too_few = true;
 	}
+
 	if (slam_param_.lidar_preproc.lidar_type == 1 && orig_point_cloud_size == 96) {
 		TRACE_ERR_CLASS("livox driver error, cloud-size: 96");
 		error_livox_driver_failed = true;
@@ -368,10 +369,10 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	log_info_manager_.slam_info.data[12] = orig_point_cloud_size;
 	log_info_manager_.slam_info.data[14] = sample_point_cloud_size;
 
-	health_msg.delay_cbk_lidar = delay_lidar;							 // unit: s
-	health_msg.delay_cbk_imu = delay_imu;								 // unit: s
-	health_msg.delay_timer_slam = delay_slam;							 // unit: s
-	health_msg.delay_timer_pose = 0.;									 // unit: s
+	health_msg.delay_cbk_lidar = delay_lidar * 1e3;						 // unit: ms
+	health_msg.delay_cbk_imu = delay_imu * 1e3;							 // unit: ms
+	health_msg.delay_timer_slam = lidar_msg_interval_ * 1e3;			 // unit: ms
+	health_msg.delay_timer_pose = imu_msg_interval_ * 1e3;				 // unit: ms
 	health_msg.delay_thread_localize = localize_delay;					 // unit: s
 	health_msg.delay_thread_loop_closure = loop_closure_delay;			 // unit: s
 	health_msg.delay_thread_secmap_relocalize = secmap_relocalize_delay; // unit: s
@@ -512,9 +513,9 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 	auto slam_run_status = slam_->get_slam_run_status(); // lio状态
 	// SlamFail(降采样后点个数小于阈值)，否则为Normal
 
-	TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
-	TRACE_ERR_CLASS("slam_run_status: %s", magic_enum::enum_name(slam_run_status));
-	TRACE_ERR_CLASS("local_thrd_status: %s", magic_enum::enum_name(local_thrd_status));
+	// TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
+	// TRACE_ERR_CLASS("slam_run_status: %s", magic_enum::enum_name(slam_run_status));
+	// TRACE_ERR_CLASS("local_thrd_status: %s", magic_enum::enum_name(local_thrd_status));
 
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
@@ -604,9 +605,9 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 		TRACE_ERR_CLASS("loop_closure_thread_delay  !!!");
 	} else {
 		TRACE_ERR_CLASS("mapping status error, set to Failed");
-		TRACE_ERR_CLASS("node_status:%s ", magic_enum::enum_name(node_status));
-		TRACE_ERR_CLASS("slam_run_status: :%s ", magic_enum::enum_name(slam_run_status));
-		TRACE_ERR_CLASS("secmap_relocal_thrd_status::%s ", magic_enum::enum_name(secmap_relocal_thrd_status));
+		// TRACE_ERR_CLASS("node_status:%s ", magic_enum::enum_name(node_status));
+		// TRACE_ERR_CLASS("slam_run_status: :%s ", magic_enum::enum_name(slam_run_status));
+		// TRACE_ERR_CLASS("secmap_relocal_thrd_status::%s ", magic_enum::enum_name(secmap_relocal_thrd_status));
 	}
 	status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
 	mapping_status_.store(MappingStatus::Failed);
@@ -618,10 +619,17 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 	cloud_size_orig_.store(ros_msg->height * ros_msg->width);
 
-	static double last_lidar_hb = hb_time_cbk_lidar_;
-	hb_time_cbk_lidar_.store(node_->now().seconds());
-	log_info_manager_.slam_info.data[23] = hb_time_cbk_lidar_ - last_lidar_hb;
-	last_lidar_hb = hb_time_cbk_lidar_;
+	// static double last_lidar_hb = hb_time_cbk_lidar_;
+	// hb_time_cbk_lidar_.store(node_->now().seconds());
+	// hb_time_cbk_lidar_.store(node_->now().seconds());
+	// log_info_manager_.slam_info.data[23] = hb_time_cbk_lidar_ - last_lidar_hb;
+	// last_lidar_hb = hb_time_cbk_lidar_;
+
+	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
+	static double last_msg_time = curr_msg_time;
+	hb_time_cbk_lidar_.store(curr_msg_time);
+	lidar_msg_interval_ = curr_msg_time - last_msg_time;
+	last_msg_time = curr_msg_time;
 
 	if (slam_param_.common.cpu_id.size() > 0) {
 		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
@@ -631,7 +639,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 		}
 	}
 
-	livox_cbk_update_time_.store(rclcpp::Time(ros_msg->header.stamp).seconds());
+	// livox_cbk_update_time_.store(rclcpp::Time(ros_msg->header.stamp).seconds());
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
@@ -664,7 +672,11 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 }
 
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
-	hb_time_cbk_imu_.store(node_->now().seconds());
+	auto curr_msg_time = rclcpp::Time(msg_in->header.stamp).seconds();
+	static double last_msg_time = curr_msg_time;
+	hb_time_cbk_imu_.store(curr_msg_time);
+	imu_msg_interval_ = curr_msg_time - last_msg_time;
+	last_msg_time = curr_msg_time;
 
 	// transfer IMU : IMU-frame to baselink-frame
 	Eigen::Vector3d ang_before(msg_in->angular_velocity.x, msg_in->angular_velocity.y, msg_in->angular_velocity.z);
@@ -674,7 +686,7 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	Eigen::Vector3d acc_after = slam_param_.extrinsic.R_baselink_IMU * acc_before;
 
 	std::shared_ptr<livox_ros::ImuMsg> msg(new livox_ros::ImuMsg);
-	msg->time_stamp = rclcpp::Time(msg_in->header.stamp).seconds();
+	msg->time_stamp = curr_msg_time;
 	// msg->time_stamp = msg_in->header.stamp.toSec() + 28799.8614; temp, 测试万集雷达时用到
 
 	if (slam_param_.lidar_preproc.lidar_type == 3) {
@@ -780,7 +792,6 @@ bool LocalizationModule::module_member_init() {
 	hb_time_cbk_module_ctrl_.store(curr_time);
 	hb_time_timer_slam_.store(curr_time);
 
-	// hb_time_thread_localize_.store(curr_time);
 	hb_time_thread_loop_closure_.store(curr_time);
 	hb_time_thread_secmap_relocalize_.store(curr_time);
 

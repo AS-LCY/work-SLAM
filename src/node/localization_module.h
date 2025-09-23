@@ -263,7 +263,9 @@ class LocalizationModule {
 	std::atomic<double> hb_time_cbk_module_ctrl_;
 	std::atomic<double> hb_time_timer_slam_;
 
-	// std::atomic<double> hb_time_thread_localize_;
+	double imu_msg_interval_ = 0.005;
+	double lidar_msg_interval_ = 0.1;
+
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;
 
@@ -357,7 +359,7 @@ class LocalizationModule {
 	/// params load from yaml
 	lidar_slam::LidarSlamParam slam_param_;
 
-	static std::atomic<double> livox_cbk_update_time_;
+	// static std::atomic<double> livox_cbk_update_time_;
 
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();

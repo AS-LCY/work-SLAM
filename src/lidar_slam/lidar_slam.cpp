@@ -501,7 +501,7 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 						secmap_relocal_thrd_status_.store(SecmapRelocalThrdStatus::Normal);
 						init_T_map_odom_ = global_localization_->get_global_odom_to_map();
 						T_map_odom_ = init_T_map_odom_;
-						break;
+						// break; //外部会周期统计每次调用的时间差
 					} else {
 						global_localize_count++;
 					}
