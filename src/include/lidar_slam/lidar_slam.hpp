@@ -273,6 +273,7 @@ class LidarSlam {
 	double get_hb_time_thread_localize() { return hb_time_thread_localize_.load(); }
 	double get_hb_time_thread_loop_closure() { return hb_time_thread_loop_closure_.load(); }
 	double get_hb_time_thread_secmap_relocalize() { return hb_time_thread_secmap_relocalize_.load(); }
+	inline int get_feats_down_size() const { return feats_down_size_; }
 
 	LocalizationStatus get_local_thrd_status() { return local_thrd_status_.load(); }
 	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
@@ -380,6 +381,7 @@ class LidarSlam {
 	Eigen::Isometry3d T_map_odom_ = Eigen::Isometry3d::Identity();
 
 	std::atomic<double> lio_cost_time_{ 0.f };
+	int feats_down_size_ = 0;
 };
 
 } // namespace lidar_slam

@@ -55,13 +55,19 @@ bool LocalizationModule::create_ROS_IO() {
 	if (!node_) {
 		throw std::runtime_error("ROS node not initialized");
 	}
+	// QoS 设置为 Best Effort
+	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(10));
+	lidar_qos.best_effort();
+
+	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(400));
+	imu_qos.best_effort();
+
 	sub_pointcloud2_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-		slam_param_.lidar_preproc.sub_lidar_topic, 10,
+		slam_param_.lidar_preproc.sub_lidar_topic, lidar_qos,
 		std::bind(&LocalizationModule::lidar_ros_callback, this, std::placeholders::_1));
 
 	sub_imu_ = node_->create_subscription<sensor_msgs::msg::Imu>(
-		slam_param_.lidar_preproc.sub_imu_topic,
-		rclcpp::QoS(400), // ROS2中使用QoS替代简单的队列大小
+		slam_param_.lidar_preproc.sub_imu_topic, imu_qos,
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
 	// TODO(jxl): imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
 
@@ -168,9 +174,8 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	if (slam_timer_interval < 0) {
 		TRACE_ERR_CLASS("slam main thread time jump back, this_time - last_time = %.3f seconds", slam_timer_interval);
 	}
-	if (slam_timer_interval > 0.3) { //两次loop之间时间超过0.5s
-		TRACE_ERR_CLASS("slam main thread time jump to future, this_time - last_time = %.3f seconds",
-						slam_timer_interval);
+	if (slam_timer_interval > 0.3) {
+		// TRACE_ERR_CLASS("main thread cost time = %.3f ms", slam_timer_interval * 1e3);
 	}
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
@@ -305,12 +310,10 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
-	double delay_imu = curr_time - hb_time_cbk_imu_.load();		//当前时刻和最新imu消息时间差
-	double delay_lidar = curr_time - hb_time_cbk_lidar_.load(); //当前时刻和最新lidar消息时间差
 	double delay_slam = curr_time - hb_time_timer_slam_.load(); //当前时刻和最新主线程时间差
 
-	bool hb_cbk_lidar = std::fabs(delay_lidar) < lidar_interval * lidar_ratio ? true : false;
-	bool hb_cbk_imu = std::fabs(delay_imu) < imu_interval * imu_ratio ? true : false;
+	bool hb_cbk_lidar = std::fabs(delay_lidar_) < lidar_interval * lidar_ratio ? true : false;
+	bool hb_cbk_imu = std::fabs(delay_imu_) < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = std::fabs(delay_slam) < slam_interval * slam_ratio ? true : false;
 
 	bool hb_thread_localize = true;
@@ -371,13 +374,13 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	double lio_cost_time = slam_->get_lio_cost_time();
 
 	// fill health msg
-	health_msg.cloud_size = orig_point_cloud_size;
+	health_msg.cloud_size = slam_->get_feats_down_size();
 
 	log_info_manager_.slam_info.data[12] = orig_point_cloud_size;
 	log_info_manager_.slam_info.data[14] = sample_point_cloud_size;
 
-	health_msg.delay_cbk_lidar = delay_lidar * 1e3;			   // unit: ms
-	health_msg.delay_cbk_imu = delay_imu * 1e3;				   // unit: ms
+	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;		   // unit: ms
+	health_msg.delay_cbk_imu = delay_imu_ * 1e3;			   // unit: ms
 	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
 	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
 	health_msg.lio_cost_time = lio_cost_time * 1e3;			   // unit: ms
@@ -511,13 +514,6 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		return;
 	}
 
-	// auto last_local_status = localization_status_.load();
-	// if (last_local_status == LocalizationStatus::RelocalizeFailed || last_local_status == LocalizationStatus::Failed)
-	// { 	status_msg.localization_status = static_cast<int>(last_local_status);
-	//      log_info_manager_.slam_info.data[2] = static_cast<int>(last_local_status);
-	//      return;
-	// }
-
 	auto node_status = local_node_status_.load(); //加载地图成功后，Normal；其他时候为Inactive
 
 	auto local_thrd_status = slam_->get_local_thrd_status(); //和离线地图匹配情况
@@ -570,13 +566,6 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 		mapping_status_.store(MappingStatus::Inactive);
 		return;
 	}
-
-	// auto last_mapping_status = mapping_status_.load();
-	// if (last_mapping_status == MappingStatus::RelocalizeFailed || last_mapping_status == MappingStatus::Failed) {
-	// 	status_msg.mapping_status = static_cast<int>(last_mapping_status);
-	// 	// log_info_manager_.slam_info.data[2]= static_cast<int>(last_mapping_status);
-	// 	return;
-	// }
 
 	auto node_status = mapping_node_status_.load();
 	auto slam_run_status = slam_->get_slam_run_status();
@@ -632,17 +621,16 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 	cloud_size_orig_.store(ros_msg->height * ros_msg->width);
 
-	// static double last_lidar_hb = hb_time_cbk_lidar_;
-	// hb_time_cbk_lidar_.store(node_->now().seconds());
-	// hb_time_cbk_lidar_.store(node_->now().seconds());
-	// log_info_manager_.slam_info.data[23] = hb_time_cbk_lidar_ - last_lidar_hb;
-	// last_lidar_hb = hb_time_cbk_lidar_;
-
 	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
-	hb_time_cbk_lidar_.store(curr_msg_time);
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
+
+	auto curr_ros_time = node_->now();
+	double curr_time = rclcpp::Time(curr_ros_time).seconds();
+	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
+	TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
+					 curr_msg_time * 1e3, delay_lidar_ * 1e3);
 
 	if (slam_param_.common.cpu_id.size() > 0) {
 		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
@@ -687,9 +675,13 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	auto curr_msg_time = rclcpp::Time(msg_in->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
-	hb_time_cbk_imu_.store(curr_msg_time);
 	imu_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
+
+	auto curr_ros_time = node_->now();
+	double curr_time = rclcpp::Time(curr_ros_time).seconds();
+	delay_imu_ = curr_time - curr_msg_time; //当前时刻和最新imu消息时间差
+	TRACE_DBG_CLASS("received imu msg, time delay: %.3f ms", delay_imu_ * 1e3);
 
 	// transfer IMU : IMU-frame to baselink-frame
 	Eigen::Vector3d ang_before(msg_in->angular_velocity.x, msg_in->angular_velocity.y, msg_in->angular_velocity.z);
@@ -800,8 +792,8 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status) {
 
 bool LocalizationModule::module_member_init() {
 	double curr_time = node_->now().seconds();
-	hb_time_cbk_lidar_.store(curr_time);
-	hb_time_cbk_imu_.store(curr_time);
+	// hb_time_cbk_lidar_.store(curr_time);
+	// hb_time_cbk_imu_.store(curr_time);
 	hb_time_cbk_module_ctrl_.store(curr_time);
 	hb_time_timer_slam_.store(curr_time);
 

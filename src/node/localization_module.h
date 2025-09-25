@@ -258,13 +258,16 @@ class LocalizationModule {
 	std::atomic<MappingNodeStatus> mapping_node_status_{ MappingNodeStatus::Inactive };
 
 	// 各线程、callback、timer heartbeat
-	std::atomic<double> hb_time_cbk_imu_;
-	std::atomic<double> hb_time_cbk_lidar_;
+	// std::atomic<double> hb_time_cbk_imu_;
+	// std::atomic<double> hb_time_cbk_lidar_;
 	std::atomic<double> hb_time_cbk_module_ctrl_;
 	std::atomic<double> hb_time_timer_slam_;
 
 	double imu_msg_interval_ = 0.005;
 	double lidar_msg_interval_ = 0.1;
+
+	double delay_imu_ = 0.f;
+	double delay_lidar_ = 0.f;
 
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;

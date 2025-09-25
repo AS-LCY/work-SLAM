@@ -738,18 +738,18 @@ bool LidarSlam::run() {
 
 		downSizeFilterCloud_.setInputCloud(undistortCloud_);
 		downSizeFilterCloud_.filter(*FilteredUndistortCloud_);
-		int feats_down_size = FilteredUndistortCloud_->points.size(); //当前帧降采样后点数
-		log_info_manager_.slam_info.data[13] = feats_down_size;
+		feats_down_size_ = FilteredUndistortCloud_->points.size(); //当前帧降采样后点数
+		log_info_manager_.slam_info.data[13] = feats_down_size_;
 		PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType());
 
 		/*** initialize the map kdtree ***/
 		if (ikdtree_->Root_Node == nullptr) {
-			if (feats_down_size > feats_down_size_thr_) {
+			if (feats_down_size_ > feats_down_size_thr_) {
 				ikdtree_->set_downsample_param(config_param_.ikdtree.map_leaf_size);
 				ikdtree_->set_cube_len(config_param_.ikdtree.cube_len);
 				ikdtree_->set_det_range(config_param_.ikdtree.det_range);
 
-				FilteredUndistortCloudInOdom->resize(feats_down_size);
+				FilteredUndistortCloudInOdom->resize(feats_down_size_);
 				FilteredUndistortCloudInOdom =
 					transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_); // point转到odom系下
 				ikdtree_->Build(
@@ -759,14 +759,15 @@ bool LidarSlam::run() {
 			return false;
 		}
 
-		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size);
-		if (feats_down_size < feats_down_size_thr_) {
+		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size_);
+		if (feats_down_size_ < feats_down_size_thr_) {
 			lidar_no_point_count_++;
 			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
 				slam_run_status_.store(SlamRunStatus::SlamFail);
 			}
 			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
-			TRACE_WARN_CLASS("Too few points: %d < thresh: %d, skip this scan!", feats_down_size, feats_down_size_thr_);
+			TRACE_WARN_CLASS("Too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
+							 feats_down_size_thr_);
 			return false;
 		} else {
 			lidar_no_point_count_ = 0;
@@ -774,10 +775,10 @@ bool LidarSlam::run() {
 			slam_run_status_.store(SlamRunStatus::Normal);
 			// TODO(jxl): 应该根据滤波器状态，imu和lidar时延来判断lio状态
 		}
-		FilteredUndistortCloudInOdom->resize(feats_down_size);
+		FilteredUndistortCloudInOdom->resize(feats_down_size_);
 
 		vector<PointVector> Nearest_Points;
-		Nearest_Points.resize(feats_down_size);
+		Nearest_Points.resize(feats_down_size_);
 		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
 											   false); //迭代4次
 		auto filter_pointcloud_and_laser_update_end = std::chrono::high_resolution_clock::now();
