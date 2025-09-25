@@ -317,7 +317,7 @@ void LidarSlam::localizationThread() {
 		} else {
 			if (!globalLocalizationSuccess_) {
 				local_thrd_status_.store(LocalizationStatus::Relocalizing);
-				TRACE_INFO_CLASS("localization status = Relocalizing");
+				TRACE_INFO_CLASS("localization status = Relocalizing...\n");
 
 				if (!getLoadMap()) {
 					TRACE_WARN_CLASS("global localization failed: map not ready ... ");
@@ -349,10 +349,10 @@ void LidarSlam::localizationThread() {
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
 					TRACE_WARN_CLASS("global localization failed: time out \n");
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
-					TRACE_INFO_CLASS("localization status = RelocalizeFailed");
+					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");
 				}
 				if (globalLocalizationSuccess_) {
-					TRACE_INFO_CLASS("global localization success, localization status = Normal");
+					TRACE_INFO_CLASS("global localization success, localization status = Normal...\n");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::Normal);
 					init_T_map_odom_ = localization_->getOdomToMap();
@@ -384,7 +384,7 @@ void LidarSlam::localizationThread() {
 							wait_time++;
 							TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
 											 fgicp_score_low_accuracy_thr);
-							TRACE_INFO_CLASS("localization status = Normal");
+							TRACE_INFO_CLASS("localization status = Normal...\n");
 
 						} else if (fit_score < fgicp_score_fail_thr) {
 							gicp_low_acc_count++;
@@ -392,7 +392,7 @@ void LidarSlam::localizationThread() {
 											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
 							local_thrd_status_.store(LocalizationStatus::LowAccuracy);
 							T_map_odom_ = localization_->getOdomToMap();
-							TRACE_INFO_CLASS("localization status = low accuracy");
+							TRACE_INFO_CLASS("localization status = low accuracy...\n");
 							// need_localize_ = true;
 							// wait_time = 0;
 						} else {
@@ -409,8 +409,9 @@ void LidarSlam::localizationThread() {
 					if (gicp_fail_count >= fgicp_fail_count_thr ||
 						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败
 						local_thrd_status_.store(LocalizationStatus::Failed);
-						TRACE_INFO_CLASS("localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
-										 gicp_fail_count, gicp_low_acc_count);
+						TRACE_INFO_CLASS(
+							"localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d...\n",
+							gicp_fail_count, gicp_low_acc_count);
 
 						globalLocalizationSuccess_ = false; // 停车，进入重定位状态
 						TRACE_INFO_CLASS("next loop enter relocalization mode");
@@ -884,7 +885,7 @@ bool LidarSlam::run() {
 		lidar_no_point_count_ = 0;
 		return true;
 	} else {
-		TRACE_WARN_CLASS("sync measure failed !");
+		// TRACE_WARN_CLASS("sync measure failed !");
 	}
 
 	return false;

@@ -342,8 +342,10 @@ class LocalizationModule {
 	rclcpp::Publisher<Path>::SharedPtr pubOptimizedPath = nullptr;
 	rclcpp::Publisher<Path>::SharedPtr pubUnoptimizedPath = nullptr;
 	rclcpp::Publisher<Path>::SharedPtr pubBaseLinkMapPath = nullptr;
+	rclcpp::Publisher<Path>::SharedPtr pubBaseLinkOdompPath = nullptr;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge = nullptr;
 	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped = nullptr;
+	rclcpp::Publisher<Odometry>::SharedPtr pubLioOdom = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap = nullptr;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubKeyframePose = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubRgbCloud = nullptr;
@@ -358,6 +360,7 @@ class LocalizationModule {
 	Path unoptimized_path_msg;
 	Path optimized_path_msg;
 	Path baselink_in_map_path_msg;
+	Path baselink_in_odom_path_msg;
 
 	/// params load from yaml
 	lidar_slam::LidarSlamParam slam_param_;

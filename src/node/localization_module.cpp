@@ -84,6 +84,7 @@ bool LocalizationModule::create_ROS_IO() {
 	// both 建图 & 定位
 	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(10));
 	// T_map_baselink(里面带线速度)
+	pubLioOdom = node_->create_publisher<nav_msgs::msg::Odometry>("/lio_odom_baselink", rclcpp::QoS(10));
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =
@@ -128,6 +129,7 @@ bool LocalizationModule::create_ROS_IO() {
 
 	pubBaseLinkMapPath = node_->create_publisher<nav_msgs::msg::Path>("/baselink_in_map_path", 10);
 	//(二次)建图，定位模式下，10hz的T_map_baselink
+	pubBaseLinkOdompPath = node_->create_publisher<nav_msgs::msg::Path>("/baselink_in_odom_path", 10);
 
 	pub_pose_graph_ = node_->create_publisher<visualization_msgs::msg::MarkerArray>("/pose_graph/nodes_and_edges", 10);
 
@@ -203,19 +205,19 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 
 	// running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
 	bool running_slam_flag = slam_->run();
-	if (running_slam_flag) {
-		if (pubBodyCloud->get_subscription_count() > 0) {
-			double cloud_time = 0.f;
-			auto cloud = slam_->get_baselink_cloud(cloud_time);
-			publish_cloud(cloud_time, cloud, "base_link", pubBodyCloud);
-		}
-		if (pubOdomCloud->get_subscription_count() > 0) {
-			double cloud_time = 0.f;
-			auto cloud = slam_->get_odom_cloud(cloud_time);
-			publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
-		}
-		// process_loginfo();
+	// if (running_slam_flag) {
+	if (pubBodyCloud->get_subscription_count() > 0) {
+		double cloud_time = 0.f;
+		auto cloud = slam_->get_baselink_cloud(cloud_time);
+		publish_cloud(cloud_time, cloud, "base_link", pubBodyCloud);
 	}
+	if (pubOdomCloud->get_subscription_count() > 0) {
+		double cloud_time = 0.f;
+		auto cloud = slam_->get_odom_cloud(cloud_time);
+		publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
+	}
+	// process_loginfo();
+	// }
 
 	auto localization_status_now = localization_status_.load();
 	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == MappingStatus::Standby) {
@@ -487,7 +489,7 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
 	if (status_msg.localization_status != 0 && status_msg.localization_status != 3 &&
 		status_msg.localization_status != 4) { // Inactive = 0, Normal = 3, LowAccuracy = 4,
-		TRACE_WARN_CLASS("[Status Timer]: localization_status: %d", int(status_msg.localization_status));
+		// TRACE_WARN_CLASS("[Status Timer]: localization_status: %d", int(status_msg.localization_status));
 	}
 	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) { // Inactive = 0, Standby = 3,
 		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
@@ -629,8 +631,8 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
-	TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
-					 curr_msg_time * 1e3, delay_lidar_ * 1e3);
+	// TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
+	// 				 curr_msg_time * 1e3, delay_lidar_ * 1e3);
 
 	if (slam_param_.common.cpu_id.size() > 0) {
 		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID

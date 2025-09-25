@@ -137,7 +137,7 @@ class LocalizationModuleParamManager {
 		double yaw = extrinsic_R[0] / 180 * M_PI;
 		double pitch = extrinsic_R[1] / 180 * M_PI;
 		double roll = extrinsic_R[2] / 180 * M_PI;
-		loaded_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{ yaw, pitch, roll });
+		loaded_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{ yaw, pitch, roll }); // T_imu_lidar
 
 		// IMU in base_link
 		Eigen::Matrix3d R_imu_in_lidar = Eigen::Matrix3d::Identity();
@@ -172,6 +172,12 @@ class LocalizationModuleParamManager {
 			Lidar_In_Wheel[15];
 		loaded_param_.extrinsic.T_wheel_lidar.matrix() = T_wheel_lidar;
 		loaded_param_.extrinsic.T_lidar_wheel = loaded_param_.extrinsic.T_wheel_lidar.inverse();
+
+		//计算T_imu_baselink
+		auto T_imu_lidar = Eigen::Isometry3d::Identity();
+		T_imu_lidar.linear() = loaded_param_.extrinsic.extrinR;
+		T_imu_lidar.translation() = loaded_param_.extrinsic.extrinT;
+		loaded_param_.extrinsic.T_imu_baselink = T_imu_lidar * loaded_param_.extrinsic.T_lidar_wheel;
 
 		/// lidar_preproc params *******************************************
 		node_->declare_parameter<int>("lidar_preproc.lidar_type", 5);

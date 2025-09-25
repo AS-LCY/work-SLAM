@@ -131,6 +131,24 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 
 	pubOdomAftMapped->publish(odomAftMapped);
 
+	//发布T_odom_baselink的里程计
+	Eigen::Isometry3d T_odom_imu_eigen = Eigen::Isometry3d::Identity();
+	T_odom_imu_eigen.translation() = T_odom_imu.imu_state.pos;
+	T_odom_imu_eigen.linear() = T_odom_imu.imu_state.rot.unit_quaternion().toRotationMatrix();
+	auto T_odom_baselink = T_odom_imu_eigen * slam_param_.extrinsic.T_imu_baselink;
+	nav_msgs::msg::Odometry lio_odom;
+	lio_odom.header.stamp = msg_stamp;
+	lio_odom.header.frame_id = "odom";
+	lio_odom.child_frame_id = child_frameid;
+	lio_odom.pose.pose.position.x = T_odom_baselink.translation().x();
+	lio_odom.pose.pose.position.y = T_odom_baselink.translation().y();
+	lio_odom.pose.pose.position.z = T_odom_baselink.translation().z();
+	lio_odom.pose.pose.orientation.x = Eigen::Quaterniond(T_odom_baselink.linear()).x();
+	lio_odom.pose.pose.orientation.y = Eigen::Quaterniond(T_odom_baselink.linear()).y();
+	lio_odom.pose.pose.orientation.z = Eigen::Quaterniond(T_odom_baselink.linear()).z();
+	lio_odom.pose.pose.orientation.w = Eigen::Quaterniond(T_odom_baselink.linear()).w();
+	pubLioOdom->publish(lio_odom);
+
 	geometry_msgs::msg::TransformStamped transform;
 	transform.header.stamp = msg_stamp;
 	transform.header.frame_id = odomAftMapped.header.frame_id;
@@ -159,6 +177,21 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 		baselink_in_map_path_msg.poses.clear();
 	}
 	pubBaseLinkMapPath->publish(baselink_in_map_path_msg);
+
+	// pub T_odom_baselink path
+	baselink_in_odom_path_msg.header.stamp = msg_stamp;
+	baselink_in_odom_path_msg.header.frame_id = "odom";
+	geometry_msgs::msg::PoseStamped odom_msg;
+	odom_msg.header.stamp = msg_stamp;
+	odom_msg.header.frame_id = child_frameid;
+	odom_msg.pose = lio_odom.pose.pose;
+	baselink_in_odom_path_msg.poses.push_back(odom_msg);
+	auto odom_path_size = baselink_in_odom_path_msg.poses.size();
+	auto odom_keep_path_length = 3 * 1000; // 10hz, 300s path
+	if (odom_path_size > odom_keep_path_length) {
+		baselink_in_odom_path_msg.poses.clear();
+	}
+	pubBaseLinkOdompPath->publish(baselink_in_odom_path_msg);
 }
 
 void LocalizationModule::publish_OdomToMap_tf(const double& lidar_in_map_time, const Eigen::Isometry3d& T_map_odom) {
