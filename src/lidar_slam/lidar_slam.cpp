@@ -68,10 +68,6 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	downSizeFilterCloud_test_.setLeafSize(cloud_leaf_size_test, cloud_leaf_size_test, cloud_leaf_size_test);
 
 	// lidar & imu 预处理
-	const auto blind_distance = config_param_.lidar_preproc.blind_distance;
-	const auto point_filter_num = config_param_.lidar_preproc.point_filter_num;
-	const auto line_count = config_param_.lidar_preproc.line_count;
-
 	const auto gyr_cov = config_param_.mapping.gyr_cov;
 	const auto acc_cov = config_param_.mapping.acc_cov;
 	const auto b_gyr_cov = config_param_.mapping.b_gyr_cov;

@@ -32,7 +32,7 @@
 
       lidar_no_point_count_thr:  10
       check_delay: false
-      feats_down_size_thr: 200 # 降采样后的点个数不能小于200个
+      feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       use_pose_filter: false
       cpu_id: [4, 5]
 
@@ -86,9 +86,9 @@
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
       # feature_enabled: false  # default to false
-      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
-      point_filter_num: 6 # 每隔多少个点采样一个点, # 没有起作用
-      ring_filter_num: 1  # 这个参数没有起作用
+      extract_cloud_method: 0 ## # 没有起作用  (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
+      point_filter_num: 6 # # 没有起作用 每隔多少个点采样一个点,  
+      ring_filter_num: 1  # 没有起作用
 
       leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
       leafsize_vec: [0.2, 0.8] # voxel 所需参数

@@ -271,11 +271,8 @@ class LocalizationModule {
 
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;
-
 	std::atomic<HealthStatus> health_status_{ HealthStatus::AllOk };
-
-	std::atomic<int> cloud_size_orig_{ 0 };
-	std::atomic<int> cloud_size_sample_{ 0 };
+	std::atomic<int> cloud_size_after_preprocess_{ 0 };
 
 	Eigen::Isometry3d T_lidar_baselink_;
 
@@ -365,8 +362,6 @@ class LocalizationModule {
 	/// params load from yaml
 	lidar_slam::LidarSlamParam slam_param_;
 
-	// static std::atomic<double> livox_cbk_update_time_;
-
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();
 
@@ -378,9 +373,6 @@ class LocalizationModule {
 	tf2_ros::Buffer tf_buffer_;
 	tf2_ros::TransformListener tf_listener_;
 };
-
-// localization_module::LocalizationModuleLogInfoManager& LocalizationModule::log_info_manager_ =
-// 	localization_module::LocalizationModuleLogInfoManager::getInstance();
 
 } // namespace localization_module
 

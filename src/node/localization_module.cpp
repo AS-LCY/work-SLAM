@@ -8,7 +8,6 @@
 namespace localization_module {
 
 std::atomic<ModuleStatus> LocalizationModule::running_module_status_(ModuleStatus::MODULE_IDLE);
-// std::atomic<double> LocalizationModule::livox_cbk_update_time_(0.0);
 
 LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatus init_status)
 	: node_(node), br_(node_), tf_buffer_(node_->get_clock()), tf_listener_(tf_buffer_) {
@@ -69,7 +68,7 @@ bool LocalizationModule::create_ROS_IO() {
 	sub_imu_ = node_->create_subscription<sensor_msgs::msg::Imu>(
 		slam_param_.lidar_preproc.sub_imu_topic, imu_qos,
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
-	// TODO(jxl): imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
+	// imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
 
 	pub_localization_module_status_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleStatus>(
 		slam_param_.common.pub_topic_module_status, rclcpp::QoS(10));
@@ -361,13 +360,11 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	}
 
 	// check lidar driver
-	int orig_point_cloud_size = cloud_size_orig_.load();
-	int sample_point_cloud_size = cloud_size_sample_.load();
-	if (orig_point_cloud_size < point_cloud_size_thr) {
+	int cloud_size_after_preprocess = cloud_size_after_preprocess_.load();
+	if (cloud_size_after_preprocess < point_cloud_size_thr) {
 		error_lidar_point_too_few = true;
 	}
-
-	if (slam_param_.lidar_preproc.lidar_type == 1 && orig_point_cloud_size == 96) {
+	if (slam_param_.lidar_preproc.lidar_type == 1 && cloud_size_after_preprocess == 96) {
 		TRACE_ERR_CLASS("livox driver error, cloud-size: 96");
 		error_livox_driver_failed = true;
 		health_status_now = static_cast<HealthStatus>(std::max(2, static_cast<int>(health_status_now)));
@@ -376,10 +373,11 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	double lio_cost_time = slam_->get_lio_cost_time();
 
 	// fill health msg
-	health_msg.cloud_size = slam_->get_feats_down_size();
+	health_msg.cloud_size = cloud_size_after_preprocess;
+	health_msg.downsampled_cloud_size = slam_->get_feats_down_size();
 
-	log_info_manager_.slam_info.data[12] = orig_point_cloud_size;
-	log_info_manager_.slam_info.data[14] = sample_point_cloud_size;
+	log_info_manager_.slam_info.data[12] = cloud_size_after_preprocess;
+	log_info_manager_.slam_info.data[14] = slam_->get_feats_down_size();
 
 	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;		   // unit: ms
 	health_msg.delay_cbk_imu = delay_imu_ * 1e3;			   // unit: ms
@@ -619,10 +617,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 }
 
 void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg) {
-	static const int cloud_size_to_keep = slam_param_.lidar_preproc.cloud_size_to_keep;
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
-	cloud_size_orig_.store(ros_msg->height * ros_msg->width);
-
 	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
@@ -642,8 +637,6 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 		}
 	}
 
-	// livox_cbk_update_time_.store(rclcpp::Time(ros_msg->header.stamp).seconds());
-
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
 		curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
@@ -658,9 +651,8 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	static const auto col_count = slam_param_.lidar_preproc.cloud_column_count;
 	PointCloudType::Ptr cloud_preproc_ptr(new PointCloudType());
 	cloud_preproc_ptr->points.reserve(ring_count * col_count);
-	lidar_ptr_->pre_process(ros_msg, cloud_preproc_ptr); // 降采样，去NAN
-	int cloud_preproc_size = cloud_preproc_ptr->points.size();
-	cloud_size_sample_.store(cloud_preproc_size);
+	lidar_ptr_->pre_process(ros_msg, cloud_preproc_ptr); //间隔取点，去NAN, 去盲点
+	cloud_size_after_preprocess_.store(cloud_preproc_ptr->points.size());
 
 	double t1 = omp_get_wtime();
 	slam_->lidar_pcl_cbk(cloud_preproc_ptr); // 传入降采样后的点云给算法
