@@ -268,40 +268,8 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<double>("localization.fgicp_score_low_accuracy_thr", 0.1);
 		node_->get_parameter("localization.fgicp_score_low_accuracy_thr",
 							 loaded_param_.localization.fgicp_score_low_accuracy_thr);
-		node_->declare_parameter<int>("localization.filter_method", 1);
-		node_->get_parameter("localization.filter_method", loaded_param_.localization.filter_method);
-		node_->declare_parameter<float>("localization.fst_order_k", 0.7);
-		node_->get_parameter("localization.fst_order_k", loaded_param_.localization.fst_order_k);
-		node_->declare_parameter<double>("localization.odom2map_delta_thr", 0.05);
-		node_->get_parameter("localization.odom2map_delta_thr", loaded_param_.localization.odom2map_delta_thr);
-		node_->declare_parameter<double>("localization.odom2map_delta_set", 0.01);
-		node_->get_parameter("localization.odom2map_delta_set", loaded_param_.localization.odom2map_delta_set);
-		node_->declare_parameter<double>("localization.lidar_ratio", 0.2);
-		node_->get_parameter("localization.lidar_ratio", loaded_param_.localization.lidar_ratio);
-		node_->declare_parameter<double>("localization.baselink_dy_thr", 0.02);
-		node_->get_parameter("localization.baselink_dy_thr", loaded_param_.localization.baselink_dy_thr);
-		node_->declare_parameter<double>("localization.baselink_dx_thr", 0.04);
-		node_->get_parameter("localization.baselink_dx_thr", loaded_param_.localization.baselink_dx_thr);
-		node_->declare_parameter<double>("localization.baselink_dyaw_thr", 0.5);
-		node_->get_parameter("localization.baselink_dyaw_thr", loaded_param_.localization.baselink_dyaw_thr);
-
-		node_->declare_parameter<int>("localization.window_size", 5);
-		node_->get_parameter("localization.window_size", loaded_param_.localization.window_size);
-		node_->declare_parameter<int>("localization.filter_freq", 100);
-		node_->get_parameter("localization.filter_freq", loaded_param_.localization.filter_freq);
-
-		node_->declare_parameter<double>("localization.chassis_linear_velocity_thr", 0.02);
-		node_->get_parameter("localization.chassis_linear_velocity_thr",
-							 loaded_param_.localization.chassis_linear_velocity_thr);
-		node_->declare_parameter<double>("localization.motionless_chassis_ratio", 0.98);
-		node_->get_parameter("localization.motionless_chassis_ratio",
-							 loaded_param_.localization.motionless_chassis_ratio);
-		node_->declare_parameter<double>("localization.lidar_cbk_delay_thr", 2.0);
-		node_->get_parameter("localization.lidar_cbk_delay_thr", loaded_param_.localization.lidar_cbk_delay_thr);
-
 		node_->declare_parameter<int>("localization.fgicp_fail_count_thr", 5);
 		node_->get_parameter("localization.fgicp_fail_count_thr", loaded_param_.localization.fgicp_fail_count_thr);
-
 		node_->declare_parameter<int>("localization.fgicp_low_accuracy_count_thr", 180);
 		node_->get_parameter("localization.fgicp_low_accuracy_count_thr",
 							 loaded_param_.localization.fgicp_low_accuracy_count_thr);

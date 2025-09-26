@@ -168,8 +168,7 @@ bool Localization::loadMap(std::string path) {
 }
 
 bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& fit_score, double score_fail_thr,
-							double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set,
-							bool use_pose_filter) {
+							double score_low_accuracy_thr) {
 	double localize_start = omp_get_wtime();
 	static double odom2map_x_filter = 0.0;
 	static double odom2map_y_filter = 0.0;

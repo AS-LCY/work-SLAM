@@ -293,10 +293,6 @@ void LidarSlam::localizationThread() {
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
 
-	const auto odom2map_delta_thr = config_param_.localization.odom2map_delta_thr;
-	const auto odom2map_delta_set = config_param_.localization.odom2map_delta_set;
-	const auto use_pose_filter = config_param_.common.use_pose_filter;
-
 	const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
 	const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
 	const auto fgicp_fail_count_thr = config_param_.localization.fgicp_fail_count_thr;
@@ -378,8 +374,7 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("start localization ...");
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
-					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr,
-												odom2map_delta_thr, odom2map_delta_set, use_pose_filter)) {
+					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr)) {
 						log_info_manager_.slam_info.data[3] = 1; // converge
 						if (fit_score < fgicp_score_low_accuracy_thr) {
 							local_thrd_status_.store(LocalizationStatus::Normal);

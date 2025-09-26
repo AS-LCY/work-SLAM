@@ -41,8 +41,7 @@ class Localization {
 	bool loadMap(std::string path);
 
 	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& score, double score_fail_thr,
-				  double score_low_accuracy_thr, double odom2map_delta_thr, double odom2map_delta_set,
-				  bool use_pose_filter);
+				  double score_low_accuracy_thr);
 
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
