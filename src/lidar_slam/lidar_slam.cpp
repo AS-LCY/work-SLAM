@@ -220,7 +220,7 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	auto points_num = meas.lidar->points.size();
 	log_info_manager_.slam_info.data[30] = points_num;
 
-	// auto point_thresh = 2000;
+	// auto point_thresh = 3000;
 	// if (points_num < point_thresh) {
 	// 	TRACE_WARN_CLASS("ignore this sync, too few points: %d, thresh: %d", points_num, point_thresh);
 	// 	return false;
@@ -695,6 +695,7 @@ bool LidarSlam::run() {
 		p_imu_->Process(Measures_, kf_, pre_undistortCloud_);
 		// 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
 		// 雷达points在最后一个点时刻的laser_frame下
+		// 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
 
 		std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
 		undistortCloud_ = pre_undistortCloud_;

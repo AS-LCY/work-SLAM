@@ -13,7 +13,9 @@ bool LidarPreprocMid360::pre_process(const sensor_msgs::msg::PointCloud2::Shared
 		msg2pcl_clip(ros_msg_in, cloud_dense_);
 
 		pcl_xyzin_out->clear();
-		sampling_cloud(cloud_dense_, pcl_xyzin_out);
+		// sampling_cloud(cloud_dense_, pcl_xyzin_out);
+		pcl_xyzin_out = cloud_dense_;
+
 	} else if (extract_cloud_method_ == 3) {
 	} else {
 		return false;
