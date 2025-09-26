@@ -75,6 +75,10 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("common.lidar_no_point_count_thr", loaded_param_.common.lidar_no_point_count_thr);
 		node_->declare_parameter<bool>("common.use_pose_filter", false);
 		node_->get_parameter("common.use_pose_filter", loaded_param_.common.use_pose_filter);
+
+		node_->declare_parameter<int>("common.feats_down_size_thr", 200);
+		node_->get_parameter("common.feats_down_size_thr", loaded_param_.common.feats_down_size_thr);
+
 		node_->declare_parameter<std::vector<long int>>("common.cpu_id", std::vector<long int>());
 		node_->get_parameter("common.cpu_id", loaded_param_.common.cpu_id);
 

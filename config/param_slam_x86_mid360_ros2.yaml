@@ -44,18 +44,26 @@
       extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
       #这个参数和上面的extrinsic_R是逆的关系
 
-      # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # 红色机器  # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
-      extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0] # 设计角度   # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # test-car   # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [0.0, 5.0, 0.0] # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -13.119] # unit(degree) yaw, pitch, roll
+      # zhengfu bags
+      # extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0]  # unit(degree) yaw, pitch, roll
+
+      # extrinsic_euler_lidar_in_baselink: [-90.645, 0.35, -3.448] #转90度安装，172.18.0.16，tx=0.37, ty=0, tz=0.202
+
+      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] #正着装机器，172.18.3.231
       
-      Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.306,
+      # zhengfu bags
+      # Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.306,
+      #                   0.0,  1.0,  0.0,  0.0,
+      #                   0.0,  0.0,  1.0,  0.156,
+      #                   0.0,  0.0,  0.0,  1.0]
+      
+      #正着装机器，172.18.3.231
+      Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.274,
                         0.0,  1.0,  0.0,  0.0,
-                        0.0,  0.0,  1.0,  0.156,
+                        0.0,  0.0,  1.0,  0.203,
                         0.0,  0.0,  0.0,  1.0]
+        
+
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
@@ -89,7 +97,7 @@
       sub_imu_topic: "/livox/imu"
 
       line_count: 4 # 没有起作用 
-      blind_distance: 0.2 # 忽略掉距离雷达小于这个阈值的点
+      blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
       z_range: [-5.0, 20.0] #TODO(jxl): z > 20m点被过滤掉了
 

@@ -221,8 +221,14 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 
 		return false;
 	}
-	log_info_manager_.slam_info.data[30] = meas.lidar->points.size();
-	// log_info_manager_.slam_info.data[31] = lidar_buffer_.front()->points.size(); //跟[30]重复了
+	auto points_num = meas.lidar->points.size();
+	log_info_manager_.slam_info.data[30] = points_num;
+
+	// auto point_thresh = 2000;
+	// if (points_num < point_thresh) {
+	// 	TRACE_WARN_CLASS("ignore this sync, too few points: %d, thresh: %d", points_num, point_thresh);
+	// 	return false;
+	// }
 
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
