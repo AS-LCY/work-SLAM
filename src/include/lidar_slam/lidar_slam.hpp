@@ -50,34 +50,6 @@
 #include "lidar/robosense/pcl_point_type_def_rs.h"
 
 namespace lidar_slam {
-struct LidarParam {
-	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-	V3D extrinT;
-	M3D extrinR;
-	Eigen::Isometry3d T_wheel_lidar = Eigen::Isometry3d::Identity();
-	bool localization_mode;
-	bool offline_mode;
-	std::string load_map_path;
-	std::string save_log_path;
-	double log_keep_time;
-	double cloud_leaf_size;
-	double map_leaf_size;
-	double cube_len;
-	double det_range;
-	double blind_distance;
-	double obstacle_max_range;
-	double obstacle_min_height;
-	double obstacle_max_height;
-	double obstacle_filter_size;
-	int point_filter_num;
-	double key_frame_distance;
-	double key_frame_angle;
-	double loopSearchDistance;
-	double kdTreeReconstructRadius;
-	double kdTreeReconstructKeyFrameLeafSize;
-	double kdTreeReconstructPointLeafSize;
-};
 
 struct Localization_base {
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -303,7 +275,6 @@ class LidarSlam {
 	std::atomic<double> hb_time_thread_loop_closure_;	   // status = MAPPING or SEC_MAPPING
 	std::atomic<double> hb_time_thread_secmap_relocalize_; // status = SECMAPPING
 
-	// LidarParam param;
 	LidarSlamParam config_param_;
 	int feats_down_size_thr_ = 100;
 	bool flag_keep_only_last_lidar_ = true;

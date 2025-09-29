@@ -535,24 +535,12 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
 		localization_status_.store(LocalizationStatus::Inactive);
 	} else if (node_status == LocalNodeStatus::Normal) {
-		// if (slam_run_status == SlamRunStatus::Normal) {
-		// 	status_msg.localization_status = static_cast<int>(local_thrd_status);
-		// 	localization_status_.store(local_thrd_status); // 与 定位线程的状态一致
-		// } else if (slam_run_status == SlamRunStatus::SlamFail) {
-		// 	status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		// 	localization_status_.store(LocalizationStatus::Failed);
-		// }
 		status_msg.localization_status = static_cast<int>(local_thrd_status);
 		localization_status_.store(local_thrd_status);
 	} else if (node_status == LocalNodeStatus::LidarCallbackDelay) {
 		TRACE_ERR_CLASS("lidar cbk delay !!!");
-		// status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		// localization_status_.store(LocalizationStatus::Failed);
 	} else if (node_status == LocalNodeStatus::LocalizeThreadDelay) {
 		TRACE_ERR_CLASS("localize thread delay  !!!");
-		// status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-		// localization_status_.store(LocalizationStatus::Failed);
-		// TRACE_ERR_CLASS("localization status error, set to Failed");
 	}
 
 	status_msg.lio_status = static_cast<int>(slam_run_status);
@@ -708,30 +696,6 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 		return;
 	}
 }
-
-// void LocalizationModule::publish_unoptimized_path(
-// 	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
-// 	geometry_msgs::msg::PoseStamped msg;
-
-// 	unoptimized_path_msg.poses.clear();
-// 	unoptimized_path_msg.header.stamp = node_->now();
-// 	unoptimized_path_msg.header.frame_id = frame;
-
-// 	for (int i = 0; i < path.size(); i++) {
-// 		msg.header.stamp = node_->now();
-// 		msg.header.frame_id = frame;
-// 		msg.pose.position.x = path[i].translation().x();
-// 		msg.pose.position.y = path[i].translation().y();
-// 		msg.pose.position.z = path[i].translation().z();
-// 		/*Eigen::Quaterniond quaternion = path[i].rotation();
-// 		msg.pose.orientation.x = quaternion.x();
-// 		msg.pose.orientation.y = quaternion.y();
-// 		msg.pose.orientation.z = quaternion.z();
-// 		msg.pose.orientation.w = quaternion.w();*/
-// 		unoptimized_path_msg.poses.push_back(msg);
-// 	}
-// 	pubUnoptimizedPath->publish(unoptimized_path_msg);
-// }
 
 void LocalizationModule::publish_optimized_path(
 	const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {

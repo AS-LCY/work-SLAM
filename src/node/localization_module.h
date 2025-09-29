@@ -170,11 +170,7 @@ class LocalizationModule {
 
 	void imu_callback(Imu::SharedPtr msg_in);
 	void lidar_ros_callback(const PointCloud2::SharedPtr ros_msg);
-	// void chassis_callback(const ChassisData::SharedPtr msg_in);
 
-	// void publish_unoptimized_path(
-	// 	const std::deque<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
-	// 	const std::string& frame);
 	void publish_optimized_path(const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
 								const std::string& frame);
 
@@ -182,32 +178,13 @@ class LocalizationModule {
 	void publish_cloud(const double& cloud_time, PointCloudType::Ptr pcl_cloud_in, const std::string& frame_id,
 					   rclcpp::Publisher<PointCloud2>::SharedPtr pub);
 
-	// 发布里程计
-	void publish_odometry(const Eigen::Isometry3d& isometry_3d, const std::string& frameid,
-						  const std::string& child_frameid, rclcpp::Publisher<Odometry>::SharedPtr pub);
-
 	// 发布地图中的激光雷达位姿
 	void publish_odometry_lidar_in_map(const double& lidar_in_map_time, const Eigen::Isometry3d& lidar_in_map,
 									   const lidar_slam::Localization_base& T_odom_imu, const std::string& frameid,
 									   const std::string& child_frameid, ModuleStatus curr_running_module_status);
 	void publish_OdomToMap_tf(const double& lidar_in_map_time, const Eigen::Isometry3d& T_map_odom);
 
-	// void publish_odometry_in_map(const Eigen::Isometry3d& lidar_in_map, const std::string& frameid,
-	// 							 const std::string& child_frameid);
 	void process_loginfo();
-
-	// 发布测试点云
-	// void pub_test_cloud(PointCloudType::Ptr msg_in, bool localization_mode);
-
-	// void publish_static_transform(const Eigen::Isometry3d& wheel_in_lidar);
-
-	// 发布动态变换
-	// void publish_transform(const Eigen::Isometry3d& correction, const std::string& parent, const std::string& child);
-
-	// 发布激光雷达到地图的变换
-	// void publish_lidar_to_map(const Eigen::Isometry3d& lidar_in_map);
-
-	// void visualizeLoopClosure(const std::map<int, int>& loopIndexContainer, Path& optimized_path_msg);
 
 	void visualizePoseGraph(const std::vector<KeyPose>& poses, const std::vector<std::pair<int, int>>& loop_edges);
 
@@ -215,8 +192,6 @@ class LocalizationModule {
 	// 	const std::vector<lidar_slam::ScInfo, Eigen::aligned_allocator<lidar_slam::ScInfo>>& loadKeyframe);
 
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
-
-	// void fill_slipping_msg(flbot_msgs::NameValues& slipping_msg);
 
 	// 检查并填充健康消息
 	common_status::HealthStatus check_fill_health_msg(ModuleStatus curr_running_module_status,
@@ -354,7 +329,6 @@ class LocalizationModule {
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_pose_graph_ = nullptr;
 
 	// 路径消息
-	Path unoptimized_path_msg;
 	Path optimized_path_msg;
 	Path baselink_in_map_path_msg;
 	Path baselink_in_odom_path_msg;

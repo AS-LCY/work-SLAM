@@ -8,17 +8,7 @@
       
       init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
       time_sync_en: false
-      localization_mode: false # 没有起作用
       
-      offline_mode: false # 没有起作用
-      temp_test_offline: true # 没有起作用 
-      fast_mode: false # 没有起作用 
-      just_show_mode: false # 没有起作用 
-      show_rviz: false # 没有起作用
-
-      save_log_dir: "/home/" # 没有起作用
-      log_keep_time: 500.0 # 没有起作用
-
       map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
       map_directory: "/home/nb00085/maps/" #保存地图的路径
       
@@ -30,10 +20,9 @@
       receive_lidar_freq: 10 # unit: hz
       slam_lose_rate_time_thr: 0.12 # unit: second
 
-      lidar_no_point_count_thr:  10
       check_delay: false
-      feats_down_size_thr: 200 # 降采样后的点个数不能小于200个
-      use_pose_filter: false
+      before_downsample_size_thr: 3000 # 降采样前点个数不能小于3000个
+      feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
     extrinsic:    
@@ -47,9 +36,9 @@
       # zhengfu bags
       # extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0]  # unit(degree) yaw, pitch, roll
 
-      # extrinsic_euler_lidar_in_baselink: [-90.645, 0.35, -3.448] #转90度安装，172.18.0.16，tx=0.37, ty=0, tz=0.202
+      # extrinsic_euler_lidar_in_baselink: [-90.645, 0.35, -3.448] # 转90度安装，172.18.0.16，tx=0.37, ty=0, tz=0.202
 
-      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] #正着装机器，172.18.3.231
+      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] # 正着装机器，172.18.3.231
       
       # zhengfu bags
       # Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.306,
@@ -65,40 +54,35 @@
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
-      fgicp_peroid_sec: 60.0  #600 # 时间周期，单位： 秒
+      fgicp_peroid_sec: 1.0  #定位线程1hz运行，每3s匹配一次，单位： 秒
       fgicp_score_fail_thr: 0.3
       fgicp_score_low_accuracy_thr: 0.07
-      fgicp_fail_count_thr: 5
+      fgicp_fail_count_thr: 3
       fgicp_low_accuracy_count_thr: 1800
-
 
     lidar_preproc:
       lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
       sub_lidar_topic: "/livox/lidar"
       sub_imu_topic: "/livox/imu"
 
-      line_count: 4 # 没有起作用 
       blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
-      z_range: [-5.0, 20.0] #TODO(jxl): z > 20m点被过滤掉了
+      z_range: [-5.0, 20.0] # z > 20m点在预处理阶段被过滤掉了
 
-      keep_lidar_num_before_curr: 3 #TODO(jxl): buffer阈值有点太小
+      keep_lidar_num_before_curr: 3 # lidar buffer size
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
-      # feature_enabled: false  # default to false
       extract_cloud_method: 0 ## # 没有起作用  (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
       point_filter_num: 6 # # 没有起作用 每隔多少个点采样一个点,  
       ring_filter_num: 1  # 没有起作用
 
       leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
+
       leafsize_vec: [0.2, 0.8] # voxel 所需参数
       voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax
       boundary_z: 3.0 # init: m
       
-    
-
-      grid_size: 0.05 # unit: m   # 没有起作用
-      time_cost_thr_print: 10.0 # unit: ms
+      time_cost_thr_print: 10.0 # unit: ms，雷达预处理阶段耗时阈值
 
     mapping:
       acc_cov: 0.017573468691815922
@@ -118,7 +102,6 @@
       save_map_resolution: 0.1 # unit: m
 
     re_localization:
-      
       score_thr: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 

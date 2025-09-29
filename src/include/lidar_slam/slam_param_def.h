@@ -37,9 +37,6 @@ struct LidarPreprocParam {
 	float surf_curvature_thr = 0.1;
 	float surf_leafsize = 0.4;
 
-	///// extract by line_feature: livox
-	int line_count;
-
 	float blind_distance;
 	float max_distance;
 	std::vector<double> z_range = { -5.0, 20.0 };
@@ -51,7 +48,6 @@ struct LidarPreprocParam {
 	std::vector<double> leafsize_vec = { 0.2, 0.5 };
 	std::vector<double> voxel_region_xyz;
 	double boundary_z = 2;
-	double grid_size;
 	double time_cost_thr_print = 10;
 };
 

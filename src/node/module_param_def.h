@@ -11,28 +11,19 @@ namespace lidar_slam {
 struct CommonParam {
 	bool run_on_mower = true;
 	bool time_sync_en = false;
-	bool localization_mode = false;
-	bool offline_mode = false;
-	bool fast_mode = false;
-	bool just_show_mode = false;
-	bool show_rviz = true;
-	double log_keep_time = 0;
-	std::string save_log_dir = "/home/";
 	int map_relative_to = 0;
 	std::string map_directory = "/map/";
 	std::string cloud_map_directory = "/map/";
 	std::string sub_topic_ctrl_cmd;
 	std::string pub_topic_module_status;
 	std::string pub_topic_module_health;
-
 	std::string pub_topic_module_loginfo;
 	std::string pub_topic_slipping;
 	int receive_lidar_freq = 10;
 	double slam_lose_rate_time_thr = 0.1;
-	int lidar_no_point_count_thr = 10;
 	bool check_delay = false;
+	int before_downsample_size_thr = 3000;
 	int feats_down_size_thr = 100;
-	bool use_pose_filter = false;
 	std::vector<long int> cpu_id;
 };
 

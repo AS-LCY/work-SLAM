@@ -1,28 +1,16 @@
 /localization_module: 
   ros__parameters:
     common:
-      run_on_mower: true # true / false, default to: true
+      run_on_mower: true # true时, 【map_directory_on_mower】参数会覆盖【map_directory】参数；false时还是由【map_directory】决定
+      # map_directory_on_mower: "/home/firefly/fl_localization_ws/maps/"
       map_directory_on_mower: "/root/Public/fl_localization_ws/maps/"
       cpu_id_on_mower: [4,5,6]
+      
       init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
       time_sync_en: false
-      localization_mode: false
-      offline_mode: false
-      temp_test_offline: true ###########################( true false ), default to "false", if test with offline bag, set to "true"
-      fast_mode: false
-      just_show_mode: false
-      show_rviz: false
-      save_log_dir: "/home/"
-      log_keep_time: 500.0
+      
       map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-      # map_directory: "/home/forlinx/ws_flbot/maps/1/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/v2/1019/1/1-mapping/3dmap"
-      # map_directory: "/home/pmm/data/3-vanjee/0106/3dmap-mid360/"
-      # map_directory: "/home/pmm/data/3-vanjee/0107/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/v2/1009-23f/3dmap/"
-      # map_directory: "/home/pmm/data/1-livox/relocal/0114/3dmap/"
-      map_directory: "/root/Public/fl_localization_ws/maps/"
-      # map_directory: "/home/pmm/data/1-livox/2025/0208-th-cover/maps/"
+      map_directory: "/root/Public/fl_localization_ws/maps/" #保存地图的路径
       
       sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
       pub_topic_module_status: "/flbot/localization_module/module_status"
@@ -31,102 +19,89 @@
       pub_topic_slipping: "/flbot/localization_module/slipping_old"
       receive_lidar_freq: 10 # unit: hz
       slam_lose_rate_time_thr: 0.12 # unit: second
-      lidar_no_point_count_thr:  10
+
       check_delay: false
-      feats_down_size_thr: 200
-      use_pose_filter: false
-      # cpu_id: []
+      before_downsample_size_thr: 3000 # 降采样前点个数不能小于3000个
+      feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
     extrinsic:    
-      extrinsic_est_en:  false      # true: enable the online estimation of IMU-LiDAR extrinsic
-      extrinsic_T: [ 0.0, -0.02329, 0.04412 ] 
-      extrinsic_R: [ 0.0,  0.0,  0.0]  # unit(degree), yaw, pitch, roll  
+      extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
+      extrinsic_T: [ 0.0, -0.02329, 0.04412 ]   # T_imu_lidar
+      extrinsic_R: [ 0.0,  0.0,  0.0]  # unit(degree), yaw, pitch, roll
 
       extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # 红色机器  # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90.823513, -0.200183, -5.899221] # 银色机器   # unit(degree) yaw, pitch, roll
-      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] # 设计角度   # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-89.958343, 0.655459, -6.243460] # test-car   # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [0.0, 5.0, 0.0] # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -5.0] # unit(degree) yaw, pitch, roll
-      # extrinsic_euler_lidar_in_baselink: [-90, 0.0, -13.119] # unit(degree) yaw, pitch, roll
+      #这个参数和上面的extrinsic_R是逆的关系
 
+      # zhengfu bags
+      # extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0]  # unit(degree) yaw, pitch, roll
+
+      # extrinsic_euler_lidar_in_baselink: [-90.645, 0.35, -3.448] # 转90度安装，172.18.0.16，tx=0.37, ty=0, tz=0.202
+
+      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] # 正着装机器，172.18.3.231
+      
+      # zhengfu bags
+      # Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.306,
+      #                   0.0,  1.0,  0.0,  0.0,
+      #                   0.0,  0.0,  1.0,  0.156,
+      #                   0.0,  0.0,  0.0,  1.0]
+      
+      #正着装机器，172.18.3.231
       Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.274,
                         0.0,  1.0,  0.0,  0.0,
                         0.0,  0.0,  1.0,  0.203,
                         0.0,  0.0,  0.0,  1.0]
+      #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
-      fgicp_peroid_sec: 60.0  #600 # 时间周期，单位： 秒
-      # fgicp_score_thr: 0.1
+      fgicp_peroid_sec: 1.0  #定位线程1hz运行，每3s匹配一次，单位： 秒
       fgicp_score_fail_thr: 0.3
       fgicp_score_low_accuracy_thr: 0.07
-      fgicp_fail_count_thr: 5
+      fgicp_fail_count_thr: 3
       fgicp_low_accuracy_count_thr: 1800
-      # pose filter
-      filter_method: 1 # 0-一阶滤波 # 1-窗口滤波
-      fst_order_k: 0.7
-      odom2map_delta_thr: 0.05 # double: m
-      odom2map_delta_set: 0.01 # double: m
-      lidar_ratio: 0.2
-      baselink_dy_thr: 0.02
-      baselink_dx_thr: 0.04
-      baselink_dyaw_thr: 0.5 # unit: degree
-      window_size: 4 
-      filter_freq: 100
-      using_turning_proc: true
-      chassis_linear_velocity_thr: 0.02
-      motionless_chassis_ratio: 0.98
-      lidar_cbk_delay_thr: 2.0 # 
 
     lidar_preproc:
-      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  # 
+      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
       sub_lidar_topic: "/livox/lidar"
       sub_imu_topic: "/livox/imu"
-      # sub_lidar_topic: "/robosense/lidar"
-      # sub_imu_topic: "/robosense/imu"
-      line_count: 4 # 此参数在提取特征点（mid360）时用上，其余没有
-      blind_distance: 0.5
+
+      blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
-      z_range: [-5.0, 20.0]
-      keep_lidar_num_before_curr: 3 #  取值 >= 0, 0 表示只保留最后一帧， 1 表示可多缓存一帧； 其余的当算不过来时则跳过
-      # point_filter_distance: [40, 40, 15] # unit: m; if(abs(point_x)>50 || abs(point_y)>50) then ignore;
-      cloud_size_to_keep: 3500
-      # feature_enabled: false  # default to false
-      extract_cloud_method: 0 ## (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature  
-      point_filter_num: 6 # 间隔采样所需参数
-      ring_filter_num: 1
+      z_range: [-5.0, 20.0] # z > 20m点在预处理阶段被过滤掉了
+
+      keep_lidar_num_before_curr: 3 # lidar buffer size
+      cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
+
+      extract_cloud_method: 0 ## # 没有起作用  (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature
+      point_filter_num: 6 # # 没有起作用 每隔多少个点采样一个点,  
+      ring_filter_num: 1  # 没有起作用
+
       leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
+
       leafsize_vec: [0.2, 0.8] # voxel 所需参数
       voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax
       boundary_z: 3.0 # init: m
-      # 
-      # obstacle_max_range:  2.5
-      # obstacle_max_height: 0.5
-      # obstacle_min_height: -0.1 # above wheel center
-      # obstacle_filter_size: 20
-      grid_size: 0.05 # unit: m
-      time_cost_thr_print: 10.0 # unit: ms
+      
+      time_cost_thr_print: 10.0 # unit: ms，雷达预处理阶段耗时阈值
 
     mapping:
       acc_cov: 0.017573468691815922
       gyr_cov: 0.01524654486781841 
       b_acc_cov: 0.00025566293746767606
-      b_gyr_cov: 0.0007414029109004667 
-      cloud_leaf_size: 0.5
+      b_gyr_cov: 0.0007414029109004667
+
+      cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
+
       key_frame_distance: 1.0   # unit: m     # 大于此距离为关键帧
       key_frame_angle: 0.2      # unit: rad   # 大于此角度为关键帧
       loopSearchDistance: 1.5
-      loopSearchTimeDiff: 30.0  # unit: sec, 原本30s, 
+      loopSearchTimeDiff: 30.0  # unit: sec
       loopSearchSkipKey: 5  # 跳过的关键帧数， 间隔帧数小于 loopSearchSkipKey ，不参与回环检测搜索
-      loopIcpScore: 0.3 # 原本代码中写死为 0.3
-      # use_ele_pcd_flag: false   # 是否使用单区域pcd
-      # save_ele_pcd_flag: false  # 是否保存单区域pcd
+      loopIcpScore: 0.3
+
       save_map_resolution: 0.1 # unit: m
 
     re_localization:
-      # score_thr: 0.05
       score_thr: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
@@ -136,7 +111,7 @@
       kdTreeReconstructRadius: 400.0
       kdTreeReconstructKeyFrameLeafSize: 10.0
       kdTreeReconstructPointLeafSize: 1.0
-      map_leaf_size: 0.5  # ???为什么在这里  
+      map_leaf_size: 0.5  
       
     detect_slip: 
       detect_window_time_range: 2.0 # unit: second

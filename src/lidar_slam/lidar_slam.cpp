@@ -374,7 +374,7 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (need_localize_) { // 1hz循环一次，每60s定位一次
-					TRACE_INFO_CLASS("\n\n");
+					TRACE_INFO_CLASS("\n");
 					TRACE_INFO_CLASS("start localization ...");
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
@@ -670,8 +670,6 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 }
 
 bool LidarSlam::run() {
-	static const int prm_lidar_no_point_count_thr = config_param_.common.lidar_no_point_count_thr;
-
 	auto run_start = std::chrono::high_resolution_clock::now();
 
 	if (sync_packages(Measures_)) { //在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
@@ -679,7 +677,7 @@ bool LidarSlam::run() {
 		static double last_lidar_time = Measures_.lidar_beg_time;
 
 		auto points_num = Measures_.lidar->points.size();
-		auto point_thresh = 3000;
+		auto point_thresh = config_param_.common.before_downsample_size_thr;
 		if (points_num < point_thresh) {
 			// TRACE_WARN_CLASS("before downsample too few points: %d, thresh: %d", points_num, point_thresh);
 			slam_run_status_.store(SlamRunStatus::BeforeDownSampleTooFewPoints);
@@ -771,6 +769,15 @@ bool LidarSlam::run() {
 		log_info_manager_.slam_info.data[13] = feats_down_size_;
 		PointCloudType::Ptr FilteredUndistortCloudInOdom(new PointCloudType());
 
+		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size_);
+		if (feats_down_size_ < feats_down_size_thr_) {
+			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
+			slam_run_status_.store(SlamRunStatus::AfterDownSampleTooFewPoints);
+			// TRACE_WARN_CLASS("after downsample too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
+			// 				 feats_down_size_thr_);
+			return false;
+		}
+
 		/*** initialize the map kdtree ***/
 		if (ikdtree_->Root_Node == nullptr) {
 			if (feats_down_size_ > feats_down_size_thr_) {
@@ -783,19 +790,11 @@ bool LidarSlam::run() {
 					transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_); // point转到odom系下
 				ikdtree_->Build(
 					FilteredUndistortCloudInOdom->points); // world系下对当前帧降采样后的点云，初始化lkd-tree
+				TRACE_INFO_CLASS("initiate  ikdtree! ");
 			}
-			TRACE_INFO_CLASS("initiate  ikdtree! ");
 			return false;
 		}
 
-		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size_);
-		if (feats_down_size_ < feats_down_size_thr_) {
-			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
-			slam_run_status_.store(SlamRunStatus::AfterDownSampleTooFewPoints);
-			// TRACE_WARN_CLASS("after downsample too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
-			// 				 feats_down_size_thr_);
-			return false;
-		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size_);
 
 		vector<PointVector> Nearest_Points;

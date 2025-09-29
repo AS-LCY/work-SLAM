@@ -58,7 +58,6 @@ class LocalizationFusion {
 
 	// slipping detect
 	int detect_slipping(nav_msgs::Odometry curr_odom);
-	// void fill_slipping_msg(flbot_msgs::NameValues& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
 	void fill_slipping_msg(std_msgs::Float64MultiArray& slipping_msg, ros::Time slam_odom_stamp, int slip_flag);
 
    public:

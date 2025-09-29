@@ -37,20 +37,7 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("common.run_on_mower", loaded_param_.common.run_on_mower);
 		node_->declare_parameter<bool>("common.time_sync_en", false);
 		node_->get_parameter("common.time_sync_en", loaded_param_.common.time_sync_en);
-		node_->declare_parameter<bool>("common.localization_mode", false);
-		node_->get_parameter("common.localization_mode", loaded_param_.common.localization_mode);
-		node_->declare_parameter<bool>("common.offline_mode", false);
-		node_->get_parameter("common.offline_mode", loaded_param_.common.offline_mode);
-		node_->declare_parameter<bool>("common.fast_mode", false);
-		node_->get_parameter("common.fast_mode", loaded_param_.common.fast_mode);
-		node_->declare_parameter<bool>("common.just_show_mode", false);
-		node_->get_parameter("common.just_show_mode", loaded_param_.common.just_show_mode);
-		node_->declare_parameter<bool>("common.show_rviz", false);
-		node_->get_parameter("common.show_rviz", loaded_param_.common.show_rviz);
-		node_->declare_parameter<std::string>("common.save_log_dir", "/home/");
-		node_->get_parameter("common.save_log_dir", loaded_param_.common.save_log_dir);
-		node_->declare_parameter<double>("common.log_keep_time", 500.0);
-		node_->get_parameter("common.log_keep_time", loaded_param_.common.log_keep_time);
+
 		node_->declare_parameter<int>("common.map_relative_to", 2);
 		node_->get_parameter("common.map_relative_to", loaded_param_.common.map_relative_to);
 		node_->declare_parameter<std::string>("common.map_directory", "/home/pmm/data/5-lanhai/");
@@ -71,11 +58,9 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("common.receive_lidar_freq", loaded_param_.common.receive_lidar_freq);
 		node_->declare_parameter<double>("common.slam_lose_rate_time_thr", 0.1);
 		node_->get_parameter("common.slam_lose_rate_time_thr", loaded_param_.common.slam_lose_rate_time_thr);
-		node_->declare_parameter<int>("common.lidar_no_point_count_thr", 10);
-		node_->get_parameter("common.lidar_no_point_count_thr", loaded_param_.common.lidar_no_point_count_thr);
-		node_->declare_parameter<bool>("common.use_pose_filter", false);
-		node_->get_parameter("common.use_pose_filter", loaded_param_.common.use_pose_filter);
 
+		node_->declare_parameter<int>("common.before_downsample_size_thr", 3000);
+		node_->get_parameter("common.before_downsample_size_thr", loaded_param_.common.before_downsample_size_thr);
 		node_->declare_parameter<int>("common.feats_down_size_thr", 200);
 		node_->get_parameter("common.feats_down_size_thr", loaded_param_.common.feats_down_size_thr);
 
@@ -196,11 +181,8 @@ class LocalizationModuleParamManager {
 			node_->get_parameter("lidar_preproc.edge_curvature_thr", loaded_param_.lidar_preproc.edge_curvature_thr);
 			node_->declare_parameter<float>("lidar_preproc.surf_curvature_thr", 5.0);
 			node_->get_parameter("lidar_preproc.surf_curvature_thr", loaded_param_.lidar_preproc.surf_curvature_thr);
-
-		} else if (loaded_param_.lidar_preproc.lidar_type == 1) {
-			node_->declare_parameter<int>("lidar_preproc.line_count", 4);
-			node_->get_parameter("lidar_preproc.line_count", loaded_param_.lidar_preproc.line_count);
 		}
+
 		node_->declare_parameter<std::string>("lidar_preproc.sub_lidar_topic", "/M300/lidar");
 		node_->get_parameter("lidar_preproc.sub_lidar_topic", loaded_param_.lidar_preproc.sub_lidar_topic);
 		node_->declare_parameter<std::string>("lidar_preproc.sub_imu_topic", "/M300/imu");
