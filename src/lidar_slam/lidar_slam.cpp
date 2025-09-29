@@ -67,6 +67,9 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	auto cloud_leaf_size_test = config_param_.lidar_preproc.leafsize;
 	downSizeFilterCloud_test_.setLeafSize(cloud_leaf_size_test, cloud_leaf_size_test, cloud_leaf_size_test);
 
+	auto cloud_leaf_size_localize = config_param_.localization.cloud_leaf_size_localize;
+	downSizeFilterCloud_localize_.setLeafSize(cloud_leaf_size_localize, cloud_leaf_size_localize,
+											  cloud_leaf_size_localize);
 	// lidar & imu 预处理
 	const auto gyr_cov = config_param_.mapping.gyr_cov;
 	const auto acc_cov = config_param_.mapping.acc_cov;
@@ -287,7 +290,7 @@ void LidarSlam::localizationThread() {
 	int gicp_fail_count = 0;
 	int gicp_low_acc_count = 0;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
-	PointCloudType::Ptr UndistortCloudInOdom_test(new PointCloudType());
+	PointCloudType::Ptr ds_odom_cloud_localize(new PointCloudType());
 
 	static int wait_time = 0;
 	while (thread_run_ && reseting_ == false) {
@@ -305,13 +308,12 @@ void LidarSlam::localizationThread() {
 		}
 
 		{
-			std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+			ds_odom_cloud_localize.reset(new PointCloudType());
 			std::unique_lock<std::mutex> odom_cloud_lock(mtx_odom_cloud_);
-			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
-			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
-			undistort_cloud_lock.unlock();
-			pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // update localize used source point cloud
+			downSizeFilterCloud_localize_.setInputCloud(UndistortCloudInOdom_);
+			downSizeFilterCloud_localize_.filter(*ds_odom_cloud_localize);
 			odom_cloud_lock.unlock();
+			pcl::copyPointCloud(*ds_odom_cloud_localize, *temp);
 		}
 
 		if (local_thrd_status_.load() == LocalizationStatus::RelocalizeFailed) {
@@ -841,9 +843,8 @@ bool LidarSlam::run() {
 				if (insert) { //是关键帧
 					TRACE_INFO_CLASS("backend: keyPoses id: %d", back_end_->getKeyframePoses().size() - 1);
 					double not_used_T_odom_lidar_time = 0.f;
-					back_end_->saveCurrentCloud(
-						undistortCloud_,
-						getLidarInMap(not_used_T_odom_lidar_time)); //注意这里只是为了取水平面，后端还是在odom坐标系
+					back_end_->saveCurrentCloud(undistortCloud_, //每个关键帧保存的是未降采样的点云
+												getLidarInMap(not_used_T_odom_lidar_time)); //注意这里只是为了取水平面
 				}
 
 				{
@@ -860,6 +861,12 @@ bool LidarSlam::run() {
 		auto backend_end = std::chrono::high_resolution_clock::now();
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();
+		{
+			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
+			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
+			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
+			//在lio线程中计算odom_cloud，在定位模式和建图模式下都可以直接使用
+		}
 		FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_);
 		auto transform_cloud_end = std::chrono::high_resolution_clock::now();
 

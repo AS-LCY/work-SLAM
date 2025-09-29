@@ -54,6 +54,7 @@
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
     localization:
+      cloud_leaf_size_localize: 0.3
       fgicp_peroid_sec: 1.0  #定位线程1hz运行，每3s匹配一次，单位： 秒
       fgicp_score_fail_thr: 0.3
       fgicp_score_low_accuracy_thr: 0.07

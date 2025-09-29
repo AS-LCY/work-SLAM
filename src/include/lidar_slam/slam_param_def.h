@@ -72,6 +72,7 @@ struct MappingParam {
 };
 
 struct LocalizationParam {
+	double cloud_leaf_size_localize = 0.3;
 	float fgicp_peroid_sec = 1;
 	double fgicp_score_fail_thr = 0.3;
 	double fgicp_score_low_accuracy_thr = 0.1;

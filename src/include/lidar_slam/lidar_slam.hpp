@@ -342,8 +342,9 @@ class LidarSlam {
 	PointCloudType::Ptr undistortCloud_; // lidar 系
 	PointCloudType::Ptr FilteredUndistortCloud_;
 
-	pcl::VoxelGrid<PointType> downSizeFilterCloud_;
-	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;
+	pcl::VoxelGrid<PointType> downSizeFilterCloud_;			 // lio
+	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;	 // global localize
+	pcl::VoxelGrid<PointType> downSizeFilterCloud_localize_; // localize
 
 	SlamWorkMode working_mode_ = UNKNOWN;
 
