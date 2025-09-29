@@ -32,7 +32,7 @@
 
       lidar_no_point_count_thr:  10
       check_delay: false
-      feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
+      feats_down_size_thr: 200 # 降采样后的点个数不能小于200个
       use_pose_filter: false
       cpu_id: [4, 5]
 

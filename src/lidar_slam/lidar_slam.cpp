@@ -214,18 +214,8 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 		TRACE_WARN_CLASS("Measure.imu is empty.");
 		TRACE_WARN_CLASS("imu_buffer.front.time: %f, back.time: %f", imu_time, imu_buffer_.back()->time_stamp);
 		TRACE_WARN_CLASS("lidar_beg_time.time: %f, lidar_end_time.time: %f", meas.lidar_beg_time, meas.lidar_end_time);
-
 		return false;
 	}
-	auto points_num = meas.lidar->points.size();
-	log_info_manager_.slam_info.data[30] = points_num;
-
-	// auto point_thresh = 3000;
-	// if (points_num < point_thresh) {
-	// 	TRACE_WARN_CLASS("ignore this sync, too few points: %d, thresh: %d", points_num, point_thresh);
-	// 	return false;
-	// }
-
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
 	TRACE_DBG_CLASS("sync cost time: %f ms", double(sync_duration.count()));
@@ -300,14 +290,28 @@ void LidarSlam::localizationThread() {
 	PointCloudType::Ptr UndistortCloudInOdom_test(new PointCloudType());
 
 	static int wait_time = 0;
-
 	while (thread_run_ && reseting_ == false) {
 		hb_time_thread_localize_.store(rclcpp::Clock().now().seconds());
 		auto start = std::chrono::steady_clock::now();
 		temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
+		auto pointcloud_state_abnormal = check_pointcloud_state_abnormal();
+		if (pointcloud_state_abnormal) {
+			auto end = std::chrono::steady_clock::now();
+			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+			if (elapsed < period_relocal) {
+				std::this_thread::sleep_for(period_relocal - elapsed);
+			}
+			continue;
+		}
+
 		{
-			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-			pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp);
+			std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+			std::unique_lock<std::mutex> odom_cloud_lock(mtx_odom_cloud_);
+			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
+			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
+			undistort_cloud_lock.unlock();
+			pcl::copyPointCloud(*(UndistortCloudInOdom_), *temp); // update localize used source point cloud
+			odom_cloud_lock.unlock();
 		}
 
 		if (local_thrd_status_.load() == LocalizationStatus::RelocalizeFailed) {
@@ -315,7 +319,8 @@ void LidarSlam::localizationThread() {
 		} else {
 			if (!globalLocalizationSuccess_) {
 				local_thrd_status_.store(LocalizationStatus::Relocalizing);
-				TRACE_INFO_CLASS("localization status = Relocalizing...\n");
+				TRACE_INFO_CLASS("\n");
+				TRACE_INFO_CLASS("localization status = Relocalizing...");
 
 				if (!getLoadMap()) {
 					TRACE_WARN_CLASS("global localization failed: map not ready ... ");
@@ -344,15 +349,18 @@ void LidarSlam::localizationThread() {
 
 					global_localize_count_++;
 				}
+
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
 					TRACE_WARN_CLASS("global localization failed: time out \n");
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
 					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");
 				}
 				if (globalLocalizationSuccess_) {
-					TRACE_INFO_CLASS("global localization success, localization status = Normal...\n");
+					TRACE_INFO_CLASS("global localization success, localization status = Normal...");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::Normal);
+					gicp_fail_count = 0;
+					gicp_low_acc_count = 0;
 					init_T_map_odom_ = localization_->getOdomToMap();
 					T_map_odom_ = init_T_map_odom_;
 					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
@@ -370,8 +378,9 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("start localization ...");
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
-					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr, fgicp_score_low_accuracy_thr)) {
-						log_info_manager_.slam_info.data[3] = 1; // converge
+					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr,
+												fgicp_score_low_accuracy_thr)) { //收敛
+						log_info_manager_.slam_info.data[3] = 1;
 						if (fit_score < fgicp_score_low_accuracy_thr) {
 							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
@@ -381,15 +390,15 @@ void LidarSlam::localizationThread() {
 							wait_time++;
 							TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
 											 fgicp_score_low_accuracy_thr);
-							TRACE_INFO_CLASS("localization status = Normal...\n");
-
+							TRACE_INFO_CLASS("localization status = Normal...");
 						} else if (fit_score < fgicp_score_fail_thr) {
 							gicp_low_acc_count++;
+							gicp_fail_count = 0;
 							TRACE_WARN_CLASS("fit_score: %f, in range [%f, %f], gicp_low_acc_count = %d ", fit_score,
 											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
 							local_thrd_status_.store(LocalizationStatus::LowAccuracy);
 							T_map_odom_ = localization_->getOdomToMap();
-							TRACE_INFO_CLASS("localization status = low accuracy...\n");
+							TRACE_INFO_CLASS("localization status = low accuracy...");
 							// need_localize_ = true;
 							// wait_time = 0;
 						} else {
@@ -399,18 +408,18 @@ void LidarSlam::localizationThread() {
 						}
 					} else { // 未收敛
 						log_info_manager_.slam_info.data[3] = 0;
-						gicp_fail_count++;
-						TRACE_WARN_CLASS("fast gicp not converged,  gicp_fail_count: %d", gicp_fail_count);
+						gicp_fail_count = fgicp_fail_count_thr;
+						TRACE_ERR_CLASS("fast gicp not converged");
 					}
 
 					if (gicp_fail_count >= fgicp_fail_count_thr ||
 						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败
 						local_thrd_status_.store(LocalizationStatus::Failed);
-						TRACE_INFO_CLASS(
-							"localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d...\n",
-							gicp_fail_count, gicp_low_acc_count);
-
+						gicp_fail_count = 0;
+						gicp_low_acc_count = 0;
 						globalLocalizationSuccess_ = false; // 停车，进入重定位状态
+						TRACE_INFO_CLASS("localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
+										 gicp_fail_count, gicp_low_acc_count);
 						TRACE_INFO_CLASS("next loop enter relocalization mode");
 					}
 
@@ -475,10 +484,10 @@ void LidarSlam::global_localization_for_sec_mapping_thread() {
 					}
 				}
 
-				if (!UndistortCloudInOdom_ || UndistortCloudInOdom_->points.size() == 0) {
+				if (!undistortCloud_ || undistortCloud_->points.size() == 0) {
 					TRACE_WARN_CLASS("sec_mapping relocalizing: cloud empty ... ");
 				} else {
-					TRACE_INFO_CLASS("sec_mapping relocalizing: point count: %d", UndistortCloudInOdom_->points.size());
+					TRACE_INFO_CLASS("sec_mapping relocalizing: point count: %d", undistortCloud_->points.size());
 					Matrix3d initial_rotate;
 					PointCloudType::Ptr undistort_cloud_copy(new PointCloudType());
 					std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
@@ -669,6 +678,21 @@ bool LidarSlam::run() {
 		// TRACE_INFO_CLASS("imu lidar sync success");
 		static double last_lidar_time = Measures_.lidar_beg_time;
 
+		auto points_num = Measures_.lidar->points.size();
+		auto point_thresh = 3000;
+		if (points_num < point_thresh) {
+			// TRACE_WARN_CLASS("before downsample too few points: %d, thresh: %d", points_num, point_thresh);
+			slam_run_status_.store(SlamRunStatus::BeforeDownSampleTooFewPoints);
+			return false;
+		}
+
+		bool occluded = check_occlusion(0.8);
+		if (occluded) {
+			slam_run_status_.store(SlamRunStatus::LidarOccluded);
+			// TRACE_WARN_CLASS("lidar occluded, skip this scan!");
+			return false;
+		}
+
 		if (flg_first_scan_) {
 			first_lidar_time_ = Measures_.lidar_beg_time;
 			p_imu_->first_lidar_time_ = first_lidar_time_;
@@ -693,6 +717,9 @@ bool LidarSlam::run() {
 		pre_undistortCloud_.reset(new PointCloudType());
 		pre_undistortCloud_->clear();
 		p_imu_->Process(Measures_, kf_, pre_undistortCloud_);
+		// TRACE_INFO_CLASS("\n");
+		// TRACE_INFO_CLASS("imu predict...");
+		// print_imu_state(kf_.get_x(), kf_.get_P());
 		// 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
 		// 雷达points在最后一个点时刻的laser_frame下
 		// 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
@@ -705,10 +732,16 @@ bool LidarSlam::run() {
 
 		state_ikfom state_point;
 		state_point = kf_.get_x(); // 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
+		// bool vel_abnormal = check_lio_vel_abnormal(state_point);
+		// if (vel_abnormal) {
+		// 	slam_run_status_.store(SlamRunStatus::LioVelAbnormalInPredict);
+		// 	TRACE_WARN_CLASS("lio velocity abnormal in predict");
+		// 	return false;
+		// }
+
 		Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I)
 										.matrix()); // T_imu_laser, laser frame wrt imu
 		Eigen::Isometry3d T_odom_b(Sophus::SE3d(state_point.rot, state_point.pos).matrix());
-
 		std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
 		T_odom_lidar_time_ = Measures_.lidar_end_time;
@@ -717,13 +750,10 @@ bool LidarSlam::run() {
 		auto pointcloud_deskew_end = std::chrono::high_resolution_clock::now();
 
 		if (undistortCloud_->empty() || (undistortCloud_ == nullptr)) {
-			lidar_no_point_count_++;
-			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
-				slam_run_status_.store(SlamRunStatus::SlamFail);
-			}
-			TRACE_WARN_CLASS("No point, skip this scan!");
-			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
-			log_info_manager_.slam_info.data[13] = 0;
+			slam_run_status_.store(SlamRunStatus::PointCloudEmpty);
+			// TRACE_WARN_CLASS("No point, skip this scan!");
+			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
+			// log_info_manager_.slam_info.data[13] = 0;
 			return false;
 		}
 
@@ -760,19 +790,11 @@ bool LidarSlam::run() {
 
 		TRACE_DBG_CLASS("feats_down_size: %d", feats_down_size_);
 		if (feats_down_size_ < feats_down_size_thr_) {
-			lidar_no_point_count_++;
-			if (lidar_no_point_count_ > prm_lidar_no_point_count_thr) {
-				slam_run_status_.store(SlamRunStatus::SlamFail);
-			}
-			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
-			TRACE_WARN_CLASS("Too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
-							 feats_down_size_thr_);
+			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
+			slam_run_status_.store(SlamRunStatus::AfterDownSampleTooFewPoints);
+			// TRACE_WARN_CLASS("after downsample too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
+			// 				 feats_down_size_thr_);
 			return false;
-		} else {
-			lidar_no_point_count_ = 0;
-			log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
-			slam_run_status_.store(SlamRunStatus::Normal);
-			// TODO(jxl): 应该根据滤波器状态，imu和lidar时延来判断lio状态
 		}
 		FilteredUndistortCloudInOdom->resize(feats_down_size_);
 
@@ -780,9 +802,18 @@ bool LidarSlam::run() {
 		Nearest_Points.resize(feats_down_size_);
 		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
 											   false); //迭代4次
+		// TRACE_INFO("lidar updated.....")
+		// print_imu_state(kf_.get_x(), kf_.get_P());
 		auto filter_pointcloud_and_laser_update_end = std::chrono::high_resolution_clock::now();
 
 		state_point = kf_.get_x();
+		// vel_abnormal = check_lio_vel_abnormal(state_point);
+		// if (vel_abnormal) {
+		// 	slam_run_status_.store(SlamRunStatus::LioVelAbnormalInUpdate);
+		// 	TRACE_WARN_CLASS("lio velocity abnormal in predict");
+		// 	return false;
+		// }
+
 		T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
 		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
 		T_odom_lidar_lock.lock();
@@ -830,13 +861,6 @@ bool LidarSlam::run() {
 		auto backend_end = std::chrono::high_resolution_clock::now();
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();
-		{
-			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
-			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
-		}
-
-		/*** add the feature points to map kdtree ***/
 		FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_);
 		auto transform_cloud_end = std::chrono::high_resolution_clock::now();
 
@@ -880,12 +904,97 @@ bool LidarSlam::run() {
 			// TRACE_INFO_CLASS("ikdtree_update cost time %f ms", ikdtree_update_duration);
 			// TRACE_INFO_CLASS("===============================\n");
 		}
-		lidar_no_point_count_ = 0;
+		// lidar_no_point_count_ = 0;
+		slam_run_status_.store(SlamRunStatus::Normal);
 		return true;
 	} else {
 		// TRACE_WARN_CLASS("sync measure failed !");
+		slam_run_status_.store(SlamRunStatus::SyncFailed);
 	}
 
 	return false;
 }
+
+void LidarSlam::print_imu_state(const state_ikfom& state, const Eigen::Matrix<double, 24, 24>& cov) {
+	const Eigen::Vector3d& pos = state.pos;
+	const Eigen::Matrix3d& R = state.rot.matrix();
+	Eigen::Vector3d euler = R.eulerAngles(2, 1, 0);
+	double yaw = euler[0] * RAD2DEGREE;
+	double pitch = euler[1] * RAD2DEGREE;
+	double roll = euler[2] * RAD2DEGREE;
+	const Eigen::Vector3d& vel_body = state.rot.inverse() * state.vel;
+	const Eigen::Vector3d& ba = state.ba;
+	const Eigen::Vector3d& bg = state.bg * RAD2DEGREE;
+
+	double cov_position = std::max({ cov(0, 0), cov(1, 1), cov(2, 2) });
+	double cov_rotation = std::max({ cov(3, 3), cov(4, 4), cov(5, 5) });
+	double cov_vel = std::max({ cov(12, 12), cov(13, 13), cov(14, 14) });
+	double cov_ba = std::max({ cov(18, 18), cov(19, 19), cov(20, 20) });
+	double cov_bg = std::max({ cov(15, 15), cov(16, 16), cov(17, 17) });
+
+	lio_state_diag_cov_(0) = cov_position;
+	lio_state_diag_cov_(1) = cov_rotation;
+	lio_state_diag_cov_(2) = cov_vel;
+	lio_state_diag_cov_(3) = cov_ba;
+	lio_state_diag_cov_(4) = cov_bg;
+
+	TRACE_INFO_CLASS("imu state: position= %.2f, %.2f, %.2f, rot(y,p,r)= %.2f, %.2f, %.2f, vel(body)= %.2f, %.2f, %.2f",
+					 pos.x(), pos.y(), pos.z(), yaw, pitch, roll, vel_body.x(), vel_body.y(), vel_body.z());
+	TRACE_INFO_CLASS("ba = %.4f, %.4f, %.4f, bg = %.2f, %.2f, %.2f", ba.x(), ba.y(), ba.z(), bg.x(), bg.y(), bg.z());
+	TRACE_INFO_CLASS("imu state cov positon = %.2f, rot = %.2f, vel = %.2f, ba = % .2f, bg = % .2f ", cov_position,
+					 cov_rotation, cov_vel, cov_ba, cov_bg);
+}
+
+bool LidarSlam::check_occlusion(const double& ratio_threshold) {
+	std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+	if (!undistortCloud_ || undistortCloud_->empty()) {
+		return false;
+	}
+	int total_points = undistortCloud_->size();
+	int occluded_count = 0;
+	for (const auto& pt : undistortCloud_->points) {
+		double dist = std::sqrt(pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
+		if (dist < config_param_.lidar_preproc.blind_distance) {
+			occluded_count++;
+		}
+	}
+	double ratio = static_cast<double>(occluded_count) / total_points;
+	return ratio >= ratio_threshold;
+}
+
+bool LidarSlam::check_lio_vel_abnormal(const state_ikfom& imu_state) {
+	// imu 在滤波处理之前已经转成和base_link朝向一致了
+	const auto body_vel = imu_state.rot.inverse() * imu_state.vel;
+	const auto& vx = body_vel.x();
+	const auto& vy = body_vel.y();
+	const auto& vz = body_vel.z();
+	double vx_thresh = 1.2;
+	double vy_thresh = 0.3;
+	double vz_thresh = 0.3;
+	if (std::fabs(vx) >= vx_thresh || std::fabs(vy) >= vy_thresh || std::fabs(vz) >= vz_thresh) {
+		TRACE_WARN_CLASS("abnormal lidar velocity, vx: %.2f, vy: %.2f, vz: %.2f", vx, vy, vz);
+		return true;
+	}
+	return false;
+}
+
+bool LidarSlam::check_pointcloud_state_abnormal() {
+	auto check_result = false;
+	const auto point_cloud_state = slam_run_status_.load();
+	if (point_cloud_state == SlamRunStatus::PointCloudEmpty) {
+		check_result = true;
+		// TRACE_WARN_CLASS("point cloud empty");
+	} else if (point_cloud_state == SlamRunStatus::BeforeDownSampleTooFewPoints) {
+		check_result = true;
+		// TRACE_WARN_CLASS("before downsample too few points");
+	} else if (point_cloud_state == SlamRunStatus::AfterDownSampleTooFewPoints) {
+		check_result = true;
+		// TRACE_WARN_CLASS("after down sample too few points");
+	} else if (point_cloud_state == SlamRunStatus::LidarOccluded) {
+		check_result = true;
+		// TRACE_WARN_CLASS("lidar occluded");
+	}
+	return check_result;
+}
+
 } // namespace lidar_slam

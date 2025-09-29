@@ -120,8 +120,7 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 //反向传播
 void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_out) {
 	/***将上一帧最后尾部的imu添加到当前帧头部的imu ***/
-	auto v_imu = meas.imu;		 //取出当前帧的IMU队列
-	v_imu.push_front(last_imu_); //将上一帧最后尾部的imu添加到当前帧头部的imu
+	auto v_imu = meas.imu;								   //取出当前帧的IMU队列
 	const double& imu_end_time = v_imu.back()->time_stamp; // 拿到当前帧尾部的imu的时间
 	const double& pcl_beg_time = meas.lidar_beg_time;	   // 点云开始和结束的时间戳
 	const double& pcl_end_time = meas.lidar_end_time;
@@ -173,6 +172,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 		Q.block<3, 3>(6, 6).diagonal() = cov_bias_gyr_;
 		Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc_;
 
+		// TRACE_INFO_CLASS("dt = %f ms", dt * 1e3);
 		kf_state.predict(dt, Q, in); // IMU前向传播，每次传播的时间间隔为dt  把滤波器的状态往前预测传播
 
 		imu_state = kf_state.get_x();
@@ -189,6 +189,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 
 	// 把最后一帧IMU测量也补上
 	dt = abs(pcl_end_time - imu_end_time);
+	// TRACE_INFO_CLASS("dt = %f ms", dt * 1e3);
 	kf_state.predict(dt, Q, in);
 	imu_state = kf_state.get_x();
 

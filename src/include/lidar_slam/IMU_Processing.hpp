@@ -79,7 +79,7 @@ class ImuProcess {
 	void Reset();
 	void set_param(const V3D& transl, const M3D& rot, const V3D& gyr, const V3D& acc, const V3D& gyr_bias,
 				   const V3D& acc_bias);
-	Eigen::Matrix<double, 12, 12> Q; //噪声协方差矩阵  对应论文式(8)中的Q
+	Eigen::Matrix<double, 12, 12> Q = Eigen::Matrix<double, 12, 12>::Zero(); //噪声协方差矩阵  对应论文式(8)中的Q
 	void Process(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& pcl_un_);
 
 	double first_lidar_time_ = 0.f; //当前帧第一个点云时间

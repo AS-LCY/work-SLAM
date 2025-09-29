@@ -106,9 +106,15 @@ enum class HealthStatus : int {
 };
 
 enum class SlamRunStatus : int {
-	Inactive = 0, // inactive
-	Normal = 1,	  // normal
-	SlamFail = 2  // slam fail: cloud no enough point
+	Inactive = 0,
+	Normal = 1,
+	SyncFailed = 2,
+	PointCloudEmpty = 3,
+	BeforeDownSampleTooFewPoints = 4,
+	AfterDownSampleTooFewPoints = 5,
+	LidarOccluded = 6,
+	LioVelAbnormalInPredict = 7,
+	LioVelAbnormalInUpdate = 8,
 };
 
 enum class SecmapRelocalThrdStatus : int {

@@ -515,12 +515,10 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 	}
 
 	auto node_status = local_node_status_.load(); //加载地图成功后，Normal；其他时候为Inactive
-
-	auto local_thrd_status = slam_->get_local_thrd_status(); //和离线地图匹配情况
+	auto local_thrd_status = slam_->get_local_thrd_status();
+	// 和离线地图匹配情况
 	// RelocalizeFailed, Relocalizing, Normal, LowAccuracy, Failed
-
 	auto slam_run_status = slam_->get_slam_run_status(); // lio状态
-	// SlamFail(降采样后点个数小于阈值)，否则为Normal
 
 	// TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
 	// TRACE_ERR_CLASS("slam_run_status: %s", magic_enum::enum_name(slam_run_status));
@@ -537,13 +535,15 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
 		localization_status_.store(LocalizationStatus::Inactive);
 	} else if (node_status == LocalNodeStatus::Normal) {
-		if (slam_run_status == SlamRunStatus::Normal) {
-			status_msg.localization_status = static_cast<int>(local_thrd_status);
-			localization_status_.store(local_thrd_status); // 与 定位线程的状态一致
-		} else if (slam_run_status == SlamRunStatus::SlamFail) {
-			status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
-			localization_status_.store(LocalizationStatus::Failed);
-		}
+		// if (slam_run_status == SlamRunStatus::Normal) {
+		// 	status_msg.localization_status = static_cast<int>(local_thrd_status);
+		// 	localization_status_.store(local_thrd_status); // 与 定位线程的状态一致
+		// } else if (slam_run_status == SlamRunStatus::SlamFail) {
+		// 	status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
+		// 	localization_status_.store(LocalizationStatus::Failed);
+		// }
+		status_msg.localization_status = static_cast<int>(local_thrd_status);
+		localization_status_.store(local_thrd_status);
 	} else if (node_status == LocalNodeStatus::LidarCallbackDelay) {
 		TRACE_ERR_CLASS("lidar cbk delay !!!");
 		// status_msg.localization_status = static_cast<int>(LocalizationStatus::Failed);
@@ -554,6 +554,8 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		// localization_status_.store(LocalizationStatus::Failed);
 		// TRACE_ERR_CLASS("localization status error, set to Failed");
 	}
+
+	status_msg.lio_status = static_cast<int>(slam_run_status);
 
 	log_info_manager_.slam_info.data[2] = static_cast<int>(localization_status_.load());
 }
@@ -594,7 +596,8 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 					magic_enum::enum_cast<MappingStatus>(static_cast<int>(secmap_relocal_thrd_status)).value();
 				mapping_status_.store(mapping_status);
 			}
-		} else if (slam_run_status == SlamRunStatus::SlamFail) {
+		} else if (slam_run_status == SlamRunStatus::LioVelAbnormalInPredict ||
+				   slam_run_status == SlamRunStatus::LioVelAbnormalInUpdate) {
 			status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
 			mapping_status_.store(MappingStatus::Failed);
 		}

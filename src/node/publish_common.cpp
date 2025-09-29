@@ -103,11 +103,6 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	odomAftMapped.pose.pose.orientation.z = quaternion.z();
 	odomAftMapped.pose.pose.orientation.w = quaternion.w();
 
-	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-		odomAftMapped.pose.covariance[1] = 3;
-	} else if (is_mapping_status(curr_running_module_status)) {
-		odomAftMapped.pose.covariance[1] = 2;
-	}
 	auto vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
 	// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
 	TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
@@ -147,6 +142,12 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	lio_odom.pose.pose.orientation.y = Eigen::Quaterniond(T_odom_baselink.linear()).y();
 	lio_odom.pose.pose.orientation.z = Eigen::Quaterniond(T_odom_baselink.linear()).z();
 	lio_odom.pose.pose.orientation.w = Eigen::Quaterniond(T_odom_baselink.linear()).w();
+	Eigen::Matrix<double, 6, 1> lio_state_diag_cov = slam_->get_lio_state_diag_cov();
+	lio_odom.pose.covariance[0] = lio_state_diag_cov(0);  // position
+	lio_odom.pose.covariance[7] = lio_state_diag_cov(1);  // rotation
+	lio_odom.pose.covariance[14] = lio_state_diag_cov(2); // velocity
+	lio_odom.pose.covariance[21] = lio_state_diag_cov(3); // ba
+	lio_odom.pose.covariance[28] = lio_state_diag_cov(4); // bg
 	pubLioOdom->publish(lio_odom);
 
 	geometry_msgs::msg::TransformStamped transform;

@@ -35,9 +35,9 @@ int main(int argc, char** argv) {
 	int level = TRACE_LEVEL_INFO;				  // TRACE_LEVEL_DBG,  TRACE_LEVEL_INFO, TRACE_LEVEL_WARN
 	string log_sink_name = "localization_module"; // 设置日志输出器名称，一般为日志文件名称
 	string log_file_name = "localization_module_" + getCurrentDateTime() + ".log"; // 设置日志保存文件名
-	int max_file_byte = 10240000;												   // 设置日志文件大小, 10M
+	int max_file_byte = 102400000;												   // 设置日志文件大小, 100M
 	int max_file_num = 25;														   // 设置最大日志文件个数
-	// localization_module.log满后，会自动扩展为localization_module.log.1...n
+	// 后缀越大，log越老，降序排列
 
 	Tracer::getInstance()
 		.addLogSink(log_sink_name.c_str(), std::make_shared<TracerSink>())
