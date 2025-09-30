@@ -56,7 +56,7 @@
     localization:
       cloud_leaf_size_localize: 0.3
       fgicp_peroid_sec: 1.0  #定位线程1hz运行，每3s匹配一次，单位： 秒
-      fgicp_score_fail_thr: 0.3
+      fgicp_score_fail_thr: 0.1
       fgicp_score_low_accuracy_thr: 0.07
       fgicp_fail_count_thr: 3
       fgicp_low_accuracy_count_thr: 1800
@@ -103,7 +103,7 @@
       save_map_resolution: 0.1 # unit: m
 
     re_localization:
-      score_thr: 0.5
+      score_thr: 0.3  #raw: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
     ikdtree:

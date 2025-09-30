@@ -167,16 +167,11 @@ bool Localization::loadMap(std::string path) {
 	return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& fit_score, double score_fail_thr,
-							double score_low_accuracy_thr) {
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& fit_score, double& cost_time,
+							double fgicp_score_fail_thr) {
 	double localize_start = omp_get_wtime();
-	static double odom2map_x_filter = 0.0;
-	static double odom2map_y_filter = 0.0;
-	static const double ratio = 1.0;
-
 	TRACE_INFO_CLASS("odomCloud size: %d", (int)odomCloud->points.size());
 	TRACE_INFO_CLASS("CloudGlobalMapIn size: %d", (int)CloudGlobalMapIn_->points.size());
-
 	if (!map_ready_) {
 		TRACE_WARN_CLASS("map not ready...");
 		return false;
@@ -185,64 +180,19 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	gicp_->setInputSource(odomCloud);
 	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
 	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
-	TRACE_INFO_CLASS("match with offline map done");
-
-	PointCloudType::Ptr output_cloud(new PointCloudType());
 
 	if (!gicp_->hasConverged()) {
 		TRACE_ERR_CLASS("gicp not converged.");
 		return false;
 	} else {
 		fit_score = gicp_->getFitnessScore(); // TODO(jxl): 统计内点，还是全部点
-		if (fit_score < score_low_accuracy_thr) {
-			lastCorrectionOdomToMap_ = correctionOdomToMap_;
-			lastUpdateTime_ = curr_time_;
-
-			TRACE_INFO_CLASS("gicp success with score %f < %f", fit_score, score_low_accuracy_thr);
+		if (fit_score < fgicp_score_fail_thr) {
 			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
-			curr_time_ = omp_get_wtime();
-
-			// double last_x, last_y, last_z, last_roll, last_pitch, last_yaw;
-			// Eigen::Affine3d affine_transform(lastCorrectionOdomToMap_);
-			// pcl::getTranslationAndEulerAngles(affine_transform, last_x, last_y, last_z, last_roll, last_pitch,
-			// 								  last_yaw);
-			// double curr_x, curr_y, curr_z, curr_roll, curr_pitch, curr_yaw;
-			// Eigen::Affine3d affine_transform_co(correctionOdomToMap_);
-			// pcl::getTranslationAndEulerAngles(affine_transform_co, curr_x, curr_y, curr_z, curr_roll, curr_pitch,
-			// 								  curr_yaw);
-			// double abs_dx = std::abs(curr_x - last_x);
-			// double abs_dy = std::abs(curr_y - last_y);
-
-			// if (!filter_init_) {
-			// 	odom2map_x_filter = correctionOdomToMap_.translation().x();
-			// 	odom2map_y_filter = correctionOdomToMap_.translation().y();
-			// 	filter_init_ = true;
-			// } else { // ratio = 1.0
-			// 	odom2map_x_filter = ratio * correctionOdomToMap_.translation().x() + (1 - ratio) * odom2map_x_filter;
-			// 	odom2map_y_filter = ratio * correctionOdomToMap_.translation().y() + (1 - ratio) * odom2map_y_filter;
-			// 	correctionOdomToMap_.translation().x() = odom2map_x_filter;
-			// 	correctionOdomToMap_.translation().y() = odom2map_y_filter;
-			// }
-
-			// // update log_info (log_info_manager_) 暂时注释掉，后期再补充
-			// log_info_manager_.log_info.odom2map_dtime  = curr_time_ - lastUpdateTime_;
-			// log_info_manager_.log_info.pose_odom2map.position.x = curr_x;
-			// log_info_manager_.log_info.pose_odom2map.position.y = curr_y;
-			// log_info_manager_.log_info.pose_odom2map.position.z = curr_z;
-			// log_info_manager_.log_info.odom2map_dxyz.x = curr_x - last_x;
-			// log_info_manager_.log_info.odom2map_dxyz.y = curr_y - last_y;
-			// log_info_manager_.log_info.odom2map_dxyz.z = curr_z - last_z;
-			// log_info_manager_.log_info.odom2map_drpy.x  = 180 / PI_M * (curr_roll  - last_roll);
-			// log_info_manager_.log_info.odom2map_drpy.y  = 180 / PI_M * (curr_pitch - last_pitch);
-			// log_info_manager_.log_info.odom2map_drpy.z  = 180 / PI_M * (curr_yaw   - last_yaw);
-
-		} else {
-			TRACE_INFO_CLASS("gicp success with score %f > %f", fit_score, score_low_accuracy_thr);
 		}
-
 		double localize_end = omp_get_wtime();
-		TRACE_INFO_CLASS("localization cost time: %f ms", (localize_end - localize_start) * 1000);
-
+		cost_time = (localize_end - localize_start) * 1000;
+		TRACE_INFO_CLASS("gicp converged with score: %f", fit_score);
+		TRACE_INFO_CLASS("localization cost time: %f ms", cost_time);
 		return true;
 	}
 }
@@ -345,7 +295,6 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		Eigen::Isometry3d lidar_in_map;
 		lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
 		correctionOdomToMap_ = lidar_in_map * pose.inverse();
-		lastUpdateTime_ = omp_get_wtime();
 
 		Eigen::Vector3d T_map_odom_t = correctionOdomToMap_.translation();
 		Eigen::Vector3d T_map_odom_euler = correctionOdomToMap_.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);

@@ -380,9 +380,11 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("start localization ...");
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
-					if (localization_->localize(temp, fit_score, fgicp_score_fail_thr,
-												fgicp_score_low_accuracy_thr)) { //收敛
+					double cost_time_ms = 0.0;
+					if (localization_->localize(temp, fit_score, cost_time_ms, fgicp_score_fail_thr)) { //收敛
 						log_info_manager_.slam_info.data[3] = 1;
+						localize_cost_time_ = cost_time_ms;
+						localize_fit_score_ = fit_score;
 						if (fit_score < fgicp_score_low_accuracy_thr) {
 							local_thrd_status_.store(LocalizationStatus::Normal);
 							gicp_fail_count = 0;
@@ -408,6 +410,7 @@ void LidarSlam::localizationThread() {
 							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
 											 fgicp_score_fail_thr, gicp_fail_count);
 						}
+
 					} else { // 未收敛
 						log_info_manager_.slam_info.data[3] = 0;
 						gicp_fail_count = fgicp_fail_count_thr;

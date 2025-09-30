@@ -251,6 +251,8 @@ class LidarSlam {
 	LocalizationStatus get_local_thrd_status() { return local_thrd_status_.load(); }
 	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
 	SecmapRelocalThrdStatus get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
+	inline double get_localize_cost_time() const { return localize_cost_time_; }
+	inline double get_localize_fit_score() const { return localize_fit_score_; }
 
    private:
 	bool sync_packages(MeasureGroup& meas);
@@ -361,6 +363,9 @@ class LidarSlam {
 	std::atomic<double> lio_cost_time_{ 0.f };
 	int feats_down_size_ = 0;
 	Eigen::Matrix<double, 6, 1> lio_state_diag_cov_;
+
+	double localize_cost_time_ = 0.f;
+	double localize_fit_score_ = 0.f;
 };
 
 } // namespace lidar_slam

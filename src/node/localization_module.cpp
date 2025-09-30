@@ -379,11 +379,13 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	log_info_manager_.slam_info.data[12] = cloud_size_after_preprocess;
 	log_info_manager_.slam_info.data[14] = slam_->get_feats_down_size();
 
-	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;		   // unit: ms
-	health_msg.delay_cbk_imu = delay_imu_ * 1e3;			   // unit: ms
-	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
-	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
-	health_msg.lio_cost_time = lio_cost_time * 1e3;			   // unit: ms
+	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;				 // unit: ms
+	health_msg.delay_cbk_imu = delay_imu_ * 1e3;					 // unit: ms
+	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3;		 // unit: ms
+	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;			 // unit: ms
+	health_msg.lio_cost_time = lio_cost_time * 1e3;					 // unit: ms
+	health_msg.localize_cost_time = slam_->get_localize_cost_time(); // unit: ms
+	health_msg.localize_fit_score = slam_->get_localize_fit_score();
 
 	health_msg.delay_thread_localize = localize_delay;					 // unit: s
 	health_msg.delay_thread_loop_closure = loop_closure_delay;			 // unit: s

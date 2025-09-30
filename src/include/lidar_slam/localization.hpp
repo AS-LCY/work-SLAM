@@ -40,8 +40,8 @@ class Localization {
 	~Localization();
 	bool loadMap(std::string path);
 
-	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& score, double score_fail_thr,
-				  double score_low_accuracy_thr);
+	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& score, double& cost_time,
+				  double fgicp_score_fail_thr);
 
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
@@ -77,10 +77,7 @@ class Localization {
 	bool map_ready_;
 	bool filter_init_ = false;
 	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity(); // T_map_odom
-	Eigen::Isometry3d lastCorrectionOdomToMap_ = Eigen::Isometry3d::Identity();
 
-	double lastUpdateTime_ = 0.0f;
-	double curr_time_ = 0.0f;
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();
 };
