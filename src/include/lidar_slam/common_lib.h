@@ -125,6 +125,14 @@ enum class SecmapRelocalThrdStatus : int {
 };
 } // namespace common_status
 
+struct LocalizeStatus {
+	bool converged = false;
+	double fit_score = 0.f;
+	int num_inliers = 0;
+	double inlier_fraction = 0.f;
+	double cost_time = 0.f;
+};
+
 /*struct StatesGroup
 {
 	StatesGroup() {
@@ -325,9 +333,6 @@ static float angle_norm(float a) {
 }
 
 bool mkdir_p(const std::string& path, mode_t mode);
-
-/////////////////////////////////////////////////////////////////////////////////
-// Used in: Backend & module_ctrl_callback
 bool create_directory_if_not_exists(const std::string& directory_path);
 
 #endif

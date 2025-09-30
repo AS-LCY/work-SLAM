@@ -381,41 +381,49 @@ void LidarSlam::localizationThread() {
 					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
 					double cost_time_ms = 0.0;
-					if (localization_->localize(temp, fit_score, cost_time_ms, fgicp_score_fail_thr)) { //收敛
+					LocalizeStatus localize_status;
+					if (localization_->localize(temp, localize_status, fgicp_score_fail_thr)) {
 						log_info_manager_.slam_info.data[3] = 1;
-						localize_cost_time_ = cost_time_ms;
-						localize_fit_score_ = fit_score;
-						if (fit_score < fgicp_score_low_accuracy_thr) {
-							local_thrd_status_.store(LocalizationStatus::Normal);
-							gicp_fail_count = 0;
-							gicp_low_acc_count = 0;
-							T_map_odom_ = localization_->getOdomToMap();
-							need_localize_ = false;
-							wait_time++;
-							TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
-											 fgicp_score_low_accuracy_thr);
-							TRACE_INFO_CLASS("localization status = Normal...");
-						} else if (fit_score < fgicp_score_fail_thr) {
-							gicp_low_acc_count++;
-							gicp_fail_count = 0;
-							TRACE_WARN_CLASS("fit_score: %f, in range [%f, %f], gicp_low_acc_count = %d ", fit_score,
-											 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
-							local_thrd_status_.store(LocalizationStatus::LowAccuracy);
-							T_map_odom_ = localization_->getOdomToMap();
-							TRACE_INFO_CLASS("localization status = low accuracy...");
-							// need_localize_ = true;
-							// wait_time = 0;
-						} else {
-							gicp_fail_count++;
-							TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
-											 fgicp_score_fail_thr, gicp_fail_count);
-						}
 
-					} else { // 未收敛
-						log_info_manager_.slam_info.data[3] = 0;
+						// TODO(jxl): 根据inlier fit score和inlier ratio来判断是否匹配成功
+						// 判断逻辑封装在函数内
+						T_map_odom_ = localization_->getOdomToMap();
+						local_thrd_status_.store(LocalizationStatus::Normal);
+						TRACE_INFO_CLASS("localization status = Normal...");
+
+						// if (fit_score < fgicp_score_low_accuracy_thr) {
+						// 	local_thrd_status_.store(LocalizationStatus::Normal);
+						// 	gicp_fail_count = 0;
+						// 	gicp_low_acc_count = 0;
+						// 	T_map_odom_ = localization_->getOdomToMap();
+						// 	need_localize_ = false;
+						// 	wait_time++;
+						// 	TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
+						// 					 fgicp_score_low_accuracy_thr);
+						// 	TRACE_INFO_CLASS("localization status = Normal...");
+						// } else if (fit_score < fgicp_score_fail_thr) {
+						// 	gicp_low_acc_count++;
+						// 	gicp_fail_count = 0;
+						// 	TRACE_WARN_CLASS("fit_score: %f, in range [%f, %f], gicp_low_acc_count = %d ", fit_score,
+						// 					 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
+						// 	local_thrd_status_.store(LocalizationStatus::LowAccuracy);
+						// 	T_map_odom_ = localization_->getOdomToMap();
+						// 	TRACE_INFO_CLASS("localization status = low accuracy...");
+						// 	// need_localize_ = true;
+						// 	// wait_time = 0;
+						// } else {
+						// 	gicp_fail_count++;
+						// 	TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
+						// 					 fgicp_score_fail_thr, gicp_fail_count);
+						// }
+
+					} else {
+						// log_info_manager_.slam_info.data[3] = 0;
 						gicp_fail_count = fgicp_fail_count_thr;
-						TRACE_ERR_CLASS("fast gicp not converged");
+						// TRACE_ERR_CLASS("fast gicp not converged");
 					}
+
+					localize_status_ = localize_status;
 
 					if (gicp_fail_count >= fgicp_fail_count_thr ||
 						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败

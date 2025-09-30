@@ -6,9 +6,9 @@ Localization::Localization() {
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
 	gicp_->setNumThreads(2);
-	gicp_->setTransformationEpsilon(0.01);
+	gicp_->setTransformationEpsilon(0.01); // raw: 1e-2
 	gicp_->setMaximumIterations(64);
-	gicp_->setMaxCorrespondenceDistance(2.0); // TODO(jxl)
+	gicp_->setMaxCorrespondenceDistance(max_corres_dist_);
 	gicp_->setCorrespondenceRandomness(20);
 
 	ndt_.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
@@ -167,7 +167,7 @@ bool Localization::loadMap(std::string path) {
 	return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, double& fit_score, double& cost_time,
+bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
 							double fgicp_score_fail_thr) {
 	double localize_start = omp_get_wtime();
 	TRACE_INFO_CLASS("odomCloud size: %d", (int)odomCloud->points.size());
@@ -178,22 +178,70 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, doub
 	}
 
 	gicp_->setInputSource(odomCloud);
-	pcl::PointCloud<pcl::PointXYZI>::Ptr unused_result(new pcl::PointCloud<pcl::PointXYZI>());
-	gicp_->align(*unused_result, correctionOdomToMap_.matrix().cast<float>());
+	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+	gicp_->align(*aligned_ptr, correctionOdomToMap_.matrix().cast<float>());
 
 	if (!gicp_->hasConverged()) {
 		TRACE_ERR_CLASS("gicp not converged.");
+		localize_status.converged = false;
 		return false;
 	} else {
-		fit_score = gicp_->getFitnessScore(); // TODO(jxl): 统计内点，还是全部点
-		if (fit_score < fgicp_score_fail_thr) {
-			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+		localize_status.converged = true;
+		double matching_error = 0.f;
+		int num_inliers = 0;
+		int num_valid_points = 0;
+		std::vector<int> k_indices;
+		std::vector<float> k_sq_dists;
+		for (int i = 0; i < aligned_ptr->size(); i++) {
+			const auto& pt = aligned_ptr->at(i);
+			if (pt.getVector3fMap().norm() > max_valid_point_dist_) {
+				continue;
+			}
+			num_valid_points++;
+
+			gicp_->getSearchMethodTarget()->nearestKSearch(pt, 1, k_indices, k_sq_dists);
+			if (k_sq_dists[0] < max_correspondence_dist_square_) {
+				matching_error += std::sqrt(k_sq_dists[0]);
+				num_inliers++;
+			}
 		}
+		if (num_inliers != 0) {
+			matching_error /= num_inliers;
+		}
+		double inlier_fraction = static_cast<float>(num_inliers) / std::max(1, num_valid_points);
+
+		// fit_score = gicp_->getFitnessScore();
+		// if (fit_score < fgicp_score_fail_thr) {
+		// 	correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+		// }
+
+		correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>(); // TODO(jxl): 更新条件
+
 		double localize_end = omp_get_wtime();
-		cost_time = (localize_end - localize_start) * 1000;
-		TRACE_INFO_CLASS("gicp converged with score: %f", fit_score);
-		TRACE_INFO_CLASS("localization cost time: %f ms", cost_time);
-		return true;
+		double cost_time = (localize_end - localize_start) * 1000;
+		localize_status.fit_score = matching_error;
+		localize_status.num_inliers = num_inliers;
+		localize_status.inlier_fraction = inlier_fraction;
+		localize_status.cost_time = cost_time;
+		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f, cost time = %f",
+						 matching_error, num_inliers, inlier_fraction, cost_time);
+
+		bool match_ok = false;
+		double inlier_avg_error = 0.25;
+		double inlier_rate = 0.8;
+		if (inlier_fraction < inlier_rate) {
+			match_ok = false;
+			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f < %f", inlier_fraction, inlier_rate);
+		} else if (matching_error < inlier_avg_error) {
+			match_ok = true;
+			TRACE_INFO_CLASS("localization success, for good inlier rate: %f,  small avg score: %f < %f",
+							 inlier_fraction, matching_error, inlier_avg_error);
+		} else {
+			match_ok = false;
+			TRACE_ERR_CLASS("localization failed, for good inlier rate: %f, but high avg score: %f > %f",
+							inlier_fraction, matching_error, inlier_avg_error);
+		}
+		return match_ok;
 	}
 }
 
