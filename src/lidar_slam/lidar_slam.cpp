@@ -106,7 +106,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 	// 定位
-	localization_.reset(new Localization());
+	localization_.reset(new Localization(config_param_.localization));
 
 	global_localization_.reset(new GlobalLocalization());
 	cloud_map_manager_.reset(new CloudMap());
@@ -282,17 +282,10 @@ void LidarSlam::localizationThread() {
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
 
-	const auto fgicp_score_fail_thr = config_param_.localization.fgicp_score_fail_thr;
-	const auto fgicp_score_low_accuracy_thr = config_param_.localization.fgicp_score_low_accuracy_thr;
-	const auto fgicp_fail_count_thr = config_param_.localization.fgicp_fail_count_thr;
-	const auto fgicp_low_accuracy_count_thr = config_param_.localization.fgicp_low_accuracy_count_thr;
-
-	int gicp_fail_count = 0;
-	int gicp_low_acc_count = 0;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
 	PointCloudType::Ptr ds_odom_cloud_localize(new PointCloudType());
-
 	static int wait_time = 0;
+
 	while (thread_run_ && reseting_ == false) {
 		hb_time_thread_localize_.store(rclcpp::Clock().now().seconds());
 		auto start = std::chrono::steady_clock::now();
@@ -361,8 +354,7 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("global localization success, localization status = Normal...");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::Normal);
-					gicp_fail_count = 0;
-					gicp_low_acc_count = 0;
+
 					init_T_map_odom_ = localization_->getOdomToMap();
 					T_map_odom_ = init_T_map_odom_;
 					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
@@ -376,80 +368,23 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (need_localize_) { // 1hz循环一次，每60s定位一次
-					TRACE_INFO_CLASS("\n");
-					TRACE_INFO_CLASS("start localization ...");
-					double fit_score = 0.0; // gicp_fit_score
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
-					double cost_time_ms = 0.0;
 					LocalizeStatus localize_status;
-					if (localization_->localize(temp, localize_status, fgicp_score_fail_thr)) {
-						log_info_manager_.slam_info.data[3] = 1;
-
-						// TODO(jxl): 根据inlier fit score和inlier ratio来判断是否匹配成功
-						// 判断逻辑封装在函数内
-						T_map_odom_ = localization_->getOdomToMap();
-						local_thrd_status_.store(LocalizationStatus::Normal);
-						TRACE_INFO_CLASS("localization status = Normal...");
-
-						// if (fit_score < fgicp_score_low_accuracy_thr) {
-						// 	local_thrd_status_.store(LocalizationStatus::Normal);
-						// 	gicp_fail_count = 0;
-						// 	gicp_low_acc_count = 0;
-						// 	T_map_odom_ = localization_->getOdomToMap();
-						// 	need_localize_ = false;
-						// 	wait_time++;
-						// 	TRACE_INFO_CLASS("localize success, fit_score: %f, < %f", fit_score,
-						// 					 fgicp_score_low_accuracy_thr);
-						// 	TRACE_INFO_CLASS("localization status = Normal...");
-						// } else if (fit_score < fgicp_score_fail_thr) {
-						// 	gicp_low_acc_count++;
-						// 	gicp_fail_count = 0;
-						// 	TRACE_WARN_CLASS("fit_score: %f, in range [%f, %f], gicp_low_acc_count = %d ", fit_score,
-						// 					 fgicp_score_low_accuracy_thr, fgicp_score_fail_thr, gicp_low_acc_count);
-						// 	local_thrd_status_.store(LocalizationStatus::LowAccuracy);
-						// 	T_map_odom_ = localization_->getOdomToMap();
-						// 	TRACE_INFO_CLASS("localization status = low accuracy...");
-						// 	// need_localize_ = true;
-						// 	// wait_time = 0;
-						// } else {
-						// 	gicp_fail_count++;
-						// 	TRACE_WARN_CLASS("fit_score: %f, > %f, gicp_fail_count: %d", fit_score,
-						// 					 fgicp_score_fail_thr, gicp_fail_count);
-						// }
-
-					} else {
-						// log_info_manager_.slam_info.data[3] = 0;
-						gicp_fail_count = fgicp_fail_count_thr;
-						// TRACE_ERR_CLASS("fast gicp not converged");
-					}
-
+					LocalizationStatus localize_state_status = LocalizationStatus::Inactive;
+					localization_->localize(temp, localize_status, localize_state_status);
 					localize_status_ = localize_status;
+					local_thrd_status_.store(localize_state_status);
 
-					if (gicp_fail_count >= fgicp_fail_count_thr ||
-						gicp_low_acc_count >= fgicp_low_accuracy_count_thr) { // 连续多帧 fast-gicp 失败，则认为定位失败
-						local_thrd_status_.store(LocalizationStatus::Failed);
-						gicp_fail_count = 0;
-						gicp_low_acc_count = 0;
+					if (localize_state_status == LocalizationStatus::Normal ||
+						localize_state_status == LocalizationStatus::LowAccuracy) {
+						T_map_odom_ = localization_->getOdomToMap();
+					} else if (localize_state_status == LocalizationStatus::Failed) {
 						globalLocalizationSuccess_ = false; // 停车，进入重定位状态
-						TRACE_INFO_CLASS("localization status = failed, gicp_fail_count: %d, gicp_low_acc_count: %d",
-										 gicp_fail_count, gicp_low_acc_count);
 						TRACE_INFO_CLASS("next loop enter relocalization mode");
 					}
-
-					double T_odom_lidar_time = 0.f;
-					Eigen::Isometry3d curr_lidar_in_map = getLidarInMap(T_odom_lidar_time);
-					Eigen::Isometry3d curr_odom_to_map = getOdomToMap();
-
-					log_info_manager_.slam_info.data[17] = curr_odom_to_map.translation().x();
-					log_info_manager_.slam_info.data[18] = curr_odom_to_map.translation().y();
-
-					log_info_manager_.slam_info.data[4] = fit_score;
-					log_info_manager_.slam_info.data[5] = gicp_fail_count;
-					log_info_manager_.slam_info.data[6] = gicp_low_acc_count;
-
-				} else {
-					wait_time++;
+					need_localize_ = false;
 				}
+				wait_time++; //循环次数的计数
 			}
 		}
 

@@ -1,15 +1,17 @@
 
 #include "lidar_slam/localization.hpp"
 namespace lidar_slam {
-Localization::Localization() {
+Localization::Localization(LocalizationParam param) {
+	param_ = param;
 	log_info_manager_.reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	gicp_->setNumThreads(2);
-	gicp_->setTransformationEpsilon(0.01); // raw: 1e-2
-	gicp_->setMaximumIterations(64);
-	gicp_->setMaxCorrespondenceDistance(max_corres_dist_);
-	gicp_->setCorrespondenceRandomness(20);
+	gicp_->setNumThreads(param_.fgicp_thread_num);
+	gicp_->setTransformationEpsilon(param_.fgicp_trans_eps);
+	gicp_->setMaximumIterations(param_.fgicp_max_iter);
+	gicp_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
+	gicp_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
+	max_correspondence_dist_square_ = std::pow(param_.fgicp_inlier_max_corres_dist, 2);
 
 	ndt_.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
 	icp_.reset(new pcl::IterativeClosestPoint<PointType, PointType>());
@@ -167,14 +169,12 @@ bool Localization::loadMap(std::string path) {
 	return true;
 }
 
-bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
-							double fgicp_score_fail_thr) {
+void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
+							LocalizationStatus& localize_state_status) {
 	double localize_start = omp_get_wtime();
-	TRACE_INFO_CLASS("odomCloud size: %d", (int)odomCloud->points.size());
-	TRACE_INFO_CLASS("CloudGlobalMapIn size: %d", (int)CloudGlobalMapIn_->points.size());
 	if (!map_ready_) {
 		TRACE_WARN_CLASS("map not ready...");
-		return false;
+		return;
 	}
 
 	gicp_->setInputSource(odomCloud);
@@ -184,7 +184,8 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 	if (!gicp_->hasConverged()) {
 		TRACE_ERR_CLASS("gicp not converged.");
 		localize_status.converged = false;
-		return false;
+		localize_state_status = LocalizationStatus::Failed;
+		return;
 	} else {
 		localize_status.converged = true;
 		double matching_error = 0.f;
@@ -194,7 +195,7 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		std::vector<float> k_sq_dists;
 		for (int i = 0; i < aligned_ptr->size(); i++) {
 			const auto& pt = aligned_ptr->at(i);
-			if (pt.getVector3fMap().norm() > max_valid_point_dist_) {
+			if (pt.getVector3fMap().norm() > param_.fgicp_inlier_max_valid_point_dist) {
 				continue;
 			}
 			num_valid_points++;
@@ -210,13 +211,6 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		}
 		double inlier_fraction = static_cast<float>(num_inliers) / std::max(1, num_valid_points);
 
-		// fit_score = gicp_->getFitnessScore();
-		// if (fit_score < fgicp_score_fail_thr) {
-		// 	correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
-		// }
-
-		correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>(); // TODO(jxl): 更新条件
-
 		double localize_end = omp_get_wtime();
 		double cost_time = (localize_end - localize_start) * 1000;
 		localize_status.fit_score = matching_error;
@@ -226,22 +220,22 @@ bool Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f, cost time = %f",
 						 matching_error, num_inliers, inlier_fraction, cost_time);
 
-		bool match_ok = false;
-		double inlier_avg_error = 0.25;
-		double inlier_rate = 0.8;
+		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
+		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
 		if (inlier_fraction < inlier_rate) {
-			match_ok = false;
+			localize_state_status = LocalizationStatus::Failed;
 			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f < %f", inlier_fraction, inlier_rate);
 		} else if (matching_error < inlier_avg_error) {
-			match_ok = true;
-			TRACE_INFO_CLASS("localization success, for good inlier rate: %f,  small avg score: %f < %f",
+			localize_state_status = LocalizationStatus::Normal;
+			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			TRACE_INFO_CLASS("localization Normal, for good inlier rate: %f,  small avg score: %f < %f",
 							 inlier_fraction, matching_error, inlier_avg_error);
 		} else {
-			match_ok = false;
-			TRACE_ERR_CLASS("localization failed, for good inlier rate: %f, but high avg score: %f > %f",
+			localize_state_status = LocalizationStatus::LowAccuracy;
+			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			TRACE_ERR_CLASS("localization LowAccuracy, for good inlier rate: %f, but high avg score: %f > %f",
 							inlier_fraction, matching_error, inlier_avg_error);
 		}
-		return match_ok;
 	}
 }
 

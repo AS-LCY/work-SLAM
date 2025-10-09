@@ -245,16 +245,30 @@ class LocalizationModuleParamManager {
 		/// localization params *******************************************
 		node_->declare_parameter<float>("localization.fgicp_peroid_sec", 5.0);
 		node_->get_parameter("localization.fgicp_peroid_sec", loaded_param_.localization.fgicp_peroid_sec);
-		node_->declare_parameter<double>("localization.fgicp_score_fail_thr", 0.3);
-		node_->get_parameter("localization.fgicp_score_fail_thr", loaded_param_.localization.fgicp_score_fail_thr);
-		node_->declare_parameter<double>("localization.fgicp_score_low_accuracy_thr", 0.1);
-		node_->get_parameter("localization.fgicp_score_low_accuracy_thr",
-							 loaded_param_.localization.fgicp_score_low_accuracy_thr);
-		node_->declare_parameter<int>("localization.fgicp_fail_count_thr", 5);
-		node_->get_parameter("localization.fgicp_fail_count_thr", loaded_param_.localization.fgicp_fail_count_thr);
-		node_->declare_parameter<int>("localization.fgicp_low_accuracy_count_thr", 180);
-		node_->get_parameter("localization.fgicp_low_accuracy_count_thr",
-							 loaded_param_.localization.fgicp_low_accuracy_count_thr);
+		node_->declare_parameter<double>("localization.cloud_leaf_size_localize", 0.3);
+		node_->get_parameter("localization.cloud_leaf_size_localize",
+							 loaded_param_.localization.cloud_leaf_size_localize);
+		node_->declare_parameter<int>("localization.fgicp_thread_num", 2);
+		node_->get_parameter("localization.fgicp_thread_num", loaded_param_.localization.fgicp_thread_num);
+		node_->declare_parameter<float>("localization.fgicp_trans_eps", 0.01);
+		node_->get_parameter("localization.fgicp_trans_eps", loaded_param_.localization.fgicp_trans_eps);
+		node_->declare_parameter<int>("localization.fgicp_max_iter", 64);
+		node_->get_parameter("localization.fgicp_max_iter", loaded_param_.localization.fgicp_max_iter);
+		node_->declare_parameter<float>("localization.fgicp_max_corres_dist", 2.0);
+		node_->get_parameter("localization.fgicp_max_corres_dist", loaded_param_.localization.fgicp_max_corres_dist);
+		node_->declare_parameter<int>("localization.fgicp_max_corres_num", 20);
+		node_->get_parameter("localization.fgicp_max_corres_num", loaded_param_.localization.fgicp_max_corres_num);
+		node_->declare_parameter<float>("localization.fgicp_inlier_max_valid_point_dist", 40);
+		node_->get_parameter("localization.fgicp_inlier_max_valid_point_dist",
+							 loaded_param_.localization.fgicp_inlier_max_valid_point_dist);
+		node_->declare_parameter<float>("localization.fgicp_inlier_max_corres_dist", 0.5);
+		node_->get_parameter("localization.fgicp_inlier_max_corres_dist",
+							 loaded_param_.localization.fgicp_inlier_max_corres_dist);
+		node_->declare_parameter<float>("localization.fgicp_inlier_rate_thr", 0.8);
+		node_->get_parameter("localization.fgicp_inlier_rate_thr", loaded_param_.localization.fgicp_inlier_rate_thr);
+		node_->declare_parameter<float>("localization.fgicp_inlier_avg_error_thr", 0.25);
+		node_->get_parameter("localization.fgicp_inlier_avg_error_thr",
+							 loaded_param_.localization.fgicp_inlier_avg_error_thr);
 
 		/// re-localization params *******************************************s
 		node_->declare_parameter<double>("re_localization.score_thr", 0.05);

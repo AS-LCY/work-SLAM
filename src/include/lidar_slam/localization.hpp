@@ -1,17 +1,14 @@
 #ifndef LOCALIZATION_H
 #define LOCALIZATION_H
 #include <omp.h>
-
-#include <mutex>
-// #include <math.h> // ikd_Tree.h 中已包含
-#include <csignal>
-#include <fstream>
-#include <thread>
-// #include <unistd.h> // ikd_Tree.h 中已包含
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/icp.h>
 
 #include <Eigen/Core>
+#include <csignal>
+#include <fstream>
+#include <mutex>
+#include <thread>
 // #include <pcl/kdtree/kdtree_flann.h>
 // #include <pcl/common/common.h>
 // #include <pcl/common/transforms.h>
@@ -28,6 +25,7 @@
 
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
+#include "lidar_slam/slam_param_def.h"
 #include "node/log_info_manager.hpp"
 
 namespace lidar_slam {
@@ -36,12 +34,14 @@ class Localization {
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	Localization();
+	using LocalizationStatus = common_status::LocalizationStatus;
+
+	Localization(LocalizationParam param);
 	~Localization();
 	bool loadMap(std::string path);
 
-	bool localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
-				  double fgicp_score_fail_thr);
+	void localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
+				  LocalizationStatus& localize_state_status);
 
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
@@ -78,12 +78,11 @@ class Localization {
 	bool filter_init_ = false;
 	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity(); // T_map_odom
 
-	const double max_corres_dist_ = 2.f;
-	const double max_correspondence_dist_square_ = std::pow(0.5, 2);
-	const double max_valid_point_dist_ = 25.f;
-
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();
+
+	LocalizationParam param_;
+	double max_correspondence_dist_square_;
 };
 
 } // namespace lidar_slam
