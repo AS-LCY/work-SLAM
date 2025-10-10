@@ -82,8 +82,12 @@ bool LocalizationModule::create_ROS_IO() {
 
 	// both 建图 & 定位
 	pubOdomAftMapped = node_->create_publisher<nav_msgs::msg::Odometry>("/Odometry_lidar_in_map", rclcpp::QoS(10));
-	// T_map_baselink(里面带线速度)
+
+	// T_lio_baselink(里面带线速度)
 	pubLioOdom = node_->create_publisher<nav_msgs::msg::Odometry>("/lio_odom_baselink", rclcpp::QoS(10));
+
+	// T_lio_imu(里面带线速度)
+	pubLioOdomImu = node_->create_publisher<nav_msgs::msg::Odometry>("/lio_odom_imu", rclcpp::QoS(10));
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =

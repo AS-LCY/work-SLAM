@@ -66,7 +66,9 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 					T_odom_imu.imu_state.vel.z());
 	TRACE_DBG_CLASS("after: %f, %f, %f\n\n\n", vel.x(), vel.y(), vel.z());
 
-	odomAftMapped.twist.twist.linear.x = vel[0]; // baselink下的线速度
+	// imu系下的速度，近似也是baselink下的线速度，已经根据外参把imu系和baselink系对齐
+	// TODO(jxl): 考虑杆臂计算baselink线速度
+	odomAftMapped.twist.twist.linear.x = vel[0];
 	odomAftMapped.twist.twist.linear.y = vel[1];
 	odomAftMapped.twist.twist.linear.z = vel[2];
 
@@ -106,6 +108,20 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	lio_odom.pose.covariance[21] = lio_state_diag_cov(3); // ba
 	lio_odom.pose.covariance[28] = lio_state_diag_cov(4); // bg
 	pubLioOdom->publish(lio_odom);
+
+	//发布T_odom_imu的里程计
+	nav_msgs::msg::Odometry lio_odom_imu;
+	lio_odom_imu.header.stamp = msg_stamp;
+	lio_odom_imu.header.frame_id = "odom";
+	lio_odom_imu.child_frame_id = "imu_link";
+	lio_odom_imu.pose.pose.position.x = T_odom_imu.imu_state.pos.x();
+	lio_odom_imu.pose.pose.position.y = T_odom_imu.imu_state.pos.y();
+	lio_odom_imu.pose.pose.position.z = T_odom_imu.imu_state.pos.z();
+	lio_odom_imu.pose.pose.orientation.x = T_odom_imu.imu_state.rot.unit_quaternion().x();
+	lio_odom_imu.pose.pose.orientation.y = T_odom_imu.imu_state.rot.unit_quaternion().y();
+	lio_odom_imu.pose.pose.orientation.z = T_odom_imu.imu_state.rot.unit_quaternion().z();
+	lio_odom_imu.pose.pose.orientation.w = T_odom_imu.imu_state.rot.unit_quaternion().w();
+	pubLioOdomImu->publish(lio_odom_imu);
 
 	geometry_msgs::msg::TransformStamped transform;
 	transform.header.stamp = msg_stamp;

@@ -275,7 +275,7 @@ void LidarSlam::loopClosureThread() {
 }
 
 void LidarSlam::localizationThread() {
-	const int frequency = 1.0; // 频率为1Hz
+	const int frequency = 2.0; // 频率为1Hz
 	auto period_relocal = std::chrono::milliseconds(1000 / frequency);
 	const float period_local_sec = config_param_.localization.fgicp_peroid_sec;
 	const auto score_thr = config_param_.re_localization.score_thr;
@@ -747,10 +747,10 @@ bool LidarSlam::run() {
 
 		vector<PointVector> Nearest_Points;
 		Nearest_Points.resize(feats_down_size_);
-		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
+		kf_.update_iterated_dyn_share_modified(0.0004, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
 											   false); //迭代4次
 		// TRACE_INFO("lidar updated.....")
-		// print_imu_state(kf_.get_x(), kf_.get_P());
+		print_imu_state(kf_.get_x(), kf_.get_P());
 		auto filter_pointcloud_and_laser_update_end = std::chrono::high_resolution_clock::now();
 
 		state_point = kf_.get_x();
@@ -890,11 +890,11 @@ void LidarSlam::print_imu_state(const state_ikfom& state, const Eigen::Matrix<do
 	lio_state_diag_cov_(3) = cov_ba;
 	lio_state_diag_cov_(4) = cov_bg;
 
-	TRACE_INFO_CLASS("imu state: position= %.2f, %.2f, %.2f, rot(y,p,r)= %.2f, %.2f, %.2f, vel(body)= %.2f, %.2f, %.2f",
-					 pos.x(), pos.y(), pos.z(), yaw, pitch, roll, vel_body.x(), vel_body.y(), vel_body.z());
-	TRACE_INFO_CLASS("ba = %.4f, %.4f, %.4f, bg = %.2f, %.2f, %.2f", ba.x(), ba.y(), ba.z(), bg.x(), bg.y(), bg.z());
-	TRACE_INFO_CLASS("imu state cov positon = %.2f, rot = %.2f, vel = %.2f, ba = % .2f, bg = % .2f ", cov_position,
-					 cov_rotation, cov_vel, cov_ba, cov_bg);
+	// TRACE_INFO_CLASS("imu state: position= %.2f, %.2f, %.2f, rot(y,p,r)= %.2f, %.2f, %.2f, vel(body)= %.2f, %.2f,
+	// %.2f", 				 pos.x(), pos.y(), pos.z(), yaw, pitch, roll, vel_body.x(), vel_body.y(), vel_body.z());
+	// TRACE_INFO_CLASS("ba = %.4f, %.4f, %.4f, bg = %.2f, %.2f, %.2f", ba.x(), ba.y(), ba.z(), bg.x(), bg.y(), bg.z());
+	// TRACE_INFO_CLASS("imu state cov positon = %.2f, rot = %.2f, vel = %.2f, ba = % .2f, bg = % .2f ", cov_position,
+	// 				 cov_rotation, cov_vel, cov_ba, cov_bg);
 }
 
 bool LidarSlam::check_occlusion(const double& ratio_threshold) {

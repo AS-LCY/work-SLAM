@@ -318,6 +318,8 @@ class LocalizationModule {
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubLoopConstraintEdge = nullptr;
 	rclcpp::Publisher<Odometry>::SharedPtr pubOdomAftMapped = nullptr;
 	rclcpp::Publisher<Odometry>::SharedPtr pubLioOdom = nullptr;
+	rclcpp::Publisher<Odometry>::SharedPtr pubLioOdomImu = nullptr;
+
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubLoadMap = nullptr;
 	rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pubKeyframePose = nullptr;
 	rclcpp::Publisher<PointCloud2>::SharedPtr pubRgbCloud = nullptr;
