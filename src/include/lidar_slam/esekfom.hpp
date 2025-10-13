@@ -254,13 +254,13 @@ class esekf {
 			double t_update_2 = omp_get_wtime(); // x^k - x^
 
 			//由于H矩阵是稀疏的，只有前12列有非零元素，后12列是零 因此这里采用分块矩阵的形式计算 减少计算量
-			auto H = dyn_share.h_x;												// m X 12 的矩阵
+			auto H = dyn_share.h_x.eval();										// m X 12 的矩阵
 			Eigen::Matrix<double, 24, 24> HTH = Matrix<double, 24, 24>::Zero(); //矩阵 H^T * H
 			double t_update_3 = omp_get_wtime();								// H^T * H
 
 			HTH.block<12, 12>(0, 0) = H.transpose() * H;
 
-			auto K_front = (HTH / R + P_.inverse()).inverse();
+			Eigen::Matrix<double, 24, 24> K_front = (HTH / R + P_.inverse()).inverse();
 			Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> K;
 			K = K_front.block<24, 12>(0, 0) * H.transpose() / R; //卡尔曼增益  这里R视为常数
 			double t_update_4 = omp_get_wtime();				 //计算卡尔曼增益

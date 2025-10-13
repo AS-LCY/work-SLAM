@@ -147,7 +147,7 @@ class LocalizationModuleParamManager {
 		double yaw3 = extrinsic_euler_lidar_in_baselink[0] / 180 * M_PI;
 		double pitch3 = extrinsic_euler_lidar_in_baselink[1] / 180 * M_PI;
 		double roll3 = extrinsic_euler_lidar_in_baselink[2] / 180 * M_PI;
-		auto R_lidar_in_base = rpy2R(Eigen::Vector3d{ roll3, pitch3, yaw3 });
+		Eigen::Matrix3d R_lidar_in_base = rpy2R(Eigen::Vector3d{ roll3, pitch3, yaw3 });
 		loaded_param_.extrinsic.R_baselink_IMU = R_lidar_in_base * R_imu_in_lidar;
 		//仅用来转换IMU数据到baselink坐标系下
 
@@ -163,7 +163,7 @@ class LocalizationModuleParamManager {
 		loaded_param_.extrinsic.T_lidar_wheel = loaded_param_.extrinsic.T_wheel_lidar.inverse();
 
 		//计算T_imu_baselink
-		auto T_imu_lidar = Eigen::Isometry3d::Identity();
+		Eigen::Isometry3d T_imu_lidar = Eigen::Isometry3d::Identity();
 		T_imu_lidar.linear() = loaded_param_.extrinsic.extrinR;
 		T_imu_lidar.translation() = loaded_param_.extrinsic.extrinT;
 		loaded_param_.extrinsic.T_imu_baselink = T_imu_lidar * loaded_param_.extrinsic.T_lidar_wheel;

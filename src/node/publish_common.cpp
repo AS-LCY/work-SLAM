@@ -24,53 +24,91 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	odomAftMapped.child_frame_id = child_frameid;
 	odomAftMapped.header.stamp = msg_stamp;
 
-	static Eigen::Quaterniond q_last = Eigen::Quaterniond::Identity();
-	static double q_time_last = lidar_in_map_time;
 	static bool first_pub = true;
 	double q_time_curr = lidar_in_map_time;
+	static double q_time_last = q_time_curr;
+
 	odomAftMapped.pose.pose.position.x = lidar_in_map.translation().x();
 	odomAftMapped.pose.pose.position.y = lidar_in_map.translation().y();
 	odomAftMapped.pose.pose.position.z = lidar_in_map.translation().z();
 	Eigen::Quaterniond quaternion = Eigen::Quaterniond(lidar_in_map.rotation());
 	quaternion.normalize();
+	static Eigen::Quaterniond q_last = quaternion;
+
+	bool imu_gyro_calculated = false;
+	Eigen::Vector3d imu_gyro = Eigen::Vector3d::Zero();
+	static Eigen::Vector3d last_imu_gyro = Eigen::Vector3d::Zero();
+	static Eigen::Vector3d last_baselink_linear_vel = Eigen::Vector3d::Zero();
+	static Eigen::Vector3d last_baselink_angular_vel = Eigen::Vector3d::Zero();
 
 	if (first_pub) {
 		first_pub = false;
+
+		odomAftMapped.twist.twist.angular.x = 0.f;
+		odomAftMapped.twist.twist.angular.y = 0.f;
+		odomAftMapped.twist.twist.angular.z = 0.f;
+
+		// imu系下的速度，近似也是baselink下的线速度，已经根据外参把imu系和baselink系对齐
+		Eigen::Vector3d vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
+		// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
+
+		TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
+						T_odom_imu.imu_state.vel.z());
+		TRACE_DBG_CLASS("after: %f, %f, %f\n\n\n", vel.x(), vel.y(), vel.z());
+		odomAftMapped.twist.twist.linear.x = vel.x();
+		odomAftMapped.twist.twist.linear.y = vel.y();
+		odomAftMapped.twist.twist.linear.z = vel.z();
 	} else {
+		//由于发布线程和lio线程是分开的，加上lio中由于一些异常情况，lidar_in_map_time没有更新，导致dt等于0
 		double dt = q_time_curr - q_time_last;
-		assert(dt != 0.f);
-		Eigen::Quaterniond dq = q_last.inverse() * quaternion;
-		dq.normalize();
-		Eigen::AngleAxisd dq_angle_axis(dq);
-		double dq_angle = dq_angle_axis.angle();
-		Eigen::Vector3d dq_axis = dq_angle_axis.axis();
-		if (dq_angle > M_PI) { // 防止数值不稳定 (当角度接近 0 时)
-			dq_angle -= 2 * M_PI;
+		if (dt > 1e-4) {
+			Eigen::Quaterniond dq = q_last.inverse() * quaternion;
+			dq.normalize();
+			Eigen::AngleAxisd dq_angle_axis(dq);
+			double dq_angle = dq_angle_axis.angle();
+			Eigen::Vector3d dq_axis = dq_angle_axis.axis();
+			Eigen::Vector3d gyro = (dq_angle / dt) * dq_axis;
+			// TRACE_INFO_CLASS("dq_angle: %f, dt: %f", dq_angle, dt);
+
+			imu_gyro.x() = gyro.x() - T_odom_imu.imu_state.bg.x();
+			imu_gyro.y() = gyro.y() - T_odom_imu.imu_state.bg.y();
+			imu_gyro.z() = gyro.z() - T_odom_imu.imu_state.bg.z();
+			imu_gyro_calculated = true;
+
+			Eigen::Matrix3d R_imu_baselink = slam_param_.extrinsic.T_imu_baselink.linear();
+			Eigen::Vector3d baselink_gyro = R_imu_baselink.transpose() * imu_gyro;
+			odomAftMapped.twist.twist.angular.x = baselink_gyro.x();
+			odomAftMapped.twist.twist.angular.y = baselink_gyro.y();
+			odomAftMapped.twist.twist.angular.z = baselink_gyro.z(); //和imu的gyro可以做校验
+
+			const Eigen::Vector3d& imu_world_vel = T_odom_imu.imu_state.vel;
+			const Eigen::Matrix3d& imu_world_R = T_odom_imu.imu_state.rot.unit_quaternion().toRotationMatrix();
+			Eigen::Vector3d baselink_vel = calc_baselink_vel_from_lio_imu_state(
+				imu_world_vel, imu_world_R, slam_param_.extrinsic.T_imu_baselink, imu_gyro);
+			odomAftMapped.twist.twist.linear.x = baselink_vel.x();
+			odomAftMapped.twist.twist.linear.y = baselink_vel.y();
+			odomAftMapped.twist.twist.linear.z = baselink_vel.z();
+
+			last_baselink_angular_vel = baselink_gyro;
+			last_baselink_linear_vel = baselink_vel;
+			last_imu_gyro = imu_gyro;
+		} else {
+			odomAftMapped.twist.twist.angular.x = last_baselink_angular_vel.x();
+			odomAftMapped.twist.twist.angular.y = last_baselink_angular_vel.y();
+			odomAftMapped.twist.twist.angular.z = last_baselink_angular_vel.z();
+			odomAftMapped.twist.twist.linear.x = last_baselink_linear_vel.x();
+			odomAftMapped.twist.twist.linear.y = last_baselink_linear_vel.y();
+			odomAftMapped.twist.twist.linear.z = last_baselink_linear_vel.z();
 		}
-		Eigen::Vector3d gyro = (dq_angle / dt) * dq_axis;
-		odomAftMapped.twist.twist.angular.x = gyro.x() - T_odom_imu.imu_state.bg.x();
-		odomAftMapped.twist.twist.angular.y = gyro.y() - T_odom_imu.imu_state.bg.y();
-		odomAftMapped.twist.twist.angular.z = gyro.z() - T_odom_imu.imu_state.bg.z(); //和imu的gyro可以做校验
+
+		q_last = quaternion;
+		q_time_last = q_time_curr;
 	}
-	q_last = quaternion;
-	q_time_last = q_time_curr;
 
 	odomAftMapped.pose.pose.orientation.x = quaternion.x();
 	odomAftMapped.pose.pose.orientation.y = quaternion.y();
 	odomAftMapped.pose.pose.orientation.z = quaternion.z();
 	odomAftMapped.pose.pose.orientation.w = quaternion.w();
-
-	auto vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
-	// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
-	TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
-					T_odom_imu.imu_state.vel.z());
-	TRACE_DBG_CLASS("after: %f, %f, %f\n\n\n", vel.x(), vel.y(), vel.z());
-
-	// imu系下的速度，近似也是baselink下的线速度，已经根据外参把imu系和baselink系对齐
-	// TODO(jxl): 考虑杆臂计算baselink线速度
-	odomAftMapped.twist.twist.linear.x = vel[0];
-	odomAftMapped.twist.twist.linear.y = vel[1];
-	odomAftMapped.twist.twist.linear.z = vel[2];
 
 	//输出ba, bg到twist的diag cov来可视化
 	odomAftMapped.twist.covariance[0] = T_odom_imu.imu_state.ba.x();  // (0,0)
@@ -89,7 +127,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	Eigen::Isometry3d T_odom_imu_eigen = Eigen::Isometry3d::Identity();
 	T_odom_imu_eigen.translation() = T_odom_imu.imu_state.pos;
 	T_odom_imu_eigen.linear() = T_odom_imu.imu_state.rot.unit_quaternion().toRotationMatrix();
-	auto T_odom_baselink = T_odom_imu_eigen * slam_param_.extrinsic.T_imu_baselink;
+	Eigen::Isometry3d T_odom_baselink = T_odom_imu_eigen * slam_param_.extrinsic.T_imu_baselink;
 	nav_msgs::msg::Odometry lio_odom;
 	lio_odom.header.stamp = msg_stamp;
 	lio_odom.header.frame_id = "odom";
@@ -121,6 +159,20 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	lio_odom_imu.pose.pose.orientation.y = T_odom_imu.imu_state.rot.unit_quaternion().y();
 	lio_odom_imu.pose.pose.orientation.z = T_odom_imu.imu_state.rot.unit_quaternion().z();
 	lio_odom_imu.pose.pose.orientation.w = T_odom_imu.imu_state.rot.unit_quaternion().w();
+
+	Eigen::Vector3d imu_vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
+	lio_odom_imu.twist.twist.linear.x = imu_vel.x();
+	lio_odom_imu.twist.twist.linear.y = imu_vel.y();
+	lio_odom_imu.twist.twist.linear.z = imu_vel.z();
+	if (imu_gyro_calculated) {
+		lio_odom_imu.twist.twist.angular.x = imu_gyro.x();
+		lio_odom_imu.twist.twist.angular.y = imu_gyro.y();
+		lio_odom_imu.twist.twist.angular.z = imu_gyro.z();
+	} else {
+		lio_odom_imu.twist.twist.angular.x = last_imu_gyro.x();
+		lio_odom_imu.twist.twist.angular.y = last_imu_gyro.y();
+		lio_odom_imu.twist.twist.angular.z = last_imu_gyro.z();
+	}
 	pubLioOdomImu->publish(lio_odom_imu);
 
 	geometry_msgs::msg::TransformStamped transform;

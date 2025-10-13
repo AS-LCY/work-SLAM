@@ -94,6 +94,30 @@ PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen
 	return cloudOut;
 }
 
+Eigen::Vector3d calc_baselink_vel_from_lio_imu_state(const Eigen::Vector3d& imu_world_vel,
+													 const Eigen::Matrix3d& imu_world_R,
+													 const Eigen::Isometry3d& T_imu_baselink,
+													 const Eigen::Vector3d& imu_gyro) {
+	const Eigen::Matrix3d R_imu_baselink = T_imu_baselink.linear();
+	const Eigen::Vector3d t_imu_baselink = T_imu_baselink.translation();
+	const Eigen::Vector3d without_lever_arm_vel = R_imu_baselink.transpose() * imu_world_R.transpose() * imu_world_vel;
+	const Eigen::Vector3d lever_arm_vel = R_imu_baselink.transpose() * imu_gyro.cross(t_imu_baselink);
+	const Eigen::Vector3d baselink_vel = without_lever_arm_vel + lever_arm_vel;
+
+	// TRACE_INFO("imu world vel = %f, %f, %f", imu_world_vel.x(), imu_world_vel.y(), imu_world_vel.z());
+	// TRACE_INFO("imu gyro = %f, %f, %f", imu_gyro.x(), imu_gyro.y(), imu_gyro.z());
+	// TRACE_INFO("t_imu_baselink = %f, %f, %f", t_imu_baselink.x(), t_imu_baselink.y(), t_imu_baselink.z());
+	// TRACE_INFO("imu_world_R is SO(3) = %d", isSO3(imu_world_R));
+	// TRACE_INFO("R_imu_baselink is SO(3) = %d", isSO3(R_imu_baselink));
+	// TRACE_INFO("R_imu_baselink^T =\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f", R_imu_baselink.transpose()(0, 0),
+	// 		   R_imu_baselink.transpose()(0, 1), R_imu_baselink.transpose()(0, 2), R_imu_baselink.transpose()(1, 0),
+	// 		   R_imu_baselink.transpose()(1, 1), R_imu_baselink.transpose()(1, 2), R_imu_baselink.transpose()(2, 0),
+	// 		   R_imu_baselink.transpose()(2, 1), R_imu_baselink.transpose()(2, 2));
+	// TRACE_INFO("lever arm vel= %f, %f, %f,  norm : %f\n\n", lever_arm_vel.x(), lever_arm_vel.y(), lever_arm_vel.z(),
+	// 		   lever_arm_vel.norm());
+	return baselink_vel;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 bool mkdir_p(const std::string& path, mode_t mode) {
 	// 替换路径中的 "//" 为 "/"

@@ -323,6 +323,26 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
 
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur);
 
+Eigen::Vector3d calc_baselink_vel_from_lio_imu_state(const Eigen::Vector3d& imu_world_vel,
+													 const Eigen::Matrix3d& imu_world_R,
+													 const Eigen::Isometry3d& T_imu_baselink,
+													 const Eigen::Vector3d& imu_gyro);
+inline bool isSO3(const Eigen::Matrix3d& R, double tol = 1e-6, bool verbose = false) {
+	Eigen::Matrix3d shouldBeIdentity = R.transpose() * R;
+	Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+	double detR = R.determinant();
+
+	bool orthogonal = shouldBeIdentity.isApprox(I, tol);
+	bool det_one = std::abs(detR - 1.0) < tol;
+
+	if (verbose) {
+		std::cout << "R^T R:\n" << shouldBeIdentity << std::endl;
+		std::cout << "det(R): " << detR << std::endl;
+	}
+
+	return orthogonal && det_one;
+}
+
 static float angle_norm(float a) {
 	if (a < -PI_M) {
 		return a + PI_M * 2;
