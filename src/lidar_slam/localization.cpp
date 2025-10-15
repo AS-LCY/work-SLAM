@@ -220,6 +220,7 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f, cost time = %f",
 						 matching_error, num_inliers, inlier_fraction, cost_time);
 
+		Eigen::Isometry3d matched_result = Eigen::Isometry3d::Identity();
 		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
 		if (inlier_fraction < inlier_rate) {
@@ -227,12 +228,16 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f < %f", inlier_fraction, inlier_rate);
 		} else if (matching_error < inlier_avg_error) {
 			localize_state_status = LocalizationStatus::Normal;
-			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			correctionOdomToMap_ = smoothUpdateTransform(correctionOdomToMap_last_, matched_result);
+			correctionOdomToMap_last_ = correctionOdomToMap_;
 			TRACE_INFO_CLASS("localization Normal, for good inlier rate: %f,  small avg score: %f < %f",
 							 inlier_fraction, matching_error, inlier_avg_error);
 		} else {
 			localize_state_status = LocalizationStatus::LowAccuracy;
-			correctionOdomToMap_.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+			correctionOdomToMap_ = smoothUpdateTransform(correctionOdomToMap_last_, matched_result);
+			correctionOdomToMap_last_ = correctionOdomToMap_;
 			TRACE_ERR_CLASS("localization LowAccuracy, for good inlier rate: %f, but high avg score: %f > %f",
 							inlier_fraction, matching_error, inlier_avg_error);
 		}
@@ -336,7 +341,8 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		}
 		Eigen::Isometry3d lidar_in_map;
 		lidar_in_map.matrix() = icp.getFinalTransformation().matrix().cast<double>();
-		correctionOdomToMap_ = lidar_in_map * pose.inverse();
+		correctionOdomToMap_ = lidar_in_map * pose.inverse(); //全局重定位不能做平滑
+		correctionOdomToMap_last_ = correctionOdomToMap_;
 
 		Eigen::Vector3d T_map_odom_t = correctionOdomToMap_.translation();
 		Eigen::Vector3d T_map_odom_euler = correctionOdomToMap_.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);

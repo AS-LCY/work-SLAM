@@ -76,7 +76,8 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr KeyPoint_;
 	bool map_ready_;
 	bool filter_init_ = false;
-	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity(); // T_map_odom
+	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity();		 // T_map_odom
+	Eigen::Isometry3d correctionOdomToMap_last_ = Eigen::Isometry3d::Identity(); //上一次T_map_odom
 
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();

@@ -8,6 +8,8 @@
 
 #include <Eigen/Core>
 
+#include "sophus/se3.hpp"
+
 using namespace std;
 using namespace Eigen;
 
@@ -375,6 +377,41 @@ inline bool isSO3(const Eigen::Matrix3d& R, double tol = 1e-6, bool verbose = fa
 	}
 
 	return orthogonal && det_one;
+}
+
+inline void orthonormalizeIsometry(Eigen::Isometry3d& T) {
+	Eigen::Matrix3d R = T.rotation();
+
+	// 对 R 做 SVD 分解
+	Eigen::JacobiSVD<Eigen::Matrix3d> svd(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Matrix3d R_ortho = svd.matrixU() * svd.matrixV().transpose();
+
+	// 确保 det(R) == +1（避免反射矩阵）
+	if (R_ortho.determinant() < 0) {
+		Eigen::Matrix3d U = svd.matrixU();
+		U.col(2) *= -1;
+		R_ortho = U * svd.matrixV().transpose();
+	}
+
+	T.linear() = R_ortho;
+}
+
+inline Eigen::Isometry3d smoothUpdateTransform(Eigen::Isometry3d T_old, Eigen::Isometry3d T_new,
+											   const double alpha = 0.1) {
+	orthonormalizeIsometry(T_old);
+	orthonormalizeIsometry(T_new);
+	Sophus::SE3d T_old_SE3(T_old.rotation(), T_old.translation());
+	Sophus::SE3d T_new_SE3(T_new.rotation(), T_new.translation());
+
+	Sophus::SE3d delta_T = T_new_SE3 * T_old_SE3.inverse();
+	Eigen::Matrix<double, 6, 1> delta_se3 = delta_T.log();
+	Eigen::Matrix<double, 6, 1> delta_smoothed = alpha * delta_se3; //指数平滑（插值）
+	Sophus::SE3d T_smoothed_SE3 = Sophus::SE3d::exp(delta_smoothed) * T_old_SE3;
+
+	Eigen::Isometry3d T_smoothed = Eigen::Isometry3d::Identity();
+	T_smoothed.linear() = T_smoothed_SE3.rotationMatrix();
+	T_smoothed.translation() = T_smoothed_SE3.translation();
+	return T_smoothed;
 }
 
 static float angle_norm(float a) {
