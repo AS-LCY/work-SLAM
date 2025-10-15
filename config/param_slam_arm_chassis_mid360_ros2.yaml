@@ -25,6 +25,12 @@
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
+      use_wheel_odom: true
+      sub_wheel_odom_topic: "/process_controller/ChassisData"
+      wheel_cov: 0.001
+      nhc_y_cov: 0.001
+      nhc_z_cov: 0.001
+
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
       extrinsic_T: [ 0.0, -0.02329, 0.04412 ]   # T_imu_lidar

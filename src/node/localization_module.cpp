@@ -61,6 +61,9 @@ bool LocalizationModule::create_ROS_IO() {
 	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(400));
 	imu_qos.best_effort();
 
+	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(20));
+	wheel_odom_qos.best_effort();
+
 	sub_pointcloud2_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
 		slam_param_.lidar_preproc.sub_lidar_topic, lidar_qos,
 		std::bind(&LocalizationModule::lidar_ros_callback, this, std::placeholders::_1));
@@ -69,6 +72,12 @@ bool LocalizationModule::create_ROS_IO() {
 		slam_param_.lidar_preproc.sub_imu_topic, imu_qos,
 		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
 	// imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
+
+	if (slam_param_.common.use_wheel_odom) {
+		sub_wheel_odom_ = node_->create_subscription<ChassisData>(
+			slam_param_.common.sub_wheel_odom_topic, wheel_odom_qos,
+			std::bind(&LocalizationModule::wheel_odom_callback, this, std::placeholders::_1));
+	}
 
 	pub_localization_module_status_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleStatus>(
 		slam_param_.common.pub_topic_module_status, rclcpp::QoS(10));
@@ -705,6 +714,27 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 		return;
 	} else {
 		slam_->imu_cbk(msg);
+		return;
+	}
+}
+
+void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
+	auto curr_msg_time = rclcpp::Time(msg->header.stamp).seconds();
+	// TODO(jxl): wheel odom msg interval and delay
+	//...
+	//...
+
+	ModuleStatus curr_running_module_status = running_module_status_.load();
+	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
+		curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
+		curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM) {
+		return;
+	} else {
+		WheelOdomData odom_msg;
+		odom_msg.timestamp = curr_msg_time;
+		odom_msg.linear_velocity = msg->ac_linear_velocity;	  // m/s
+		odom_msg.angular_velocity = msg->ac_angular_velocity; // rad/s
+		slam_->wheel_odom_cbk(odom_msg);
 		return;
 	}
 }

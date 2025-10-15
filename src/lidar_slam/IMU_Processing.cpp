@@ -3,7 +3,8 @@
 
 //这个hpp主要包含：IMU数据预处理：IMU初始化，IMU正向传播，反向传播补偿运动失真
 
-ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true), start_timestamp_(-1) {
+ImuProcess::ImuProcess(const Eigen::Isometry3d& T_imu_baselink)
+	: b_first_frame_(true), imu_need_init_(true), start_timestamp_(-1) {
 	init_iter_num_ = 1;
 	Q = process_noise_cov(); //调用use-ikfom.hpp里面的process_noise_cov初始化噪声协方差
 
@@ -19,6 +20,9 @@ ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true), start_tim
 	Lidar_T_wrt_IMU_ = Vector3d(0, 0, 0);	 // lidar到IMU的位置外参初始化
 	Lidar_R_wrt_IMU_ = Matrix3d::Identity(); // lidar到IMU的旋转外参初始化
 	last_imu_.reset(new livox_ros::ImuMsg);	 //上一帧imu初始化
+
+	R_imu_baselink_ = T_imu_baselink.linear();
+	t_imu_baselink_ = T_imu_baselink.translation();
 }
 
 ImuProcess::~ImuProcess() {}
@@ -91,6 +95,20 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 	init_state.offset_T_L_I = Lidar_T_wrt_IMU_;				  //将lidar和imu外参传入
 	init_state.offset_R_L_I = Sophus::SO3d(Lidar_R_wrt_IMU_); // imu frame to laser frame
 
+	// wheel velocity initialization
+	// double wheel_velocity = 0.0;
+	// if (USE_WHEEL && !meas.wheel.empty()) {
+	// 	wheel_velocity = meas.wheel.back().linear_velocity;
+	// 	V3D wheel_v_vec(wheel_velocity, 0.0, 0.0);
+	// 	M3D angv_crossmat;
+	// 	V3D real_gyr = cur_gyr - mean_gyr_;
+	// 	angv_crossmat << SKEW_SYM_MATRX(real_gyr);
+
+	// 	// baselink vel estimate imu body vel
+	// 	V3D imu_body_vel = R_imu_baselink_ * wheel_v_vec - angv_crossmat * t_imu_baselink_;
+	// 	init_state.vel = initial_rotate_ * imu_body_vel; // imu world vel
+	// }
+
 	kf_state.change_x(init_state); //将初始化后的状态传入esekfom.hpp中的x_
 
 	Matrix<double, 24, 24> init_P = MatrixXd::Identity(24, 24); //在esekfom.hpp获得P_的协方差矩阵
@@ -118,7 +136,7 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 }
 
 //反向传播
-void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_out) {
+void ImuProcess::UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_out) {
 	/***将上一帧最后尾部的imu添加到当前帧头部的imu ***/
 	auto v_imu = meas.imu;								   //取出当前帧的IMU队列
 	const double& imu_end_time = v_imu.back()->time_stamp; // 拿到当前帧尾部的imu的时间
@@ -174,6 +192,29 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 
 		// TRACE_INFO_CLASS("dt = %f ms", dt * 1e3);
 		kf_state.predict(dt, Q, in); // IMU前向传播，每次传播的时间间隔为dt  把滤波器的状态往前预测传播
+
+		// update by wheel meas
+		if (USE_WHEEL && !meas.wheel.empty()) {
+			double wheel_time = meas.wheel.front().timestamp;
+			if (wheel_time < head->time_stamp) {
+				meas.wheel.pop_front();
+			} else {
+				if (wheel_time < tail->time_stamp) { // wheel 位于两个imu之间
+					// opt_with_wheel = true;
+					Eigen::Vector3d imu_gyro = 0.5 * (head->angular_velocity + tail->angular_velocity);
+					TRACE_INFO(
+						"wheel time = %f, head_imu_time = %f, tail_imu_time = %f, vel = %f, imu_gyro = %f, %f, %f",
+						meas.wheel.front().timestamp, head->time_stamp, tail->time_stamp,
+						meas.wheel.front().linear_velocity, imu_gyro.x() * RAD2DEGREE, imu_gyro.y() * RAD2DEGREE,
+						imu_gyro.z() * RAD2DEGREE);
+					kf_state.update_iterated_dyn_share_wheel_odom(meas.wheel.front().linear_velocity,
+																  imu_gyro); // wheel更新
+					// TRACE_INFO_CLASS("wheel update...");
+					// opt_with_wheel = false;
+					meas.wheel.pop_front();
+				}
+			}
+		}
 
 		imu_state = kf_state.get_x();
 		angvel_last_ =
@@ -241,7 +282,7 @@ void ImuProcess::UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state
 	}
 }
 
-void ImuProcess::Process(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& cur_pcl_un_) {
+void ImuProcess::Process(MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& cur_pcl_un_) {
 	if (meas.imu.empty()) {
 		return;
 	}

@@ -51,6 +51,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 		// imu系下的速度，近似也是baselink下的线速度，已经根据外参把imu系和baselink系对齐
 		Eigen::Vector3d vel = T_odom_imu.imu_state.rot.inverse() * T_odom_imu.imu_state.vel;
 		// jxl: 直接取逆然后相乘，计算的结果就是对的；rot.matrix().inverse()是错的
+		// rot.inverse() == rot.matrix().transpose()
 
 		TRACE_DBG_CLASS("before: %f, %f, %f\n", T_odom_imu.imu_state.vel.x(), T_odom_imu.imu_state.vel.y(),
 						T_odom_imu.imu_state.vel.z());

@@ -25,6 +25,11 @@ struct CommonParam {
 	int before_downsample_size_thr = 3000;
 	int feats_down_size_thr = 100;
 	std::vector<long int> cpu_id;
+	bool use_wheel_odom = false;
+	std::string sub_wheel_odom_topic = "/flbot/hardware/chassic_data";
+	double wheel_cov = 0.001;
+	double nhc_y_cov = 0.001;
+	double nhc_z_cov = 0.001;
 };
 
 struct DetectSlipParam {

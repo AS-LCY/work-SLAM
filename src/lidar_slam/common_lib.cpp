@@ -1,5 +1,8 @@
 #include "lidar_slam/common_lib.h"
 
+bool USE_WHEEL = false;
+// bool opt_with_wheel = false;
+
 Eigen::Vector3d R2ypr(const Eigen::Matrix3d& R) {
 	Eigen::Vector3d n = R.col(0);
 	Eigen::Vector3d o = R.col(1);
@@ -113,8 +116,10 @@ Eigen::Vector3d calc_baselink_vel_from_lio_imu_state(const Eigen::Vector3d& imu_
 	// 		   R_imu_baselink.transpose()(0, 1), R_imu_baselink.transpose()(0, 2), R_imu_baselink.transpose()(1, 0),
 	// 		   R_imu_baselink.transpose()(1, 1), R_imu_baselink.transpose()(1, 2), R_imu_baselink.transpose()(2, 0),
 	// 		   R_imu_baselink.transpose()(2, 1), R_imu_baselink.transpose()(2, 2));
-	// TRACE_INFO("lever arm vel= %f, %f, %f,  norm : %f\n\n", lever_arm_vel.x(), lever_arm_vel.y(), lever_arm_vel.z(),
-	// 		   lever_arm_vel.norm());
+	// TRACE_INFO("without_lever_arm_vel= %f, %f, %f,  norm : %f", without_lever_arm_vel.x(), without_lever_arm_vel.y(),
+	// without_lever_arm_vel.z(), without_lever_arm_vel.norm());
+	// TRACE_INFO("lever arm vel= %f, %f, %f,  norm : %f", lever_arm_vel.x(), lever_arm_vel.y(), lever_arm_vel.z(),
+	// lever_arm_vel.norm());
 	return baselink_vel;
 }
 

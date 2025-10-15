@@ -42,6 +42,7 @@ struct MeasureGroup // Lidar data and imu dates for the curent process
 	double lidar_end_time; // lidar data end time in the MeasureGroup
 	PointCloudType::Ptr lidar;
 	deque<std::shared_ptr<livox_ros::ImuMsg>> imu;
+	deque<WheelOdomData> wheel;
 };
 
 struct Pose6D {
@@ -73,14 +74,14 @@ class ImuProcess {
    public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	ImuProcess();
+	ImuProcess(const Eigen::Isometry3d& T_imu_baselink);
 	~ImuProcess();
 
 	void Reset();
 	void set_param(const V3D& transl, const M3D& rot, const V3D& gyr, const V3D& acc, const V3D& gyr_bias,
 				   const V3D& acc_bias);
 	Eigen::Matrix<double, 12, 12> Q = Eigen::Matrix<double, 12, 12>::Zero(); //噪声协方差矩阵  对应论文式(8)中的Q
-	void Process(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& pcl_un_);
+	void Process(MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType::Ptr& pcl_un_);
 
 	double first_lidar_time_ = 0.f; //当前帧第一个点云时间
 	double set_first_lidar_time(const double first_lidar_time) {
@@ -93,7 +94,7 @@ class ImuProcess {
 
    private:
 	void IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, int& N);
-	void UndistortPcl(const MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_in_out);
+	void UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, PointCloudType& pcl_in_out);
 
 	V3D cov_acc_ = V3D(0, 0, 0);					 //加速度测量协方差
 	V3D cov_gyr_ = V3D(0, 0, 0);					 //角速度测量协方差
@@ -120,5 +121,8 @@ class ImuProcess {
 	bool imu_need_init_ = true; //是否需要初始化imu
 
 	std::mutex mtx_first_lidar_time_;
+
+	Eigen::Matrix3d R_imu_baselink_ = Eigen::Matrix3d::Identity();
+	Eigen::Vector3d t_imu_baselink_ = Eigen::Vector3d::Zero();
 };
 #endif

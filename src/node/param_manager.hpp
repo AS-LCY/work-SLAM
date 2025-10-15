@@ -66,6 +66,16 @@ class LocalizationModuleParamManager {
 
 		node_->declare_parameter<std::vector<long int>>("common.cpu_id", std::vector<long int>());
 		node_->get_parameter("common.cpu_id", loaded_param_.common.cpu_id);
+		node_->declare_parameter<bool>("common.use_wheel_odom", false);
+		node_->get_parameter("common.use_wheel_odom", loaded_param_.common.use_wheel_odom);
+		node_->declare_parameter<std::string>("common.sub_wheel_odom_topic", "/flbot/hardware/chassic_data");
+		node_->get_parameter("common.sub_wheel_odom_topic", loaded_param_.common.sub_wheel_odom_topic);
+		node_->declare_parameter<double>("common.wheel_cov", 0.001);
+		node_->get_parameter("common.wheel_cov", loaded_param_.common.wheel_cov);
+		node_->declare_parameter<double>("common.nhc_y_cov", 0.001);
+		node_->get_parameter("common.nhc_y_cov", loaded_param_.common.nhc_y_cov);
+		node_->declare_parameter<double>("common.nhc_z_cov", 0.1);
+		node_->get_parameter("common.nhc_z_cov", loaded_param_.common.nhc_z_cov);
 
 		/// 处理地图目录路径
 		std::string parent_dir;

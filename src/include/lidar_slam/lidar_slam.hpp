@@ -22,6 +22,7 @@
 
 // #include <fast_gicp/gicp/fast_gicp.hpp>
 
+#include "flbot_msgs/msg/chassis_data.hpp"
 #include "lidar_slam/IMU_Processing.hpp"
 #include "lidar_slam/backend.hpp"
 #include "lidar_slam/cloud_map.hpp"
@@ -79,6 +80,7 @@ class LidarSlam {
 	using MappingStatus = common_status::MappingStatus;
 	using SecmapRelocalThrdStatus = common_status::SecmapRelocalThrdStatus;
 	using SlamRunStatus = common_status::SlamRunStatus;
+	using ChassisData = flbot_msgs::msg::ChassisData;
 
 	LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode init_mode, rclcpp::Node::SharedPtr node); // new added
 	LidarSlam() = delete;
@@ -98,6 +100,7 @@ class LidarSlam {
 
 	bool run();
 
+	void wheel_odom_cbk(const WheelOdomData& msg);
 	void lidar_pcl_cbk(const PointCloudType::Ptr cloud);
 	void imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in);
 	bool save_map(string saveMapDirectory, double resolution, int start_index, int end_index) {
@@ -285,6 +288,7 @@ class LidarSlam {
 	deque<double> time_buffer_;				  // 记录lidar时间, lidar header time
 	deque<PointCloudType::Ptr> lidar_buffer_; // 记录特征提取或间隔采样后的lidar（特征）数据
 	deque<std::shared_ptr<livox_ros::ImuMsg>> imu_buffer_;
+	deque<WheelOdomData> wheel_odom_buffer_;
 
 	// bool lidar_pushed_ = false;
 	atomic<double> lidar_end_time_;	   // < 当前帧雷达，帧结束的时间，update: sync_packages()
@@ -306,6 +310,7 @@ class LidarSlam {
 	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
 	double T_odom_lidar_time_ = 0.f;
 	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_imu_baselink_ = Eigen::Isometry3d::Identity();
 
 	bool thread_run_ = true;
 	bool globalLocalizationSuccess_ = false;
@@ -320,6 +325,7 @@ class LidarSlam {
 
 	std::mutex mtx_imu_buffer_;
 	std::mutex mtx_lidar_buffer_;
+	std::mutex mtx_wheel_odom_buffer_;
 
 	std::mutex mtx_odom_cloud_;
 	std::mutex mtx_lidar_cloud_;

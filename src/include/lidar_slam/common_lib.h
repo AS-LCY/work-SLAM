@@ -65,6 +65,9 @@ typedef Matrix3f M3F;
 constexpr double RAD2DEGREE = 180.f / M_PI;
 constexpr double DEGREE2RAD = M_PI / 180.f;
 
+extern bool USE_WHEEL;
+// extern bool opt_with_wheel;
+
 namespace common_status {
 enum class LocalizationStatus : int {
 	Inactive = 0,		  // l_inactive
@@ -131,6 +134,12 @@ struct LocalizeStatus {
 	int num_inliers = 0;
 	double inlier_fraction = 0.f;
 	double cost_time = 0.f;
+};
+
+struct WheelOdomData {
+	double timestamp = 0.0;		   // second
+	double linear_velocity = 0.0;  // m/s
+	double angular_velocity = 0.0; // rad/s
 };
 
 /*struct StatesGroup
@@ -322,6 +331,12 @@ Eigen::Matrix3d rpy2R(const Eigen::Vector3d& rpy);
 Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
 
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur);
+
+// inline Eigen::Matrix3d skew_sym_matrix(const Eigen::Vector3d& v) {
+// 	Eigen::Matrix3d m;
+// 	m << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
+// 	return m;
+// }
 
 Eigen::Vector3d calc_baselink_vel_from_lio_imu_state(const Eigen::Vector3d& imu_world_vel,
 													 const Eigen::Matrix3d& imu_world_R,

@@ -170,6 +170,7 @@ class LocalizationModule {
 
 	void imu_callback(Imu::SharedPtr msg_in);
 	void lidar_ros_callback(const PointCloud2::SharedPtr ros_msg);
+	void wheel_odom_callback(ChassisData::SharedPtr msg);
 
 	void publish_optimized_path(const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path,
 								const std::string& frame);
@@ -258,6 +259,7 @@ class LocalizationModule {
 
 	rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_pointcloud2_;
 	rclcpp::Subscription<Imu>::SharedPtr sub_imu_;
+	rclcpp::Subscription<ChassisData>::SharedPtr sub_wheel_odom_;
 	rclcpp::Subscription<UInt32>::SharedPtr sub_mapping_ctrl_;
 
 	rclcpp::TimerBase::SharedPtr timer_slam_;

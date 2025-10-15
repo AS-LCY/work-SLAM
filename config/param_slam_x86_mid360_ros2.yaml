@@ -25,6 +25,12 @@
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
+      use_wheel_odom: false
+      sub_wheel_odom_topic: "/process_controller/ChassisData"
+      wheel_cov: 0.001
+      nhc_y_cov: 0.001
+      nhc_z_cov: 0.001
+
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
       extrinsic_T: [ 0.0, -0.02329, 0.04412 ]   # T_imu_lidar
@@ -49,7 +55,7 @@
       #正着装机器，172.18.3.231
       Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.274,
                         0.0,  1.0,  0.0,  0.0,
-                        0.0,  0.0,  1.0,  0.203,
+                        0.0,  0.0,  1.0,  0.0,
                         0.0,  0.0,  0.0,  1.0]
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 
@@ -93,7 +99,7 @@
     mapping:
       acc_cov: 0.017573468691815922
       gyr_cov: 0.01524654486781841 
-      b_acc_cov: 0.00025566293746767606
+      b_acc_cov: 0.00025566293746767606  #TODO(jxl): 可能要缩小，原本是扩大了50倍来使用
       b_gyr_cov: 0.0007414029109004667
 
       cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
