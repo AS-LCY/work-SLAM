@@ -170,7 +170,8 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	}
 
 	static double last_slam_hb = hb_time_timer_slam_.load();
-	hb_time_timer_slam_.store(node_->now().seconds());
+	auto curr_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now().seconds();
+	hb_time_timer_slam_.store(curr_time);
 	double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
 
 	log_info_manager_.slam_info.data[29] = slam_timer_interval;
@@ -198,7 +199,7 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		(slam_->getLoadMap())->points.size() > 0 && pubLoadMap->get_subscription_count() > 0 && !global_map_pubed_) {
 		sensor_msgs::msg::PointCloud2 loadMap;
 		pcl::toROSMsg(*(slam_->getLoadMap()), loadMap);
-		loadMap.header.stamp = node_->now();
+		loadMap.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 		loadMap.header.frame_id = "map";
 		pubLoadMap->publish(loadMap);
 		global_map_pubed_ = true;
@@ -313,7 +314,7 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	// check ROS IO status **********************************************************************
 	HealthStatus health_status_now = HealthStatus::AllOk;
 
-	auto curr_ros_time = node_->now();
+	auto curr_ros_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	double delay_slam = curr_time - hb_time_timer_slam_.load(); //当前时刻和最新主线程时间差
 
@@ -424,7 +425,7 @@ void LocalizationModule::pub_module_status_timer() {
 	}
 
 	auto curr_running_module_status = running_module_status_.load();
-	auto curr_ros_time = node_->now();
+	auto curr_ros_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 
 	flbot_msgs::msg::LocalizationModuleHealth health_msg;
 	HealthStatus health_status_now = check_fill_health_msg(curr_running_module_status, health_msg);
@@ -625,7 +626,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
 
-	auto curr_ros_time = node_->now();
+	auto curr_ros_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
 	// TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
@@ -674,7 +675,7 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	imu_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
 
-	auto curr_ros_time = node_->now();
+	auto curr_ros_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	delay_imu_ = curr_time - curr_msg_time; //当前时刻和最新imu消息时间差
 	TRACE_DBG_CLASS("received imu msg, time delay: %.3f ms", delay_imu_ * 1e3);
@@ -713,11 +714,11 @@ void LocalizationModule::publish_optimized_path(
 	geometry_msgs::msg::PoseStamped msg;
 
 	optimized_path_msg.poses.clear();
-	optimized_path_msg.header.stamp = node_->now();
+	optimized_path_msg.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	optimized_path_msg.header.frame_id = frame;
 
 	for (size_t i = 0; i < path.size(); i++) {
-		msg.header.stamp = node_->now();
+		msg.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 		msg.header.frame_id = frame;
 		msg.pose.position.x = path[i].translation().x();
 		msg.pose.position.y = path[i].translation().y();
@@ -763,7 +764,7 @@ bool LocalizationModule::init_module_by_set_status(ModuleStatus set_status) {
 }
 
 bool LocalizationModule::module_member_init() {
-	double curr_time = node_->now().seconds();
+	double curr_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now().seconds();
 	// hb_time_cbk_lidar_.store(curr_time);
 	// hb_time_cbk_imu_.store(curr_time);
 	hb_time_cbk_module_ctrl_.store(curr_time);

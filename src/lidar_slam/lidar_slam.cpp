@@ -161,8 +161,9 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	}
 
 	lidar_buffer_lock.lock();
-	if (!time_buffer_.empty() && omp_get_wtime() - time_buffer_.front() > 0.15) {
-		TRACE_WARN_CLASS("lidar lose rate %f s", omp_get_wtime() - time_buffer_.front());
+	auto curr_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now().seconds();
+	if (!time_buffer_.empty() && curr_time - time_buffer_.front() > 0.15) {
+		// TRACE_WARN_CLASS("lidar lose rate %f s", curr_time - time_buffer_.front());
 	}
 
 	assert(lidar_buffer_.size() == time_buffer_.size());

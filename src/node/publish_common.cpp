@@ -248,7 +248,7 @@ void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
 	visualization_msgs::msg::Marker nodes;
 	nodes.lifetime = rclcpp::Duration(0, 0);
 	nodes.header.frame_id = "map";
-	nodes.header.stamp = node_->now();
+	nodes.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	nodes.ns = "pose_graph_nodes";
 	nodes.id = nodes_id++;
 	nodes.type = visualization_msgs::msg::Marker::SPHERE_LIST;
@@ -266,7 +266,7 @@ void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
 	visualization_msgs::msg::Marker edges;
 	edges.lifetime = rclcpp::Duration(0, 0);
 	edges.header.frame_id = "map";
-	edges.header.stamp = node_->now();
+	edges.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 	edges.ns = "pose_graph_edges";
 	edges.id = edges_id++;
 	edges.type = visualization_msgs::msg::Marker::LINE_LIST;
@@ -351,7 +351,7 @@ void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
 // 		}
 // 		visualization_msgs::msg::Marker Marker; //定义Marker对象
 // 		Marker.header.frame_id = "map";
-// 		Marker.header.stamp = node_->now();
+// 		Marker.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now();
 // 		Marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING; //选用文本类型
 // 		Marker.ns = "basic_shapes";										 //必写，否则rviz无法显示
 // 		Marker.pose.orientation.w = 1.0;								 //文字的方向
