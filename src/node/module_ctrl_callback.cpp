@@ -13,7 +13,7 @@ void LocalizationModule::localization_module_ctrl_callback(const std_msgs::msg::
 			exit(EXIT_FAILURE);
 		}
 	}
-	hb_time_cbk_module_ctrl_.store(rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now().seconds());
+	hb_time_cbk_module_ctrl_.store(node_->now().seconds());
 
 	/** msg_in *************************************************************************************
 	 * enum SlamCtrlCmd{

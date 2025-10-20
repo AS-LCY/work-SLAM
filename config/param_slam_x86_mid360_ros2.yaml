@@ -25,11 +25,11 @@
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
-      use_wheel_odom: false
+      use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
-      wheel_cov: 0.001
-      nhc_y_cov: 0.001
-      nhc_z_cov: 0.001
+      wheel_cov: 0.01
+      nhc_y_cov: 0.01
+      nhc_z_cov: 0.01
 
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
@@ -55,7 +55,7 @@
       #正着装机器，172.18.3.231
       Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.274,
                         0.0,  1.0,  0.0,  0.0,
-                        0.0,  0.0,  1.0,  0.0,
+                        0.0,  0.0,  1.0,  0.203,
                         0.0,  0.0,  0.0,  1.0]
       #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
 

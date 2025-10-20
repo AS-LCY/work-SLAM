@@ -268,6 +268,7 @@ class LidarSlam {
 	bool check_occlusion(const double& ratio_threshold);
 	bool check_lio_vel_abnormal(const state_ikfom& imu_state);
 	bool check_pointcloud_state_abnormal();
+	std::deque<WheelOdomData> getDataInRangeAndClean(double lidar_beg_time, double lidar_end_time);
 
    private:
 	std::atomic<LocalizationStatus> local_thrd_status_{ LocalizationStatus::Inactive };

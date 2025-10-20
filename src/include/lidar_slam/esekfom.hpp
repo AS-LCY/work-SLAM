@@ -102,7 +102,7 @@ class esekf {
 	}
 
 	void h_share_model_wheel_odom(dyn_share_datastruct& ekfom_data, const double& baselink_linear_vel,
-								  const Eigen::Vector3d& meas_imu_gyro, double wheel_cov_noise) {
+								  const Eigen::Vector3d& meas_imu_gyro, double& wheel_cov_noise) {
 		ekfom_data.h_x = MatrixXd::Zero(3, 24);
 		ekfom_data.h.resize(3);
 
@@ -144,15 +144,18 @@ class esekf {
 		Eigen::Matrix3d tmp_mat = R_imu_baselink_.transpose() * bg_crossmat;
 		Eigen::Matrix3d cov_mat = Eigen::Matrix3d::Identity();
 		cov_mat(0, 0) = wheel_cov_;
-		if (gyr_vec.norm() > 0.3) {
-			cov_mat(1, 1) = baselink_linear_vel * gyr_vec.norm();
-		} else {
-			cov_mat(1, 1) = nhc_y_cov_;
-		}
+		cov_mat(1, 1) = nhc_y_cov_;
+
+		// if (gyr_vec.norm() > 0.3) {
+		// 	cov_mat(1, 1) = baselink_linear_vel * gyr_vec.norm();
+		// } else {
+		// 	cov_mat(1, 1) = nhc_y_cov_;
+		// }
+
 		cov_mat(2, 2) = nhc_z_cov_;
 		cov_mat = (cov_mat + tmp_mat * tmp_mat.transpose() * gyr_cov_).eval();
 		wheel_cov_noise = cov_mat.diagonal().maxCoeff();
-		// TRACE_INFO_CLASS("wheel odom cov noise: %f", wheel_cov_noise);
+		TRACE_INFO_CLASS("wheel odom cov noise: %f", wheel_cov_noise);
 
 		double use_weight = false;
 		Eigen::Matrix3d weight_matrix = Eigen::Matrix3d::Identity();
@@ -166,6 +169,8 @@ class esekf {
 		ekfom_data.h(0) = res.x();
 		ekfom_data.h(1) = res.y();
 		ekfom_data.h(2) = res.z();
+
+		// TRACE_INFO_CLASS("weighted wheel residual: %f, %f, %f", res.x(), res.y(), res.z());
 
 		// jacobian
 		M3D rot_crossmat;
@@ -404,7 +409,7 @@ class esekf {
 	}
 
 	void update_iterated_dyn_share_wheel_odom(const double& baselink_linear_vel, const Eigen::Vector3d& meas_imu_gyro,
-											  int maximum_iter = 0) {
+											  int maximum_iter = 4) {
 		dyn_share_datastruct dyn_share;
 		dyn_share.valid = true;
 		dyn_share.converge = true;
@@ -418,7 +423,7 @@ class esekf {
 		for (int i = -1; i < maximum_iter; i++) // maximum_iter是卡尔曼滤波的最大迭代次数
 		{
 			dyn_share.valid = true;
-			double wheel_cov_noise = 0.1;
+			double wheel_cov_noise = 0.01;
 			h_share_model_wheel_odom(dyn_share, baselink_linear_vel, meas_imu_gyro, wheel_cov_noise);
 			if (!dyn_share.valid) {
 				continue;

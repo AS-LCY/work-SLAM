@@ -171,9 +171,8 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	}
 
 	lidar_buffer_lock.lock();
-	auto curr_time = rclcpp::Clock(rcl_clock_type_t::RCL_STEADY_TIME).now().seconds();
-	if (!time_buffer_.empty() && curr_time - time_buffer_.front() > 0.15) {
-		// TRACE_WARN_CLASS("lidar lose rate %f s", curr_time - time_buffer_.front());
+	if (!time_buffer_.empty() && omp_get_wtime() - time_buffer_.front() > 0.15) {
+		TRACE_WARN_CLASS("lidar lose rate %f s", omp_get_wtime() - time_buffer_.front());
 	}
 
 	assert(lidar_buffer_.size() == time_buffer_.size());
@@ -231,34 +230,27 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 		return false;
 	}
 
-	// find the closet wheel data to the last imu frame
-	std::unique_lock<std::mutex> wheel_odom_buffer_lock(mtx_wheel_odom_buffer_);
-	if (USE_WHEEL && !wheel_odom_buffer_.empty()) {
-		meas.wheel.clear();
-		double wheel_time = wheel_odom_buffer_.front().timestamp;
-		TRACE_INFO_CLASS("wheel_time = %f, lidar_end_time = %f", wheel_time, lidar_end_time_.load());
-
-		//记录wheel数据，wheel时间小于当前帧lidar结束时间
-		int pushed_wheel_odom_num = 0;
-		while ((!wheel_odom_buffer_.empty()) && (wheel_time < lidar_end_time_)) {
-			wheel_time = wheel_odom_buffer_.front().timestamp;
-			if (wheel_time > lidar_end_time_) {
-				break;
+	if (USE_WHEEL) {
+		meas.wheel = getDataInRangeAndClean(meas.lidar_beg_time, meas.lidar_end_time);
+		if (meas.wheel.empty()) {
+			TRACE_WARN_CLASS("Measure.wheel is empty...");
+			if (!wheel_odom_buffer_.empty()) {
+				TRACE_WARN_CLASS("front wheel time: %f, back time: %f", wheel_odom_buffer_.front().timestamp,
+								 wheel_odom_buffer_.back().timestamp);
 			}
-
-			meas.wheel.push_back(wheel_odom_buffer_.front()); //记录当前lidar帧内的wheel数据到meas.wheel
-			pushed_wheel_odom_num++;
-			TRACE_INFO("wheel time = %f, vel = %f", wheel_odom_buffer_.front().timestamp,
-					   wheel_odom_buffer_.front().linear_velocity);
-			wheel_odom_buffer_.pop_front();
+			TRACE_INFO_CLASS("lidar begin time = %f, lidar end time = %f", meas.lidar_beg_time, lidar_end_time_.load());
+		} else {
+			TRACE_INFO_CLASS("synced %d wheel odom data", int(meas.wheel.size()));
 		}
-		TRACE_INFO_CLASS("synced %d wheel odom data", pushed_wheel_odom_num);
 	}
-	wheel_odom_buffer_lock.unlock();
+	TRACE_INFO_CLASS("SYNC...");
+	TRACE_INFO_CLASS("lidar beg time: %f, lidar end time: %f", meas.lidar_beg_time, meas.lidar_end_time);
+	TRACE_INFO_CLASS("imu front: %f, end time: %f, size: %d", meas.imu.front()->time_stamp, meas.imu.back()->time_stamp,
+					 meas.imu.size());
 
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
-	TRACE_DBG_CLASS("sync cost time: %f ms", double(sync_duration.count()));
+	TRACE_DBG_CLASS("sync cost time: %f ms\n\n", double(sync_duration.count()));
 
 	return true;
 }
@@ -800,7 +792,7 @@ bool LidarSlam::run() {
 
 		vector<PointVector> Nearest_Points;
 		Nearest_Points.resize(feats_down_size_);
-		kf_.update_iterated_dyn_share_modified(0.0004, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
+		kf_.update_iterated_dyn_share_modified(0.001, FilteredUndistortCloud_, *ikdtree_, Nearest_Points, 4,
 											   false); //迭代4次
 		// TRACE_INFO("lidar updated.....")
 		print_imu_state(kf_.get_x(), kf_.get_P());
@@ -1000,6 +992,19 @@ bool LidarSlam::check_pointcloud_state_abnormal() {
 		// TRACE_WARN_CLASS("lidar occluded");
 	}
 	return check_result;
+}
+
+std::deque<WheelOdomData> LidarSlam::getDataInRangeAndClean(double lidar_beg_time, double lidar_end_time) {
+	std::deque<WheelOdomData> result;
+	std::unique_lock<std::mutex> wheel_odom_buffer_lock(mtx_wheel_odom_buffer_);
+	while (!wheel_odom_buffer_.empty() && wheel_odom_buffer_.front().timestamp < lidar_beg_time) {
+		wheel_odom_buffer_.pop_front();
+	}
+	for (const auto& data : wheel_odom_buffer_) {
+		if (data.timestamp > lidar_end_time) break;
+		if (data.timestamp >= lidar_beg_time) result.push_back(data);
+	}
+	return result;
 }
 
 } // namespace lidar_slam

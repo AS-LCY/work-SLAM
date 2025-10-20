@@ -27,9 +27,9 @@
 
       use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
-      wheel_cov: 0.001
-      nhc_y_cov: 0.001
-      nhc_z_cov: 0.001
+      wheel_cov: 0.01
+      nhc_y_cov: 0.01
+      nhc_z_cov: 0.01
 
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
