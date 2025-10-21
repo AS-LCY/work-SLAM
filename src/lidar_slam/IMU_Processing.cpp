@@ -201,7 +201,6 @@ void ImuProcess::UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, Poin
 				TRACE_INFO("pop wheel, front wheel time = %f, head_imu_time = %f", wheel_time, head->time_stamp);
 			} else {
 				if (wheel_time < tail->time_stamp) { // wheel 位于两个imu之间
-					// opt_with_wheel = true;
 					Eigen::Vector3d imu_gyro = 0.5 * (head->angular_velocity + tail->angular_velocity);
 					TRACE_INFO(
 						"wheel update, wheel time = %f, head_imu_time = %f, tail_imu_time = %f, vel = %f, imu_gyro = "
@@ -212,7 +211,6 @@ void ImuProcess::UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, Poin
 					kf_state.update_iterated_dyn_share_wheel_odom(meas.wheel.front().linear_velocity,
 																  imu_gyro); // wheel更新
 					// TRACE_INFO_CLASS("wheel update...");
-					// opt_with_wheel = false;
 					meas.wheel.pop_front();
 				} else {
 					TRACE_INFO("keep wheel, front wheel time = %f > tail_imu_time = %f", wheel_time, tail->time_stamp);

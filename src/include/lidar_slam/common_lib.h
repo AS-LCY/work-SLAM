@@ -66,7 +66,6 @@ constexpr double RAD2DEGREE = 180.f / M_PI;
 constexpr double DEGREE2RAD = M_PI / 180.f;
 
 extern bool USE_WHEEL;
-// extern bool opt_with_wheel;
 
 namespace common_status {
 enum class LocalizationStatus : int {
@@ -337,6 +336,26 @@ PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen
 // 	m << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
 // 	return m;
 // }
+
+inline Eigen::Isometry3d makeTransform(const std::vector<double>& trans, const std::vector<double>& rot) {
+	assert(trans.size() == 3 && rot.size() == 3);
+	double tx = trans[0];
+	double ty = trans[1];
+	double tz = trans[2];
+	double yaw = rot[0] * DEGREE2RAD;
+	double pitch = rot[1] * DEGREE2RAD;
+	double roll = rot[2] * DEGREE2RAD;
+
+	// 按照 R = Rz(yaw) * Ry(pitch) * Rx(roll)
+	Eigen::AngleAxisd Rz(yaw, Eigen::Vector3d::UnitZ());
+	Eigen::AngleAxisd Ry(pitch, Eigen::Vector3d::UnitY());
+	Eigen::AngleAxisd Rx(roll, Eigen::Vector3d::UnitX());
+	Eigen::Matrix3d R = (Rz * Ry * Rx).matrix();
+	Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+	T.linear() = R;
+	T.translation() = Eigen::Vector3d(tx, ty, tz);
+	return T;
+}
 
 Eigen::Vector3d calc_baselink_vel_from_lio_imu_state(const Eigen::Vector3d& imu_world_vel,
 													 const Eigen::Matrix3d& imu_world_R,

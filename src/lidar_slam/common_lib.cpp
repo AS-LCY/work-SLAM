@@ -1,7 +1,6 @@
 #include "lidar_slam/common_lib.h"
 
 bool USE_WHEEL = false;
-// bool opt_with_wheel = false;
 
 Eigen::Vector3d R2ypr(const Eigen::Matrix3d& R) {
 	Eigen::Vector3d n = R.col(0);
@@ -70,6 +69,8 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g) {
 	Eigen::Matrix3d R0;
 	Eigen::Vector3d ng1 = g.normalized();
 	Eigen::Vector3d ng2{ 0, 0, 1.0 };
+	double scale = ng1.z() > 0 ? 1 : -1;
+	ng2 *= scale;
 	R0 = Eigen::Quaterniond::FromTwoVectors(ng1, ng2).toRotationMatrix();
 	double yaw = R2ypr(R0).x();
 	R0 = ypr2R(Eigen::Vector3d{ -yaw, 0, 0 }) * R0;

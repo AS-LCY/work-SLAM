@@ -16,7 +16,7 @@ LidarSlam::LidarSlam(const LidarSlamParam yaml_param, SlamWorkMode start_mode, r
 	config_param_ = yaml_param;
 	feats_down_size_thr_ = config_param_.common.feats_down_size_thr;
 
-	T_lidar_wheel_ = yaml_param.extrinsic.T_lidar_wheel;
+	T_lidar_wheel_ = yaml_param.extrinsic.T_lidar_baselink;
 	T_imu_baselink_ = yaml_param.extrinsic.T_imu_baselink;
 
 	USE_WHEEL = config_param_.common.use_wheel_odom;
@@ -164,10 +164,6 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	if (reseting_ == true) {
 		TRACE_INFO_CLASS("reseting true, sync packages return false!");
 		return false;
-	}
-
-	if (USE_WHEEL && wheel_odom_buffer_.empty()) {
-		// opt_with_wheel = false;
 	}
 
 	lidar_buffer_lock.lock();

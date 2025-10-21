@@ -246,7 +246,7 @@ bool LocalizationModule::stop_mapping() {
 				TRACE_INFO_CLASS("save map data success!");
 			}
 
-			save_extrinsic_to_file();
+			// save_extrinsic_to_file();
 
 			map_saved_.store(1);
 			TRACE_INFO_CLASS("map_saved: %d", map_saved_.load());
@@ -289,21 +289,21 @@ bool LocalizationModule::stop_mapping() {
 	}
 }
 
-bool LocalizationModule::save_extrinsic_to_file() {
-	std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
-	std::ofstream extrinsic_file(extrinsic_file_name);
-	if (!extrinsic_file.is_open()) {
-		TRACE_ERR_CLASS("open extrinsic file failed!");
-		return false;
-	}
+// bool LocalizationModule::save_extrinsic_to_file() {
+// 	std::string extrinsic_file_name = slam_param_.common.cloud_map_directory + "/extrinsic.txt";
+// 	std::ofstream extrinsic_file(extrinsic_file_name);
+// 	if (!extrinsic_file.is_open()) {
+// 		TRACE_ERR_CLASS("open extrinsic file failed!");
+// 		return false;
+// 	}
 
-	extrinsic_file << "extrinsic_euler_lidar_in_baselink: \n";
-	extrinsic_file << "  yaw:   " << slam_param_.extrinsic.yaw_pitch_roll_deg[0] << " degree, \n";
-	extrinsic_file << "  pitch: " << slam_param_.extrinsic.yaw_pitch_roll_deg[1] << " degree, \n";
-	extrinsic_file << "  roll:  " << slam_param_.extrinsic.yaw_pitch_roll_deg[2] << " degree, \n";
-	extrinsic_file.close();
-	return true;
-}
+// 	extrinsic_file << "extrinsic_euler_lidar_in_baselink: \n";
+// 	extrinsic_file << "  yaw:   " << slam_param_.extrinsic.yaw_pitch_roll_deg[0] << " degree, \n";
+// 	extrinsic_file << "  pitch: " << slam_param_.extrinsic.yaw_pitch_roll_deg[1] << " degree, \n";
+// 	extrinsic_file << "  roll:  " << slam_param_.extrinsic.yaw_pitch_roll_deg[2] << " degree, \n";
+// 	extrinsic_file.close();
+// 	return true;
+// }
 
 bool LocalizationModule::start_localization(int map_id) {
 	ModuleStatus running_module_status_now = running_module_status_.load();

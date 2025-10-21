@@ -28,36 +28,33 @@
       use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
       wheel_cov: 0.01
-      nhc_y_cov: 0.01
+      nhc_y_cov: 0.001
       nhc_z_cov: 0.01
 
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
-      extrinsic_T: [ 0.0, -0.02329, 0.04412 ]   # T_imu_lidar
-      extrinsic_R: [ 0.0,  0.0,  0.0]  # unit(degree), yaw, pitch, roll
 
-      extrinsic_euler_IMU_in_lidar: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
-      #这个参数和上面的extrinsic_R是逆的关系
+      # 正着装机器，172.18.3.231
+      # baselink_lidar_trans: [0.274, 0.0, 0.203] # unit: meter, x, y, z
+      # 雷达点云已经在驱动中，根据下面的真实安装位置，转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
+      # baselink_lidar_rot: [0.510998, 0.161714, -0.879601] # unit(degree) yaw, pitch, roll
+      # #baselink到真实雷达安装位置的旋转
 
-      # zhengfu bags
-      # extrinsic_euler_lidar_in_baselink: [-90.0, 0.0, -5.0]  # unit(degree) yaw, pitch, roll
-
-      # extrinsic_euler_lidar_in_baselink: [-90.645, 0.35, -3.448] # 转90度安装，172.18.0.16，tx=0.37, ty=0, tz=0.202
-
-      extrinsic_euler_lidar_in_baselink: [0.510998, 0.161714, -0.879601] # 正着装机器，172.18.3.231
+      # 转90度安装，172.18.0.16
+      baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
+      baselink_lidar_rot: [-90.645, 0.35, -3.448] # unit(degree) yaw, pitch, roll
       
-      # zhengfu bags
-      # Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.306,
-      #                   0.0,  1.0,  0.0,  0.0,
-      #                   0.0,  0.0,  1.0,  0.156,
-      #                   0.0,  0.0,  0.0,  1.0]
-      
-      #正着装机器，172.18.3.231
-      Lidar_In_Wheel: [1.0,  0.0,  0.0,  0.274,
-                        0.0,  1.0,  0.0,  0.0,
-                        0.0,  0.0,  1.0,  0.203,
-                        0.0,  0.0,  0.0,  1.0]
-      #雷达点云已经在驱动中转换成了和base_link朝向一致的点云，原点的位置还在实际雷达处
+      # lidar to livox_imu (/livox/imu)
+      # lidar_imu_trans: [0.0, 0.02329, -0.04412]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
+
+      # lidar(172.18.3.231) to mcu_imu(+x, +y, +z, 后左下) (/mcu_imu)
+      # lidar_imu_trans: [0.0, -0.22, -0.06]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 180.0, 0.0]      # unit(degree) yaw, pitch, roll
+
+      # lidar(172.18.0.16) to mcu_imu(+x, +y, +z, 后左下) (/mcu_imu)，lidar斜向下安装5deg，和标定的斜向下安装3.448差不多
+      lidar_imu_trans: [-0.22, 0.0, -0.06]  # unit: meter, x, y, z
+      lidar_imu_rot: [-90.0, 3.448, 180.0]    # unit(degree) yaw, pitch, roll
 
     localization:
       fgicp_peroid_sec: 10.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
@@ -75,7 +72,8 @@
     lidar_preproc:
       lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
       sub_lidar_topic: "/livox/lidar"
-      sub_imu_topic: "/livox/imu"
+      # sub_imu_topic: "/livox/imu"
+      sub_imu_topic: "/mcu_imu"
 
       blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0

@@ -830,7 +830,7 @@ bool LocalizationModule::load_lidar_slam_param() {
 	LocalizationModuleParamManager* param_manager = LocalizationModuleParamManager::Instance(node_);
 	const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
 	slam_param_ = loaded_param;
-	T_lidar_baselink_ = slam_param_.extrinsic.T_lidar_wheel;
+	T_lidar_baselink_ = slam_param_.extrinsic.T_lidar_baselink;
 	TRACE_INFO_CLASS("loaded_param success!");
 	return true;
 }

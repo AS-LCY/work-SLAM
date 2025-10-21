@@ -102,81 +102,68 @@ class LocalizationModuleParamManager {
 			loaded_param_.common.cpu_id = cpu_id_on_mower_temp;
 		}
 
-		// ... 其他参数处理逻辑保持不变
-
 		/// extrinsic *******************************************
-		vector<double> extrinsic_T;
-		vector<double> extrinsic_R;
-		std::vector<double> Lidar_In_Wheel;					   // 4* 4
-		std::vector<double> extrinsic_euler_IMU_in_lidar;	   // 1 * 3
-		std::vector<double> extrinsic_euler_lidar_in_baselink; // 1 * 3
-
-		node_->declare_parameter<std::vector<double>>("extrinsic.extrinsic_T", std::vector<double>());
-		node_->get_parameter("extrinsic.extrinsic_T", extrinsic_T);
-
-		node_->declare_parameter<std::vector<double>>("extrinsic.extrinsic_R", std::vector<double>());
-		node_->get_parameter("extrinsic.extrinsic_R", extrinsic_R);
-
 		node_->declare_parameter<bool>("extrinsic.extrinsic_est_en", false);
 		node_->get_parameter("extrinsic.extrinsic_est_en", loaded_param_.extrinsic.extrinsic_est_en);
+		std::vector<double> baselink_lidar_trans;
+		node_->declare_parameter<std::vector<double>>("extrinsic.baselink_lidar_trans", std::vector<double>());
+		node_->get_parameter("extrinsic.baselink_lidar_trans", baselink_lidar_trans);
+		std::vector<double> baselink_lidar_rot;
+		node_->declare_parameter<std::vector<double>>("extrinsic.baselink_lidar_rot", std::vector<double>());
+		node_->get_parameter("extrinsic.baselink_lidar_rot", baselink_lidar_rot);
 
-		node_->declare_parameter<std::vector<double>>("extrinsic.Lidar_In_Wheel", std::vector<double>());
-		node_->get_parameter("extrinsic.Lidar_In_Wheel", Lidar_In_Wheel);
+		// T_baselink_alignedlidar
+		Eigen::Isometry3d T_baselink_alignedlidar = makeTransform(baselink_lidar_trans, std::vector<double>{ 0, 0, 0 });
 
-		node_->declare_parameter<std::vector<double>>("extrinsic.extrinsic_euler_IMU_in_lidar", std::vector<double>());
-		node_->get_parameter("extrinsic.extrinsic_euler_IMU_in_lidar", extrinsic_euler_IMU_in_lidar);
+		// T_alignedlidar_lidar
+		Eigen::Isometry3d T_alignedlidar_lidar = makeTransform(std::vector<double>{ 0, 0, 0 }, baselink_lidar_rot);
 
-		node_->declare_parameter<std::vector<double>>("extrinsic.extrinsic_euler_lidar_in_baselink",
-													  std::vector<double>());
-		node_->get_parameter("extrinsic.extrinsic_euler_lidar_in_baselink", extrinsic_euler_lidar_in_baselink);
-		///注意ROS2中使用点号(.)代替了斜杠(/)作为参数命名空间分隔符，且需要先声明参数再获取。
+		// T_lidar_imu
+		std::vector<double> lidar_imu_trans;
+		node_->declare_parameter<std::vector<double>>("extrinsic.lidar_imu_trans", std::vector<double>());
+		node_->get_parameter("extrinsic.lidar_imu_trans", lidar_imu_trans);
+		std::vector<double> lidar_imu_rot;
+		node_->declare_parameter<std::vector<double>>("extrinsic.lidar_imu_rot", std::vector<double>());
+		node_->get_parameter("extrinsic.lidar_imu_rot", lidar_imu_rot);
+		Eigen::Isometry3d T_lidar_imu = makeTransform(lidar_imu_trans, lidar_imu_rot);
 
-		// 矩阵赋值逻辑保持不变
-		loaded_param_.extrinsic.extrinT << extrinsic_T[0], extrinsic_T[1], extrinsic_T[2];
-		double yaw = extrinsic_R[0] / 180 * M_PI;
-		double pitch = extrinsic_R[1] / 180 * M_PI;
-		double roll = extrinsic_R[2] / 180 * M_PI;
-		loaded_param_.extrinsic.extrinR = ypr2R(Eigen::Vector3d{ yaw, pitch, roll }); // T_imu_lidar
+		// T_baselink_imu
+		Eigen::Isometry3d T_baselink_imu = T_baselink_alignedlidar * T_alignedlidar_lidar * T_lidar_imu;
 
-		// IMU in base_link
-		Eigen::Matrix3d R_imu_in_lidar = Eigen::Matrix3d::Identity();
-		if (extrinsic_euler_IMU_in_lidar.size() == 3) {
-			double yaw2 = extrinsic_euler_IMU_in_lidar[0] / 180 * M_PI;
-			double pitch2 = extrinsic_euler_IMU_in_lidar[1] / 180 * M_PI;
-			double roll2 = extrinsic_euler_IMU_in_lidar[2] / 180 * M_PI;
-			R_imu_in_lidar = rpy2R(Eigen::Vector3d{ roll2, pitch2, yaw2 }); // TODO(jxl): 内部实现和ypr2R等价
-		} else if (extrinsic_euler_IMU_in_lidar.size() == 4) {
-			double qx = extrinsic_euler_IMU_in_lidar[0];
-			double qy = extrinsic_euler_IMU_in_lidar[1];
-			double qz = extrinsic_euler_IMU_in_lidar[2];
-			double qw = extrinsic_euler_IMU_in_lidar[3];
-			Eigen::Quaterniond eigen_quat = Eigen::Quaterniond(qw, qx, qy, qz);
-			R_imu_in_lidar = eigen_quat.toRotationMatrix();
-		}
+		// T_alignedimu_imu
+		Eigen::Isometry3d T_alignedimu_imu = Eigen::Isometry3d::Identity();
+		T_alignedimu_imu.linear() = T_baselink_imu.linear();
+		T_alignedimu_imu.translation() = Eigen::Vector3d::Zero();
+		//用来把原始imu数据转到和baselink对齐的imu坐标系下
 
-		double yaw3 = extrinsic_euler_lidar_in_baselink[0] / 180 * M_PI;
-		double pitch3 = extrinsic_euler_lidar_in_baselink[1] / 180 * M_PI;
-		double roll3 = extrinsic_euler_lidar_in_baselink[2] / 180 * M_PI;
-		Eigen::Matrix3d R_lidar_in_base = rpy2R(Eigen::Vector3d{ roll3, pitch3, yaw3 });
-		loaded_param_.extrinsic.R_baselink_IMU = R_lidar_in_base * R_imu_in_lidar;
+		// T_baselink_alignedimu
+		Eigen::Isometry3d T_baselink_alignedimu = Eigen::Isometry3d::Identity();
+		T_baselink_alignedimu = T_baselink_imu * T_alignedimu_imu.inverse();
+
+		// T_alignedlidar_alignedimu
+		Eigen::Isometry3d T_alignedlidar_alignedimu = Eigen::Isometry3d::Identity();
+		T_alignedlidar_alignedimu = T_baselink_alignedlidar.inverse() * T_baselink_alignedimu;
+		Eigen::Isometry3d T_alignedimu_alignedlidar = T_alignedlidar_alignedimu.inverse();
+
+		//前端lio中需要的外参是：
+		loaded_param_.extrinsic.extrinT = T_alignedimu_alignedlidar.translation();
+		loaded_param_.extrinsic.extrinR = T_alignedimu_alignedlidar.linear().matrix();
+
+		loaded_param_.extrinsic.R_baselink_IMU = T_baselink_imu.linear().matrix();
 		//仅用来转换IMU数据到baselink坐标系下
 
-		loaded_param_.extrinsic.yaw_pitch_roll_deg = extrinsic_euler_lidar_in_baselink;
+		// T_alignedlidar_baselink
+		loaded_param_.extrinsic.T_lidar_baselink = T_baselink_alignedlidar.inverse();
 
-		// T_wheel_lidar & T_lidar_wheel
-		Eigen::Matrix4d T_wheel_lidar;
-		T_wheel_lidar << Lidar_In_Wheel[0], Lidar_In_Wheel[1], Lidar_In_Wheel[2], Lidar_In_Wheel[3], Lidar_In_Wheel[4],
-			Lidar_In_Wheel[5], Lidar_In_Wheel[6], Lidar_In_Wheel[7], Lidar_In_Wheel[8], Lidar_In_Wheel[9],
-			Lidar_In_Wheel[10], Lidar_In_Wheel[11], Lidar_In_Wheel[12], Lidar_In_Wheel[13], Lidar_In_Wheel[14],
-			Lidar_In_Wheel[15];
-		loaded_param_.extrinsic.T_wheel_lidar.matrix() = T_wheel_lidar;
-		loaded_param_.extrinsic.T_lidar_wheel = loaded_param_.extrinsic.T_wheel_lidar.inverse();
+		// T_alignedimu_baselink
+		loaded_param_.extrinsic.T_imu_baselink = T_baselink_alignedimu.inverse();
 
-		//计算T_imu_baselink
-		Eigen::Isometry3d T_imu_lidar = Eigen::Isometry3d::Identity();
-		T_imu_lidar.linear() = loaded_param_.extrinsic.extrinR;
-		T_imu_lidar.translation() = loaded_param_.extrinsic.extrinT;
-		loaded_param_.extrinsic.T_imu_baselink = T_imu_lidar * loaded_param_.extrinsic.T_lidar_wheel;
+		Eigen::Vector3d baselink_alignedlidar_ypr = R2ypr(T_baselink_alignedlidar.linear().matrix());
+		Eigen::Vector3d baselink_alignedimu_ypr = R2ypr(T_baselink_alignedimu.linear().matrix());
+		TRACE_INFO_CLASS("baselink_alignedlidar_ypr: %f, %f, %f", baselink_alignedlidar_ypr.x() * RAD2DEGREE,
+						 baselink_alignedlidar_ypr.y() * RAD2DEGREE, baselink_alignedlidar_ypr.z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("baselink_alignedimu_ypr: %f, %f, %f", baselink_alignedimu_ypr.x() * RAD2DEGREE,
+						 baselink_alignedimu_ypr.y() * RAD2DEGREE, baselink_alignedimu_ypr.z() * RAD2DEGREE);
 
 		/// lidar_preproc params *******************************************
 		node_->declare_parameter<int>("lidar_preproc.lidar_type", 5);

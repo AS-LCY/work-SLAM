@@ -146,7 +146,7 @@ class LocalizationModule {
 	bool start_mapping(int map_id);
 	bool start_second_mapping(int map_id);
 	bool stop_mapping();
-	bool save_extrinsic_to_file();
+	// bool save_extrinsic_to_file();
 	bool start_localization(int map_id);
 
 	bool stop_localization();
