@@ -102,41 +102,40 @@ class esekf {
 	}
 
 	void h_share_model_wheel_odom(dyn_share_datastruct& ekfom_data, const double& baselink_linear_vel,
-								  const Eigen::Vector3d& meas_imu_gyro, double& wheel_cov_noise) {
+								  const Eigen::Vector3d& meas_imu_gyro, Eigen::Matrix3d& wheel_odom_noise_cov) {
 		ekfom_data.h_x = MatrixXd::Zero(3, 24);
 		ekfom_data.h.resize(3);
 
 		M3D angv_crossmat;
 		V3D gyr = meas_imu_gyro;
-		V3D gyr_vec(gyr[0] - x_.bg(0), gyr[1] - x_.bg(1), gyr[2] - x_.bg(2)); // TODO(jxl): 要减去bias吗？
+		V3D gyr_vec(gyr[0] - x_.bg(0), gyr[1] - x_.bg(1), gyr[2] - x_.bg(2));
 		angv_crossmat << SKEW_SYM_MATRX(gyr_vec);
 
 		V3D wheel_v_vec(baselink_linear_vel, 0.0, 0.0);
-		// V3D baselink_v_est =
-		// 	R_imu_baselink_.transpose() * (x_.rot.matrix().transpose() * x_.vel + angv_crossmat * t_imu_baselink_);
 
-		TRACE_INFO("imu world vel = %f, %f, %f", x_.vel.x(), x_.vel.y(), x_.vel.z());
-		TRACE_INFO("mea imu gyro(deg) = %f, %f, %f", meas_imu_gyro.x() * RAD2DEGREE, meas_imu_gyro.y() * RAD2DEGREE,
-				   meas_imu_gyro.z() * RAD2DEGREE);
-		TRACE_INFO("bg bias(deg) = %f, %f, %f", x_.bg.x() * RAD2DEGREE, x_.bg.y() * RAD2DEGREE, x_.bg.z() * RAD2DEGREE);
-		TRACE_INFO("imu gyro unbiased(deg) = %f, %f, %f", gyr_vec.x() * RAD2DEGREE, gyr_vec.y() * RAD2DEGREE,
-				   gyr_vec.z() * RAD2DEGREE);
-		TRACE_INFO("t_imu_baselink = %f, %f, %f", t_imu_baselink_.x(), t_imu_baselink_.y(), t_imu_baselink_.z());
-		TRACE_INFO("imu_world_R is SO(3) = %d", isSO3(x_.rot.matrix()));
-		TRACE_INFO("R_imu_baselink is SO(3) = %d", isSO3(R_imu_baselink_));
+		// TRACE_INFO("imu world vel = %f, %f, %f", x_.vel.x(), x_.vel.y(), x_.vel.z());
+		// TRACE_INFO("mea imu gyro(deg) = %f, %f, %f", meas_imu_gyro.x() * RAD2DEGREE, meas_imu_gyro.y() * RAD2DEGREE,
+		// 		   meas_imu_gyro.z() * RAD2DEGREE);
+		// TRACE_INFO("bg bias(deg) = %f, %f, %f", x_.bg.x() * RAD2DEGREE, x_.bg.y() * RAD2DEGREE, x_.bg.z()
+		// *RAD2DEGREE);
+		// TRACE_INFO("imu gyro unbiased(deg) = %f, %f, %f", gyr_vec.x() * RAD2DEGREE, gyr_vec.y() *
+		// RAD2DEGREE, gyr_vec.z() * RAD2DEGREE);
+		// TRACE_INFO("t_imu_baselink = %f, %f, %f", t_imu_baselink_.x(), t_imu_baselink_.y(), t_imu_baselink_.z());
+		// TRACE_INFO("imu_world_R is SO(3) = %d", isSO3(x_.rot.matrix()));
+		// TRACE_INFO("R_imu_baselink is SO(3) = %d", isSO3(R_imu_baselink_));
 		const Eigen::Vector3d without_lever_arm_vel =
 			R_imu_baselink_.transpose() * x_.rot.matrix().transpose() * x_.vel;
 		const Eigen::Vector3d lever_arm_vel = R_imu_baselink_.transpose() * angv_crossmat * t_imu_baselink_;
 		const Eigen::Vector3d baselink_v_est = without_lever_arm_vel + lever_arm_vel;
-		TRACE_INFO("without_lever_arm_vel= %f, %f, %f,  norm : %f", without_lever_arm_vel.x(),
-				   without_lever_arm_vel.y(), without_lever_arm_vel.z(), without_lever_arm_vel.norm());
-		TRACE_INFO("lever arm vel= %f, %f, %f,  norm : %f", lever_arm_vel.x(), lever_arm_vel.y(), lever_arm_vel.z(),
-				   lever_arm_vel.norm());
-		TRACE_INFO_CLASS("estimate baselink vel = %f, %f, %f", baselink_v_est.x(), baselink_v_est.y(),
-						 baselink_v_est.z());
+		// TRACE_INFO("without_lever_arm_vel= %f, %f, %f,  norm : %f", without_lever_arm_vel.x(),
+		// 		   without_lever_arm_vel.y(), without_lever_arm_vel.z(), without_lever_arm_vel.norm());
+		// TRACE_INFO("lever arm vel= %f, %f, %f,  norm : %f", lever_arm_vel.x(), lever_arm_vel.y(), lever_arm_vel.z(),
+		// 		   lever_arm_vel.norm());
+		// TRACE_INFO_CLASS("estimate baselink vel = %f, %f, %f", baselink_v_est.x(), baselink_v_est.y(),
+		// 				 baselink_v_est.z());
 		V3D res = wheel_v_vec - baselink_v_est; // 残差 = 测量值 - 估计值
-		TRACE_INFO_CLASS("meas vel = %f, wheel odom residual: %f, %f, %f", baselink_linear_vel, res.x(), res.y(),
-						 res.z());
+		// TRACE_INFO_CLASS("meas vel = %f, wheel odom residual: %f, %f, %f", baselink_linear_vel, res.x(), res.y(),
+		//				 res.z());
 
 		// covariance
 		M3D bg_crossmat;
@@ -145,19 +144,18 @@ class esekf {
 		Eigen::Matrix3d cov_mat = Eigen::Matrix3d::Identity();
 		cov_mat(0, 0) = wheel_cov_;
 		cov_mat(1, 1) = nhc_y_cov_;
-
 		// if (gyr_vec.norm() > 0.3) {
 		// 	cov_mat(1, 1) = baselink_linear_vel * gyr_vec.norm();
 		// } else {
 		// 	cov_mat(1, 1) = nhc_y_cov_;
 		// }
-
 		cov_mat(2, 2) = nhc_z_cov_;
 		cov_mat = (cov_mat + tmp_mat * tmp_mat.transpose() * gyr_cov_).eval();
-		wheel_cov_noise = cov_mat.diagonal().maxCoeff();
-		TRACE_INFO_CLASS("wheel odom cov noise: %f", wheel_cov_noise);
+		wheel_odom_noise_cov = cov_mat;
+		double wheel_cov_noise = cov_mat.diagonal().maxCoeff();
+		// TRACE_INFO_CLASS("wheel odom cov noise: %f", wheel_cov_noise);
 
-		double use_weight = false;
+		double use_weight = false; //在更新的时候已经考虑了测量噪声
 		Eigen::Matrix3d weight_matrix = Eigen::Matrix3d::Identity();
 		Eigen::LLT<Eigen::Matrix3d> llt(cov_mat);
 		if (llt.info() == Eigen::Success && use_weight) {
@@ -181,7 +179,6 @@ class esekf {
 		ekfom_data.h_x.block<3, 3>(0, 12) =
 			-weight_matrix * R_imu_baselink_.transpose() * x_.rot.matrix().transpose(); // J_vel
 
-		// TODO(jxl): 是否使能计算对bg的雅可比
 		ekfom_data.h_x.block<3, 3>(0, 15) = -weight_matrix * R_imu_baselink_.transpose() * bg_crossmat; // J_bg
 
 		return;
@@ -371,6 +368,7 @@ class esekf {
 
 			Matrix<double, 24, 1> dx_ =
 				K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
+			// jxl: 对比文章和代码的实现，dx_的前半部分好像少个负号，其实不然， 作者把负号加到残差中了。
 
 			x_ = boxplus(x_, dx_); //公式(18)
 
@@ -423,56 +421,42 @@ class esekf {
 		for (int i = -1; i < maximum_iter; i++) // maximum_iter是卡尔曼滤波的最大迭代次数
 		{
 			dyn_share.valid = true;
-			double wheel_cov_noise = 0.01;
-			h_share_model_wheel_odom(dyn_share, baselink_linear_vel, meas_imu_gyro, wheel_cov_noise);
+			Eigen::Matrix3d wheel_odom_noise_cov = Eigen::Matrix3d::Zero();
+			h_share_model_wheel_odom(dyn_share, baselink_linear_vel, meas_imu_gyro, wheel_odom_noise_cov);
 			if (!dyn_share.valid) {
 				continue;
 			}
 			vectorized_state dx;
 			dx_new = boxminus(x_, x_propagated); //公式(18)中的 x^k - x^
 
-			// //由于H矩阵是稀疏的，只有前12列有非零元素，后12列是零 因此这里采用分块矩阵的形式计算 减少计算量
-			// auto H = dyn_share.h_x.eval();										// m X 12 的矩阵
-			// Eigen::Matrix<double, 24, 24> HTH = Matrix<double, 24, 24>::Zero(); //矩阵 H^T * H
-
-			// HTH.block<12, 12>(0, 0) = H.transpose() * H;
-
-			// Eigen::Matrix<double, 24, 24> K_front = (HTH / R + P_.inverse()).inverse();
-			// Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> K;
-			// K = K_front.block<24, 12>(0, 0) * H.transpose() / R; //卡尔曼增益  这里R视为常数
-
-			// Eigen::Matrix<double, 24, 24> KH = Matrix<double, 24, 24>::Zero(); //矩阵 K * H
-			// KH.block<24, 12>(0, 0) = K * H;
-
-			// Matrix<double, 24, 1> dx_ =
-			// 	K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
-
 			Eigen::Matrix<double, 3, 24> H = dyn_share.h_x.eval();
 			Eigen::Matrix<double, 24, 24> HTH = Eigen::Matrix<double, 24, 24>::Zero();
-			HTH = H.transpose() * H;
-			Eigen::Matrix<double, 24, 24> K_front = (HTH / wheel_cov_noise + P_.inverse()).inverse(); //前半部分
-			Eigen::Matrix<double, 24, 3> K = K_front * H.transpose() / wheel_cov_noise;
+			HTH = H.transpose() * wheel_odom_noise_cov.inverse() * H;
+			Eigen::Matrix<double, 24, 24> K_front = (HTH + P_.inverse()).inverse(); //前半部分
+			Eigen::Matrix<double, 24, 3> K = K_front * H.transpose() * wheel_odom_noise_cov.inverse();
 			Eigen::Matrix<double, 24, 24> KH = Matrix<double, 24, 24>::Zero();
 			KH = K * H;
 			Eigen::Matrix<double, 24, 1> dx_ =
-				K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
-
-			TRACE_INFO_CLASS("dx_p = %f, %f, %f", dx_[0], dx_[1], dx_[2]);
-			TRACE_INFO_CLASS("dx_Q(deg) = %f, %f, %f", dx_[3] * RAD2DEGREE, dx_[4] * RAD2DEGREE, dx_[5] * RAD2DEGREE);
-			TRACE_INFO_CLASS("dx_V = %f, %f, %f", dx_[12], dx_[13], dx_[14]);
-			TRACE_INFO_CLASS("dx_bg(deg) = %f, %f, %f", dx_[15] * RAD2DEGREE, dx_[16] * RAD2DEGREE,
-							 dx_[17] * RAD2DEGREE);
-			TRACE_INFO_CLASS("dx_ba = %f, %f, %f", dx_[18], dx_[19], dx_[20]);
-			TRACE_INFO_CLASS("dx_gw = %f, %f, %f\n\n", dx_[21], dx_[22], dx_[23]);
+				-K * dyn_share.h + (KH - Matrix<double, 24, 24>::Identity()) * dx_new; //公式(18)  J 是 I
 
 			x_ = boxplus(x_, dx_); //公式(18)
 
 			dyn_share.converge = true;
 			if (i == maximum_iter - 1) {
 				P_ = (Matrix<double, 24, 24>::Identity() - KH) * P_; //公式(19)
-				return;
 			}
 		}
+
+		vectorized_state dx_wheel_odom = vectorized_state::Zero();
+		dx_wheel_odom = boxminus(x_, x_propagated);
+		// TRACE_INFO_CLASS("dx_p = %f, %f, %f", dx_wheel_odom[0], dx_wheel_odom[1], dx_wheel_odom[2]);
+		// TRACE_INFO_CLASS("dx_Q(deg) = %f, %f, %f", dx_wheel_odom[3] * RAD2DEGREE, dx_wheel_odom[4] * RAD2DEGREE,
+		// 				 dx_wheel_odom[5] * RAD2DEGREE);
+		// TRACE_INFO_CLASS("dx_V = %f, %f, %f", dx_wheel_odom[12], dx_wheel_odom[13], dx_wheel_odom[14]);
+		// TRACE_INFO_CLASS("dx_bg(deg) = %f, %f, %f", dx_wheel_odom[15] * RAD2DEGREE, dx_wheel_odom[16] * RAD2DEGREE,
+		// 				 dx_wheel_odom[17] * RAD2DEGREE);
+		// TRACE_INFO_CLASS("dx_ba = %f, %f, %f", dx_wheel_odom[18], dx_wheel_odom[19], dx_wheel_odom[20]);
+		// TRACE_INFO_CLASS("dx_gw = %f, %f, %f\n\n", dx_wheel_odom[21], dx_wheel_odom[22], dx_wheel_odom[23]);
 	}
 
    private:

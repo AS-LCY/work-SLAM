@@ -96,18 +96,18 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 	init_state.offset_R_L_I = Sophus::SO3d(Lidar_R_wrt_IMU_); // imu frame to laser frame
 
 	// wheel velocity initialization
-	// double wheel_velocity = 0.0;
-	// if (USE_WHEEL && !meas.wheel.empty()) {
-	// 	wheel_velocity = meas.wheel.back().linear_velocity;
-	// 	V3D wheel_v_vec(wheel_velocity, 0.0, 0.0);
-	// 	M3D angv_crossmat;
-	// 	V3D real_gyr = cur_gyr - mean_gyr_;
-	// 	angv_crossmat << SKEW_SYM_MATRX(real_gyr);
+	double wheel_velocity = 0.0;
+	if (USE_WHEEL && !meas.wheel.empty()) {
+		wheel_velocity = meas.wheel.back().linear_velocity;
+		V3D wheel_v_vec(wheel_velocity, 0.0, 0.0);
+		M3D angv_crossmat;
+		V3D real_gyr = cur_gyr - mean_gyr_;
+		angv_crossmat << SKEW_SYM_MATRX(real_gyr);
 
-	// 	// baselink vel estimate imu body vel
-	// 	V3D imu_body_vel = R_imu_baselink_ * wheel_v_vec - angv_crossmat * t_imu_baselink_;
-	// 	init_state.vel = initial_rotate_ * imu_body_vel; // imu world vel
-	// }
+		// baselink vel estimate imu body vel
+		V3D imu_body_vel = R_imu_baselink_ * wheel_v_vec - angv_crossmat * t_imu_baselink_;
+		init_state.vel = initial_rotate_ * imu_body_vel; // imu world vel
+	}
 
 	kf_state.change_x(init_state); //将初始化后的状态传入esekfom.hpp中的x_
 
@@ -132,6 +132,8 @@ void ImuProcess::IMU_init(const MeasureGroup& meas, esekfom::esekf& kf_state, in
 			init_state.grav.norm(), init_state.grav.x(), init_state.grav.y(), init_state.grav.z(),
 			init_state.bg.x() * RAD2DEGREE, init_state.bg.y() * RAD2DEGREE, init_state.bg.z() * RAD2DEGREE,
 			init_ypr.x() * RAD2DEGREE, init_ypr.y() * RAD2DEGREE, init_ypr.z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("init vel = %f, %f, %f, ba = %f, %f, %f", init_state.vel.x(), init_state.vel.y(),
+						 init_state.vel.z(), init_state.ba.x(), init_state.ba.y(), init_state.ba.z());
 	}
 }
 
@@ -198,22 +200,23 @@ void ImuProcess::UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, Poin
 			double wheel_time = meas.wheel.front().timestamp;
 			if (wheel_time < head->time_stamp) {
 				meas.wheel.pop_front();
-				TRACE_INFO("pop wheel, front wheel time = %f, head_imu_time = %f", wheel_time, head->time_stamp);
+				// TRACE_INFO("pop wheel, front wheel time = %f, head_imu_time = %f", wheel_time, head->time_stamp);
 			} else {
 				if (wheel_time < tail->time_stamp) { // wheel 位于两个imu之间
 					Eigen::Vector3d imu_gyro = 0.5 * (head->angular_velocity + tail->angular_velocity);
-					TRACE_INFO(
-						"wheel update, wheel time = %f, head_imu_time = %f, tail_imu_time = %f, vel = %f, imu_gyro = "
-						"%f, %f, %f",
-						meas.wheel.front().timestamp, head->time_stamp, tail->time_stamp,
-						meas.wheel.front().linear_velocity, imu_gyro.x() * RAD2DEGREE, imu_gyro.y() * RAD2DEGREE,
-						imu_gyro.z() * RAD2DEGREE);
+					// TRACE_INFO(
+					// 	"wheel update, wheel time = %f, head_imu_time = %f, tail_imu_time = %f, vel = %f, imu_gyro = "
+					// 	"%f, %f, %f",
+					// 	meas.wheel.front().timestamp, head->time_stamp, tail->time_stamp,
+					// 	meas.wheel.front().linear_velocity, imu_gyro.x() * RAD2DEGREE, imu_gyro.y() * RAD2DEGREE,
+					// 	imu_gyro.z() * RAD2DEGREE);
 					kf_state.update_iterated_dyn_share_wheel_odom(meas.wheel.front().linear_velocity,
 																  imu_gyro); // wheel更新
 					// TRACE_INFO_CLASS("wheel update...");
 					meas.wheel.pop_front();
 				} else {
-					TRACE_INFO("keep wheel, front wheel time = %f > tail_imu_time = %f", wheel_time, tail->time_stamp);
+					// TRACE_INFO("keep wheel, front wheel time = %f > tail_imu_time = %f", wheel_time,
+					// tail->time_stamp);
 				}
 			}
 		}

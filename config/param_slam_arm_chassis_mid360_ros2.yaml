@@ -27,9 +27,9 @@
 
       use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
-      wheel_cov: 0.01
-      nhc_y_cov: 0.001
-      nhc_z_cov: 0.01
+      wheel_cov: 0.0025  # std: 0.05m/s
+      nhc_y_cov: 0.0001  # std: 0.01m/s 
+      nhc_z_cov: 0.0025  # std: 0.05m/s
 
     extrinsic:    
       extrinsic_est_en:  false      # imu frame to laser frame, namely transform a point from laser into imu frame
@@ -97,8 +97,14 @@
     mapping:
       acc_cov: 0.017573468691815922
       gyr_cov: 0.01524654486781841 
-      b_acc_cov: 0.00025566293746767606
+      b_acc_cov: 0.00025566293746767606  #TODO(jxl): 可能要缩小，原本是扩大了50倍来使用
       b_gyr_cov: 0.0007414029109004667
+      
+      # mcu imu (todo sure)
+      # acc_cov: 0.017573468691815922
+      # gyr_cov: 0.01524654486781841 
+      # b_acc_cov: 0.00025566293746767606
+      # b_gyr_cov: 0.0007414029109004667
 
       cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
 

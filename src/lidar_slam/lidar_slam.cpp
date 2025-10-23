@@ -234,15 +234,15 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 				TRACE_WARN_CLASS("front wheel time: %f, back time: %f", wheel_odom_buffer_.front().timestamp,
 								 wheel_odom_buffer_.back().timestamp);
 			}
-			TRACE_INFO_CLASS("lidar begin time = %f, lidar end time = %f", meas.lidar_beg_time, lidar_end_time_.load());
+			TRACE_WARN_CLASS("lidar begin time = %f, lidar end time = %f", meas.lidar_beg_time, lidar_end_time_.load());
 		} else {
-			TRACE_INFO_CLASS("synced %d wheel odom data", int(meas.wheel.size()));
+			// TRACE_INFO_CLASS("synced %d wheel odom data", int(meas.wheel.size()));
 		}
 	}
-	TRACE_INFO_CLASS("SYNC...");
-	TRACE_INFO_CLASS("lidar beg time: %f, lidar end time: %f", meas.lidar_beg_time, meas.lidar_end_time);
-	TRACE_INFO_CLASS("imu front: %f, end time: %f, size: %d", meas.imu.front()->time_stamp, meas.imu.back()->time_stamp,
-					 meas.imu.size());
+	// TRACE_INFO_CLASS("SYNC...");
+	// TRACE_INFO_CLASS("lidar beg time: %f, lidar end time: %f", meas.lidar_beg_time, meas.lidar_end_time);
+	// TRACE_INFO_CLASS("imu front: %f, end time: %f, size: %d", meas.imu.front()->time_stamp,
+	// meas.imu.back()->time_stamp, meas.imu.size());
 
 	auto sync_end = std::chrono::high_resolution_clock::now();
 	auto sync_duration = std::chrono::duration_cast<std::chrono::milliseconds>(sync_end - sync_start);
