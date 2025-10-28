@@ -170,7 +170,9 @@ bool Localization::loadMap(std::string path) {
 }
 
 void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
-							LocalizationStatus& localize_state_status) {
+							LocalizationStatus& localize_state_status, const Sophus::SE3d& T_odom_lidar,
+							const Sophus::SE3d& T_lidar_delta,
+							const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local) {
 	double localize_start = omp_get_wtime();
 	if (!map_ready_) {
 		TRACE_WARN_CLASS("map not ready...");
@@ -220,7 +222,6 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f, cost time = %f",
 						 matching_error, num_inliers, inlier_fraction, cost_time);
 
-		Eigen::Isometry3d matched_result = Eigen::Isometry3d::Identity();
 		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
 		if (inlier_fraction < inlier_rate) {
@@ -228,20 +229,68 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f < %f", inlier_fraction, inlier_rate);
 		} else if (matching_error < inlier_avg_error) {
 			localize_state_status = LocalizationStatus::Normal;
-			matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
-			correctionOdomToMap_ = smoothUpdateTransform(correctionOdomToMap_last_, matched_result);
-			correctionOdomToMap_last_ = correctionOdomToMap_;
+			assignMapToOdom(matching_error, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local);
 			TRACE_INFO_CLASS("localization Normal, for good inlier rate: %f,  small avg score: %f < %f",
 							 inlier_fraction, matching_error, inlier_avg_error);
 		} else {
 			localize_state_status = LocalizationStatus::LowAccuracy;
-			matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
-			correctionOdomToMap_ = smoothUpdateTransform(correctionOdomToMap_last_, matched_result);
-			correctionOdomToMap_last_ = correctionOdomToMap_;
+			assignMapToOdom(matching_error, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local);
 			TRACE_ERR_CLASS("localization LowAccuracy, for good inlier rate: %f, but high avg score: %f > %f",
 							inlier_fraction, matching_error, inlier_avg_error);
 		}
 	}
+}
+
+void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar,
+								   const Sophus::SE3d& T_lidar_delta,
+								   const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local) {
+	Eigen::Isometry3d matched_result = Eigen::Isometry3d::Identity();
+	matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+
+	// 直接赋值
+	// correctionOdomToMap_ = matched_result;
+
+	// 使用固定比率的指数平滑
+	// correctionOdomToMap_ = smoothUpdateTransform(correctionOdomToMap_last_, matched_result);
+	// correctionOdomToMap_last_ = correctionOdomToMap_;
+
+	// 使用EKF平滑滤波器
+	// double predict_noise = T_lidar_delta_cov_local.diagonal().maxCoeff();
+	// double meas_noise = matching_error;
+	// double scale_factor = meas_noise / predict_noise;
+	// TRACE_INFO_CLASS("scale_factor = %f", scale_factor);
+
+	matching_error *= 1e-1; //测量噪声比预测噪声大很多，缩小测量噪声
+	Eigen::Matrix<double, 6, 1> noise_vec(matching_error, matching_error, matching_error, matching_error,
+										  matching_error, matching_error); //前三维平移，后三维旋转
+	Eigen::Matrix<double, 6, 6> meas_cov_global = noise_vec.asDiagonal();
+	Sophus::SE3d T_map_odom = convertIsometry3dToSE3d(matched_result);
+	Eigen::Isometry3d smoothed_T_map_odom =
+		smootherMatchResult(T_map_odom, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local, meas_cov_global);
+	correctionOdomToMap_ = smoothed_T_map_odom;
+
+	// Eigen::Vector3d trans = correctionOdomToMap_.translation();
+	// Eigen::Vector3d euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
+	// TRACE_INFO_CLASS("T_map_odom translation: x= %f, y= %f, z= %f", trans.x(), trans.y(), trans.z());
+	// TRACE_INFO_CLASS("T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", euler.x(), euler.y(), euler.z());
+}
+
+Eigen::Isometry3d Localization::smootherMatchResult(const Sophus::SE3d& T_map_odom, const Sophus::SE3d& T_odom_lidar,
+													const Sophus::SE3d& T_lidar_delta,
+													const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local,
+													const Eigen::Matrix<double, 6, 6>& meas_cov_global) {
+	Sophus::SE3d T_map_lidar_last = ekf_smoother_.getState();
+	Eigen::Matrix<double, 6, 6> T_lidar_delta_cov_global =
+		compute_global_cov(T_map_lidar_last, T_lidar_delta_cov_local);
+	ekf_smoother_.processModel(T_lidar_delta, T_lidar_delta_cov_global);
+
+	Sophus::SE3d T_map_lidar_meas = T_map_odom * T_odom_lidar;
+	ekf_smoother_.update(T_map_lidar_meas, meas_cov_global);
+
+	Sophus::SE3d T_map_lidar_curr = ekf_smoother_.getState();
+	Sophus::SE3d smoothed_T_map_odom_sophus = T_map_lidar_curr * T_odom_lidar.inverse();
+	Eigen::Isometry3d smoothed_T_map_odom = convertSE3dToIsometry3d(smoothed_T_map_odom_sophus);
+	return smoothed_T_map_odom;
 }
 
 bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isometry3d pose, Matrix3d initial_rotate,
@@ -347,6 +396,12 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		Eigen::Vector3d T_map_odom_t = correctionOdomToMap_.translation();
 		Eigen::Vector3d T_map_odom_euler = correctionOdomToMap_.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
 		auto updated_euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+
+		//初始化 ekf smoother
+		Sophus::SE3d T_map_lidar_init = convertIsometry3dToSE3d(lidar_in_map);
+		Eigen::Matrix<double, 6, 1> noise_vec(0.1, 0.1, 0.1, 0.1, 0.1, 0.1); //前三维平移，后三维旋转
+		Eigen::Matrix<double, 6, 6> T_map_lidar_init_cov = noise_vec.asDiagonal();
+		ekf_smoother_.init(T_map_lidar_init, T_map_lidar_init_cov);
 
 		TRACE_INFO_CLASS("icp given init T_map_lidar yaw: %f, pitch: %f, roll: %f", updated_euler[0] * RAD2DEGREE,
 						 updated_euler[1] * RAD2DEGREE, updated_euler[2] * RAD2DEGREE);

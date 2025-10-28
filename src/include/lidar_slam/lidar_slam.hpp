@@ -147,9 +147,15 @@ class LidarSlam {
 	}
 
 	inline PointCloudType::Ptr get_odom_cloud(double& cloud_time) {
-		std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
+		PointCloudType::Ptr UndistortCloudInOdom;
+		UndistortCloudInOdom.reset(new PointCloudType());
+		{
+			std::unique_lock<std::mutex> cloud_lock(mtx_lidar_cloud_);
+			UndistortCloudInOdom->resize(undistortCloud_->points.size());
+			UndistortCloudInOdom = transformPointCloud(undistortCloud_, T_odom_lidar_);
+		}
 		cloud_time = T_odom_lidar_time_;
-		return UndistortCloudInOdom_;
+		return UndistortCloudInOdom;
 	}
 
 	inline std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> get_optimized_path() {
@@ -308,6 +314,7 @@ class LidarSlam {
 	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> optimized_path_;
 
 	MeasureGroup Measures_;
+	Eigen::Matrix<double, 6, 6> T_odom_lidar_cov_ = Eigen::Matrix<double, 6, 6>::Zero();
 	Eigen::Isometry3d T_odom_lidar_ = Eigen::Isometry3d::Identity();
 	double T_odom_lidar_time_ = 0.f;
 	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
@@ -371,6 +378,14 @@ class LidarSlam {
 	Eigen::Matrix<double, 6, 1> lio_state_diag_cov_;
 
 	LocalizeStatus localize_status_;
+
+	//定位线程使用
+	Eigen::Isometry3d T_odom_lidar_curr_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_odom_lidar_last_ = Eigen::Isometry3d::Identity();
+	Eigen::Matrix<double, 6, 6> T_odom_lidar_cov_curr_ = Eigen::Matrix<double, 6, 6>::Zero();
+	Eigen::Matrix<double, 6, 6> T_odom_lidar_cov_last_ = Eigen::Matrix<double, 6, 6>::Zero();
+	double lidar_time_curr_ = 0.0;
+	double lidar_time_last_ = 0.0;
 };
 
 } // namespace lidar_slam

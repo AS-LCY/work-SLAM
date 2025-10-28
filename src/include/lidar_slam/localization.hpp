@@ -23,6 +23,7 @@
 
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
+#include "lidar_slam/ekf_smoother.h"
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
 #include "lidar_slam/slam_param_def.h"
@@ -41,7 +42,8 @@ class Localization {
 	bool loadMap(std::string path);
 
 	void localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
-				  LocalizationStatus& localize_state_status);
+				  LocalizationStatus& localize_state_status, const Sophus::SE3d& T_odom_lidar,
+				  const Sophus::SE3d& T_lidar_delta, const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
 
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
@@ -59,6 +61,13 @@ class Localization {
 	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
 
    private:
+	Eigen::Isometry3d smootherMatchResult(const Sophus::SE3d& T_map_odom, const Sophus::SE3d& T_odom_lidar,
+										  const Sophus::SE3d& T_lidar_delta,
+										  const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local,
+										  const Eigen::Matrix<double, 6, 6>& meas_cov_global);
+	void assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar, const Sophus::SE3d& T_lidar_delta,
+						 const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
+
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
 	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
 	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_;
@@ -78,6 +87,8 @@ class Localization {
 	bool filter_init_ = false;
 	Eigen::Isometry3d correctionOdomToMap_ = Eigen::Isometry3d::Identity();		 // T_map_odom
 	Eigen::Isometry3d correctionOdomToMap_last_ = Eigen::Isometry3d::Identity(); //上一次T_map_odom
+
+	EkfSmoother ekf_smoother_;
 
 	inline static localization_module::LocalizationModuleLogInfoManager& log_info_manager_ =
 		localization_module::LocalizationModuleLogInfoManager::getInstance();

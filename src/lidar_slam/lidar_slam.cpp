@@ -233,8 +233,9 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 			if (!wheel_odom_buffer_.empty()) {
 				TRACE_WARN_CLASS("front wheel time: %f, back time: %f", wheel_odom_buffer_.front().timestamp,
 								 wheel_odom_buffer_.back().timestamp);
+				TRACE_WARN_CLASS("lidar begin time = %f, lidar end time = %f", meas.lidar_beg_time,
+								 lidar_end_time_.load());
 			}
-			TRACE_WARN_CLASS("lidar begin time = %f, lidar end time = %f", meas.lidar_beg_time, lidar_end_time_.load());
 		} else {
 			// TRACE_INFO_CLASS("synced %d wheel odom data", int(meas.wheel.size()));
 		}
@@ -326,8 +327,17 @@ void LidarSlam::localizationThread() {
 		}
 
 		{
-			ds_odom_cloud_localize.reset(new PointCloudType());
 			std::unique_lock<std::mutex> odom_cloud_lock(mtx_odom_cloud_);
+			std::unique_lock<std::mutex> cloud_lock(mtx_lidar_cloud_);
+			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
+			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
+			cloud_lock.unlock();
+
+			T_odom_lidar_curr_ = T_odom_lidar_;
+			T_odom_lidar_cov_curr_ = T_odom_lidar_cov_;
+			lidar_time_curr_ = lidar_end_time_;
+
+			ds_odom_cloud_localize.reset(new PointCloudType());
 			downSizeFilterCloud_localize_.setInputCloud(UndistortCloudInOdom_);
 			downSizeFilterCloud_localize_.filter(*ds_odom_cloud_localize);
 			odom_cloud_lock.unlock();
@@ -396,7 +406,17 @@ void LidarSlam::localizationThread() {
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
 					LocalizeStatus localize_status;
 					LocalizationStatus localize_state_status = LocalizationStatus::Inactive;
-					localization_->localize(temp, localize_status, localize_state_status);
+
+					//计算从上次匹配到当前匹配时刻，lio估计的T_lidar_delta
+					Sophus::SE3d T_odom_lidar_curr_sophus = convertIsometry3dToSE3d(T_odom_lidar_curr_);
+					Sophus::SE3d T_odom_lidar_last_sophus = convertIsometry3dToSE3d(T_odom_lidar_last_);
+					Sophus::SE3d T_lidar_delta_sophus;
+					Eigen::Matrix<double, 6, 6> T_lidar_delta_cov_local;
+					compute_relative_cov(T_odom_lidar_last_sophus, T_odom_lidar_cov_last_, T_odom_lidar_curr_sophus,
+										 T_odom_lidar_cov_curr_, T_lidar_delta_sophus, T_lidar_delta_cov_local);
+
+					localization_->localize(temp, localize_status, localize_state_status, T_odom_lidar_curr_sophus,
+											T_lidar_delta_sophus, T_lidar_delta_cov_local);
 					localize_status_ = localize_status;
 					local_thrd_status_.store(localize_state_status);
 
@@ -412,6 +432,10 @@ void LidarSlam::localizationThread() {
 				wait_time++; //循环次数的计数
 			}
 		}
+
+		T_odom_lidar_last_ = T_odom_lidar_curr_;
+		T_odom_lidar_cov_last_ = T_odom_lidar_cov_curr_;
+		lidar_time_last_ = lidar_time_curr_;
 
 		auto end = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -732,6 +756,14 @@ bool LidarSlam::run() {
 		std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
 		T_odom_lidar_time_ = Measures_.lidar_end_time;
+
+		// lio的imu位姿，旋转误差是在局部坐标系下，位置误差是在全局坐标系下。
+		// 认为外参T_imu_lidar是准确的，无噪声的，根据公式推导和误差传递公式，T_odom_lidar在全局系下的方差等于T_odom_imu在全局系下的方差。
+		Eigen::Matrix3d position_cov = kf_.get_P().block<3, 3>(0, 0);
+		Eigen::Matrix3d rot_cov_local = kf_.get_P().block<3, 3>(3, 3);
+		Eigen::Matrix3d rot_cov_global = state_point.rot.Adj() * rot_cov_local * state_point.rot.Adj().transpose();
+		T_odom_lidar_cov_.block<3, 3>(0, 0) = position_cov;
+		T_odom_lidar_cov_.block<3, 3>(3, 3) = rot_cov_global;
 		T_odom_lidar_lock.unlock();
 
 		auto pointcloud_deskew_end = std::chrono::high_resolution_clock::now();
@@ -807,6 +839,11 @@ bool LidarSlam::run() {
 		T_odom_lidar_lock.lock();
 		T_odom_lidar_ = T_odom_b * T_b_lidar;
 		T_odom_lidar_time_ = Measures_.lidar_end_time;
+		position_cov = kf_.get_P().block<3, 3>(0, 0);
+		rot_cov_local = kf_.get_P().block<3, 3>(3, 3);
+		rot_cov_global = state_point.rot.Adj() * rot_cov_local * state_point.rot.Adj().transpose();
+		T_odom_lidar_cov_.block<3, 3>(0, 0) = position_cov;
+		T_odom_lidar_cov_.block<3, 3>(3, 3) = rot_cov_global;
 		T_odom_lidar_lock.unlock();
 
 		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
@@ -848,12 +885,6 @@ bool LidarSlam::run() {
 		auto backend_end = std::chrono::high_resolution_clock::now();
 
 		auto transform_cloud_start = std::chrono::high_resolution_clock::now();
-		{
-			std::unique_lock<std::mutex> lk(mtx_odom_cloud_);
-			UndistortCloudInOdom_->resize(undistortCloud_->points.size());
-			UndistortCloudInOdom_ = transformPointCloud(undistortCloud_, T_odom_lidar_);
-			//在lio线程中计算odom_cloud，在定位模式和建图模式下都可以直接使用
-		}
 		FilteredUndistortCloudInOdom = transformPointCloud(FilteredUndistortCloud_, T_odom_lidar_);
 		auto transform_cloud_end = std::chrono::high_resolution_clock::now();
 

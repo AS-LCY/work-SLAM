@@ -333,11 +333,79 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
 
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur);
 
-// inline Eigen::Matrix3d skew_sym_matrix(const Eigen::Vector3d& v) {
-// 	Eigen::Matrix3d m;
-// 	m << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
-// 	return m;
-// }
+inline void orthonormalizeIsometry(Eigen::Isometry3d& T) {
+	Eigen::Matrix3d R = T.rotation();
+
+	// 对 R 做 SVD 分解
+	Eigen::JacobiSVD<Eigen::Matrix3d> svd(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
+	Eigen::Matrix3d R_ortho = svd.matrixU() * svd.matrixV().transpose();
+
+	// 确保 det(R) == +1（避免反射矩阵）
+	if (R_ortho.determinant() < 0) {
+		Eigen::Matrix3d U = svd.matrixU();
+		U.col(2) *= -1;
+		R_ortho = U * svd.matrixV().transpose();
+	}
+
+	T.linear() = R_ortho;
+}
+
+inline Eigen::Isometry3d convertSE3dToIsometry3d(const Sophus::SE3d& T_sophus) {
+	Eigen::Matrix3d R = T_sophus.rotationMatrix();
+	Eigen::Vector3d t = T_sophus.translation();
+	Eigen::Isometry3d T_eigen = Eigen::Isometry3d::Identity();
+	T_eigen.linear() = R;
+	T_eigen.translation() = t;
+	return T_eigen;
+}
+
+inline Sophus::SE3d convertIsometry3dToSE3d(Eigen::Isometry3d T_eigen) {
+	orthonormalizeIsometry(T_eigen);
+	Eigen::Matrix3d R = T_eigen.rotation();
+	Eigen::Vector3d t = T_eigen.translation();
+	Sophus::SE3d T_sophus(R, t);
+	return T_sophus;
+}
+
+inline Eigen::Matrix3d skew_sym_matrix(const Eigen::Vector3d& v) {
+	Eigen::Matrix3d m;
+	m << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
+	return m;
+}
+
+// adjoint of SE3 (6x6)
+inline Eigen::Matrix<double, 6, 6> adjointSE3(const Sophus::SE3d& T) {
+	Eigen::Matrix3d R = T.rotationMatrix();
+	Eigen::Vector3d t = T.translation();
+	Eigen::Matrix<double, 6, 6> Ad = Eigen::Matrix<double, 6, 6>::Zero();
+	Ad.template block<3, 3>(0, 0) = R;
+	Ad.template block<3, 3>(0, 3) = skew_sym_matrix(t) * R;
+	Ad.template block<3, 3>(3, 3) = R;
+	return Ad;
+}
+
+inline void compute_relative_cov(const Sophus::SE3d& Tj, const Eigen::Matrix<double, 6, 6>& cov_Tj,
+								 const Sophus::SE3d& Tk, const Eigen::Matrix<double, 6, 6>& cov_Tk, Sophus::SE3d& Tjk,
+								 Eigen::Matrix<double, 6, 6>& Tjk_cov_local) {
+	Tjk = Tj.inverse() * Tk;
+
+	// 假设认为Tj和Tk两个位姿之间是相互独立的，不考虑联合分布，实际中两个位姿是有依赖关系的。
+	// Tj，Tk两个位姿的方差是全局坐标系下的方差，不是在当前位姿下(局部坐标系下)的方差。
+	// 返回的cov_Tjk是在位姿Tj下的方差。
+	Eigen::Matrix<double, 6, 6> Tj_inv_adj = Tj.inverse().Adj();
+	Eigen::Matrix<double, 6, 6> Tjk_cov_global =
+		Tj_inv_adj * cov_Tj * Tj_inv_adj.transpose() + Tj_inv_adj * cov_Tk * Tj_inv_adj.transpose();
+
+	Tjk_cov_local = Tj.Adj().inverse() * Tjk_cov_global * Tj.Adj().inverse().transpose();
+}
+
+inline Eigen::Matrix<double, 6, 6> compute_global_cov(const Sophus::SE3d& Ti,
+													  const Eigen::Matrix<double, 6, 6>& cov_Ti_local) {
+	//已知Ti在某全局坐标系下的位姿和在Ti local系下的方差，计算Ti在全局坐标系下的方差
+	Eigen::Matrix<double, 6, 6> Ti_adj = Ti.Adj();
+	Eigen::Matrix<double, 6, 6> cov_Ti_global = Ti_adj * cov_Ti_local * Ti_adj.transpose();
+	return cov_Ti_global;
+}
 
 inline Eigen::Isometry3d makeTransform(const std::vector<double>& trans, const std::vector<double>& rot) {
 	assert(trans.size() == 3 && rot.size() == 3);
@@ -377,23 +445,6 @@ inline bool isSO3(const Eigen::Matrix3d& R, double tol = 1e-6, bool verbose = fa
 	}
 
 	return orthogonal && det_one;
-}
-
-inline void orthonormalizeIsometry(Eigen::Isometry3d& T) {
-	Eigen::Matrix3d R = T.rotation();
-
-	// 对 R 做 SVD 分解
-	Eigen::JacobiSVD<Eigen::Matrix3d> svd(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
-	Eigen::Matrix3d R_ortho = svd.matrixU() * svd.matrixV().transpose();
-
-	// 确保 det(R) == +1（避免反射矩阵）
-	if (R_ortho.determinant() < 0) {
-		Eigen::Matrix3d U = svd.matrixU();
-		U.col(2) *= -1;
-		R_ortho = U * svd.matrixV().transpose();
-	}
-
-	T.linear() = R_ortho;
 }
 
 inline Eigen::Isometry3d smoothUpdateTransform(Eigen::Isometry3d T_old, Eigen::Isometry3d T_new,

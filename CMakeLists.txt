@@ -161,6 +161,7 @@ ament_auto_add_library(lidar_slam SHARED
   src/lidar_slam/Scancontext.cpp
   src/lidar_slam/cloud_map.cpp
   src/lidar_slam/global_localization.cpp
+  src/lidar_slam/ekf_smoother.cpp
 )
 
 target_link_libraries(lidar_slam 
