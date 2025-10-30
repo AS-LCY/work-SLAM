@@ -733,7 +733,6 @@ bool LidarSlam::run() {
 		// print_imu_state(kf_.get_x(), kf_.get_P());
 		// 根据imu数据序列和lidar数据，向前传播纠正点云的畸变, 此前已经完成间隔采样或特征提取
 		// 雷达points在最后一个点时刻的laser_frame下
-		// 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
 
 		std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
 		undistortCloud_ = pre_undistortCloud_;
