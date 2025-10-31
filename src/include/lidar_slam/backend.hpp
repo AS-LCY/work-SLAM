@@ -73,8 +73,7 @@ class BackEnd {
 	void saveCurrentCloud(PointCloudType::Ptr points, Eigen::Isometry3d pose);
 	PointCloudType::Ptr getCurrentMap();
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr getCurrentRGBMap();
-	bool saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, Eigen::Isometry3d transformTobeMapped,
-								double time);
+	bool saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, double time);
 	void performLoopClosure(double time);
 
 	// if start_index == end_index == 0; save all;

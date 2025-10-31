@@ -862,7 +862,7 @@ bool LidarSlam::run() {
 				TRACE_WARN_CLASS("Waiting for loading key cloud ...");
 			} else {
 				//后端优化的位姿是T_map_lidar
-				bool insert = back_end_->saveKeyFramesAndFactor(init_T_map_odom_, T_odom_lidar_, lidar_end_time_);
+				bool insert = back_end_->saveKeyFramesAndFactor(T_odom_lidar_, lidar_end_time_);
 				if (insert) { //是关键帧
 					TRACE_INFO_CLASS("backend: keyPoses id: %d", back_end_->getKeyframePoses().size() - 1);
 					double not_used_T_odom_lidar_time = 0.f;

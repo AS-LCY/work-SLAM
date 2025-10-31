@@ -70,15 +70,18 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 
 		initialEstimate_.insert(0, gtsam::Pose3(transformTobeMapped.matrix()));
 	} else {
-		std::shared_lock<std::shared_mutex> keyposes_read_lock(mtxPose_);
-		gtsam::Pose3 poseFrom(KeyPoses_.back().pose.matrix()); /// pre
-		keyposes_read_lock.unlock();
-		gtsam::Pose3 poseTo(transformTobeMapped.matrix()); // cur
-		// 参数：前一帧id，当前帧id，前一帧与当前帧的位姿变换（作为观测值），噪声协方差
-		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(KeyPoint_->size() - 1, KeyPoint_->size(),
-														   poseFrom.between(poseTo), odom_noise_ptr_));
+		assert(OdomKeyPoses_.size() >= 2);
+		gtsam::Pose3 poseFrom(OdomKeyPoses_[OdomKeyPoses_.size() - 2].pose.matrix()); // prev
+		gtsam::Pose3 poseTo(OdomKeyPoses_[OdomKeyPoses_.size() - 1].pose.matrix());	  // cur
+		gtsam::Pose3 between_pose = poseFrom.between(poseTo);
+		gtsam::Pose3 poseInit(transformTobeMapped.matrix());
+		gtsam::noiseModel::Diagonal::shared_ptr odometryNoise =
+			gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+
+		gtSAMgraph_.add(gtsam::BetweenFactor<gtsam::Pose3>(KeyPoint_->size() - 1, KeyPoint_->size(), between_pose,
+														   odom_noise_ptr_));
 		// 变量节点设置初始值
-		initialEstimate_.insert(KeyPoint_->size(), poseTo);
+		initialEstimate_.insert(KeyPoint_->size(), poseInit);
 	}
 }
 
@@ -107,7 +110,7 @@ void BackEnd::addLoopFactor() {
 }
 
 //在lio的线程中运行
-bool BackEnd::saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, Eigen::Isometry3d transformTobeMapped,
+bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, // T_odom_lidar
 									 double time) {
 	if (!saveFrame(transformTobeMapped)) { //是否关键帧
 		return false;
@@ -118,7 +121,12 @@ bool BackEnd::saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, E
 	KeyPose odom_pose(transformTobeMapped, KeyPoint_->size(), time, ypr(2), ypr(1), ypr(0));
 	OdomKeyPoses_.emplace_back(odom_pose);
 
-	addOdomFactor(init_T_map_odom * transformTobeMapped); // init_T_map_lidar
+	std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+	Eigen::Isometry3d T_map_lidar_init = T_map_odom_ * transformTobeMapped;
+	T_map_odom_lock.unlock();
+
+	addOdomFactor(T_map_lidar_init); // init_T_map_lidar
+
 	// addGPSFactor();
 
 	addLoopFactor();
@@ -166,7 +174,7 @@ bool BackEnd::saveKeyFramesAndFactor(const Eigen::Isometry3d& init_T_map_odom, E
 	keyframe_poses_lock.unlock();
 
 	assert(thisPose6D.index == OdomKeyPoses_.back().index);
-	std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+	T_map_odom_lock.lock();
 	T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
 	T_map_odom_lock.unlock();
 
