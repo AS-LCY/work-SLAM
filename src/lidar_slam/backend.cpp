@@ -119,7 +119,7 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, // T
 	// save odom poses
 	auto ypr = transformTobeMapped.rotation().eulerAngles(2, 1, 0);
 	KeyPose odom_pose(transformTobeMapped, KeyPoint_->size(), time, ypr(2), ypr(1), ypr(0));
-	OdomKeyPoses_.emplace_back(odom_pose);
+	OdomKeyPoses_.emplace_back(odom_pose); // T_odom_lidar
 
 	std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
 	Eigen::Isometry3d T_map_lidar_init = T_map_odom_ * transformTobeMapped;
@@ -175,7 +175,7 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, // T
 
 	assert(thisPose6D.index == OdomKeyPoses_.back().index);
 	T_map_odom_lock.lock();
-	T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
+	T_map_odom_ = latest_optimized_pose * OdomKeyPoses_.back().pose.inverse();
 	T_map_odom_lock.unlock();
 
 	if (aLoopIsClosed_) {
@@ -227,7 +227,7 @@ bool BackEnd::correctPoses() {
 
 		assert(OdomKeyPoses_.size() == numPoses);
 		std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
-		T_map_odom_ = latest_optimized_pose * T_lidar_imu_ * OdomKeyPoses_.back().pose.inverse();
+		T_map_odom_ = latest_optimized_pose * OdomKeyPoses_.back().pose.inverse();
 		T_map_odom_lock.unlock();
 
 		aLoopIsClosed_ = false;
