@@ -25,7 +25,7 @@
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
-      use_wheel_odom: true
+      use_wheel_odom: false
       sub_wheel_odom_topic: "/process_controller/ChassisData"
       wheel_cov: 0.0025  # std: 0.05m/s
       nhc_y_cov: 0.0001  # std: 0.01m/s 

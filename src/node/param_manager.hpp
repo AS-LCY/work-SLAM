@@ -158,6 +158,32 @@ class LocalizationModuleParamManager {
 		// T_alignedimu_baselink
 		loaded_param_.extrinsic.T_imu_baselink = T_baselink_alignedimu.inverse();
 
+		TRACE_INFO_CLASS("Extrinsic parameters loaded:..............");
+		Eigen::Vector3d alignedimu_alignedlidar_ypr = R2ypr(loaded_param_.extrinsic.extrinR);
+		TRACE_INFO_CLASS("extrinsic.extrinR_ypr: %f, %f, %f", alignedimu_alignedlidar_ypr.x() * RAD2DEGREE,
+						 alignedimu_alignedlidar_ypr.y() * RAD2DEGREE, alignedimu_alignedlidar_ypr.z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("extrinsic.extrinT_trans: %f, %f, %f", loaded_param_.extrinsic.extrinT.x(),
+						 loaded_param_.extrinsic.extrinT.y(), loaded_param_.extrinsic.extrinT.z());
+		TRACE_INFO_CLASS("baselink_imu_ypr: %f, %f, %f", R2ypr(loaded_param_.extrinsic.R_baselink_IMU).x() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.R_baselink_IMU).y() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.R_baselink_IMU).z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("T_lidar_baselink_ypr: %f, %f, %f",
+						 R2ypr(loaded_param_.extrinsic.T_lidar_baselink.linear().matrix()).x() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.T_lidar_baselink.linear().matrix()).y() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.T_lidar_baselink.linear().matrix()).z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("T_lidar_baselink_trans: %f, %f, %f",
+						 loaded_param_.extrinsic.T_lidar_baselink.translation().x(),
+						 loaded_param_.extrinsic.T_lidar_baselink.translation().y(),
+						 loaded_param_.extrinsic.T_lidar_baselink.translation().z());
+
+		TRACE_INFO_CLASS("T_imu_baselink_ypr: %f, %f, %f",
+						 R2ypr(loaded_param_.extrinsic.T_imu_baselink.linear().matrix()).x() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.T_imu_baselink.linear().matrix()).y() * RAD2DEGREE,
+						 R2ypr(loaded_param_.extrinsic.T_imu_baselink.linear().matrix()).z() * RAD2DEGREE);
+		TRACE_INFO_CLASS("T_imu_baselink_trans: %f, %f, %f", loaded_param_.extrinsic.T_imu_baselink.translation().x(),
+						 loaded_param_.extrinsic.T_imu_baselink.translation().y(),
+						 loaded_param_.extrinsic.T_imu_baselink.translation().z());
+
 		Eigen::Vector3d baselink_alignedlidar_ypr = R2ypr(T_baselink_alignedlidar.linear().matrix());
 		Eigen::Vector3d baselink_alignedimu_ypr = R2ypr(T_baselink_alignedimu.linear().matrix());
 		TRACE_INFO_CLASS("baselink_alignedlidar_ypr: %f, %f, %f", baselink_alignedlidar_ypr.x() * RAD2DEGREE,
