@@ -122,6 +122,11 @@ bool BackEnd::saveKeyFramesAndFactor(Eigen::Isometry3d transformTobeMapped, // T
 	OdomKeyPoses_.emplace_back(odom_pose); // T_odom_lidar
 
 	std::unique_lock<std::mutex> T_map_odom_lock(mtxTmapOdom_);
+	TRACE_INFO_CLASS("T_map_odom_ypr: %f, %f, %f", R2ypr(T_map_odom_.linear().matrix()).x() * RAD2DEGREE,
+					 R2ypr(T_map_odom_.linear().matrix()).y() * RAD2DEGREE,
+					 R2ypr(T_map_odom_.linear().matrix()).z() * RAD2DEGREE);
+	TRACE_INFO_CLASS("T_map_odom_trans: %f, %f, %f", T_map_odom_.translation().x(), T_map_odom_.translation().y(),
+					 T_map_odom_.translation().z());
 	Eigen::Isometry3d T_map_lidar_init = T_map_odom_ * transformTobeMapped;
 	T_map_odom_lock.unlock();
 

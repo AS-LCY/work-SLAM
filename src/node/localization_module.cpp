@@ -699,7 +699,8 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	msg->time_stamp = curr_msg_time;
 	// msg->time_stamp = msg_in->header.stamp.toSec() + 28799.8614; temp, 测试万集雷达时用到
 
-	if (slam_param_.lidar_preproc.lidar_type == 3) {
+	if (slam_param_.lidar_preproc.lidar_type == 3 &&
+		slam_param_.lidar_preproc.sub_imu_topic.compare("/vanjee_lidar_imu_packets") == 0) {
 		acc_after = acc_after / G_m_s2;
 	}
 

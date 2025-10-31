@@ -41,12 +41,25 @@
       # #baselink到真实雷达安装位置的旋转
 
       # 转90度安装，172.18.0.16
+      #baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
+      #baselink_lidar_rot: [-90.645, 0.35, -3.448] # unit(degree) yaw, pitch, roll
+      
+      # 正着安装，172.18.0.98(wanji lidar)
       baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
-      baselink_lidar_rot: [-90.645, 0.35, -3.448] # unit(degree) yaw, pitch, roll
+      baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
       
       # lidar to livox_imu (/livox/imu)
-      lidar_imu_trans: [0.0, 0.02329, -0.04412]  # unit: meter, x, y, z
-      lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
+      # lidar_imu_trans: [0.0, 0.02329, -0.04412]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
+      
+      # 172.18.0.98(wanji lidar) to wanji imu
+      # lidar_imu_trans: [-0.01256, -0.01699, -0.03706]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
+
+      # 172.18.0.98(wanji lidar) to mcu imu(+x, +y, +z, 后左下)
+      lidar_imu_trans: [0.0, 0.22, -0.06]  # unit: meter, x, y, z
+      lidar_imu_rot: [0.0, 176.552, 0.0]    # unit(degree) yaw, pitch, roll
+
 
       # lidar(172.18.3.231) to mcu_imu(+x, +y, +z, 后左下) (/mcu_imu)
       # lidar_imu_trans: [0.0, -0.22, -0.06]  # unit: meter, x, y, z
@@ -70,10 +83,14 @@
       fgicp_inlier_avg_error_thr: 0.25
 
     lidar_preproc:
-      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy 
-      sub_lidar_topic: "/livox/lidar"
-      sub_imu_topic: "/livox/imu"
-      # sub_imu_topic: "/mcu_imu"
+      lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  #3: wanji-lidar
+
+      # sub_lidar_topic: "/livox/lidar"
+      sub_lidar_topic: "/vanjee_points722f"
+      
+      # sub_imu_topic: "/vanjee_lidar_imu_packets"
+      # sub_imu_topic: "/livox/imu"
+      sub_imu_topic: "/mcu_imu"
 
       blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
@@ -95,16 +112,22 @@
       time_cost_thr_print: 10.0 # unit: ms，雷达预处理阶段耗时阈值
 
     mapping:
-      acc_cov: 0.017573468691815922
-      gyr_cov: 0.01524654486781841 
-      b_acc_cov: 0.00025566293746767606  #TODO(jxl): 可能要缩小，原本是扩大了50倍来使用
-      b_gyr_cov: 0.0007414029109004667
+      # acc_cov: 0.017573468691815922
+      # gyr_cov: 0.01524654486781841 
+      # b_acc_cov: 0.00025566293746767606  #TODO(jxl): 可能要缩小，原本是扩大了50倍来使用
+      # b_gyr_cov: 0.0007414029109004667
+
+      # wanji imu
+      # acc_cov: 0.1
+      # gyr_cov: 0.1
+      # b_acc_cov: 0.0001
+      # b_gyr_cov: 0.0001
       
       # mcu imu
-      # acc_cov: 0.003733229975895636
-      # gyr_cov: 0.009190293568628582
-      # b_acc_cov: 0.00019203457476267735
-      # b_gyr_cov: 0.00015301978135362925
+      acc_cov: 0.003733229975895636
+      gyr_cov: 0.009190293568628582
+      b_acc_cov: 0.00019203457476267735
+      b_gyr_cov: 0.00015301978135362925
 
       cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
 
