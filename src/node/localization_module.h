@@ -242,6 +242,8 @@ class LocalizationModule {
 	double imu_msg_interval_ = 0.005;
 	double lidar_msg_interval_ = 0.1;
 
+	double last_imu_msg_time_ = 0.f;
+	double last_lidar_msg_time_ = 0.f;
 	double delay_imu_ = 0.f;
 	double delay_lidar_ = 0.f;
 

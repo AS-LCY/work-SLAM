@@ -310,9 +310,9 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	static const double loop_closure_interval = 1.0;
 	static const double secmap_relocalize_interval = 1.0;
 
-	static const int imu_ratio = 10;
-	static const int lidar_ratio = 2;
-	static const int slam_ratio = 2;
+	static const int imu_ratio = 15;
+	static const int lidar_ratio = 3;
+	static const int slam_ratio = 3;
 
 	static const int localize_ratio = 2;
 	static const int loop_closure_ratio = 2;
@@ -326,9 +326,20 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	double delay_slam = curr_time - hb_time_timer_slam_.load(); //当前时刻和最新主线程时间差
 
-	bool hb_cbk_lidar = std::fabs(delay_lidar_) < lidar_interval * lidar_ratio ? true : false;
-	bool hb_cbk_imu = std::fabs(delay_imu_) < imu_interval * imu_ratio ? true : false;
+	//在这对lidar延迟和imu延迟做判断，因为有时雷达和imu会突然没有数据，回调函数进不去。
+	double delay_lidar = curr_time - last_lidar_msg_time_;
+	double delay_imu = curr_time - last_imu_msg_time_;
+	bool hb_cbk_lidar = std::fabs(delay_lidar) < lidar_interval * lidar_ratio ? true : false;
+	bool hb_cbk_imu = std::fabs(delay_imu) < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = std::fabs(delay_slam) < slam_interval * slam_ratio ? true : false;
+	if (!hb_cbk_lidar) {
+		TRACE_WARN_CLASS("current time = %f, latest lidar time = %f, time interval >= %f ms", curr_time,
+						 last_lidar_msg_time_, delay_lidar * 1e3);
+	}
+	if (!hb_cbk_imu) {
+		TRACE_WARN_CLASS("current time = %f, latest imu time = %f, time interval >= %f ms", curr_time,
+						 last_imu_msg_time_, delay_imu * 1e3);
+	}
 
 	bool hb_thread_localize = true;
 	bool hb_thread_loop_closure = true;
@@ -631,6 +642,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
+	last_lidar_msg_time_ = curr_msg_time;
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
 
@@ -680,6 +692,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	auto curr_msg_time = rclcpp::Time(msg_in->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
+	last_imu_msg_time_ = curr_msg_time;
 	imu_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
 
