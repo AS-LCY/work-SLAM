@@ -25,7 +25,7 @@
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       cpu_id: [4, 5]
 
-      use_wheel_odom: false
+      use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
       wheel_cov: 0.0025  # std: 0.05m/s
       nhc_y_cov: 0.0001  # std: 0.01m/s 
@@ -112,16 +112,17 @@
       time_cost_thr_print: 10.0 # unit: ms，雷达预处理阶段耗时阈值
 
     mapping:
+      # livox imu
       # acc_cov: 0.017573468691815922
       # gyr_cov: 0.01524654486781841 
       # b_acc_cov: 0.00025566293746767606  #TODO(jxl): 可能要缩小，原本是扩大了50倍来使用
       # b_gyr_cov: 0.0007414029109004667
 
       # wanji imu
-      # acc_cov: 0.1
-      # gyr_cov: 0.1
-      # b_acc_cov: 0.0001
-      # b_gyr_cov: 0.0001
+      # acc_cov: 0.150907217289141845
+      # gyr_cov: 0.0693919383409865
+      # b_acc_cov: 0.0013365858253573185
+      # b_gyr_cov: 0.0005372376866273254
       
       # mcu imu
       acc_cov: 0.003733229975895636
