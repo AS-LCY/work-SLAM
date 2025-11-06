@@ -77,7 +77,7 @@
       fgicp_max_iter: 64
       fgicp_max_corres_dist: 1.0
       fgicp_max_corres_num: 20
-      fgicp_inlier_max_valid_point_dist: 30.0 #mid-360, 40m @10 反射率
+      fgicp_inlier_max_valid_point_dist: 70.0 #mid-360, 40m @10 反射率
       fgicp_inlier_max_corres_dist: 0.5
       fgicp_inlier_rate_thr: 0.6
       fgicp_inlier_avg_error_thr: 0.25
@@ -92,7 +92,7 @@
       # sub_imu_topic: "/livox/imu"
       sub_imu_topic: "/mcu_imu"
 
-      blind_distance: 0.5 # 忽略掉距离雷达小于这个阈值的点
+      blind_distance: 0.2 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
       z_range: [-5.0, 20.0] # z > 20m点在预处理阶段被过滤掉了
 

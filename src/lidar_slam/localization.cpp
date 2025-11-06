@@ -195,9 +195,11 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		int num_valid_points = 0;
 		std::vector<int> k_indices;
 		std::vector<float> k_sq_dists;
+		int too_far_points_num = 0;
 		for (int i = 0; i < aligned_ptr->size(); i++) {
 			const auto& pt = aligned_ptr->at(i);
 			if (pt.getVector3fMap().norm() > param_.fgicp_inlier_max_valid_point_dist) {
+				too_far_points_num++;
 				continue;
 			}
 			num_valid_points++;
@@ -208,10 +210,17 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 				num_inliers++;
 			}
 		}
+
 		if (num_inliers != 0) {
 			matching_error /= num_inliers;
 		}
 		double inlier_fraction = static_cast<float>(num_inliers) / std::max(1, num_valid_points);
+		if (num_valid_points == 0) { //在特别空旷的场景下，nearby点个数为0，num_inliers为0，会触发误判逻辑
+			TRACE_INFO_CLASS("points sum num = %d, too far points num = %d, nearby point num = %d, num_inliers = %d",
+							 odomCloud->points.size(), too_far_points_num, num_valid_points, num_inliers);
+			TRACE_INFO_CLASS("reset inlier_fraction = 100%");
+			inlier_fraction = 1.0;
+		}
 
 		double localize_end = omp_get_wtime();
 		double cost_time = (localize_end - localize_start) * 1000;
