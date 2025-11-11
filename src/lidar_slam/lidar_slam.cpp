@@ -82,10 +82,8 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	const auto extrinT = config_param_.extrinsic.extrinT; // T_imu_lidar
 	const auto extrinR = config_param_.extrinsic.extrinR;
 
-	// construct T_imu_lidar
-	Eigen::Isometry3d T_imu_lidar = Eigen::Isometry3d::Identity();
-	T_imu_lidar.linear() = extrinR;
-	T_imu_lidar.translation() = extrinT;
+	T_imu_lidar_.linear() = extrinR;
+	T_imu_lidar_.translation() = extrinT;
 
 	auto key_frame_distance = config_param_.mapping.key_frame_distance;
 	auto key_frame_angle = config_param_.mapping.key_frame_angle;
@@ -94,7 +92,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	auto loopSearchSkipKey = config_param_.mapping.loopSearchSkipKey;
 	auto loopIcpScore = config_param_.mapping.loopIcpScore;
 
-	back_end_.reset(new BackEnd(T_imu_lidar.inverse(), key_frame_distance, key_frame_angle, loopSearchDistance,
+	back_end_.reset(new BackEnd(T_imu_lidar_.inverse(), key_frame_distance, key_frame_angle, loopSearchDistance,
 								loopSearchTimeDiff, loopSearchSkipKey, loopIcpScore));
 
 	/// sec_mapping & localizaiton
@@ -619,34 +617,17 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 			const auto time_diff = (curr_pose_copy.update_time - localization_base_copy.update_time) * 1e3;
 			TRACE_ERR_CLASS("ERROR: latest imu predicted pose time < laser update pose time, %f < %f, time diff: %f ms",
 							curr_pose_copy.update_time, localization_base_copy.update_time, time_diff);
-
 			current_pose_lock.lock();
 			current_pose_ = localization_base_copy;
 			current_pose_lock.unlock();
-
-			imu_buffer_lock.lock();
-			for (auto it = imu_buffer_.begin(); it != imu_buffer_.end(); it++) {
-				const std::shared_ptr<livox_ros::ImuMsg>& msg = *it;
-				if (msg->time_stamp > current_pose_.update_time) {
-					double dt = msg->time_stamp - current_pose_.update_time;
-					V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
-								 current_pose_.imu_state.bg;
-					V3D acc =
-						V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) *
-						G_m_s2 / init_acc_norm; // msg中acc单位是g
-					acc =
-						current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
-
-					current_pose_lock.lock();
-					current_pose_.imu_state.pos += current_pose_.imu_state.vel * dt + 0.5 * acc * dt * dt;
-					current_pose_.imu_state.vel += acc * dt;
-					current_pose_.imu_state.rot = current_pose_.imu_state.rot * Sophus::SO3d::exp(angvel * dt);
-					current_pose_.update_time = msg->time_stamp;
-					current_pose_lock.unlock();
-				}
-			}
-			imu_buffer_lock.unlock();
+			upsampling_current_pose(init_acc_norm);
 		} else { //(localize_time, curr_time)
+			if (laser_updated_.load()) {
+				// TRACE_INFO_CLASS("laser updated, current_pose time = %f, localize_pose time = %f",
+				// 				 curr_pose_copy.update_time, localization_base_copy.update_time);
+				upsampling_current_pose(init_acc_norm);
+				laser_updated_.store(false);
+			}
 			if (msg->time_stamp > current_pose_.update_time) {
 				double dt = msg->time_stamp - current_pose_.update_time;
 				V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
@@ -850,9 +831,7 @@ bool LidarSlam::run() {
 		localization_base_.update_time = lidar_end_time_;
 		localization_base_lock.unlock();
 
-		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
-		current_pose_ = localization_base_; // imu回调函数中基于更新后的位姿来重新预测位姿
-		current_pose_lock.unlock();
+		laser_updated_.store(true);
 
 		auto backend_start = std::chrono::high_resolution_clock::now();
 		if (working_mode_ == MAPPING || working_mode_ == SEC_MAPPING) {
@@ -1031,6 +1010,32 @@ std::deque<WheelOdomData> LidarSlam::getDataInRangeAndClean(double lidar_beg_tim
 		if (data.timestamp >= lidar_beg_time) result.push_back(data);
 	}
 	return result;
+}
+
+void LidarSlam::upsampling_current_pose(const double& init_acc_norm) {
+	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
+	std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+
+	std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+	current_pose_ = localization_base_;
+	localization_base_lock.unlock();
+
+	for (auto it = imu_buffer_.begin(); it != imu_buffer_.end(); it++) {
+		const std::shared_ptr<livox_ros::ImuMsg>& msg = *it;
+		if (msg->time_stamp > current_pose_.update_time) {
+			double dt = msg->time_stamp - current_pose_.update_time;
+			V3D angvel = V3D(msg->angular_velocity[0], msg->angular_velocity[1], msg->angular_velocity[2]) -
+						 current_pose_.imu_state.bg;
+			V3D acc = V3D(msg->linear_acceleration[0], msg->linear_acceleration[1], msg->linear_acceleration[2]) *
+					  G_m_s2 / init_acc_norm; // msg中acc单位是g
+			acc = current_pose_.imu_state.rot * (acc - current_pose_.imu_state.ba) + current_pose_.imu_state.grav;
+
+			current_pose_.imu_state.pos += current_pose_.imu_state.vel * dt + 0.5 * acc * dt * dt;
+			current_pose_.imu_state.vel += acc * dt;
+			current_pose_.imu_state.rot = current_pose_.imu_state.rot * Sophus::SO3d::exp(angvel * dt);
+			current_pose_.update_time = msg->time_stamp;
+		}
+	}
 }
 
 } // namespace lidar_slam
