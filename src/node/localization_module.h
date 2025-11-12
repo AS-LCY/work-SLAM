@@ -49,6 +49,7 @@
 #include "lidar/livox/ros_livox_datatype_def.h"
 #include "lidar_slam/common_lib.h"
 #include "lidar_slam/lidar_slam.hpp"
+#include "lidar_slam/resource_monitor.hpp"
 #include "magic_enum/magic_enum.hpp"
 #include "node/log_info_manager.hpp"
 #include "node/module_param_def.h"
@@ -352,6 +353,8 @@ class LocalizationModule {
 
 	tf2_ros::Buffer tf_buffer_;
 	tf2_ros::TransformListener tf_listener_;
+
+	std::unique_ptr<ProcessMonitor> monitor_;
 };
 
 } // namespace localization_module
