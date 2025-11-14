@@ -286,6 +286,7 @@ class LidarSlam {
 	bool check_pointcloud_state_abnormal();
 	std::deque<WheelOdomData> getDataInRangeAndClean(double lidar_beg_time, double lidar_end_time);
 	void upsampling_current_pose(const double& init_acc_norm);
+	void reset_global_localize_flags();
 
    private:
 	std::atomic<LocalizationStatus> local_thrd_status_{ LocalizationStatus::Inactive };
@@ -367,9 +368,9 @@ class LidarSlam {
 	std::unique_ptr<GlobalLocalization> global_localization_ = nullptr;
 	std::unique_ptr<CloudMap> cloud_map_manager_ = nullptr;
 
-	PointCloudType::Ptr UndistortCloudInOdom_;
-	PointCloudType::Ptr undistortCloud_; // lidar 系
-	PointCloudType::Ptr FilteredUndistortCloud_;
+	PointCloudType::Ptr UndistortCloudInOdom_ = nullptr;
+	PointCloudType::Ptr undistortCloud_ = nullptr; // lidar 系
+	PointCloudType::Ptr FilteredUndistortCloud_ = nullptr;
 
 	pcl::VoxelGrid<PointType> downSizeFilterCloud_;			 // lio
 	pcl::VoxelGrid<PointType> downSizeFilterCloud_test_;	 // global localize
@@ -389,7 +390,7 @@ class LidarSlam {
 
 	std::atomic<double> lio_cost_time_{ 0.f };
 	int feats_down_size_ = 0;
-	Eigen::Matrix<double, 6, 1> lio_state_diag_cov_;
+	Eigen::Matrix<double, 6, 1> lio_state_diag_cov_ = Eigen::Matrix<double, 6, 1>::Zero();
 
 	LocalizeStatus localize_status_;
 
@@ -400,6 +401,12 @@ class LidarSlam {
 	Eigen::Matrix<double, 6, 6> T_odom_lidar_cov_last_ = Eigen::Matrix<double, 6, 6>::Zero();
 	double lidar_time_curr_ = 0.0;
 	double lidar_time_last_ = 0.0;
+
+	// global localize integrate
+	double integrate_scan_move_dist_ = 0.f;
+	int integrate_scan_num_ = 0;
+	bool integrate_init_pose_ = false;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr global_localize_odom_cloud_sum_ = nullptr;
 };
 
 } // namespace lidar_slam

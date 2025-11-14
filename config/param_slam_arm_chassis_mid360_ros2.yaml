@@ -86,7 +86,7 @@
 
     localization:
       fgicp_peroid_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
-      cloud_leaf_size_localize: 0.1
+      cloud_leaf_size_localize: 0.2
       fgicp_thread_num: 2
       fgicp_trans_eps: 1e-2
       fgicp_max_iter: 64
@@ -120,7 +120,7 @@
       point_filter_num: 6 # # 没有起作用 每隔多少个点采样一个点,  
       ring_filter_num: 1  # 没有起作用
 
-      leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
+      leafsize: 0.2 # extract_cloud_method == 2 时, voxel 参数
 
       leafsize_vec: [0.2, 0.8] # voxel 所需参数
       voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax

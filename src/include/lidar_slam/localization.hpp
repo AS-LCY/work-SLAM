@@ -23,13 +23,19 @@
 
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
+#include "kiss_matcher/KISSMatcher.hpp"
 #include "lidar_slam/ekf_smoother.h"
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
 #include "lidar_slam/slam_param_def.h"
+#include "lidar_slam/tictoc.hpp"
 #include "node/log_info_manager.hpp"
+#include "small_gicp/pcl/pcl_point.hpp"
+#include "small_gicp/pcl/pcl_point_traits.hpp"
+#include "small_gicp/pcl/pcl_registration.hpp"
 
 namespace lidar_slam {
+
 class Localization {
 	DECL_CLASSNAME(Localization)
    public:
@@ -37,7 +43,7 @@ class Localization {
 
 	using LocalizationStatus = common_status::LocalizationStatus;
 
-	Localization(LocalizationParam param);
+	Localization(LocalizationParam param, const LoopClosureConfig& relocalize_params);
 	~Localization();
 	bool loadMap(std::string path);
 
@@ -47,6 +53,8 @@ class Localization {
 
 	bool globalLocalization(PointCloudType::Ptr lidarCloud, Eigen::Isometry3d pose, Matrix3d initial_rotate,
 							double score);
+	bool globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr odom_cloud,
+							const Eigen::Isometry3d& T_odom_lidar_curr, const int try_num);
 
 	Eigen::Isometry3d getOdomToMap() { return correctionOdomToMap_; }
 
@@ -61,12 +69,17 @@ class Localization {
 	PointCloudType::Ptr getTestCloud() { return testMatchcloud_; }
 
    private:
+	void initGlobalLocalize();
 	Eigen::Isometry3d smootherMatchResult(const Sophus::SE3d& T_map_odom, const Sophus::SE3d& T_odom_lidar,
 										  const Sophus::SE3d& T_lidar_delta,
 										  const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local,
 										  const Eigen::Matrix<double, 6, 6>& meas_cov_global);
 	void assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar, const Sophus::SE3d& T_lidar_delta,
 						 const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
+
+	RegOutput icpAlignment();
+
+	RegOutput coarseToFineAlignment();
 
 	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
 	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
@@ -95,6 +108,16 @@ class Localization {
 
 	LocalizationParam param_;
 	double max_correspondence_dist_square_;
+
+	// global localize
+	LoopClosureConfig config_;
+	std::shared_ptr<kiss_matcher::KISSMatcher> global_reg_handler_ = nullptr;
+	std::shared_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>> local_reg_handler_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr src_cloud_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr tgt_cloud_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr coarse_aligned_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr debug_cloud_ = nullptr;
 };
 
 } // namespace lidar_slam

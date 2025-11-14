@@ -113,6 +113,11 @@ find_package(fast_gicp REQUIRED)
 find_package(std_msgs REQUIRED) 
 find_package(pcl_conversions REQUIRED)
 
+
+add_subdirectory(src/kiss_matcher)
+
+add_subdirectory(src/small_gicp)
+
 message("GTSAM_INCLUDE_DIR:===========" ${GTSAM_INCLUDE_DIR} )
 message("GTSAM_LIBRARIES:==========="  ${GTSAM_LIBRARIES} )
 
@@ -133,6 +138,8 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   ${fmt_INCLUDE_DIRS}
   /usr/local/include
+
+  src/kiss_matcher/core/
 )
 
 # 使用 ament_auto_add_library 添加库
@@ -182,6 +189,9 @@ target_link_libraries(lidar_slam
   # /usr/local/lib/libfast_gicp.so
   gtsam
   ${logTracer_LIBRARY}
+
+  small_gicp
+  kiss_matcher_core
 )
 
 # SLAM主节点 - 使用 ament_auto_add_executable

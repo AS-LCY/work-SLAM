@@ -1,8 +1,12 @@
 
 #include "lidar_slam/localization.hpp"
+
+using namespace kiss_matcher;
+
 namespace lidar_slam {
-Localization::Localization(LocalizationParam param) {
+Localization::Localization(LocalizationParam param, const LoopClosureConfig& relocalize_params) {
 	param_ = param;
+	config_ = relocalize_params;
 	log_info_manager_.reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
@@ -34,6 +38,31 @@ Localization::Localization(LocalizationParam param) {
 	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
 	map_ready_ = false;
 	filter_init_ = false;
+
+	initGlobalLocalize();
+}
+
+void Localization::initGlobalLocalize() {
+	config_.matcher_config_ = kiss_matcher::KISSMatcherConfig(config_.voxel_res_, false); //不对点云进行降采样
+	config_.matcher_config_.use_quatro_ = true;
+
+	auto& gc = config_.gicp_config_;
+	gc.max_corr_dist_ = config_.voxel_res_ * gc.scale_factor_for_corr_dist_;
+
+	src_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	tgt_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	coarse_aligned_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	aligned_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	debug_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+
+	global_reg_handler_ = std::make_shared<kiss_matcher::KISSMatcher>(config_.matcher_config_);
+	local_reg_handler_ = std::make_shared<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>();
+
+	local_reg_handler_->setNumThreads(gc.num_threads_);
+	local_reg_handler_->setCorrespondenceRandomness(gc.correspondence_randomness_);
+	local_reg_handler_->setMaxCorrespondenceDistance(gc.max_corr_dist_);
+	local_reg_handler_->setVoxelResolution(config_.voxel_res_);
+	local_reg_handler_->setRegistrationType("VGICP"); // "VGICP" or "GICP"
 }
 
 Localization::~Localization() {}
@@ -428,6 +457,122 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 		TRACE_ERR_CLASS("scancontext search fail, score: %f", min_dist);
 		return false;
 	}
+}
+
+RegOutput Localization::icpAlignment() {
+	RegOutput reg_output;
+	aligned_->clear();
+
+	local_reg_handler_->setInputSource(coarse_aligned_);
+	local_reg_handler_->setInputTarget(tgt_cloud_);
+
+	local_reg_handler_->align(*aligned_);
+
+	const auto& local_reg_result = local_reg_handler_->getRegistrationResult();
+	double overlapness = static_cast<double>(local_reg_result.num_inliers) / coarse_aligned_->size() * 100.0;
+	reg_output.overlapness_ = overlapness;
+
+	// NOTE(hlim): fine_T_coarse
+	reg_output.pose_ = local_reg_handler_->getFinalTransformation().cast<double>();
+	// if matchness overlapness is over than threshold,
+	// that means the registration result is likely to be sufficiently overlapped
+	if (overlapness > config_.gicp_config_.overlap_threshold_) {
+		reg_output.is_valid_ = true;
+		reg_output.is_converged_ = true;
+	}
+	if (config_.verbose_) {
+		if (overlapness >= config_.gicp_config_.overlap_threshold_) {
+			TRACE_INFO_CLASS("global localization: local refine overlapness: %f% >= thresh: %f%", overlapness,
+							 config_.gicp_config_.overlap_threshold_);
+		} else {
+			TRACE_ERR_CLASS("global localization: local refine overlapness: %f% < thresh: %f%", overlapness,
+							config_.gicp_config_.overlap_threshold_);
+		}
+	}
+	return reg_output;
+}
+
+RegOutput Localization::coarseToFineAlignment() {
+	RegOutput reg_output;
+	coarse_aligned_->clear();
+
+	const auto& src_vec = convertCloudToVec(*src_cloud_);
+	const auto& tgt_vec = convertCloudToVec(*tgt_cloud_);
+
+	const auto& solution = global_reg_handler_->estimate(src_vec, tgt_vec);
+	// TODO(jxl): global map cloud只计算一遍fast fpfh
+
+	Eigen::Matrix4d coarse_alignment = Eigen::Matrix4d::Identity();
+	coarse_alignment.block<3, 3>(0, 0) = solution.rotation.cast<double>();
+	coarse_alignment.topRightCorner(3, 1) = solution.translation.cast<double>();
+
+	*coarse_aligned_ = transformPcd(*src_cloud_, coarse_alignment);
+
+	const size_t num_inliers = global_reg_handler_->getNumFinalInliers();
+	reg_output.num_final_inliers_ = num_inliers; // TODO(jxl): 内点个数怎么计算的？
+	if (config_.verbose_) {
+		if (num_inliers >= config_.num_inliers_threshold_) {
+			TRACE_INFO_CLASS("final inliers = % >= thresh = %d", num_inliers, config_.num_inliers_threshold_);
+		} else {
+			TRACE_ERR_CLASS("ERROR: final inliers = % < thresh = %d", num_inliers, config_.num_inliers_threshold_);
+		}
+	}
+
+	// NOTE(hlim): A small number of inliers suggests that the initial alignment may have failed,
+	// so fine alignment is meaningless.
+	if (!solution.valid || num_inliers < config_.num_inliers_threshold_) {
+		return reg_output;
+	} else {
+		const auto& fine_output = icpAlignment();
+		reg_output = fine_output;
+		reg_output.pose_ = fine_output.pose_ * coarse_alignment;
+
+		// Use this cloud to debug whether the transformation is correct.
+		// *debug_cloud_        = transformPcd(src, reg_output.pose_);
+	}
+	return reg_output;
+}
+
+bool Localization::globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr odom_cloud,
+									  const Eigen::Isometry3d& T_odom_lidar_curr, const int try_num) {
+	*src_cloud_ = *odom_cloud;
+	*tgt_cloud_ = *CloudGlobalMapIn_;
+
+	lidar_slam::TicToc timer;
+	const auto& reg_output = coarseToFineAlignment(); // TODO(jxl): 后面次运行，是不是可以把初始值范围扩大
+	global_reg_handler_->print();
+	const auto t = timer.toc();
+	TRACE_INFO_CLASS("global localization cost time = %f ms", t);
+
+	if (!reg_output.is_valid_) {
+		TRACE_ERR_CLASS("global localization alignment rejected. # of inliers: %d", reg_output.num_final_inliers_);
+		return false;
+	}
+
+	correctionOdomToMap_.matrix() = reg_output.pose_; //全局重定位不能做平滑
+	correctionOdomToMap_last_ = correctionOdomToMap_; // T_map_odom
+
+	Eigen::Vector3d T_map_odom_t = correctionOdomToMap_.translation();
+	Eigen::Vector3d T_map_odom_euler = correctionOdomToMap_.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+	Eigen::Isometry3d lidar_in_map = correctionOdomToMap_ * T_odom_lidar_curr;
+	auto updated_euler = lidar_in_map.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+
+	//初始化 ekf smoother
+	Sophus::SE3d T_map_lidar_init = convertIsometry3dToSE3d(lidar_in_map);
+	Eigen::Matrix<double, 6, 1> noise_vec(0.1, 0.1, 0.1, 0.1, 0.1, 0.1); //前三维平移，后三维旋转
+	Eigen::Matrix<double, 6, 6> T_map_lidar_init_cov = noise_vec.asDiagonal();
+	ekf_smoother_.init(T_map_lidar_init, T_map_lidar_init_cov);
+
+	TRACE_INFO_CLASS("icp given init T_map_lidar yaw: %f, pitch: %f, roll: %f", updated_euler[0] * RAD2DEGREE,
+					 updated_euler[1] * RAD2DEGREE, updated_euler[2] * RAD2DEGREE);
+	TRACE_INFO_CLASS("icp given init T_map_lidar trans x: %f, y: %f, z: %f", lidar_in_map.translation().x(),
+					 lidar_in_map.translation().y(), lidar_in_map.translation().z());
+
+	TRACE_INFO_CLASS("icp given T_map_odom yaw: %f, pitch: %f, roll: %f", T_map_odom_euler[0] * RAD2DEGREE,
+					 T_map_odom_euler[1] * RAD2DEGREE, T_map_odom_euler[2] * RAD2DEGREE);
+	TRACE_INFO_CLASS("icp given T_map_odom trans x: %f, y: %f, z: %f", T_map_odom_t.x(), T_map_odom_t.y(),
+					 T_map_odom_t.z());
+	return true;
 }
 
 } // namespace lidar_slam

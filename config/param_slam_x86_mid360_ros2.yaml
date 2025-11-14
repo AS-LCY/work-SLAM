@@ -86,7 +86,7 @@
 
     localization:
       fgicp_peroid_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
-      cloud_leaf_size_localize: 0.1
+      cloud_leaf_size_localize: 0.2
       fgicp_thread_num: 2
       fgicp_trans_eps: 1e-2
       fgicp_max_iter: 64
@@ -120,7 +120,7 @@
       point_filter_num: 6 # # 没有起作用 每隔多少个点采样一个点,  
       ring_filter_num: 1  # 没有起作用
 
-      leafsize: 0.5 # extract_cloud_method == 2 时, voxel 参数
+      leafsize: 0.2 # extract_cloud_method == 2 时, voxel 参数
 
       leafsize_vec: [0.2, 0.8] # voxel 所需参数
       voxel_region_xyz: [-10.0, 10.0, -10.0, 10.0, -1.0, 15.0]  # order: xmin, xmax, ymin, ymax, zmin, zmax
@@ -167,6 +167,38 @@
     re_localization:
       score_thr: 0.3  #raw: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
+
+      integrate_scan_move_dist_thresh: 5.0
+      voxel_resolution: 0.3            # ⭐ [Unit: m] Voxel grid resolution for downsampling
+      # each scan downsampled by <localization/cloud_leaf_size_localize> before integrate
+
+      global_reg:
+        enable: true
+        # The best value of `num_inliers_threshold` highly depends on `num_submap_keyframes`
+        # Thus, heuristic tuning is required for the best performance.
+        # Larger values make it more conservative (i.e., higher `num_inliers_threshold` enhances LC precision)
+        num_inliers_threshold: 100       # ⭐ Minimum inlier count to accept KISS-Matcher initial alignment
+
+      local_reg:
+        num_threads: 2                  # Number of threads used for local registration
+        correspondences_number: 20      # Minimum number of correspondences required
+        max_num_iter: 64                # Maximum iterations for local registration
+
+        # NOTE(hlim): `scale_factor_for_corr_dist` * `voxel_resolution` is set to
+        # distance threshold for ICP-variants (i.e., it is a factor relative to voxel resolution)
+        scale_factor_for_corr_dist: 5.0 # ⭐ Scale for correspondence search distance
+
+        # NOTE(hlim): The best value of `overlap_threshold` highly depends on `num_submap_keyframes`
+        # Thus, heuristic tuning is required for the best performance.
+        # Larger values make it more conservative (i.e., higher `overlap_threshold` enhances LC precision)
+        overlap_threshold: 55.0         # ⭐ [Unit: %] Threshold for the ratio of ICP inliers
+                                        # (i.e., the percentage of correspondences within `corr_dist`).
+                                        # A value close to 100% means the source and target are nearly perfectly aligned.
+                                        # In cases of partial overlap, this ratio can never reach 100%.
+                                        # If you set `num_submap_keyframes` as 1 (i.e., scan-to-scan matching),
+                                        # it's recommended to use a higher value.
+
+
 
     ikdtree:
       cube_len: 400.0

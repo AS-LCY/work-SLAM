@@ -77,6 +77,16 @@ Eigen::Matrix3d g2R(const Eigen::Vector3d& g) {
 	return R0;
 }
 
+std::vector<Eigen::Vector3f> convertCloudToVec(const pcl::PointCloud<pcl::PointXYZI>& cloud) {
+	std::vector<Eigen::Vector3f> vec;
+	vec.reserve(cloud.size());
+	for (const auto& pt : cloud.points) {
+		if (!std::isfinite(pt.x) || !std::isfinite(pt.y) || !std::isfinite(pt.z)) continue;
+		vec.emplace_back(pt.x, pt.y, pt.z);
+	}
+	return vec;
+}
+
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur) {
 	PointCloudType::Ptr cloudOut(new PointCloudType());
 

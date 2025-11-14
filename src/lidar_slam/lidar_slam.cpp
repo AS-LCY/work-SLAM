@@ -98,6 +98,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	/// sec_mapping & localizaiton
 	globalLocalizationSuccess_ = false;
 	global_localize_count_ = 0;
+	reset_global_localize_flags();
 
 	ikdtree_.reset(new KD_TREE<pcl::PointXYZINormal>());
 
@@ -110,7 +111,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 	// 定位
-	localization_.reset(new Localization(config_param_.localization));
+	localization_.reset(new Localization(config_param_.localization, config_param_.re_localization.lc_config));
 
 	global_localization_.reset(new GlobalLocalization());
 	cloud_map_manager_.reset(new CloudMap());
@@ -305,6 +306,8 @@ void LidarSlam::localizationThread() {
 	const auto score_thr = config_param_.re_localization.score_thr;
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
+	const double integrate_scan_move_dist_thresh = config_param_.re_localization.integrate_scan_move_dist_thresh;
+	const auto& relocalize_params = config_param_.re_localization.lc_config;
 
 	pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
 	PointCloudType::Ptr ds_odom_cloud_localize(new PointCloudType());
@@ -355,33 +358,64 @@ void LidarSlam::localizationThread() {
 				} else if (!temp || temp->points.size() == 0) {
 					TRACE_WARN_CLASS("globalLocalization failed: cloud empty ... ");
 				} else {
-					TRACE_INFO_CLASS("start global localization ... , point count: %d", temp->points.size());
-					PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType());
-					Matrix3d initial_rotate;
-					{
-						std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
-						downSizeFilterCloud_test_.setInputCloud(undistortCloud_); // lidar系下的点云
-						downSizeFilterCloud_test_.filter(*FilteredUndistortCloud_test);
+					//在重定位模式下，移动的距离满足阈值要求，然后触发全局重定位
+					if (!integrate_init_pose_) {
+						integrate_init_pose_ = true;
+						continue;
 					}
-					initial_rotate = p_imu_->get_initial_rotate();
+					Eigen::Vector3d delta_trans_vec =
+						T_odom_lidar_curr_.translation() - T_odom_lidar_last_.translation();
+					double delta_trans = std::sqrt(delta_trans_vec.x() * delta_trans_vec.x() +
+												   delta_trans_vec.y() * delta_trans_vec.y());
+					if (integrate_scan_move_dist_ < integrate_scan_move_dist_thresh) {
+						integrate_scan_move_dist_ += delta_trans;
+						integrate_scan_num_++;
+						*global_localize_odom_cloud_sum_ += *temp;
+						TRACE_INFO_CLASS("integrate scan num = %d, move dist = %f", integrate_scan_num_,
+										 integrate_scan_move_dist_);
+						continue;
+					} else {
+						TRACE_INFO_CLASS("integrate scan num = %d, move dist = %f", integrate_scan_num_,
+										 integrate_scan_move_dist_);
+						double t0 = omp_get_wtime();
+						TRACE_INFO_CLASS("start to global localize, try num = %d ...", global_localize_count_);
+						globalLocalizationSuccess_ = localization_->globalLocalization(
+							global_localize_odom_cloud_sum_, T_odom_lidar_curr_, global_localize_count_);
+						double t1 = omp_get_wtime();
+						TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
+						global_localize_count_++;
+					}
 
-					std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
-					auto T_odom_lidar_copy = T_odom_lidar_;
-					T_odom_lidar_lock.unlock();
+					// TRACE_INFO_CLASS("start global localization ... , point count: %d", temp->points.size());
+					// PointCloudType::Ptr FilteredUndistortCloud_test(new PointCloudType());
+					// Matrix3d initial_rotate;
+					// {
+					// 	std::unique_lock<std::mutex> undistort_cloud_lock(mtx_lidar_cloud_);
+					// 	downSizeFilterCloud_test_.setInputCloud(undistortCloud_); // lidar系下的点云
+					// 	downSizeFilterCloud_test_.filter(*FilteredUndistortCloud_test);
+					// 	//用来重定位的点云应该足够密
+					// }
+					// initial_rotate = p_imu_->get_initial_rotate();
 
-					double t0 = omp_get_wtime();
-					globalLocalizationSuccess_ = localization_->globalLocalization(
-						FilteredUndistortCloud_test, T_odom_lidar_copy, initial_rotate, score_thr);
-					double t1 = omp_get_wtime();
-					TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
+					// std::unique_lock<std::mutex> T_odom_lidar_lock(mtx_pose_);
+					// auto T_odom_lidar_copy = T_odom_lidar_;
+					// T_odom_lidar_lock.unlock();
 
-					global_localize_count_++;
+					// double t0 = omp_get_wtime();
+					// globalLocalizationSuccess_ = localization_->globalLocalization(
+					// 	FilteredUndistortCloud_test, T_odom_lidar_copy, initial_rotate, score_thr);
+
+					// double t1 = omp_get_wtime();
+					// TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
+
+					// global_localize_count_++;
 				}
 
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
 					TRACE_ERR_CLASS("global localization failed: time out \n");
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
-					TRACE_ERR_CLASS("localization status = RelocalizeFailed...\n");
+					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");
+					reset_global_localize_flags();
 				}
 				if (globalLocalizationSuccess_) {
 					TRACE_INFO_CLASS("global localization success, localization status = Normal...");
@@ -392,6 +426,7 @@ void LidarSlam::localizationThread() {
 					T_map_odom_ = init_T_map_odom_;
 					need_localize_ = false; //全局重定位成功后要等60s才会进行第一次定位
 					wait_time++;
+					reset_global_localize_flags();
 				}
 
 			} else { //全局定位成功
@@ -1080,6 +1115,14 @@ void LidarSlam::upsampling_current_pose(const double& init_acc_norm) {
 			current_pose_.update_time = msg->time_stamp;
 		}
 	}
+}
+
+void LidarSlam::reset_global_localize_flags() {
+	global_localize_count_ = 0;
+	integrate_scan_move_dist_ = 0.f;
+	integrate_scan_num_ = 0;
+	integrate_init_pose_ = false;
+	global_localize_odom_cloud_sum_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 }
 
 } // namespace lidar_slam

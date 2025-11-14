@@ -2,12 +2,14 @@
 #define COMMON_LIB_H
 
 #include <logTracer/tracer.h>
+#include <pcl/common/transforms.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sys/stat.h>
 
 #include <Eigen/Core>
 
+#include "kiss_matcher/KISSMatcher.hpp"
 #include "sophus/se3.hpp"
 
 using namespace std;
@@ -128,6 +130,37 @@ enum class SecmapRelocalThrdStatus : int {
 	Normal = 3			  // normal
 };
 } // namespace common_status
+
+struct GICPConfig {
+	int num_threads_ = 4;
+	int correspondence_randomness_ = 20;
+	int max_num_iter_ = 20;
+
+	double max_corr_dist_ = 1.0;
+	double scale_factor_for_corr_dist_ = 5.0;
+	double overlap_threshold_ = 90.0;
+};
+
+struct LoopClosureConfig {
+	bool verbose_ = true;
+	bool enable_global_registration_ = true;
+	bool is_multilayer_env_ = false;
+	size_t num_submap_keyframes_ = 11;
+	size_t num_inliers_threshold_ = 100;
+	double voxel_res_ = 0.1;
+	double loop_detection_radius_;
+	double loop_detection_timediff_threshold_;
+	GICPConfig gicp_config_;
+	kiss_matcher::KISSMatcherConfig matcher_config_;
+};
+
+struct RegOutput {
+	bool is_valid_ = false;
+	bool is_converged_ = false;
+	size_t num_final_inliers_ = 0;
+	double overlapness_ = 0.0;
+	Eigen::Matrix4d pose_ = Eigen::Matrix4d::Identity();
+};
 
 struct LocalizeStatus {
 	bool converged = false;
@@ -330,6 +363,18 @@ void get_xyz_ypr(const Eigen::Isometry3d& eigen_transform, Eigen::Vector3d& xyz,
 Eigen::Matrix3d rpy2R(const Eigen::Vector3d& rpy);
 
 Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
+
+template <typename T>
+inline pcl::PointCloud<T> transformPcd(const pcl::PointCloud<T>& cloud_in, const Eigen::Matrix4d& pose) {
+	if (cloud_in.empty()) {
+		return cloud_in;
+	}
+	pcl::PointCloud<T> cloud_out;
+	pcl::transformPointCloud(cloud_in, cloud_out, pose);
+	return cloud_out;
+}
+
+std::vector<Eigen::Vector3f> convertCloudToVec(const pcl::PointCloud<pcl::PointXYZI>& cloud);
 
 PointCloudType::Ptr transformPointCloud(PointCloudType::Ptr cloudIn, const Eigen::Isometry3d& transCur);
 
