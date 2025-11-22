@@ -1,7 +1,7 @@
 /localization_module: 
   ros__parameters:
     common:
-      run_on_mower: true # true时, 【map_directory_on_mower】参数会覆盖【map_directory】参数；false时还是由【map_directory】决定
+      run_on_mower: false # true时, 【map_directory_on_mower】参数会覆盖【map_directory】参数；false时还是由【map_directory】决定
       # map_directory_on_mower: "/home/firefly/fl_localization_ws/maps/"
       map_directory_on_mower: "/home/nb00085/maps/"
       cpu_id_on_mower: []

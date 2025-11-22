@@ -191,34 +191,38 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	br_.sendTransform(transform);
 
 	// pub T_map_baselink path
-	baselink_in_map_path_msg.header.stamp = msg_stamp;
-	baselink_in_map_path_msg.header.frame_id = frameid;
-	geometry_msgs::msg::PoseStamped msg;
-	msg.header.stamp = msg_stamp;
-	msg.header.frame_id = child_frameid;
-	msg.pose = odomAftMapped.pose.pose;
-	baselink_in_map_path_msg.poses.push_back(msg);
-	auto path_size = baselink_in_map_path_msg.poses.size();
-	auto keep_path_length = 3 * 1000; // 10hz, 300s path
-	if (path_size > keep_path_length) {
-		baselink_in_map_path_msg.poses.clear();
+	if (pubBaseLinkMapPath->get_subscription_count() > 0) {
+		baselink_in_map_path_msg.header.stamp = msg_stamp;
+		baselink_in_map_path_msg.header.frame_id = frameid;
+		geometry_msgs::msg::PoseStamped msg;
+		msg.header.stamp = msg_stamp;
+		msg.header.frame_id = child_frameid;
+		msg.pose = odomAftMapped.pose.pose;
+		baselink_in_map_path_msg.poses.push_back(msg);
+		auto path_size = baselink_in_map_path_msg.poses.size();
+		auto keep_path_length = 5 * 1000; // 10hz, 300s path
+		if (path_size > keep_path_length) {
+			baselink_in_map_path_msg.poses.erase(baselink_in_map_path_msg.poses.begin());
+		}
+		pubBaseLinkMapPath->publish(baselink_in_map_path_msg);
 	}
-	pubBaseLinkMapPath->publish(baselink_in_map_path_msg);
 
 	// pub T_odom_baselink path
-	baselink_in_odom_path_msg.header.stamp = msg_stamp;
-	baselink_in_odom_path_msg.header.frame_id = "odom";
-	geometry_msgs::msg::PoseStamped odom_msg;
-	odom_msg.header.stamp = msg_stamp;
-	odom_msg.header.frame_id = child_frameid;
-	odom_msg.pose = lio_odom.pose.pose;
-	baselink_in_odom_path_msg.poses.push_back(odom_msg);
-	auto odom_path_size = baselink_in_odom_path_msg.poses.size();
-	auto odom_keep_path_length = 3 * 1000; // 10hz, 300s path
-	if (odom_path_size > odom_keep_path_length) {
-		baselink_in_odom_path_msg.poses.clear();
+	if (pubBaseLinkOdompPath->get_subscription_count() > 0) {
+		baselink_in_odom_path_msg.header.stamp = msg_stamp;
+		baselink_in_odom_path_msg.header.frame_id = "odom";
+		geometry_msgs::msg::PoseStamped odom_msg;
+		odom_msg.header.stamp = msg_stamp;
+		odom_msg.header.frame_id = child_frameid;
+		odom_msg.pose = lio_odom.pose.pose;
+		baselink_in_odom_path_msg.poses.push_back(odom_msg);
+		auto odom_path_size = baselink_in_odom_path_msg.poses.size();
+		auto odom_keep_path_length = 5 * 1000; // 10hz, 300s path
+		if (odom_path_size > odom_keep_path_length) {
+			baselink_in_odom_path_msg.poses.erase(baselink_in_odom_path_msg.poses.begin());
+		}
+		pubBaseLinkOdompPath->publish(baselink_in_odom_path_msg);
 	}
-	pubBaseLinkOdompPath->publish(baselink_in_odom_path_msg);
 }
 
 void LocalizationModule::publish_OdomToMap_tf(const double& lidar_in_map_time, const Eigen::Isometry3d& T_map_odom) {

@@ -332,11 +332,11 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	bool hb_cbk_lidar = std::fabs(delay_lidar) < lidar_interval * lidar_ratio ? true : false;
 	bool hb_cbk_imu = std::fabs(delay_imu) < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = std::fabs(delay_slam) < slam_interval * slam_ratio ? true : false;
-	if (!hb_cbk_lidar) {
+	if (!hb_cbk_lidar && slam_param_.common.run_on_mower) {
 		TRACE_WARN_CLASS("current time = %f, latest lidar time = %f, time interval >= %f ms", curr_time,
 						 last_lidar_msg_time_, delay_lidar * 1e3);
 	}
-	if (!hb_cbk_imu) {
+	if (!hb_cbk_imu && slam_param_.common.run_on_mower) {
 		TRACE_WARN_CLASS("current time = %f, latest imu time = %f, time interval >= %f ms", curr_time,
 						 last_imu_msg_time_, delay_imu * 1e3);
 	}
