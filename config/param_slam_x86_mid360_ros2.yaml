@@ -4,7 +4,7 @@
       run_on_mower: false # true时, 【map_directory_on_mower】参数会覆盖【map_directory】参数；false时还是由【map_directory】决定
       # map_directory_on_mower: "/home/firefly/fl_localization_ws/maps/"
       map_directory_on_mower: "/home/nb00085/maps/"
-      cpu_id_on_mower: []
+      # cpu_id_on_mower: []
       
       init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
       time_sync_en: false
@@ -23,7 +23,7 @@
       check_delay: false
       before_downsample_size_thr: 3000 # 降采样前点个数不能小于3000个
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
-      cpu_id: []
+      # cpu_id: []
 
       use_wheel_odom: true
       sub_wheel_odom_topic: "/process_controller/ChassisData"
