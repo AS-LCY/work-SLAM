@@ -1,6 +1,7 @@
 map/*
 *.pcd
 build/*
+aarch64_toolchain.cmake
 
 *.zip
 *.tar.gz
