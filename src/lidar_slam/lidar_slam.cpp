@@ -538,10 +538,22 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 
 	std::unique_lock<std::mutex> lidar_buffer_lock(mtx_lidar_buffer_);
 	if (curr_time < last_timestamp_lidar_) {
-		TRACE_WARN_CLASS("clear lidar buffer! curr lidar time: %f < last lidar time: %f", curr_time,
+		TRACE_WARN_CLASS("ignore this lidar data, curr lidar time: %f < last lidar time: %f", curr_time,
 						 last_timestamp_lidar_);
+		// lidar_buffer_.clear();
+		// time_buffer_.clear();
+		return;
+	} else if (curr_time - last_timestamp_lidar_ > 1.) {
+		TRACE_WARN_CLASS("laser lose rate! laser diff: %f > thresh: %f", curr_time - last_timestamp_lidar_, 1.);
 		lidar_buffer_.clear();
 		time_buffer_.clear();
+		TRACE_WARN_CLASS("curr_time: %f, last_timestamp_lidar_: %f", curr_time, last_timestamp_lidar_);
+		TRACE_WARN_CLASS("lidar buffer cleared.");
+
+		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+		localization_base_.update_time = curr_time;
+		localization_base_lock.unlock();
+		TRACE_INFO_CLASS("reset localization_base_ time to curr lidar time: %f", curr_time);
 	}
 
 	const double time_diff_thresh = 0.15;
@@ -592,14 +604,36 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 
 	std::unique_lock<std::mutex> imu_buffer_lock(mtx_imu_buffer_);
 	if (curr_timestamp_imu < last_timestamp_imu_) {
-		imu_buffer_.clear();
-		TRACE_WARN_CLASS("clear imu buffer! curr imu time: %f < last imu time: %f", curr_timestamp_imu,
+		TRACE_WARN_CLASS("ignore this imu data, curr imu time: %f < last imu time: %f", curr_timestamp_imu,
 						 last_timestamp_imu_);
-	} else if (curr_timestamp_imu - last_timestamp_imu_ > 0.1) {
-		TRACE_WARN_CLASS("imu lose rate! imu diff: %f > thresh: %f", curr_timestamp_imu - last_timestamp_imu_, 0.1);
+		return;
+	} else if (curr_timestamp_imu - last_timestamp_imu_ > 1.) {
+		TRACE_WARN_CLASS("imu lose rate! imu diff: %f > thresh: %f", curr_timestamp_imu - last_timestamp_imu_, 1.);
+		TRACE_WARN_CLASS("curr_imu_time: %f, last_timestamp_imu_: %f", curr_timestamp_imu, last_timestamp_imu_);
+		TRACE_WARN_CLASS("imu buffer cleared.");
+		imu_buffer_.clear();
+
+		std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+		current_pose_.update_time = curr_timestamp_imu;
+		current_pose_lock.unlock();
+
+		//当lidaar由待机模式到正常模式时，lidar cb未执行，imu cb通常会先执行（频率高）
+		//导致localization_base_时间还是待机前的时间，所以在upsampling_current_pose()中，
+		//会因为正常逻辑(localization_base_ reset current_pose_)而时间diff过大，位姿出现跳变
+		//所以这里也reset localization_base_时间
+		std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
+		localization_base_.update_time = curr_timestamp_imu;
+		localization_base_lock.unlock();
+
+		TRACE_INFO_CLASS("reset current_pose_ time and localization_base_ time to curr imu time: %f",
+						 curr_timestamp_imu);
 	}
 	imu_buffer_.push_back(msg); // base_link下的acc，gyro
 	last_timestamp_imu_ = curr_timestamp_imu;
+	if (imu_buffer_.size() == 1) {
+		TRACE_INFO_CLASS("first imu time: %f, do nothing", imu_buffer_.front()->time_stamp);
+		return;
+	}
 	imu_buffer_lock.unlock();
 
 	std::unique_lock<std::mutex> localization_base_lock(mtx_localization_base_);
