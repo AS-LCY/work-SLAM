@@ -64,8 +64,8 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<int>("common.feats_down_size_thr", 200);
 		node_->get_parameter("common.feats_down_size_thr", loaded_param_.common.feats_down_size_thr);
 
-		node_->declare_parameter<std::vector<long int>>("common.cpu_id", std::vector<long int>());
-		node_->get_parameter("common.cpu_id", loaded_param_.common.cpu_id);
+		// node_->declare_parameter<std::vector<long int>>("common.cpu_id", std::vector<long int>());
+		// node_->get_parameter("common.cpu_id", loaded_param_.common.cpu_id);
 		node_->declare_parameter<bool>("common.use_wheel_odom", false);
 		node_->get_parameter("common.use_wheel_odom", loaded_param_.common.use_wheel_odom);
 		node_->declare_parameter<std::string>("common.sub_wheel_odom_topic", "/flbot/hardware/chassic_data");
@@ -92,14 +92,14 @@ class LocalizationModuleParamManager {
 		std::string map_directory_on_mower_temp = "";
 		std::vector<long int> cpu_id_on_mower_temp;
 
-		node_->declare_parameter<std::vector<long int>>("common.cpu_id_on_mower", std::vector<long int>());
-		node_->get_parameter("common.cpu_id_on_mower", cpu_id_on_mower_temp);
+		// node_->declare_parameter<std::vector<long int>>("common.cpu_id_on_mower", std::vector<long int>());
+		// node_->get_parameter("common.cpu_id_on_mower", cpu_id_on_mower_temp);
 		node_->declare_parameter<std::string>("common.map_directory_on_mower", "");
 		node_->get_parameter("common.map_directory_on_mower", map_directory_on_mower_temp);
 
 		if (loaded_param_.common.run_on_mower) {
 			loaded_param_.common.map_directory = map_directory_on_mower_temp;
-			loaded_param_.common.cpu_id = cpu_id_on_mower_temp;
+			// loaded_param_.common.cpu_id = cpu_id_on_mower_temp;
 		}
 
 		/// extrinsic *******************************************

@@ -19,11 +19,11 @@ LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatu
 	}
 
 	//**************************** CPU 绑定 *********************************
-	CPU_ZERO(&cpu_mask_); // 初始化 CPU 亲和性集合，将其设置为零
-	for (int i = 0; i < slam_param_.common.cpu_id.size(); i++) {
-		CPU_SET(slam_param_.common.cpu_id[i], &cpu_mask_); // 将线程绑定到 cpu_id 核心
-		TRACE_INFO_CLASS("set cpu: %d", static_cast<int>(slam_param_.common.cpu_id[i]));
-	}
+	// CPU_ZERO(&cpu_mask_); // 初始化 CPU 亲和性集合，将其设置为零
+	// for (int i = 0; i < slam_param_.common.cpu_id.size(); i++) {
+	// 	CPU_SET(slam_param_.common.cpu_id[i], &cpu_mask_); // 将线程绑定到 cpu_id 核心
+	// 	TRACE_INFO_CLASS("set cpu: %d", static_cast<int>(slam_param_.common.cpu_id[i]));
+	// }
 
 	//************** 初始化一些成员变量, after param load  ********************
 	module_member_init();
@@ -170,13 +170,13 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 
 	double t0 = omp_get_wtime();
 
-	if (slam_param_.common.cpu_id.size() > 0) {
-		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
-		if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
-			perror("pthread_setaffinity_np");
-			exit(EXIT_FAILURE);
-		}
-	}
+	// if (slam_param_.common.cpu_id.size() > 0) {
+	// 	pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
+	// 	if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
+	// 		perror("pthread_setaffinity_np");
+	// 		exit(EXIT_FAILURE);
+	// 	}
+	// }
 
 	static double last_slam_hb = hb_time_timer_slam_.load();
 	hb_time_timer_slam_.store(node_->now().seconds());
@@ -655,13 +655,13 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	// TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
 	// 				 curr_msg_time * 1e3, delay_lidar_ * 1e3);
 
-	if (slam_param_.common.cpu_id.size() > 0) {
-		pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
-		if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
-			perror("pthread_setaffinity_np");
-			exit(EXIT_FAILURE);
-		}
-	}
+	// if (slam_param_.common.cpu_id.size() > 0) {
+	// 	pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
+	// 	if (pthread_setaffinity_np(this_thread, sizeof(cpu_mask_), &cpu_mask_) < 0) {
+	// 		perror("pthread_setaffinity_np");
+	// 		exit(EXIT_FAILURE);
+	// 	}
+	// }
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
