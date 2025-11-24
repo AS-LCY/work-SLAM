@@ -220,6 +220,21 @@ target_link_libraries(lidar_slam_node
 #   lidar_slam
 # )
 
+
+execute_process(
+    COMMAND git log -1 --pretty=format:"Commit: %H%nAuthor: %an%nDate: %ad%nMessage: %s"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_INFO
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+file(WRITE ${CMAKE_BINARY_DIR}/version.txt "${GIT_INFO}\n")
+
+install(
+    FILES ${CMAKE_BINARY_DIR}/version.txt
+    DESTINATION .
+)
+
 ############# 安装配置 #############
 # 安装其他资源文件
 install(DIRECTORY 
