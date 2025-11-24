@@ -481,6 +481,11 @@ void BackEnd::performLoopClosure(double time) {
 		loopFindNearKeyframes(prevKeyframeCloud, loopKeyPre,
 							  20); //  选取historyKeyframeSearchNum个keyframe拼成submap
 	}
+	if (cureKeyframeCloud->empty() || prevKeyframeCloud->empty()) {
+		TRACE_ERR_CLASS("loop closure between %d(size = %d) and %d(size = %d), pointcloud empty!, ", loopKeyCur,
+						cureKeyframeCloud->points.size(), loopKeyPre, prevKeyframeCloud->points.size());
+		return;
+	}
 
 	// ICP Settings zx gicp ?
 	pcl::IterativeClosestPoint<PointType, PointType> icp;
