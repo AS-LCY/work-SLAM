@@ -189,6 +189,15 @@ class LidarSlam {
 			std::unique_lock<std::mutex> lk(mtx_pose_);
 			T_odom_lidar_time = T_odom_lidar_time_;
 			return T_odom_lidar_; // 10hz
+
+			// 200hz预测
+			// std::unique_lock<std::mutex> current_pose_lock(mtx_current_pose_);
+			// Eigen::Isometry3d T_odom_imu(
+			// 	Sophus::SE3d(current_pose_.imu_state.rot, current_pose_.imu_state.pos).matrix());
+			// T_odom_lidar_time = current_pose_.update_time;
+			// current_pose_lock.unlock();
+			// Eigen::Isometry3d T_odom_lidar = T_odom_imu * T_imu_lidar_;
+			// return T_odom_lidar;
 		} else {
 			TRACE_ERR_CLASS("In other mode, T_odom_lidar = I");
 			return Eigen::Isometry3d::Identity();
@@ -275,6 +284,7 @@ class LidarSlam {
 	bool check_lio_vel_abnormal(const state_ikfom& imu_state);
 	bool check_pointcloud_state_abnormal();
 	std::deque<WheelOdomData> getDataInRangeAndClean(double lidar_beg_time, double lidar_end_time);
+	void upsampling_current_pose(const double& init_acc_norm);
 
    private:
 	std::atomic<LocalizationStatus> local_thrd_status_{ LocalizationStatus::Inactive };
@@ -319,12 +329,14 @@ class LidarSlam {
 	double T_odom_lidar_time_ = 0.f;
 	Eigen::Isometry3d T_lidar_wheel_ = Eigen::Isometry3d::Identity();
 	Eigen::Isometry3d T_imu_baselink_ = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_imu_lidar_ = Eigen::Isometry3d::Identity();
 
 	bool thread_run_ = true;
 	bool globalLocalizationSuccess_ = false;
 
 	Localization_base localization_base_; // 10hz, T_odom_imu, 每次点云处理后更新，并作为current_pose 积分结果的base
 	Localization_base current_pose_; // 200hz, T_odom_imu
+	std::atomic_bool laser_updated_ = { false };
 
 	std::unique_ptr<KD_TREE<pcl::PointXYZINormal>> ikdtree_ = nullptr;
 
