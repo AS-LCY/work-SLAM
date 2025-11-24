@@ -306,6 +306,7 @@ void ImuProcess::Process(MeasureGroup& meas, esekfom::esekf& kf_state, PointClou
 
 			cov_acc_ = cov_acc_scale_; // 初始化完成后切换到cov_acc_scale
 			cov_gyr_ = cov_gyr_scale_;
+			printf("IMU Initial Done\n");
 		}
 
 		return;
