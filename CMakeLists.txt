@@ -221,26 +221,22 @@ target_link_libraries(lidar_slam_node
 # )
 
 
-execute_process(
-    COMMAND git log -1 --pretty=format:"Commit: %H%nAuthor: %an%nDate: %ad%nMessage: %s"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_INFO
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+set(VERSION_TEMPLATE ${CMAKE_CURRENT_SOURCE_DIR}/version.txt.in)
+set(VERSION_FILE ${CMAKE_BINARY_DIR}/version.txt)
+
+add_custom_target(generate_version ALL
+    COMMAND ${CMAKE_COMMAND}
+        -DSRC_DIR=${CMAKE_SOURCE_DIR}
+        -DTEMPLATE_FILE=${VERSION_TEMPLATE}
+        -DOUTPUT_FILE=${VERSION_FILE}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cmake
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/.git/HEAD
+        ${CMAKE_SOURCE_DIR}/.git/index
 )
 
-file(WRITE ${CMAKE_BINARY_DIR}/version.txt "${GIT_INFO}\n")
+install(FILES ${VERSION_FILE} DESTINATION .)
 
-install(
-    FILES ${CMAKE_BINARY_DIR}/version.txt
-    DESTINATION .
-)
-
-############# 安装配置 #############
-# 安装其他资源文件
-install(DIRECTORY 
-  launch config rviz_cfg params
-  DESTINATION share/${PROJECT_NAME}
-)
 
 # 使用 ament_auto_package 自动处理安装和导出
 ament_auto_package(

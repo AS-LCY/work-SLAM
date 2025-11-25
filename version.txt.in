@@ -1,0 +1,8 @@
+Branch: @GIT_BRANCH@
+Tag: @GIT_TAG@
+Commit: @GIT_COMMIT@
+Author: @GIT_AUTHOR@
+Date: @GIT_DATE@
+Message: @GIT_MESSAGE@
+Dirty: @GIT_DIRTY@
+Commit Count: @GIT_COMMIT_COUNT@
