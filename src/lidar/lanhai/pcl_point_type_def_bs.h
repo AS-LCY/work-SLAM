@@ -14,12 +14,14 @@
 struct BsPointXYZI
 {
   PCL_ADD_POINT4D;      // 16
-  float intensities;      // 4
+  // float intensities;      // 4
+  float intensity;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 } EIGEN_ALIGN16;
 POINT_CLOUD_REGISTER_POINT_STRUCT(BsPointXYZI, 
         (float, x, x)(float, y, y)(float, z, z)
-        (float, intensities, intensities)
+        // (float, intensities, intensities)
+        (float, intensity, intensity)
         )
 
 #endif

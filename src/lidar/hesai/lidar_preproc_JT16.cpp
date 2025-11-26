@@ -118,7 +118,8 @@ bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedP
             xyzin_point.x = curpt->x;
             xyzin_point.y = curpt->y;
             xyzin_point.z = curpt->z;
-            xyzin_point.intensity = curpt->intensities;            
+            // xyzin_point.intensity = curpt->intensities;
+            xyzin_point.intensity = curpt->intensity;            
             // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
             // xyzin_point.curvature = curpt->timestamp - header_time; // offset, unit = second
             xyzin_point.curvature = 0; // offset, unit = second, 没有时间信息
