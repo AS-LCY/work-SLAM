@@ -45,7 +45,7 @@ LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatu
 
 	ros_spinner_start();
 
-	monitor_ = std::make_unique<ProcessMonitor>(2.0);
+	monitor_ = std::make_unique<ProcessMonitor>(10.0);
 }
 
 LocalizationModule::~LocalizationModule() {}

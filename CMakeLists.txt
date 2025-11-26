@@ -238,6 +238,14 @@ add_custom_target(generate_version ALL
 install(FILES ${VERSION_FILE} DESTINATION .)
 
 
+############# 安装配置 #############
+# 安装其他资源文件
+install(DIRECTORY 
+  launch config rviz_cfg params
+  DESTINATION share/${PROJECT_NAME}
+)
+
+
 # 使用 ament_auto_package 自动处理安装和导出
 ament_auto_package(
   # # 显式添加非自动检测的依赖
