@@ -1,184 +1,188 @@
 #include "lidar/hesai/lidar_preproc_JT16.h"
 
-
 namespace localization_module {
 
-LidarPreprocJT16::LidarPreprocJT16(rclcpp::Node::SharedPtr node): LidarPreprocParent(node){
-    
-    if(!set_param(node)){
-        // ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
-    }else {
-        // ROS_INFO("\033[0;32mSet lidar-M300 param successfully!\033[0m");
-        // ROS_INFO("Set lidar-M300 param successfully!");
-    }
-    // ROS_INFO("\033[1;32mReset to lidar_preproc_M300 successfully!\033[0m");
-    // ROS_INFO("Reset to lidar_preproc_M300 successfully!");
+LidarPreprocJT16::LidarPreprocJT16(rclcpp::Node::SharedPtr node) : LidarPreprocParent(node) {
+	if (!set_param(node)) {
+		// ROS_ERROR_STREAM(RED << "Set lidar param failed!" << RESET);
+	} else {
+		// ROS_INFO("\033[0;32mSet lidar-M300 param successfully!\033[0m");
+		// ROS_INFO("Set lidar-M300 param successfully!");
+	}
+	// ROS_INFO("\033[1;32mReset to lidar_preproc_M300 successfully!\033[0m");
+	// ROS_INFO("Reset to lidar_preproc_M300 successfully!");
+
+	cloud_dense_.reset(new PointCloudType());
 }
 
-
-LidarPreprocJT16::~LidarPreprocJT16(){
-
-}
+LidarPreprocJT16::~LidarPreprocJT16() {}
 
 ///////////////// 入口函数 /////////////////
-bool LidarPreprocJT16::pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr& pcl_xyzin_out){
-    if(extract_cloud_method_ == 0){
-        cloud_dense_->clear();
-        msg2pcl_clip(ros_msg_in, cloud_dense_);
-    
-        pcl_xyzin_out->clear();
-        sampling_cloud(cloud_dense_, pcl_xyzin_out);
-    }else if (extract_cloud_method_ == 3){
+bool LidarPreprocJT16::pre_process(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in,
+								   PointCloudType::Ptr& pcl_xyzin_out) {
+	if (extract_cloud_method_ == 0) {
+		cloud_dense_->clear();
+		msg2pcl_clip(ros_msg_in, cloud_dense_);
 
-    }else{
-        return false;
-    }
+		pcl_xyzin_out->clear();
+		sampling_cloud(cloud_dense_, pcl_xyzin_out);
+	} else if (extract_cloud_method_ == 3) {
+	} else {
+		return false;
+	}
 
-    return true;
+	return true;
 }
-
 
 // current used
 /// TODO: point-type
-bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in, PointCloudType::Ptr pcl_xyzin_out){
+bool LidarPreprocJT16::msg2pcl_clip(const sensor_msgs::msg::PointCloud2::SharedPtr ros_msg_in,
+									PointCloudType::Ptr pcl_xyzin_out) {
+	// ROS_INFO_ONCE("M300: ros_msg_in --> pcl_xyzin_out");
 
-    // ROS_INFO_ONCE("M300: ros_msg_in --> pcl_xyzin_out");
+	int cloud_num = ros_msg_in->height * ros_msg_in->width;
+	// double header_time = ros_msg_in->header.stamp.toSec();
+	double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
 
-    int cloud_num = ros_msg_in->height * ros_msg_in->width;
-    // double header_time = ros_msg_in->header.stamp.toSec(); 
-    double header_time = rclcpp::Time(ros_msg_in->header.stamp).seconds();
+	///// MetaData --- header
+	pcl::PCLHeader pcl_header;
+	// pcl_header.seq = ros_msg_in->header.seq;
+	// pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
+	pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
+	pcl_header.frame_id = ros_msg_in->header.frame_id;
+	///// MetaData --- field
+	std::vector<pcl::PCLPointField> pcl_fields;
 
-    ///// MetaData --- header 
-    pcl::PCLHeader pcl_header;
-    // pcl_header.seq = ros_msg_in->header.seq;
-    // pcl_header.stamp = ros_msg_in->header.stamp.toNSec() / 1000ull;
-    pcl_header.stamp = rclcpp::Time(ros_msg_in->header.stamp).nanoseconds() / 1000ull;
-    pcl_header.frame_id = ros_msg_in->header.frame_id;
-    ///// MetaData --- field
-    std::vector<pcl::PCLPointField> pcl_fields;
-    
-    pcl_fields.resize(ros_msg_in->fields.size());
-    std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
-    int i = 0;
-    for(; it != ros_msg_in->fields.end(); ++it, ++i) {
-      pcl_fields[i].name = it->name;
-      pcl_fields[i].offset = it->offset;
-      pcl_fields[i].datatype = it->datatype;
-      pcl_fields[i].count = it->count;
-    //   ROS_INFO_STREAM(RED<<"field-name: "<<pcl_fields[i].name<<RESET); // check filed name
-    }
-    //// create Mapping
-    pcl::MsgFieldMap field_map;
-    pcl::createMapping<BsPointXYZI> (pcl_fields, field_map);
+	pcl_fields.resize(ros_msg_in->fields.size());
+	std::vector<sensor_msgs::msg::PointField>::const_iterator it = ros_msg_in->fields.begin();
+	int i = 0;
+	for (; it != ros_msg_in->fields.end(); ++it, ++i) {
+		pcl_fields[i].name = it->name;
+		pcl_fields[i].offset = it->offset;
+		pcl_fields[i].datatype = it->datatype;
+		pcl_fields[i].count = it->count;
+		//   ROS_INFO_STREAM(RED<<"field-name: "<<pcl_fields[i].name<<RESET); // check filed name
+	}
+	//// create Mapping
+	pcl::MsgFieldMap field_map;
+	// pcl::createMapping<BsPointXYZI> (pcl_fields, field_map);
+	pcl::createMapping<RsPointXYZIRT>(pcl_fields, field_map);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    /// fill pcl_xyzin_out
+	///////////////////////////////////////////////////////////////////////////////////////////
+	/// fill pcl_xyzin_out
 
-    // 说明： 每一条 ring 的第一个点的数据，存于 height = 0；
-    uint valid_num = 0;
-    pcl_xyzin_out->points.reserve(cloud_num);
-    for (std::uint32_t h = 0; h < ros_msg_in->height; ++h){
-        const std::uint8_t* h_data = &ros_msg_in->data[h * ros_msg_in->row_step];
-        for (std::uint32_t w = 0; w < ros_msg_in->width; ++w){
-            const std::uint8_t* msg_data = h_data + w * ros_msg_in->point_step;
-            auto col = h;
-            auto row = w;
-            BsPointXYZI temp_point;
-            BsPointXYZI* curpt = &temp_point;
-            std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
+	// TRACE_INFO("\n\n\n");
 
-            for (const pcl::detail::FieldMapping& mapping : field_map){
-                memcpy (curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
-            }
+	// 说明： 每一条 ring 的第一个点的数据，存于 height = 0；
+	uint valid_num = 0;
+	pcl_xyzin_out->points.reserve(cloud_num);
+	for (std::uint32_t h = 0; h < ros_msg_in->height; ++h) {
+		const std::uint8_t* h_data = &ros_msg_in->data[h * ros_msg_in->row_step];
+		for (std::uint32_t w = 0; w < ros_msg_in->width; ++w) {
+			const std::uint8_t* msg_data = h_data + w * ros_msg_in->point_step;
+			auto col = h;
+			auto row = w;
+			// BsPointXYZI temp_point;
+			// BsPointXYZI* curpt = &temp_point;
+			RsPointXYZIRT temp_point;
+			RsPointXYZIRT* curpt = &temp_point;
 
-            ///// make it dense
-            if (lidar_common::is_nan_pt(*curpt)) { continue; } 
-            
-            // if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
-            //    continue;
-            // }
-            double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
-            if(range_square < blind_range_square_ || range_square > max_range_square_ || curpt->z < z_range_[0] || curpt->z > z_range_[1]){
-                continue;
-            }
+			std::uint8_t* curpt_data = reinterpret_cast<std::uint8_t*>(curpt);
 
-            // // if(row % point_filter_num_ == 0){
-            // if(col % point_filter_num_ == 0 && row % ring_filter_num_ == 0){
-            //     PointType xyzin_point;
-            //     xyzin_point.x = curpt->x;
-            //     xyzin_point.y = curpt->y;
-            //     xyzin_point.z = curpt->z;
-            //     xyzin_point.intensity = curpt->intensity;
-                
-            //     xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
-            //     pcl_xyzin_out->points.push_back(xyzin_point);
-            // }
+			for (const pcl::detail::FieldMapping& mapping : field_map) {
+				memcpy(curpt_data + mapping.struct_offset, msg_data + mapping.serialized_offset, mapping.size);
+			}
 
-            PointType xyzin_point;
-            xyzin_point.x = curpt->x;
-            xyzin_point.y = curpt->y;
-            xyzin_point.z = curpt->z;
-            // xyzin_point.intensity = curpt->intensities;
-            xyzin_point.intensity = curpt->intensity;            
-            // xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
-            // xyzin_point.curvature = curpt->timestamp - header_time; // offset, unit = second
-            xyzin_point.curvature = 0; // offset, unit = second, 没有时间信息
+			///// make it dense
+			if (lidar_common::is_nan_pt(*curpt)) {
+				continue;
+			}
 
-            pcl_xyzin_out->points.push_back(xyzin_point);
+			// if(abs(curpt->x) > thr_region_x_ || abs(curpt->y) > thr_region_y_ || abs(curpt->z) > thr_region_z_){
+			//    continue;
+			// }
+			double range_square = curpt->x * curpt->x + curpt->y * curpt->y + curpt->z * curpt->z;
+			if (range_square < blind_range_square_ || range_square > max_range_square_ || curpt->z < z_range_[0] ||
+				curpt->z > z_range_[1]) {
+				continue;
+			}
 
-        }
-    }
-    pcl_xyzin_out->points.shrink_to_fit();
-    ///// Copy info fields
-    pcl_xyzin_out->header   = pcl_header;
-    pcl_xyzin_out->width    = pcl_xyzin_out->points.size();
-    pcl_xyzin_out->height   = 1;
-    pcl_xyzin_out->is_dense = 1;
+			// // if(row % point_filter_num_ == 0){
+			// if(col % point_filter_num_ == 0 && row % ring_filter_num_ == 0){
+			//     PointType xyzin_point;
+			//     xyzin_point.x = curpt->x;
+			//     xyzin_point.y = curpt->y;
+			//     xyzin_point.z = curpt->z;
+			//     xyzin_point.intensity = curpt->intensity;
 
-    return true;
+			//     xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
+			//     pcl_xyzin_out->points.push_back(xyzin_point);
+			// }
+
+			PointType xyzin_point;
+			xyzin_point.x = curpt->x;
+			xyzin_point.y = curpt->y;
+			xyzin_point.z = curpt->z;
+			// xyzin_point.intensity = curpt->intensities;
+			xyzin_point.intensity = curpt->intensity;
+			// xyzin_point.curvature = (curpt->timestamp - header_time) * 1000; // offset, unit = ms
+			xyzin_point.curvature = curpt->timestamp - header_time; // offset, unit = second
+			// xyzin_point.curvature = 0; // offset, unit = second, 没有时间信息
+
+			// TRACE_INFO("valid_num= %d, curpt->timestamp: %lf, header_time: %lf, offset: %lf ms", valid_num,
+			// 		   curpt->timestamp, header_time, (curpt->timestamp - header_time) * 1000);
+			valid_num++;
+
+			pcl_xyzin_out->points.push_back(xyzin_point);
+		}
+	}
+	pcl_xyzin_out->points.shrink_to_fit();
+	///// Copy info fields
+	pcl_xyzin_out->header = pcl_header;
+	pcl_xyzin_out->width = pcl_xyzin_out->points.size();
+	pcl_xyzin_out->height = 1;
+	pcl_xyzin_out->is_dense = 1;
+
+	return true;
 }
 
+bool LidarPreprocJT16::set_param(rclcpp::Node::SharedPtr node) {
+	LocalizationModuleParamManager* param_manager = LocalizationModuleParamManager::Instance(node);
+	// const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
+	// std::shared_ptr<const lidar_slam::LidarSlamParam> loaded_param = param_manager->get_loaded_param();
+	const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
+	// if (loaded_param == NULL) {
+	//     // ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
+	//     return false;
+	// }else{
+	// param_ = loaded_param->lidar_preproc;
 
-bool LidarPreprocJT16::set_param(rclcpp::Node::SharedPtr node){
+	// thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
+	// thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
+	// thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
 
-    LocalizationModuleParamManager *param_manager = LocalizationModuleParamManager::Instance(node);
-    // const lidar_slam::LidarSlamParam* loaded_param = param_manager->get_loaded_param();
-    // std::shared_ptr<const lidar_slam::LidarSlamParam> loaded_param = param_manager->get_loaded_param();
-    const lidar_slam::LidarSlamParam& loaded_param = param_manager->get_loaded_param();
-    // if (loaded_param == NULL) {
-    //     // ROS_ERROR_STREAM(RED << "loaded_param is NULL" << RESET);
-    //     return false;
-    // }else{
-        // param_ = loaded_param->lidar_preproc;
+	// blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
+	// max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
 
-        // thr_region_x_ = loaded_param->lidar_preproc.point_filter_distance[0];
-        // thr_region_y_ = loaded_param->lidar_preproc.point_filter_distance[1];
-        // thr_region_z_ = loaded_param->lidar_preproc.point_filter_distance[2];
+	// point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
+	// ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
 
-        // blind_range_square_ = loaded_param->lidar_preproc.blind_distance * loaded_param->lidar_preproc.blind_distance;
-        // max_range_square_ = loaded_param->lidar_preproc.max_distance * loaded_param->lidar_preproc.max_distance;
+	// cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
 
-        // point_filter_num_ = loaded_param->lidar_preproc.point_filter_num;
-        // ring_filter_num_ = loaded_param->lidar_preproc.ring_filter_num;
+	// ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
+	// ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
+	// ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
+	// ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
 
-        // cloud_size_to_keep_ = loaded_param->lidar_preproc.cloud_size_to_keep;
-
-        // ROS_ERROR("thr_region_x_ : %lf", thr_region_x_);
-        // ROS_ERROR("thr_region_y_ : %lf", thr_region_y_);
-        // ROS_ERROR("blind_range_square_ : %lf", blind_range_square_);
-        // ROS_ERROR("point_filter_num_ : %d", point_filter_num_);
-
-        return true;
-    // }
+	return true;
+	// }
 }
-
-
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 // // 间隔采样
-// void LidarPreprocJT16::extract_cloud_by_interval_sampling(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in, PointCloudType::Ptr pcl_xyzin_out){
+// void LidarPreprocJT16::extract_cloud_by_interval_sampling(const pcl::PointCloud<BsPointXYZI>::Ptr pcl_rs_in,
+// PointCloudType::Ptr pcl_xyzin_out){
 
 // }
-
 
 } // namespace localization_module
