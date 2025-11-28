@@ -546,6 +546,8 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
 		localization_status_.store(LocalizationStatus::Inactive);
 		return;
+	} else {
+		localization_status_.store(LocalizationStatus::Normal);
 	}
 
 	auto node_status = local_node_status_.load(); //加载地图成功后，Normal；其他时候为Inactive
@@ -588,7 +590,11 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 		curr_running_module_status != ModuleStatus::MODULE_SEC_MAPPING) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
 		mapping_status_.store(MappingStatus::Inactive);
+		TRACE_INFO_CLASS("not in mapping mode or sec_mapping mode, mapping_status == Inactive");
 		return;
+	} else {
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Standby);
+		// TRACE_INFO_CLASS("mapping_status == Standby by default");
 	}
 
 	auto node_status = mapping_node_status_.load();
@@ -606,6 +612,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	if (node_status == MappingNodeStatus::Inactive) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
 		mapping_status_.store(MappingStatus::Inactive);
+		TRACE_INFO_CLASS("node_status == Inactive, set mapping_status == Inactive");
 		return;
 	} else if (node_status == MappingNodeStatus::Normal) {
 		if (slam_run_status == SlamRunStatus::Normal) {
@@ -821,8 +828,8 @@ bool LocalizationModule::module_member_init() {
 
 	health_status_.store(HealthStatus::AllOk);
 
-	mapping_node_status_.store(MappingNodeStatus::Inactive);
-	local_node_status_.store(LocalNodeStatus::Inactive);
+	mapping_node_status_.store(MappingNodeStatus::Normal);
+	local_node_status_.store(LocalNodeStatus::Normal);
 
 	mapping_status_.store(MappingStatus::Inactive);
 	localization_status_.store(LocalizationStatus::Inactive);
