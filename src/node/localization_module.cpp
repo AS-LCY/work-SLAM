@@ -590,7 +590,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 		curr_running_module_status != ModuleStatus::MODULE_SEC_MAPPING) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
 		mapping_status_.store(MappingStatus::Inactive);
-		TRACE_INFO_CLASS("not in mapping mode or sec_mapping mode, mapping_status == Inactive");
+		// TRACE_INFO_CLASS("not in mapping mode or sec_mapping mode, mapping_status == Inactive");
 		return;
 	} else {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Standby);
@@ -612,7 +612,7 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	if (node_status == MappingNodeStatus::Inactive) {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
 		mapping_status_.store(MappingStatus::Inactive);
-		TRACE_INFO_CLASS("node_status == Inactive, set mapping_status == Inactive");
+		// TRACE_INFO_CLASS("node_status == Inactive, set mapping_status == Inactive");
 		return;
 	} else if (node_status == MappingNodeStatus::Normal) {
 		if (slam_run_status == SlamRunStatus::Normal) {
