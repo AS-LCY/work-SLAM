@@ -111,7 +111,7 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 	// 定位
-	localization_.reset(new Localization(config_param_.localization, config_param_.re_localization.lc_config));
+	localization_.reset(new Localization(config_param_.localization, config_param_.re_localization.relocalize_config));
 
 	global_localization_.reset(new GlobalLocalization());
 	cloud_map_manager_.reset(new CloudMap());
@@ -307,7 +307,7 @@ void LidarSlam::localizationThread() {
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
 	const double integrate_scan_move_dist_thresh = config_param_.re_localization.integrate_scan_move_dist_thresh;
-	const auto& relocalize_params = config_param_.re_localization.lc_config;
+	const auto& relocalize_params = config_param_.re_localization.relocalize_config;
 
 	pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
 	PointCloudType::Ptr ds_odom_cloud_localize(new PointCloudType());
@@ -361,10 +361,12 @@ void LidarSlam::localizationThread() {
 					//在重定位模式下，移动的距离满足阈值要求，然后触发全局重定位
 					if (!integrate_init_pose_) {
 						integrate_init_pose_ = true;
+						T_odom_lidar_last_ = T_odom_lidar_curr_;
 						continue;
 					}
 					Eigen::Vector3d delta_trans_vec =
 						T_odom_lidar_curr_.translation() - T_odom_lidar_last_.translation();
+					T_odom_lidar_last_ = T_odom_lidar_curr_;
 					double delta_trans = std::sqrt(delta_trans_vec.x() * delta_trans_vec.x() +
 												   delta_trans_vec.y() * delta_trans_vec.y());
 					if (integrate_scan_move_dist_ < integrate_scan_move_dist_thresh) {
@@ -437,7 +439,7 @@ void LidarSlam::localizationThread() {
 
 				if (need_localize_) { // 1hz循环一次，每60s定位一次
 					TRACE_INFO_CLASS("localizationThread, point count: %d", temp->points.size());
-					LocalizeStatus localize_status;
+					LocalizeResultStatus localize_status;
 					LocalizationStatus localize_state_status = LocalizationStatus::Inactive;
 
 					//计算从上次匹配到当前匹配时刻，lio估计的T_lidar_delta

@@ -254,6 +254,10 @@ class KISSMatcher {
 
 	double getProcessingTime();
 
+	double getSourceExtractionTime();
+
+	double getTargetExtractionTime();
+
 	double getExtractionTime();
 
 	double getRejectionTime();
@@ -293,6 +297,8 @@ class KISSMatcher {
 	// '-1' means that time has not been updated
 	double processing_time_ = -1.0;
 	double extraction_time_ = -1.0;
+	double extraction_source_cloud_time_ = -1.0;
+	double extraction_target_cloud_time_ = -1.0;
 	double matching_time_ = -1.0;
 	double solver_time_ = -1.0;
 

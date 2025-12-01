@@ -109,7 +109,7 @@
       # sub_imu_topic: "/lidar_imu"
       sub_imu_topic: "/mcu_imu"
 
-      blind_distance: 0.2 # 忽略掉距离雷达小于这个阈值的点
+      blind_distance: 0.3 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
       z_range: [-5.0, 20.0] # z > 20m点在预处理阶段被过滤掉了
 

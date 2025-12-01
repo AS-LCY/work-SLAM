@@ -141,7 +141,7 @@ struct GICPConfig {
 	double overlap_threshold_ = 90.0;
 };
 
-struct LoopClosureConfig {
+struct RelocalizationConfig {
 	bool verbose_ = true;
 	bool enable_global_registration_ = true;
 	bool is_multilayer_env_ = false;
@@ -162,7 +162,7 @@ struct RegOutput {
 	Eigen::Matrix4d pose_ = Eigen::Matrix4d::Identity();
 };
 
-struct LocalizeStatus {
+struct LocalizeResultStatus {
 	bool converged = false;
 	double fit_score = 0.f;
 	int num_inliers = 0;

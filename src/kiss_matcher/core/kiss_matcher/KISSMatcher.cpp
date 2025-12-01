@@ -68,6 +68,7 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 	// Note(hlim) Some erroneous points are filtered out
 	// Thus, # of `src_keypoints_` <= `src_processed_`
 	faster_pfh_->ComputeFeature(src_keypoints_, src_descriptors_);
+	auto t_source_cloud_compute_feature = std::chrono::high_resolution_clock::now();
 
 	faster_pfh_->setInputCloud(tgt_processed_);
 
@@ -96,9 +97,16 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 	}
 	auto t_end = std::chrono::high_resolution_clock::now();
 
-	processing_time_ = std::chrono::duration_cast<std::chrono::duration<double>>(t_process - t_init).count();
-	extraction_time_ = std::chrono::duration_cast<std::chrono::duration<double>>(t_mid - t_process).count();
-	matching_time_ = std::chrono::duration_cast<std::chrono::duration<double>>(t_end - t_mid).count();
+	processing_time_ =
+		std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_process - t_init).count();
+	extraction_source_cloud_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
+										t_source_cloud_compute_feature - t_process)
+										.count();
+	extraction_target_cloud_time_ =
+		std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_mid - t_source_cloud_compute_feature)
+			.count();
+	extraction_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_mid - t_process).count();
+	matching_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_end - t_mid).count();
 
 	if (!target_data_assigned_.load()) {
 		target_data_assigned_.store(true);
@@ -151,7 +159,7 @@ RegistrationSolution KISSMatcher::solve(const Eigen::Matrix<double, 3, Eigen::Dy
 	std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
 	solver_->solve(src_matched, tgt_matched);
 	std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-	solver_time_ = std::chrono::duration_cast<std::chrono::duration<double>>(t_end - t_start).count();
+	solver_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_end - t_start).count();
 
 	return solver_->getSolution();
 }
@@ -179,6 +187,10 @@ double KISSMatcher::getProcessingTime() { return processing_time_; }
 
 double KISSMatcher::getExtractionTime() { return extraction_time_; }
 
+double KISSMatcher::getSourceExtractionTime() { return extraction_source_cloud_time_; }
+
+double KISSMatcher::getTargetExtractionTime() { return extraction_target_cloud_time_; }
+
 double KISSMatcher::getRejectionTime() { return robin_matching_->getRejectionTime(); }
 
 double KISSMatcher::getMatchingTime() { return matching_time_; }
@@ -187,17 +199,21 @@ double KISSMatcher::getSolverTime() { return solver_time_; }
 
 void KISSMatcher::print() {
 	const double t_p = getProcessingTime();
+	const double t_source_e = getSourceExtractionTime();
+	const double t_target_e = getTargetExtractionTime();
 	const double t_e = getExtractionTime();
 	const double t_r = getRejectionTime();
 	const double t_m = getMatchingTime();
 	const double t_s = getSolverTime();
 
 	TRACE_INFO_CLASS("============== Time ==============\n");
-	TRACE_INFO_CLASS("Voxelization: %f sec\n", t_p);
-	TRACE_INFO_CLASS("Extraction : %f sec\n", t_e);
-	TRACE_INFO_CLASS("Pruning : %f sec\n", t_r);
-	TRACE_INFO_CLASS("Matching : %f sec\n", t_m);
-	TRACE_INFO_CLASS("Solving : %f sec\n", t_s);
+	TRACE_INFO_CLASS("Voxelization: %f ms", t_p);
+	TRACE_INFO_CLASS("Extraction source : %f ms", t_source_e);
+	TRACE_INFO_CLASS("Extraction target: %f ms", t_target_e);
+	TRACE_INFO_CLASS("Extraction source + target: %f ms", t_e);
+	TRACE_INFO_CLASS("Pruning : %f ms", t_r);
+	TRACE_INFO_CLASS("Matching : %f ms", t_m);
+	TRACE_INFO_CLASS("Solving : %f ms", t_s);
 	TRACE_INFO_CLASS("----------------------------------\n");
 	TRACE_INFO_CLASS("\033[1;32mTotal : %f sec\033[0m\n", t_p + t_e + t_r + t_m + t_s);
 

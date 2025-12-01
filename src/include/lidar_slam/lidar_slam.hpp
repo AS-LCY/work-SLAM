@@ -269,7 +269,7 @@ class LidarSlam {
 	LocalizationStatus get_local_thrd_status() { return local_thrd_status_.load(); }
 	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
 	SecmapRelocalThrdStatus get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
-	inline LocalizeStatus get_localize_status() const { return localize_status_; }
+	inline LocalizeResultStatus get_localize_status() const { return localize_status_; }
 	inline bool get_filter_initialized() const { return filter_processed_first_laser_; }
 
    private:
@@ -392,7 +392,7 @@ class LidarSlam {
 	int feats_down_size_ = 0;
 	Eigen::Matrix<double, 6, 1> lio_state_diag_cov_ = Eigen::Matrix<double, 6, 1>::Zero();
 
-	LocalizeStatus localize_status_;
+	LocalizeResultStatus localize_status_;
 
 	//定位线程使用
 	Eigen::Isometry3d T_odom_lidar_curr_ = Eigen::Isometry3d::Identity();

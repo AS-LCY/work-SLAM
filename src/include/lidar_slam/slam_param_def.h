@@ -52,7 +52,7 @@ struct ReLocalizationParam {
 	double score_thr;
 	int time_out_thr; // 以秒为单位
 	double integrate_scan_move_dist_thresh;
-	LoopClosureConfig lc_config;
+	RelocalizationConfig relocalize_config;
 };
 
 struct MappingParam {

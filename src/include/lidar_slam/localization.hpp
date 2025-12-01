@@ -43,11 +43,11 @@ class Localization {
 
 	using LocalizationStatus = common_status::LocalizationStatus;
 
-	Localization(LocalizationParam param, const LoopClosureConfig& relocalize_params);
+	Localization(LocalizationParam param, const RelocalizationConfig& relocalize_params);
 	~Localization();
 	bool loadMap(std::string path);
 
-	void localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
+	void localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeResultStatus& localize_status,
 				  LocalizationStatus& localize_state_status, const Sophus::SE3d& T_odom_lidar,
 				  const Sophus::SE3d& T_lidar_delta, const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
 
@@ -110,7 +110,7 @@ class Localization {
 	double max_correspondence_dist_square_;
 
 	// global localize
-	LoopClosureConfig config_;
+	RelocalizationConfig relocalize_config_;
 	std::shared_ptr<kiss_matcher::KISSMatcher> global_reg_handler_ = nullptr;
 	std::shared_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>> local_reg_handler_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr src_cloud_ = nullptr;

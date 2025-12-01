@@ -4,9 +4,9 @@
 using namespace kiss_matcher;
 
 namespace lidar_slam {
-Localization::Localization(LocalizationParam param, const LoopClosureConfig& relocalize_params) {
+Localization::Localization(LocalizationParam param, const RelocalizationConfig& relocalize_params) {
 	param_ = param;
-	config_ = relocalize_params;
+	relocalize_config_ = relocalize_params;
 	log_info_manager_.reset_log_info();
 
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
@@ -43,11 +43,12 @@ Localization::Localization(LocalizationParam param, const LoopClosureConfig& rel
 }
 
 void Localization::initGlobalLocalize() {
-	config_.matcher_config_ = kiss_matcher::KISSMatcherConfig(config_.voxel_res_, false); //不对点云进行降采样
-	config_.matcher_config_.use_quatro_ = true;
+	relocalize_config_.matcher_config_ = kiss_matcher::KISSMatcherConfig(
+		relocalize_config_.voxel_res_, false); //不对点云进行降采样，因为已经在lidar_slam.cpp中integrate前降采样了
+	relocalize_config_.matcher_config_.use_quatro_ = true;
 
-	auto& gc = config_.gicp_config_;
-	gc.max_corr_dist_ = config_.voxel_res_ * gc.scale_factor_for_corr_dist_;
+	auto& gc = relocalize_config_.gicp_config_;
+	gc.max_corr_dist_ = relocalize_config_.voxel_res_ * gc.scale_factor_for_corr_dist_;
 
 	src_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	tgt_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -55,13 +56,13 @@ void Localization::initGlobalLocalize() {
 	aligned_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	debug_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-	global_reg_handler_ = std::make_shared<kiss_matcher::KISSMatcher>(config_.matcher_config_);
+	global_reg_handler_ = std::make_shared<kiss_matcher::KISSMatcher>(relocalize_config_.matcher_config_);
 	local_reg_handler_ = std::make_shared<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>();
 
 	local_reg_handler_->setNumThreads(gc.num_threads_);
 	local_reg_handler_->setCorrespondenceRandomness(gc.correspondence_randomness_);
 	local_reg_handler_->setMaxCorrespondenceDistance(gc.max_corr_dist_);
-	local_reg_handler_->setVoxelResolution(config_.voxel_res_);
+	local_reg_handler_->setVoxelResolution(relocalize_config_.voxel_res_);
 	local_reg_handler_->setRegistrationType("VGICP"); // "VGICP" or "GICP"
 }
 
@@ -198,7 +199,7 @@ bool Localization::loadMap(std::string path) {
 	return true;
 }
 
-void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeStatus& localize_status,
+void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, LocalizeResultStatus& localize_status,
 							LocalizationStatus& localize_state_status, const Sophus::SE3d& T_odom_lidar,
 							const Sophus::SE3d& T_lidar_delta,
 							const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local) {
@@ -476,17 +477,17 @@ RegOutput Localization::icpAlignment() {
 	reg_output.pose_ = local_reg_handler_->getFinalTransformation().cast<double>();
 	// if matchness overlapness is over than threshold,
 	// that means the registration result is likely to be sufficiently overlapped
-	if (overlapness > config_.gicp_config_.overlap_threshold_) {
+	if (overlapness > relocalize_config_.gicp_config_.overlap_threshold_) {
 		reg_output.is_valid_ = true;
 		reg_output.is_converged_ = true;
 	}
-	if (config_.verbose_) {
-		if (overlapness >= config_.gicp_config_.overlap_threshold_) {
+	if (relocalize_config_.verbose_) {
+		if (overlapness >= relocalize_config_.gicp_config_.overlap_threshold_) {
 			TRACE_INFO_CLASS("global localization: local refine overlapness: %f% >= thresh: %f%", overlapness,
-							 config_.gicp_config_.overlap_threshold_);
+							 relocalize_config_.gicp_config_.overlap_threshold_);
 		} else {
 			TRACE_ERR_CLASS("global localization: local refine overlapness: %f% < thresh: %f%", overlapness,
-							config_.gicp_config_.overlap_threshold_);
+							relocalize_config_.gicp_config_.overlap_threshold_);
 		}
 	}
 	return reg_output;
@@ -510,17 +511,19 @@ RegOutput Localization::coarseToFineAlignment() {
 
 	const size_t num_inliers = global_reg_handler_->getNumFinalInliers();
 	reg_output.num_final_inliers_ = num_inliers; // TODO(jxl): 内点个数怎么计算的？
-	if (config_.verbose_) {
-		if (num_inliers >= config_.num_inliers_threshold_) {
-			TRACE_INFO_CLASS("final inliers = % >= thresh = %d", num_inliers, config_.num_inliers_threshold_);
+	if (relocalize_config_.verbose_) {
+		if (num_inliers >= relocalize_config_.num_inliers_threshold_) {
+			TRACE_INFO_CLASS("final inliers = % >= thresh = %d", num_inliers,
+							 relocalize_config_.num_inliers_threshold_);
 		} else {
-			TRACE_ERR_CLASS("ERROR: final inliers = % < thresh = %d", num_inliers, config_.num_inliers_threshold_);
+			TRACE_ERR_CLASS("ERROR: final inliers = % < thresh = %d", num_inliers,
+							relocalize_config_.num_inliers_threshold_);
 		}
 	}
 
 	// NOTE(hlim): A small number of inliers suggests that the initial alignment may have failed,
 	// so fine alignment is meaningless.
-	if (!solution.valid || num_inliers < config_.num_inliers_threshold_) {
+	if (!solution.valid || num_inliers < relocalize_config_.num_inliers_threshold_) {
 		return reg_output;
 	} else {
 		const auto& fine_output = icpAlignment();
@@ -535,6 +538,15 @@ RegOutput Localization::coarseToFineAlignment() {
 
 bool Localization::globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr odom_cloud,
 									  const Eigen::Isometry3d& T_odom_lidar_curr, const int try_num) {
+	if (!odom_cloud || !CloudGlobalMapIn_) {
+		TRACE_ERR_CLASS("point cloud ptr is nullptr.");
+		return false;
+	}
+	if (odom_cloud->points.size() < 200) {
+		TRACE_WARN_CLASS("relocalization input cloud size too small: %d < 200", odom_cloud->points.size());
+		return false;
+	}
+
 	*src_cloud_ = *odom_cloud;
 	*tgt_cloud_ = *CloudGlobalMapIn_;
 
