@@ -40,21 +40,23 @@ struct KISSMatcherConfig {
 
 	// Graph-theoretic outlier rejection parms
 	float thr_linearity_ = 1.0; // 1.0 means that we won't use linearity-based filtering
-	// NOTE(hlim): The final `robin_noise_bound` becomes `voxel_size_` * `robin_noise_bound_gain_`
+	// NOTE(hlim): The final `robin_noise_bound` becomes `voxel_size_` *
+	// `robin_noise_bound_gain_`
 	float robin_noise_bound_gain_ = 1.0;
 	float robin_noise_bound_ = voxel_size_ * robin_noise_bound_gain_;
 
 	// matching params
-	// NOTE(hlim): For better usability for map-level registration, I set `true` as a default
-	// Enabling `use_ratio_test_` may cause a slight slowdown,
-	// and its impact is insignificant at the scan level.
-	bool use_ratio_test_ = true;
+	// NOTE(hlim): For better usability for map-level registration, I set `true`
+	// as a default Enabling `use_ratio_test_` may cause a slight slowdown, and
+	// its impact is insignificant at the scan level.
+	bool use_ratio_test_ = false;
 	std::string robin_mode_ = "max_core";
 	float tuple_scale_ = 0.95;
 	int num_max_corr_ = 5000;
 
 	// Solver params
-	// NOTE(hlim): The final `solver_noise_bound` becomes `voxel_size_` * `solver_noise_bound_gain_`
+	// NOTE(hlim): The final `solver_noise_bound` becomes `voxel_size_` *
+	// `solver_noise_bound_gain_`
 	float solver_noise_bound_gain_ = 1.0;
 	float solver_noise_bound_ = voxel_size_ * solver_noise_bound_gain_;
 	bool use_quatro_ = false;
@@ -93,8 +95,10 @@ struct KISSMatcherConfig {
 
 		if ((robin_noise_bound_ > 1.0) && enable_noise_bound_clamping) {
 			TRACE_WARN(
-				"Too large `robin_noise_bound_` has been set. Empirically, 1.0 tends to work better for large-scale "
-				"maps. If you do not want to clamp these values, disable `enable_noise_clamping.");
+				"Too large `robin_noise_bound_` has been set. Empirically, "
+				"1.0 tends to work better for large-scale "
+				"maps. If you do not want to clamp these values, disable "
+				"`enable_noise_clamping.");
 			robin_noise_bound_ = 1.0;
 		}
 
@@ -102,7 +106,8 @@ struct KISSMatcherConfig {
 			TRACE_WARN(
 				" Too large `solver_noise bound_` has been set."
 				"Empirically, 1.0 tends to work better for large-scale maps."
-				"If you do not want to clamp these values, disable `enable_noise_clamping` ");
+				"If you do not want to clamp these values, disable "
+				"`enable_noise_clamping` ");
 			solver_noise_bound_ = 1.0;
 		}
 	}
@@ -118,7 +123,8 @@ class KISSMatcher {
 	explicit KISSMatcher(const float& voxel_size);
 
 	/**
-	 * @brief Constructor that initializes KISSMatcher with a configuration object.
+	 * @brief Constructor that initializes KISSMatcher with a configuration
+	 * object.
 	 * @param config Configuration parameters for the matcher.
 	 */
 	explicit KISSMatcher(const KISSMatcherConfig& config);
@@ -137,14 +143,16 @@ class KISSMatcher {
 	/**
 	 * @brief Matches keypoints between source and target voxelized point clouds.
 	 * @param src Source point cloud.
-	 * @note Input clouds are automatically voxelized depending on `config_.use_voxel_sampling_`
+	 * @note Input clouds are automatically voxelized depending on
+	 * `config_.use_voxel_sampling_`
 	 * @param tgt Target point cloud.
 	 * @return A pair of matched keypoints.
 	 */
 	KeypointPair match(const std::vector<Eigen::Vector3f>& src, const std::vector<Eigen::Vector3f>& tgt);
 
 	/**
-	 * @brief Matches keypoints between source and target voxelized point clouds (Eigen format).
+	 * @brief Matches keypoints between source and target voxelized point clouds
+	 * (Eigen format).
 	 * @param src Source point cloud in Eigen format.
 	 * @param tgt Target point cloud in Eigen format.
 	 * @return A pair of matched keypoints.
@@ -162,7 +170,8 @@ class KISSMatcher {
 
 	/**
 	 * @brief Solves for the optimal transformation using matched keypoints.
-	 * This function assumes that the correspondences have already been established.
+	 * This function assumes that the correspondences have already been
+	 * established.
 	 * @param src_matched Source keypoints matrix.
 	 * @param tgt_matched Target keypoints matrix.
 	 * @return The estimated registration solution.
@@ -172,8 +181,9 @@ class KISSMatcher {
 
 	/**
 	 * @brief Prunes outliers and then solves for registration.
-	 * This function applies outlier filtering before estimating the transformation,
-	 * and assumes that the correspondences have already been established.
+	 * This function applies outlier filtering before estimating the
+	 * transformation, and assumes that the correspondences have already been
+	 * established.
 	 * @param src_matched Source point cloud keypoints.
 	 * @param tgt_matched Target point cloud keypoints.
 	 * @return The estimated registration solution after pruning.
@@ -183,7 +193,8 @@ class KISSMatcher {
 
 	/**
 	 * @brief Retrieves input point clouds of FasterPFH.
-	 * @note Once, `config_.use_voxel_sampling_` is true, it outputs voxelized clouds
+	 * @note Once, `config_.use_voxel_sampling_` is true, it outputs voxelized
+	 * clouds
 	 * @return A pair of nput point clouds.
 	 */
 	inline KeypointPair getProcessedInputClouds() { return { src_processed_, tgt_processed_ }; }
@@ -236,16 +247,16 @@ class KISSMatcher {
 
 	void clear() {
 		src_processed_.clear();
-		tgt_processed_.clear();
+		if (!target_data_assigned_.load()) tgt_processed_.clear();
 
 		src_keypoints_.clear();
-		tgt_keypoints_.clear();
+		if (!target_data_assigned_.load()) tgt_keypoints_.clear();
 
-		src_keypoints_.clear();
-		tgt_keypoints_.clear();
+		src_matched_.clear();
+		tgt_matched_.clear();
 
 		src_descriptors_.clear();
-		tgt_descriptors_.clear();
+		if (!target_data_assigned_.load()) tgt_descriptors_.clear();
 
 		corr_.clear();
 
@@ -289,11 +300,12 @@ class KISSMatcher {
 	std::vector<Eigen::Vector3f> src_matched_;
 	std::vector<Eigen::Vector3f> tgt_matched_;
 
-	// Setup aligned attribute to keep Address Sanitizer happy during resize() and clear()
-	// The eigen docs seem to say its not required, especially with c++17 but...
-	// I(ewak) guessed and gave it a try and address sanitiser builds run clean, YMMV.
-	// add_compile_options(-fsanitize=address -fsanitize-recover=address)
-	// add_link_options(-fsanitize=address -fsanitize-recover=address)
+	// Setup aligned attribute to keep Address Sanitizer happy during resize() and
+	// clear() The eigen docs seem to say its not required, especially with c++17
+	// but... I(ewak) guessed and gave it a try and address sanitiser builds run
+	// clean, YMMV. add_compile_options(-fsanitize=address
+	// -fsanitize-recover=address) add_link_options(-fsanitize=address
+	// -fsanitize-recover=address)
 	std::vector<Eigen::VectorXf> __attribute__((aligned(EIGEN_MAX_ALIGN_BYTES))) src_descriptors_;
 	std::vector<Eigen::VectorXf> __attribute__((aligned(EIGEN_MAX_ALIGN_BYTES))) tgt_descriptors_;
 
@@ -307,7 +319,7 @@ class KISSMatcher {
 	double matching_time_ = -1.0;
 	double solver_time_ = -1.0;
 
-	// std::atomic_bool target_data_assigned_ = { false };
+	std::atomic_bool target_data_assigned_ = { false };
 };
 
 } // namespace kiss_matcher

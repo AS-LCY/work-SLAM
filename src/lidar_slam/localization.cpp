@@ -542,10 +542,13 @@ RegOutput Localization::coarseToFineAlignment() {
 	coarse_aligned_->clear();
 
 	const auto& src_vec = convertCloudToVec(*src_cloud_);
-	const auto& tgt_vec = convertCloudToVec(*tgt_cloud_);
-
-	TRACE_INFO_CLASS("Global registration: source cloud size: %d, target cloud size: %d", src_vec.size(),
-					 tgt_vec.size());
+	std::vector<Eigen::Vector3f> tgt_vec;
+	if (!global_match_target_cloud_assigned_.load()) {
+		tgt_vec = convertCloudToVec(*tgt_cloud_);
+		global_match_target_cloud_assigned_.store(true);
+	}
+	TRACE_INFO_CLASS("Global registration: source cloud size: %d, target cloud size: %d", src_cloud_->points.size(),
+					 tgt_cloud_->points.size());
 	const auto& solution = global_reg_handler_->estimate(src_vec, tgt_vec);
 
 	Eigen::Matrix4d coarse_alignment = Eigen::Matrix4d::Identity();
@@ -602,19 +605,19 @@ bool Localization::globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr
 
 	lidar_slam::TicToc timer_voxel;
 	source_ds_->clear();
-	target_ds_->clear();
+	if (!global_match_target_cloud_assigned_.load()) target_ds_->clear();
 
 	lidar_slam::TicToc source_voxel_timer;
 	ds_source_cloud_filter_.setInputCloud(odom_cloud);
 	ds_source_cloud_filter_.filter(*source_ds_);
-	src_cloud_ = source_ds_;
+	src_cloud_ = source_ds_; //指向同一个地址
 	const auto source_voxel_cost_time = source_voxel_timer.toc();
 	TRACE_INFO_CLASS("raw source cloud: %d, downsampled source cloud: %d, cost time: %f ms", odom_cloud->points.size(),
 					 source_ds_->points.size(), source_voxel_cost_time);
 
-	lidar_slam::TicToc target_crop_timer;
-	const Eigen::Isometry3d& T_map_lidar_guess = correctionOdomToMap_ * T_odom_lidar_curr;
-	cropped_target_ = cropTargetCloud(T_map_lidar_guess);
+	// lidar_slam::TicToc target_crop_timer;
+	// const Eigen::Isometry3d& T_map_lidar_guess = correctionOdomToMap_ * T_odom_lidar_curr;
+	// cropped_target_ = cropTargetCloud(T_map_lidar_guess);
 
 	// { //使用crop box裁剪虽然比cropTargetCloud更快，但是kiss matcher的trans inliers却更少
 	// 	const Eigen::Vector3d& center = T_map_lidar_guess.translation();
@@ -631,25 +634,22 @@ bool Localization::globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr
 	// 	crop_box.setRotation(rotation);
 	// 	crop_box.filter(*cropped_target_);
 	// }
-	const auto target_crop_cost_time = target_crop_timer.toc();
-	TRACE_INFO_CLASS("raw target cloud: %d, cropped target cloud: %d, cost time: %f ms",
-					 CloudGlobalMapIn_->points.size(), cropped_target_->points.size(), target_crop_cost_time);
+	// const auto target_crop_cost_time = target_crop_timer.toc();
+	// TRACE_INFO_CLASS("raw target cloud: %d, cropped target cloud: %d, cost time: %f ms",
+	// 				 CloudGlobalMapIn_->points.size(), cropped_target_->points.size(), target_crop_cost_time);
 
 	lidar_slam::TicToc target_voxel_timer;
-	ds_target_cloud_filter_.setInputCloud(cropped_target_);
-	ds_target_cloud_filter_.filter(*target_ds_);
-	tgt_cloud_ = target_ds_;
+	if (!global_match_target_cloud_assigned_.load()) {
+		ds_target_cloud_filter_.setInputCloud(CloudGlobalMapIn_); // CloudGlobalMapIn_, cropped_target_
+		ds_target_cloud_filter_.filter(*target_ds_);
+		tgt_cloud_ = target_ds_; //指向同一个地址
+		TRACE_INFO_CLASS("set target cloud for global localization.");
+	} else {
+		TRACE_INFO_CLASS("target cloud for global localization already set.");
+	}
 	const auto target_voxel_cost_time = target_voxel_timer.toc();
-	TRACE_INFO_CLASS("downsampled target cloud: %d, cost time: %f ms", target_ds_->points.size(),
+	TRACE_INFO_CLASS("downsampled target cloud: %d, cost time: %f ms", tgt_cloud_->points.size(),
 					 target_voxel_cost_time);
-
-	// if (!global_match_target_cloud_assigned_.load()) { //如果使用了裁剪的target， 就不需要这个标志了
-	// 	tgt_cloud_ = target_ds_;
-	// 	global_match_target_cloud_assigned_.store(true);
-	// 	TRACE_INFO_CLASS("set target cloud for global localization.");
-	// } else {
-	// 	TRACE_INFO_CLASS("target cloud for global localization already set.");
-	// }
 	const auto voxel_cost_time = timer_voxel.toc();
 	TRACE_INFO_CLASS("voxel cost time = %f ms", voxel_cost_time);
 

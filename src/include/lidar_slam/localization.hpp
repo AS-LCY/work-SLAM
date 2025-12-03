@@ -122,7 +122,7 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr coarse_aligned_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr debug_cloud_ = nullptr;
-	// std::atomic_bool global_match_target_cloud_assigned_{ false };
+	std::atomic_bool global_match_target_cloud_assigned_{ false };
 
 	pcl::VoxelGrid<pcl::PointXYZI> ds_source_cloud_filter_;
 	pcl::VoxelGrid<pcl::PointXYZI> ds_target_cloud_filter_;
@@ -132,6 +132,7 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr source_ds_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr target_ds_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cropped_target_ = nullptr;
+	// bool kiss_matcher_target_cloud_change_ = false; // false: 使用全局地图， true使用裁剪的全局地图
 };
 
 } // namespace lidar_slam

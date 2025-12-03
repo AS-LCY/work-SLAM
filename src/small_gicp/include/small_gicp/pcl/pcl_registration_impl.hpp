@@ -41,6 +41,7 @@ template <typename PointSource, typename PointTarget>
 void RegistrationPCL<PointSource, PointTarget>::setInputSource(const PointCloudSourceConstPtr& cloud) {
   auto t_start = std::chrono::high_resolution_clock::now();
   if (input_ == cloud) {
+    TRACE_INFO_CLASS("source cloud is already set");
     return;
   }
 
@@ -57,6 +58,7 @@ template <typename PointSource, typename PointTarget>
 void RegistrationPCL<PointSource, PointTarget>::setInputTarget(const PointCloudTargetConstPtr& cloud) {
   auto t_start = std::chrono::high_resolution_clock::now();
   if (target_ == cloud) {
+    TRACE_INFO_CLASS("target cloud is already set");
     return;
   }
 

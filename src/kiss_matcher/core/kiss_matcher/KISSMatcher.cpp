@@ -13,6 +13,7 @@ KISSMatcher::KISSMatcher(const float& voxel_size) { config_ = KISSMatcherConfig(
 
 KISSMatcher::KISSMatcher(const KISSMatcherConfig& config) {
 	config_ = config;
+
 	reset();
 }
 
@@ -56,7 +57,7 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 	src_processed_ = std::move(processInput(src));
 	TRACE_INFO_CLASS("source point cloud size after downsampling: %d", src_processed_.size());
 
-	tgt_processed_ = std::move(processInput(tgt));
+	if (!target_data_assigned_.load()) tgt_processed_ = std::move(processInput(tgt));
 	TRACE_INFO_CLASS("target point cloud size after downsampling: %d", tgt_processed_.size());
 
 	auto t_process = std::chrono::high_resolution_clock::now();
@@ -68,11 +69,11 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 	faster_pfh_->ComputeFeature(src_keypoints_, src_descriptors_);
 	auto t_source_cloud_compute_feature = std::chrono::high_resolution_clock::now();
 
-	faster_pfh_->setInputCloud(tgt_processed_);
+	if (!target_data_assigned_.load()) faster_pfh_->setInputCloud(tgt_processed_);
 
 	// Note(hlim) Some erroneous points are filtered out
 	// Thus, # of `tgt_keypoints_` <= `tgt_processed_`
-	faster_pfh_->ComputeFeature(tgt_keypoints_, tgt_descriptors_);
+	if (!target_data_assigned_.load()) faster_pfh_->ComputeFeature(tgt_keypoints_, tgt_descriptors_);
 	auto t_mid = std::chrono::high_resolution_clock::now();
 
 	const auto& corr =
@@ -87,8 +88,9 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 		src_matched_[i] = src_keypoints_[src_idx];
 		tgt_matched_[i] = tgt_keypoints_[dst_idx];
 	}
-	auto t_end = std::chrono::high_resolution_clock::now();
+	target_data_assigned_.store(true);
 
+	auto t_end = std::chrono::high_resolution_clock::now();
 	processing_time_ =
 		std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_process - t_init).count();
 	extraction_source_cloud_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(

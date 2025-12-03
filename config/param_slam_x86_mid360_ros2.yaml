@@ -178,7 +178,7 @@
         # The best value of `num_inliers_threshold` highly depends on `num_submap_keyframes`
         # Thus, heuristic tuning is required for the best performance.
         # Larger values make it more conservative (i.e., higher `num_inliers_threshold` enhances LC precision)
-        num_inliers_threshold: 3       # ⭐ Minimum inlier count to accept KISS-Matcher initial alignment
+        num_inliers_threshold: 5       # ⭐ Minimum inlier count to accept KISS-Matcher initial alignment
 
       local_reg:
         num_threads: 2                  # Number of threads used for local registration

@@ -306,7 +306,8 @@ void LidarSlam::localizationThread() {
 	const auto score_thr = config_param_.re_localization.score_thr;
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
-	const double integrate_scan_move_dist_thresh = config_param_.re_localization.integrate_scan_move_dist_thresh;
+	const double integrate_scan_move_dist_thresh_init = config_param_.re_localization.integrate_scan_move_dist_thresh;
+	double integrate_scan_move_dist_thresh = integrate_scan_move_dist_thresh_init;
 	const auto& relocalize_params = config_param_.re_localization.relocalize_config;
 	const double relocalize_dist_interval = relocalize_params.relocalize_dist_interval_;
 
@@ -390,8 +391,18 @@ void LidarSlam::localizationThread() {
 						globalLocalizationSuccess_ = localization_->globalLocalization(
 							global_localize_odom_cloud_sum_, T_odom_lidar_curr_, global_localize_count_);
 						double t1 = omp_get_wtime();
-						TRACE_INFO_CLASS("global Localization cost time: %f ms", (t1 - t0) * 1000);
+						TRACE_INFO_CLASS(
+							"global Localization cost time: %f ms, success: %d, try_num: %d, integrate dist thresh: %f",
+							(t1 - t0) * 1000, globalLocalizationSuccess_, global_localize_count_,
+							integrate_scan_move_dist_thresh);
 						global_localize_count_++;
+						if (!globalLocalizationSuccess_) {
+							TRACE_ERR_CLASS("global localization failed, reset integrate scan.");
+							reset_global_localize_flags();
+							integrate_scan_move_dist_thresh =
+								integrate_scan_move_dist_thresh_init + global_localize_count_; //线性增加
+							// integrate_scan_move_dist_thresh += global_localize_count_; //非线性增加
+						}
 					}
 
 					// TRACE_INFO_CLASS("start global localization ... , point count: %d", temp->points.size());
@@ -420,7 +431,8 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
-					TRACE_ERR_CLASS("global localization failed: time out \n");
+					TRACE_WARN_CLASS("global localization failed: time out \n");
+					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
 					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");
 					reset_global_localize_flags();
@@ -1126,7 +1138,7 @@ void LidarSlam::upsampling_current_pose(const double& init_acc_norm) {
 }
 
 void LidarSlam::reset_global_localize_flags() {
-	global_localize_count_ = 0;
+	// global_localize_count_ = 0;
 	integrate_scan_move_dist_ = 0.f;
 	integrate_scan_num_ = 0;
 	integrate_init_pose_ = false;
