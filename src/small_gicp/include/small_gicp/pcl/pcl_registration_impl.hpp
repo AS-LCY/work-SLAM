@@ -39,6 +39,7 @@ RegistrationPCL<PointSource, PointTarget>::~RegistrationPCL() {}
 
 template <typename PointSource, typename PointTarget>
 void RegistrationPCL<PointSource, PointTarget>::setInputSource(const PointCloudSourceConstPtr& cloud) {
+  auto t_start = std::chrono::high_resolution_clock::now();
   if (input_ == cloud) {
     return;
   }
@@ -47,10 +48,14 @@ void RegistrationPCL<PointSource, PointTarget>::setInputSource(const PointCloudS
   source_tree_ = std::make_shared<small_gicp::KdTree<pcl::PointCloud<PointSource>>>(input_, KdTreeBuilderOMP(num_threads_));
   source_covs_.clear();
   source_voxelmap_.reset();
+  auto t_end = std::chrono::high_resolution_clock::now();
+  const double cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_end - t_start).count();
+  TRACE_INFO_CLASS("[RegistrationPCL::setInputSource] Set input source cloud with %lu points (cost time: %f ms)", input_->size(), cost_time);
 }
 
 template <typename PointSource, typename PointTarget>
 void RegistrationPCL<PointSource, PointTarget>::setInputTarget(const PointCloudTargetConstPtr& cloud) {
+  auto t_start = std::chrono::high_resolution_clock::now();
   if (target_ == cloud) {
     return;
   }
@@ -59,6 +64,9 @@ void RegistrationPCL<PointSource, PointTarget>::setInputTarget(const PointCloudT
   target_tree_ = std::make_shared<small_gicp::KdTree<pcl::PointCloud<PointTarget>>>(target_, KdTreeBuilderOMP(num_threads_));
   target_covs_.clear();
   target_voxelmap_.reset();
+  auto t_end = std::chrono::high_resolution_clock::now();
+  const double cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_end - t_start).count();
+  TRACE_INFO_CLASS("[RegistrationPCL::setInputTarget] Set input target cloud with %lu points (cost time: %f ms)", target_->size(), cost_time);
 }
 
 template <typename PointSource, typename PointTarget>
@@ -207,12 +215,18 @@ void RegistrationPCL<PointSource, PointTarget>::computeTransformation(PointCloud
   PointCloudProxy<PointSource> source_proxy(*input_, source_covs_);
   PointCloudProxy<PointTarget> target_proxy(*target_, target_covs_);
 
+  auto t_source_est_cov_start = std::chrono::high_resolution_clock::now();
   if (source_covs_.size() != input_->size()) {
     estimate_covariances_omp(source_proxy, *source_tree_, k_correspondences_, num_threads_);
   }
+  auto t_source_est_cov_end = std::chrono::high_resolution_clock::now();
+  const double source_est_cov_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_source_est_cov_end - t_source_est_cov_start).count();
+
   if (target_covs_.size() != target_->size()) {
     estimate_covariances_omp(target_proxy, *target_tree_, k_correspondences_, num_threads_);
   }
+  auto t_target_est_cov_end = std::chrono::high_resolution_clock::now();
+  const double target_est_cov_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_target_est_cov_end - t_source_est_cov_end).count();
 
   small_gicp::Registration<GICPFactor, ParallelReductionOMP> registration;
   registration.criteria.rotation_eps = rotation_epsilon_;
@@ -223,18 +237,35 @@ void RegistrationPCL<PointSource, PointTarget>::computeTransformation(PointCloud
   registration.optimizer.max_iterations = max_iterations_;
 
   if (registration_type_ == "GICP") {
+    auto t_align_start = std::chrono::high_resolution_clock::now();
     result_ = registration.align(target_proxy, source_proxy, *target_tree_, Eigen::Isometry3d(guess.template cast<double>()));
+    auto t_align_end = std::chrono::high_resolution_clock::now();
+    const double align_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_align_end - t_align_start).count();
+    TRACE_INFO_CLASS("GICP align=%f ms", align_cost_time);
   } else if (registration_type_ == "VGICP") {
+    auto t_target_voxel_start = std::chrono::high_resolution_clock::now();
     if (!target_voxelmap_) {
       target_voxelmap_ = std::make_shared<GaussianVoxelMap>(voxel_resolution_);
       target_voxelmap_->insert(target_proxy);
     }
+    auto t_target_voxel_end = std::chrono::high_resolution_clock::now();
+    const double target_voxel_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_target_voxel_end - t_target_voxel_start).count();
+
     if (!source_voxelmap_) {
       source_voxelmap_ = std::make_shared<GaussianVoxelMap>(voxel_resolution_);
       source_voxelmap_->insert(source_proxy);
     }
+    auto t_source_voxel_end = std::chrono::high_resolution_clock::now();
+    const double source_voxel_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_source_voxel_end - t_target_voxel_end).count();
 
     result_ = registration.align(*target_voxelmap_, source_proxy, *target_voxelmap_, Eigen::Isometry3d(guess.template cast<double>()));
+    auto t_align_end = std::chrono::high_resolution_clock::now();
+    const double align_cost_time = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_align_end - t_source_voxel_end).count();
+    TRACE_INFO_CLASS(
+      "[RegistrationPCL::computeTransformation] VGICP timing: target voxelmap=%f ms, source voxelmap=%f ms, align=%f ms",
+      target_voxel_cost_time,
+      source_voxel_cost_time,
+      align_cost_time);
   } else {
     PCL_ERROR("[RegistrationPCL::computeTransformation] Invalid registration type: %s\n", registration_type_.c_str());
     return;

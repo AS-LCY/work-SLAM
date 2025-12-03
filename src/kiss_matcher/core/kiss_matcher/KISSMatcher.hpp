@@ -237,16 +237,21 @@ class KISSMatcher {
 	void clear() {
 		src_processed_.clear();
 		tgt_processed_.clear();
+
 		src_keypoints_.clear();
 		tgt_keypoints_.clear();
+
 		src_keypoints_.clear();
 		tgt_keypoints_.clear();
+
 		src_descriptors_.clear();
 		tgt_descriptors_.clear();
 
 		corr_.clear();
 
 		processing_time_ = -1.0;
+		extraction_source_cloud_time_ = -1.0;
+		extraction_target_cloud_time_ = -1.0;
 		extraction_time_ = -1.0;
 		matching_time_ = -1.0;
 		solver_time_ = -1.0;
@@ -302,7 +307,7 @@ class KISSMatcher {
 	double matching_time_ = -1.0;
 	double solver_time_ = -1.0;
 
-	std::atomic_bool target_data_assigned_ = { false };
+	// std::atomic_bool target_data_assigned_ = { false };
 };
 
 } // namespace kiss_matcher

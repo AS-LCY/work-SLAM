@@ -139,6 +139,7 @@ if(BUILD_HELPER)
   target_link_libraries(small_gicp PUBLIC
     Eigen3::Eigen
     $<TARGET_NAME_IF_EXISTS:OpenMP::OpenMP_CXX>
+    ${logTracer_LIBRARY}
   )
 endif()
 

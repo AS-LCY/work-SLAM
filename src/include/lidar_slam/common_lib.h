@@ -139,6 +139,8 @@ struct GICPConfig {
 	double max_corr_dist_ = 1.0;
 	double scale_factor_for_corr_dist_ = 5.0;
 	double overlap_threshold_ = 90.0;
+	double ds_source_leaf_size_ = 0.5;
+	double ds_target_leaf_size_ = 0.5;
 };
 
 struct RelocalizationConfig {
@@ -148,6 +150,7 @@ struct RelocalizationConfig {
 	size_t num_submap_keyframes_ = 11;
 	size_t num_inliers_threshold_ = 100;
 	double voxel_res_ = 0.1;
+	double relocalize_dist_interval_ = 0.2;
 	double loop_detection_radius_;
 	double loop_detection_timediff_threshold_;
 	GICPConfig gicp_config_;

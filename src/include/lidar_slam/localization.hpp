@@ -19,6 +19,7 @@
 // #include <pcl/search/impl/search.hpp>
 // #include <pcl/range_image/range_image.h> // 深度图像相关（将从图像采集器到场景中各点的距离值作为像素值的图像）
 
+#include <pcl/filters/crop_box.h>
 #include <pcl/registration/ndt.h> //NDT(正态分布)配准类头文件
 
 #include <fast_gicp/gicp/fast_gicp.hpp>
@@ -28,6 +29,7 @@
 #include "lidar_slam/ikd_Tree.h"
 #include "lidar_slam/scan_context/Scancontext.h"
 #include "lidar_slam/slam_param_def.h"
+#include "lidar_slam/thread_safe_voxelgrid.hpp"
 #include "lidar_slam/tictoc.hpp"
 #include "node/log_info_manager.hpp"
 #include "small_gicp/pcl/pcl_point.hpp"
@@ -77,6 +79,8 @@ class Localization {
 	void assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar, const Sophus::SE3d& T_lidar_delta,
 						 const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
 
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cropTargetCloud(const Eigen::Isometry3d& pose, const double& radius = 40.f);
+
 	RegOutput icpAlignment();
 
 	RegOutput coarseToFineAlignment();
@@ -118,6 +122,16 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr coarse_aligned_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr debug_cloud_ = nullptr;
+	// std::atomic_bool global_match_target_cloud_assigned_{ false };
+
+	pcl::VoxelGrid<pcl::PointXYZI> ds_source_cloud_filter_;
+	pcl::VoxelGrid<pcl::PointXYZI> ds_target_cloud_filter_;
+	lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> source_voxel_grid_filter_;
+	lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> target_voxel_grid_filter_;
+
+	pcl::PointCloud<pcl::PointXYZI>::Ptr source_ds_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr target_ds_ = nullptr;
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cropped_target_ = nullptr;
 };
 
 } // namespace lidar_slam

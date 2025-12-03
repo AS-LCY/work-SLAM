@@ -54,12 +54,10 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 	auto t_init = std::chrono::high_resolution_clock::now();
 
 	src_processed_ = std::move(processInput(src));
+	TRACE_INFO_CLASS("source point cloud size after downsampling: %d", src_processed_.size());
 
-	if (!target_data_assigned_.load()) {
-		tgt_processed_ = std::move(processInput(tgt));
-	} else {
-		TRACE_INFO_CLASS("target point cloud(global map) has been downsampled, do nothing.");
-	}
+	tgt_processed_ = std::move(processInput(tgt));
+	TRACE_INFO_CLASS("target point cloud size after downsampling: %d", tgt_processed_.size());
 
 	auto t_process = std::chrono::high_resolution_clock::now();
 
@@ -74,18 +72,12 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 
 	// Note(hlim) Some erroneous points are filtered out
 	// Thus, # of `tgt_keypoints_` <= `tgt_processed_`
-	if (!target_data_assigned_.load()) {
-		faster_pfh_->ComputeFeature(tgt_keypoints_, tgt_descriptors_);
-	} else {
-		TRACE_INFO_CLASS("target point cloud(global map) has calculated descriptors, do nothing");
-	}
-
+	faster_pfh_->ComputeFeature(tgt_keypoints_, tgt_descriptors_);
 	auto t_mid = std::chrono::high_resolution_clock::now();
 
 	const auto& corr =
 		robin_matching_->establishCorrespondences(src_keypoints_, tgt_keypoints_, src_descriptors_, tgt_descriptors_,
 												  config_.robin_mode_, config_.tuple_scale_, config_.use_ratio_test_);
-
 	src_matched_.resize(corr.size());
 	tgt_matched_.resize(corr.size());
 
@@ -107,10 +99,6 @@ kiss_matcher::KeypointPair KISSMatcher::match(const std::vector<Eigen::Vector3f>
 			.count();
 	extraction_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_mid - t_process).count();
 	matching_time_ = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_end - t_mid).count();
-
-	if (!target_data_assigned_.load()) {
-		target_data_assigned_.store(true);
-	}
 
 	return { src_matched_, tgt_matched_ };
 }
@@ -206,7 +194,7 @@ void KISSMatcher::print() {
 	const double t_m = getMatchingTime();
 	const double t_s = getSolverTime();
 
-	TRACE_INFO_CLASS("============== Time ==============\n");
+	TRACE_INFO_CLASS("============== Time ==============");
 	TRACE_INFO_CLASS("Voxelization: %f ms", t_p);
 	TRACE_INFO_CLASS("Extraction source : %f ms", t_source_e);
 	TRACE_INFO_CLASS("Extraction target: %f ms", t_target_e);
@@ -214,17 +202,16 @@ void KISSMatcher::print() {
 	TRACE_INFO_CLASS("Pruning : %f ms", t_r);
 	TRACE_INFO_CLASS("Matching : %f ms", t_m);
 	TRACE_INFO_CLASS("Solving : %f ms", t_s);
-	TRACE_INFO_CLASS("----------------------------------\n");
-	TRACE_INFO_CLASS("\033[1;32mTotal : %f sec\033[0m\n", t_p + t_e + t_r + t_m + t_s);
+	TRACE_INFO_CLASS("Total : %f ms", t_p + t_e + t_r + t_m + t_s);
 
-	TRACE_INFO_CLASS("====== # of correspondences ======\n");
-	TRACE_INFO_CLASS("# initial pairs : %d\n", robin_matching_->getNumInitialCorrespondences());
-	TRACE_INFO_CLASS("# pruned pairs : %d\n", robin_matching_->getNumPrunedCorrespondences());
-	TRACE_INFO_CLASS("----------------------------------\n");
+	TRACE_INFO_CLASS("====== # of correspondences ======");
+	TRACE_INFO_CLASS("# initial pairs : %d", robin_matching_->getNumInitialCorrespondences());
+	TRACE_INFO_CLASS("# pruned pairs : %d", robin_matching_->getNumPrunedCorrespondences());
+	TRACE_INFO_CLASS("----------------------------------");
 
-	TRACE_INFO_CLASS("\033[1;36m# rot inliers : %zu\n", solver_->getRotationInliers().size());
-	TRACE_INFO_CLASS("# trans inliers : %zu\033[0m\n", solver_->getTranslationInliers().size());
+	TRACE_INFO_CLASS("# rot inliers : %d", solver_->getRotationInliers().size());
+	TRACE_INFO_CLASS("# trans inliers : %d", solver_->getTranslationInliers().size());
 
-	TRACE_INFO_CLASS("==================================\n");
+	TRACE_INFO_CLASS("==================================");
 }
 } // namespace kiss_matcher

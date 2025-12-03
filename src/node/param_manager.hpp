@@ -304,12 +304,16 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<double>("re_localization.voxel_resolution", 0.3);
 		node_->get_parameter("re_localization.voxel_resolution",
 							 loaded_param_.re_localization.relocalize_config.voxel_res_);
+		node_->declare_parameter<double>("re_localization.relocalize_dist_interval", 0.3);
+		node_->get_parameter("re_localization.relocalize_dist_interval",
+							 loaded_param_.re_localization.relocalize_config.relocalize_dist_interval_);
 		node_->declare_parameter<bool>("re_localization.global_reg.enable", true);
 		node_->get_parameter("re_localization.global_reg.enable",
 							 loaded_param_.re_localization.relocalize_config.enable_global_registration_);
 		node_->declare_parameter<int>("re_localization.global_reg.num_inliers_threshold", 100);
 		node_->get_parameter("re_localization.global_reg.num_inliers_threshold",
 							 loaded_param_.re_localization.relocalize_config.num_inliers_threshold_);
+
 		node_->declare_parameter<int>("re_localization.local_reg.num_threads", 2);
 		node_->get_parameter("re_localization.local_reg.num_threads",
 							 loaded_param_.re_localization.relocalize_config.gicp_config_.num_threads_);
@@ -319,6 +323,12 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<int>("re_localization.local_reg.max_num_iter", 64);
 		node_->get_parameter("re_localization.local_reg.max_num_iter",
 							 loaded_param_.re_localization.relocalize_config.gicp_config_.max_num_iter_);
+		node_->declare_parameter<double>("re_localization.local_reg.ds_source_leaf_size", 0.5);
+		node_->get_parameter("re_localization.local_reg.ds_source_leaf_size",
+							 loaded_param_.re_localization.relocalize_config.gicp_config_.ds_source_leaf_size_);
+		node_->declare_parameter<double>("re_localization.local_reg.ds_target_leaf_size", 0.5);
+		node_->get_parameter("re_localization.local_reg.ds_target_leaf_size",
+							 loaded_param_.re_localization.relocalize_config.gicp_config_.ds_target_leaf_size_);
 		node_->declare_parameter<double>("re_localization.local_reg.scale_factor_for_corr_dist", 5.0);
 		node_->get_parameter("re_localization.local_reg.scale_factor_for_corr_dist",
 							 loaded_param_.re_localization.relocalize_config.gicp_config_.scale_factor_for_corr_dist_);

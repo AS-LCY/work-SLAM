@@ -43,8 +43,9 @@ Localization::Localization(LocalizationParam param, const RelocalizationConfig& 
 }
 
 void Localization::initGlobalLocalize() {
-	relocalize_config_.matcher_config_ = kiss_matcher::KISSMatcherConfig(
-		relocalize_config_.voxel_res_, false); //不对点云进行降采样，因为已经在lidar_slam.cpp中integrate前降采样了
+	relocalize_config_.matcher_config_ = kiss_matcher::KISSMatcherConfig(relocalize_config_.voxel_res_, false);
+	//作者原本在类型转换(存在深拷贝)之后，才用自己的tbb版本降采样。我们在后面会提前用pcl来降采样，所以设置为false。
+
 	relocalize_config_.matcher_config_.use_quatro_ = true;
 
 	auto& gc = relocalize_config_.gicp_config_;
@@ -62,8 +63,16 @@ void Localization::initGlobalLocalize() {
 	local_reg_handler_->setNumThreads(gc.num_threads_);
 	local_reg_handler_->setCorrespondenceRandomness(gc.correspondence_randomness_);
 	local_reg_handler_->setMaxCorrespondenceDistance(gc.max_corr_dist_);
-	local_reg_handler_->setVoxelResolution(relocalize_config_.voxel_res_);
-	local_reg_handler_->setRegistrationType("VGICP"); // "VGICP" or "GICP"
+	local_reg_handler_->setVoxelResolution(relocalize_config_.voxel_res_); //影响其内部source和target点云voxelmap_的计算
+	local_reg_handler_->setRegistrationType("VGICP");					   // "VGICP" or "GICP"
+
+	ds_source_cloud_filter_.setLeafSize(gc.ds_source_leaf_size_, gc.ds_source_leaf_size_, gc.ds_source_leaf_size_);
+	ds_target_cloud_filter_.setLeafSize(gc.ds_target_leaf_size_, gc.ds_target_leaf_size_, gc.ds_target_leaf_size_);
+	source_voxel_grid_filter_.setLeafSize(gc.ds_source_leaf_size_, gc.ds_source_leaf_size_, gc.ds_source_leaf_size_);
+	target_voxel_grid_filter_.setLeafSize(gc.ds_target_leaf_size_, gc.ds_target_leaf_size_, gc.ds_target_leaf_size_);
+	source_ds_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	target_ds_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	cropped_target_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 }
 
 Localization::~Localization() {}
@@ -100,6 +109,7 @@ bool Localization::loadMap(std::string path) {
 	CloudGlobalMapIn_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	CloudGlobalMapIn_PointType_.reset(new PointCloudType());
 
+	auto t_loadmap_start = std::chrono::high_resolution_clock::now();
 	std::string cloud_map_file_path = path + std::string("cloud_map.pcd");
 	std::ifstream cloud_file(cloud_map_file_path);
 	if (cloud_file && cloud_file.good()) {
@@ -109,6 +119,10 @@ bool Localization::loadMap(std::string path) {
 		}
 		TRACE_INFO_CLASS("load map from : %s", cloud_map_file_path.c_str());
 	}
+	auto t_loadmap_end = std::chrono::high_resolution_clock::now();
+	auto loadmap_cost_time =
+		std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t_loadmap_end - t_loadmap_start).count();
+	TRACE_INFO_CLASS("load map cost time: %f ms", loadmap_cost_time);
 
 	if (CloudGlobalMapIn_PointType_->points.size() == 0) {
 		TRACE_ERR_CLASS("Failed to load map.");
@@ -265,17 +279,18 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
 		if (inlier_fraction < inlier_rate) {
 			localize_state_status = LocalizationStatus::Failed;
-			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f < %f", inlier_fraction, inlier_rate);
+			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f% < %f%", inlier_fraction * 100.f,
+							inlier_rate * 100.f);
 		} else if (matching_error < inlier_avg_error) {
 			localize_state_status = LocalizationStatus::Normal;
 			assignMapToOdom(matching_error, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local);
-			TRACE_INFO_CLASS("localization Normal, for good inlier rate: %f,  small avg score: %f < %f",
-							 inlier_fraction, matching_error, inlier_avg_error);
+			TRACE_INFO_CLASS("localization Normal, for good inlier rate: %f%,  small avg score: %f < %f",
+							 inlier_fraction * 100.f, matching_error, inlier_avg_error);
 		} else {
 			localize_state_status = LocalizationStatus::LowAccuracy;
 			assignMapToOdom(matching_error, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local);
-			TRACE_ERR_CLASS("localization LowAccuracy, for good inlier rate: %f, but high avg score: %f > %f",
-							inlier_fraction, matching_error, inlier_avg_error);
+			TRACE_ERR_CLASS("localization LowAccuracy, for good inlier rate: %f%, but high avg score: %f > %f",
+							inlier_fraction * 100.f, matching_error, inlier_avg_error);
 		}
 	}
 }
@@ -460,6 +475,35 @@ bool Localization::globalLocalization(PointCloudType::Ptr cloudIn, Eigen::Isomet
 	}
 }
 
+pcl::PointCloud<pcl::PointXYZI>::Ptr Localization::cropTargetCloud(const Eigen::Isometry3d& pose,
+																   const double& radius) {
+	pcl::KdTreeFLANN<pcl::PointXYZI> kdtree;
+	kdtree.setInputCloud(CloudGlobalMapIn_);
+
+	pcl::PointXYZI searchPoint;
+	searchPoint.x = pose.translation().x();
+	searchPoint.y = pose.translation().y();
+	searchPoint.z = pose.translation().z();
+
+	std::vector<int> indices;
+	std::vector<float> sqr_dists;
+	kdtree.radiusSearch(searchPoint, radius, indices, sqr_dists);
+
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_roi(new pcl::PointCloud<pcl::PointXYZI>());
+	cloud_roi->resize(indices.size());
+
+#pragma omp parallel for
+	for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
+		cloud_roi->points[i] = CloudGlobalMapIn_->points[indices[i]];
+	}
+
+	cloud_roi->width = static_cast<uint32_t>(cloud_roi->points.size());
+	cloud_roi->height = 1;
+	cloud_roi->is_dense = true;
+
+	return cloud_roi;
+}
+
 RegOutput Localization::icpAlignment() {
 	RegOutput reg_output;
 	aligned_->clear();
@@ -500,23 +544,29 @@ RegOutput Localization::coarseToFineAlignment() {
 	const auto& src_vec = convertCloudToVec(*src_cloud_);
 	const auto& tgt_vec = convertCloudToVec(*tgt_cloud_);
 
+	TRACE_INFO_CLASS("Global registration: source cloud size: %d, target cloud size: %d", src_vec.size(),
+					 tgt_vec.size());
 	const auto& solution = global_reg_handler_->estimate(src_vec, tgt_vec);
-	// TODO(jxl): global map cloud只计算一遍fast fpfh
 
 	Eigen::Matrix4d coarse_alignment = Eigen::Matrix4d::Identity();
 	coarse_alignment.block<3, 3>(0, 0) = solution.rotation.cast<double>();
 	coarse_alignment.topRightCorner(3, 1) = solution.translation.cast<double>();
-
+	auto coarse_map_odom_euler = coarse_alignment.block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+	TRACE_INFO_CLASS("kiss matcher given init T_map_odom yaw: %f, pitch: %f, roll: %f",
+					 coarse_map_odom_euler[0] * RAD2DEGREE, coarse_map_odom_euler[1] * RAD2DEGREE,
+					 coarse_map_odom_euler[2] * RAD2DEGREE);
+	TRACE_INFO_CLASS("kiss matcher given init T_map_odom trans x: %f, y: %f, z: %f", coarse_alignment(0, 3),
+					 coarse_alignment(1, 3), coarse_alignment(2, 3));
 	*coarse_aligned_ = transformPcd(*src_cloud_, coarse_alignment);
 
 	const size_t num_inliers = global_reg_handler_->getNumFinalInliers();
 	reg_output.num_final_inliers_ = num_inliers; // TODO(jxl): 内点个数怎么计算的？
 	if (relocalize_config_.verbose_) {
 		if (num_inliers >= relocalize_config_.num_inliers_threshold_) {
-			TRACE_INFO_CLASS("final inliers = % >= thresh = %d", num_inliers,
+			TRACE_INFO_CLASS("final inliers = %d >= thresh = %d", num_inliers,
 							 relocalize_config_.num_inliers_threshold_);
 		} else {
-			TRACE_ERR_CLASS("ERROR: final inliers = % < thresh = %d", num_inliers,
+			TRACE_ERR_CLASS("ERROR: final inliers = %d < thresh = %d", num_inliers,
 							relocalize_config_.num_inliers_threshold_);
 		}
 	}
@@ -526,7 +576,10 @@ RegOutput Localization::coarseToFineAlignment() {
 	if (!solution.valid || num_inliers < relocalize_config_.num_inliers_threshold_) {
 		return reg_output;
 	} else {
-		const auto& fine_output = icpAlignment();
+		lidar_slam::TicToc timer;
+		const auto& fine_output = icpAlignment(); // local refine
+		const auto t = timer.toc();
+		TRACE_INFO_CLASS("local refine cost time = %f ms", t);
 		reg_output = fine_output;
 		reg_output.pose_ = fine_output.pose_ * coarse_alignment;
 
@@ -547,13 +600,63 @@ bool Localization::globalLocalization(const pcl::PointCloud<pcl::PointXYZI>::Ptr
 		return false;
 	}
 
-	*src_cloud_ = *odom_cloud;
-	*tgt_cloud_ = *CloudGlobalMapIn_;
+	lidar_slam::TicToc timer_voxel;
+	source_ds_->clear();
+	target_ds_->clear();
 
-	lidar_slam::TicToc timer;
-	const auto& reg_output = coarseToFineAlignment(); // TODO(jxl): 后面次运行，是不是可以把初始值范围扩大
+	lidar_slam::TicToc source_voxel_timer;
+	ds_source_cloud_filter_.setInputCloud(odom_cloud);
+	ds_source_cloud_filter_.filter(*source_ds_);
+	src_cloud_ = source_ds_;
+	const auto source_voxel_cost_time = source_voxel_timer.toc();
+	TRACE_INFO_CLASS("raw source cloud: %d, downsampled source cloud: %d, cost time: %f ms", odom_cloud->points.size(),
+					 source_ds_->points.size(), source_voxel_cost_time);
+
+	lidar_slam::TicToc target_crop_timer;
+	const Eigen::Isometry3d& T_map_lidar_guess = correctionOdomToMap_ * T_odom_lidar_curr;
+	cropped_target_ = cropTargetCloud(T_map_lidar_guess);
+
+	// { //使用crop box裁剪虽然比cropTargetCloud更快，但是kiss matcher的trans inliers却更少
+	// 	const Eigen::Vector3d& center = T_map_lidar_guess.translation();
+	// 	Eigen::Vector3d euler = T_map_lidar_guess.matrix().block<3, 3>(0, 0).eulerAngles(2, 1, 0);
+	// 	double length = 60.0;
+	// 	Eigen::Vector3f size(length, length, length);
+	// 	Eigen::Vector4f min_pt(center.x() - size.x() / 2, center.y() - size.y() / 2, center.z() - size.z() / 2, 1.0f);
+	// 	Eigen::Vector4f max_pt(center.x() + size.x() / 2, center.y() + size.y() / 2, center.z() + size.z() / 2, 1.0f);
+	// 	pcl::CropBox<pcl::PointXYZI> crop_box;
+	// 	crop_box.setInputCloud(CloudGlobalMapIn_);
+	// 	crop_box.setMin(min_pt);
+	// 	crop_box.setMax(max_pt);
+	// 	Eigen::Vector3f rotation(0, 0, euler[0]);
+	// 	crop_box.setRotation(rotation);
+	// 	crop_box.filter(*cropped_target_);
+	// }
+	const auto target_crop_cost_time = target_crop_timer.toc();
+	TRACE_INFO_CLASS("raw target cloud: %d, cropped target cloud: %d, cost time: %f ms",
+					 CloudGlobalMapIn_->points.size(), cropped_target_->points.size(), target_crop_cost_time);
+
+	lidar_slam::TicToc target_voxel_timer;
+	ds_target_cloud_filter_.setInputCloud(cropped_target_);
+	ds_target_cloud_filter_.filter(*target_ds_);
+	tgt_cloud_ = target_ds_;
+	const auto target_voxel_cost_time = target_voxel_timer.toc();
+	TRACE_INFO_CLASS("downsampled target cloud: %d, cost time: %f ms", target_ds_->points.size(),
+					 target_voxel_cost_time);
+
+	// if (!global_match_target_cloud_assigned_.load()) { //如果使用了裁剪的target， 就不需要这个标志了
+	// 	tgt_cloud_ = target_ds_;
+	// 	global_match_target_cloud_assigned_.store(true);
+	// 	TRACE_INFO_CLASS("set target cloud for global localization.");
+	// } else {
+	// 	TRACE_INFO_CLASS("target cloud for global localization already set.");
+	// }
+	const auto voxel_cost_time = timer_voxel.toc();
+	TRACE_INFO_CLASS("voxel cost time = %f ms", voxel_cost_time);
+
+	lidar_slam::TicToc timer_alignment;
+	const auto& reg_output = coarseToFineAlignment();
 	global_reg_handler_->print();
-	const auto t = timer.toc();
+	const auto t = timer_alignment.toc();
 	TRACE_INFO_CLASS("global localization cost time = %f ms", t);
 
 	if (!reg_output.is_valid_) {

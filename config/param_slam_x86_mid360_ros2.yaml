@@ -169,20 +169,23 @@
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
 
       integrate_scan_move_dist_thresh: 5.0
-      voxel_resolution: 0.3            # ⭐ [Unit: m] Voxel grid resolution for downsampling
+      voxel_resolution: 0.5            # ⭐ [Unit: m] Voxel grid resolution for downsampling
       # each scan downsampled by <localization/cloud_leaf_size_localize> before integrate
+      relocalize_dist_interval: 0.2  #every this threshold to get one scan to integrate
 
       global_reg:
         enable: true
         # The best value of `num_inliers_threshold` highly depends on `num_submap_keyframes`
         # Thus, heuristic tuning is required for the best performance.
         # Larger values make it more conservative (i.e., higher `num_inliers_threshold` enhances LC precision)
-        num_inliers_threshold: 100       # ⭐ Minimum inlier count to accept KISS-Matcher initial alignment
+        num_inliers_threshold: 3       # ⭐ Minimum inlier count to accept KISS-Matcher initial alignment
 
       local_reg:
         num_threads: 2                  # Number of threads used for local registration
         correspondences_number: 20      # Minimum number of correspondences required
         max_num_iter: 64                # Maximum iterations for local registration
+        ds_source_leaf_size: 0.5        # ⭐ [Unit: m] Voxel grid downsampling size for source point cloud
+        ds_target_leaf_size: 0.5        # ⭐ [Unit: m] Voxel grid downsampling size for target point cloud
 
         # NOTE(hlim): `scale_factor_for_corr_dist` * `voxel_resolution` is set to
         # distance threshold for ICP-variants (i.e., it is a factor relative to voxel resolution)

@@ -308,6 +308,7 @@ void LidarSlam::localizationThread() {
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
 	const double integrate_scan_move_dist_thresh = config_param_.re_localization.integrate_scan_move_dist_thresh;
 	const auto& relocalize_params = config_param_.re_localization.relocalize_config;
+	const double relocalize_dist_interval = relocalize_params.relocalize_dist_interval_;
 
 	pcl::PointCloud<pcl::PointXYZI>::Ptr temp(new pcl::PointCloud<pcl::PointXYZI>());
 	PointCloudType::Ptr ds_odom_cloud_localize(new PointCloudType());
@@ -350,8 +351,8 @@ void LidarSlam::localizationThread() {
 		} else {
 			if (!globalLocalizationSuccess_) {
 				local_thrd_status_.store(LocalizationStatus::Relocalizing);
-				TRACE_INFO_CLASS("\n");
-				TRACE_INFO_CLASS("localization status = Relocalizing...");
+				// TRACE_INFO_CLASS("\n");
+				// TRACE_INFO_CLASS("localization status = Relocalizing...");
 
 				if (!getLoadMap()) {
 					TRACE_WARN_CLASS("global localization failed: map not ready ... ");
@@ -366,9 +367,14 @@ void LidarSlam::localizationThread() {
 					}
 					Eigen::Vector3d delta_trans_vec =
 						T_odom_lidar_curr_.translation() - T_odom_lidar_last_.translation();
-					T_odom_lidar_last_ = T_odom_lidar_curr_;
 					double delta_trans = std::sqrt(delta_trans_vec.x() * delta_trans_vec.x() +
 												   delta_trans_vec.y() * delta_trans_vec.y());
+					if (delta_trans < relocalize_dist_interval) {
+						// TRACE_INFO_CLASS("vehicle move dist: %f m < %f thresh, ignore this scan", delta_trans,
+						// 				 relocalize_dist_interval);
+						continue;
+					}
+					T_odom_lidar_last_ = T_odom_lidar_curr_;
 					if (integrate_scan_move_dist_ < integrate_scan_move_dist_thresh) {
 						integrate_scan_move_dist_ += delta_trans;
 						integrate_scan_num_++;

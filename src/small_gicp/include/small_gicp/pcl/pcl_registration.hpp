@@ -7,12 +7,14 @@
 #include <small_gicp/ann/kdtree_omp.hpp>
 #include <small_gicp/ann/gaussian_voxelmap.hpp>
 #include <small_gicp/registration/registration_result.hpp>
+#include <logTracer/tracer.h>
 
 namespace small_gicp {
 
 /// @brief PCL registration interfaces.
 template <typename PointSource, typename PointTarget>
 class RegistrationPCL : public pcl::Registration<PointSource, PointTarget, float> {
+  DECL_CLASSNAME(small_gicp)
 public:
   using Scalar = float;
   using Matrix4 = typename pcl::Registration<PointSource, PointTarget, Scalar>::Matrix4;
