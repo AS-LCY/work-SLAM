@@ -41,20 +41,20 @@
       # #baselink到真实雷达安装位置的旋转
       
       # hesai lidar test 
-      baselink_lidar_trans: [0.3635, 0.0, 0.189] # unit: meter, x, y, z
-      baselink_lidar_rot: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
+      # baselink_lidar_trans: [0.3635, 0.0, 0.189] # unit: meter, x, y, z
+      # baselink_lidar_rot: [0.0, 0.0, 0.0] # unit(degree) yaw, pitch, roll
 
       # 转90度安装，172.18.0.16
-      # baselink_lidar_trans: [0.37, 0.0,  0.286723] # unit: meter, x, y, z
-      # baselink_lidar_rot: [-89.999858, -1.051854, -3.615852] # unit(degree) yaw, pitch, roll
+      baselink_lidar_trans: [0.37, 0.0,  0.286723] # unit: meter, x, y, z
+      baselink_lidar_rot: [-89.999858, -1.051854, -3.615852] # unit(degree) yaw, pitch, roll
       
       # 正着安装，172.18.0.98(wanji lidar)
       # baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
       # baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
 
       # hesai lidar to hesai imu
-      lidar_imu_trans: [0.0, 0.0, 0.0]  # unit: meter, x, y, z
-      lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
+      # lidar_imu_trans: [0.0, 0.0, 0.0]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
       
       # lidar to livox_imu (/livox/imu)
       # lidar_imu_trans: [0.0, 0.02329, -0.04412]  # unit: meter, x, y, z
@@ -74,8 +74,8 @@
       # lidar_imu_rot: [0.0, 180.0, 0.0]      # unit(degree) yaw, pitch, roll
 
       # lidar(172.18.0.16) to mcu_imu(+x, +y, +z, 后左下) (/mcu_imu)，lidar斜向下安装5deg，和标定的斜向下安装3.448差不多
-      # lidar_imu_trans: [-0.22, 0.0, -0.14]  # unit: meter, x, y, z
-      # lidar_imu_rot: [-90.0, 3.448, 180.0]    # unit(degree) yaw, pitch, roll
+      lidar_imu_trans: [-0.22, 0.0, -0.14]  # unit: meter, x, y, z
+      lidar_imu_rot: [-90.0, 3.448, 180.0]    # unit(degree) yaw, pitch, roll
 
     localization:
       fgicp_peroid_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
@@ -91,16 +91,16 @@
       fgicp_inlier_avg_error_thr: 0.25
 
     lidar_preproc:
-      lidar_type: 4 # 1: livox-mid360  # 2: robosense-Airy  #3: wanji-lidar #4: hesai JT16
+      lidar_type: 1 # 1: livox-mid360  # 2: robosense-Airy  #3: wanji-lidar #4: hesai JT16
 
-      # sub_lidar_topic: "/livox/lidar"
+      sub_lidar_topic: "/livox/lidar"
       # sub_lidar_topic: "/vanjee_points722f"
-      sub_lidar_topic: "/lidar_points"
+      # sub_lidar_topic: "/lidar_points"
       
       # sub_imu_topic: "/vanjee_lidar_imu_packets"
       # sub_imu_topic: "/livox/imu"
-      sub_imu_topic: "/lidar_imu"
-      # sub_imu_topic: "/mcu_imu"
+      # sub_imu_topic: "/lidar_imu"
+      sub_imu_topic: "/mcu_imu"
 
       blind_distance: 0.2 # 忽略掉距离雷达小于这个阈值的点
       max_distance: 70.0
@@ -135,16 +135,16 @@
       # b_gyr_cov: 0.0005372376866273254
       
       # hesai imu
-      acc_cov: 0.032429494613796835
-      gyr_cov: 0.0039263307791251195
-      b_acc_cov: 0.004584363634669585
-      b_gyr_cov: 0.0001356059926379704
+      # acc_cov: 0.032429494613796835
+      # gyr_cov: 0.0039263307791251195
+      # b_acc_cov: 0.004584363634669585
+      # b_gyr_cov: 0.0001356059926379704
       
       # mcu imu
-      # acc_cov: 0.003733229975895636
-      # gyr_cov: 0.009190293568628582
-      # b_acc_cov: 0.00019203457476267735
-      # b_gyr_cov: 0.00015301978135362925
+      acc_cov: 0.003733229975895636
+      gyr_cov: 0.009190293568628582
+      b_acc_cov: 0.00019203457476267735
+      b_gyr_cov: 0.00015301978135362925
 
       cloud_leaf_size: 0.5      # lio对去完畸变后的点云进行的voxel downsize
 
