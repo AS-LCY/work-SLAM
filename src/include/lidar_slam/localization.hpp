@@ -24,6 +24,7 @@
 
 #include <fast_gicp/gicp/fast_gicp.hpp>
 
+#include "cpu_bbs3d/bbs3d.hpp"
 #include "kiss_matcher/KISSMatcher.hpp"
 #include "lidar_slam/ekf_smoother.h"
 #include "lidar_slam/ikd_Tree.h"
@@ -32,6 +33,8 @@
 #include "lidar_slam/thread_safe_voxelgrid.hpp"
 #include "lidar_slam/tictoc.hpp"
 #include "node/log_info_manager.hpp"
+#include "pointcloud_iof/pcd_loader.hpp"
+#include "pointcloud_iof/pcl_eigen_converter.hpp"
 #include "small_gicp/pcl/pcl_point.hpp"
 #include "small_gicp/pcl/pcl_point_traits.hpp"
 #include "small_gicp/pcl/pcl_registration.hpp"
@@ -115,8 +118,8 @@ class Localization {
 
 	// global localize
 	RelocalizationConfig relocalize_config_;
-	std::shared_ptr<kiss_matcher::KISSMatcher> global_reg_handler_ = nullptr;
-	std::shared_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>> local_reg_handler_ = nullptr;
+	std::unique_ptr<kiss_matcher::KISSMatcher> global_reg_handler_ = nullptr;
+	std::unique_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>> local_reg_handler_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr src_cloud_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr tgt_cloud_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr coarse_aligned_ = nullptr;
@@ -133,6 +136,8 @@ class Localization {
 	pcl::PointCloud<pcl::PointXYZI>::Ptr target_ds_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cropped_target_ = nullptr;
 	// bool kiss_matcher_target_cloud_change_ = false; // false: 使用全局地图， true使用裁剪的全局地图
+
+	std::unique_ptr<cpu_bbs3d::BBS3D> bbs3d_handler_ = nullptr;
 };
 
 } // namespace lidar_slam

@@ -57,8 +57,8 @@ void Localization::initGlobalLocalize() {
 	aligned_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	debug_cloud_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 
-	global_reg_handler_ = std::make_shared<kiss_matcher::KISSMatcher>(relocalize_config_.matcher_config_);
-	local_reg_handler_ = std::make_shared<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>();
+	global_reg_handler_ = std::make_unique<kiss_matcher::KISSMatcher>(relocalize_config_.matcher_config_);
+	local_reg_handler_ = std::make_unique<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>();
 
 	local_reg_handler_->setNumThreads(gc.num_threads_);
 	local_reg_handler_->setCorrespondenceRandomness(gc.correspondence_randomness_);

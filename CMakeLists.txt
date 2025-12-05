@@ -118,6 +118,9 @@ add_subdirectory(src/kiss_matcher)
 
 add_subdirectory(src/small_gicp)
 
+add_subdirectory(src/bbs3d)
+
+
 message("GTSAM_INCLUDE_DIR:===========" ${GTSAM_INCLUDE_DIR} )
 message("GTSAM_LIBRARIES:==========="  ${GTSAM_LIBRARIES} )
 
@@ -140,6 +143,7 @@ include_directories(
   /usr/local/include
 
   src/kiss_matcher/core/
+  src/bbs3d/include/
 )
 
 # 使用 ament_auto_add_library 添加库
@@ -192,6 +196,7 @@ target_link_libraries(lidar_slam
 
   small_gicp
   kiss_matcher_core
+  cpu_bbs3d::cpu_bbs3d
 )
 
 # SLAM主节点 - 使用 ament_auto_add_executable
