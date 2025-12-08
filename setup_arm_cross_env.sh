@@ -172,6 +172,7 @@ set(Eigen3_DIR "\${CMAKE_SYSROOT}/usr/share/eigen3/cmake")
 set(CMAKE_PREFIX_PATH \${CMAKE_SYSROOT}/opt/ros/humble)
 # 强制用系统的make（而非gmake），解决Makefile解析格式问题
 set(CMAKE_MAKE_PROGRAM /usr/bin/make CACHE FILEPATH "强制使用make编译" FORCE)
+set(PYTHON_SOABI "cpython-310-aarch64-linux-gnu" CACHE STRING "Python SOABI for aarch64")
 EOF
 
     if [ -f "$TOOLCHAIN_FILE" ]; then
