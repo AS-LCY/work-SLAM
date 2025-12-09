@@ -48,7 +48,7 @@ install(TARGETS cpu_bbs3d
 
 install(EXPORT cpu_bbs3d-export
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cpu_bbs3d
-    NAMESPACE cpu_bbs3d::
+    # NAMESPACE cpu_bbs3d::
     FILE cpu_bbs3dTargets.cmake
 )
 

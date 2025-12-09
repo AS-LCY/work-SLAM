@@ -167,11 +167,27 @@
     re_localization:
       score_thr: 0.3  #raw: 0.5
       time_out_thr: 30 # unit: second, 超过 time_out_thr，还未重定位成功，认为重定位失败
+      global_reg_method: "bbs3d" # kiss_matcher, bbs3d
+      kiss_matcher_integrate_scan_move_dist_thresh: 5.0 # unit: m
 
-      integrate_scan_move_dist_thresh: 5.0
       voxel_resolution: 0.5            # ⭐ [Unit: m] Voxel grid resolution for downsampling
       # each scan downsampled by <localization/cloud_leaf_size_localize> before integrate
       relocalize_dist_interval: 0.2  #every this threshold to get one scan to integrate
+
+      bbs3d:
+        min_level_res: 1.0 # [m], e.g. outdoor: 1.0, indoor: 0.5
+        max_level: 6
+        num_threads: 4
+
+        ## Angular search range [rad]
+        # 6.28 input is converted to 2*M_PI
+        min_rpy: [-0.02, -0.02, 0.0] # [roll, pitch, yaw]
+        max_rpy: [0.02, 0.02, 6.28]  # [roll, pitch, yaw]
+
+        score_threshold_percentage: 0.9
+        tar_leaf_size: 0.5 # off: 0.0  ## Downsample target clouds [m]
+        src_leaf_size: 0.5 # off: 0.0  ## Downsample source clouds [m]
+        integrate_scan_move_dist_thresh: 0.1
 
       global_reg:
         enable: true

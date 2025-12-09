@@ -51,7 +51,8 @@ struct LidarPreprocParam {
 struct ReLocalizationParam {
 	double score_thr;
 	int time_out_thr; // 以秒为单位
-	double integrate_scan_move_dist_thresh;
+	std::string global_reg_method = "kiss_matcher";
+	double kiss_matcher_integrate_scan_move_dist_thresh;
 	RelocalizationConfig relocalize_config;
 };
 

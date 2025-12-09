@@ -184,34 +184,15 @@ bool mkdir_p(const std::string& path, mode_t mode) {
 /////////////////////////////////////////////////////////////////////////////////
 // Used in: Backend & module_ctrl_callback
 bool create_directory_if_not_exists(const std::string& directory_path) {
-#if 1
-	if (0 != access(directory_path.c_str(), 0)) {
-		bool status = mkdir_p(directory_path.c_str(), 0777);
-		if (status) {
-			return true; // 创建目录成功
-		} else {
-			TRACE_ERR("Error creating directory: %s", directory_path.c_str());
-			return false; // 创建目录失败
+	namespace fs = std::filesystem;
+	fs::path path(directory_path);
+	try {
+		if (fs::exists(path)) {
+			return fs::is_directory(path);
 		}
-	} else {
-		// folder exist
-		return true;
+		return fs::create_directories(path);
+	} catch (const fs::filesystem_error& ex) {
+		TRACE_INFO("Error creating directory: %s", ex.what());
+		return false;
 	}
-#endif
-
-#if 0
-    std::filesystem::path path(directory_path);
-
-    if (!std::filesystem::exists(path)){
-        try {
-            std::filesystem::create_directories(path);
-            return true; // 创建目录成功
-        }catch (const std::filesystem::filesystem_error& ex){
-            std::cerr << "Error creating directory: " << ex.what() << std::endl;
-            return false; // 创建目录失败
-        }
-    } else {
-        return true; // 目录已存在
-    }
-#endif
 }

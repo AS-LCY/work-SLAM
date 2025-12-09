@@ -196,7 +196,7 @@ target_link_libraries(lidar_slam
 
   small_gicp
   kiss_matcher_core
-  cpu_bbs3d::cpu_bbs3d
+  cpu_bbs3d
 )
 
 # SLAM主节点 - 使用 ament_auto_add_executable

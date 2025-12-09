@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 
 #include <Eigen/Core>
+#include <filesystem>
 
 #include "kiss_matcher/KISSMatcher.hpp"
 #include "sophus/se3.hpp"
@@ -131,6 +132,23 @@ enum class SecmapRelocalThrdStatus : int {
 };
 } // namespace common_status
 
+struct BBS3dConfig {
+	double min_level_res = 1.0;
+	int max_level = 6;
+	int num_threads = 2;
+
+	//##Angular search range[rad]
+	//# 6.28 input is converted to 2 * M_PI
+	std::vector<double> min_rpy = { -0.02, -0.02, 0.0 }; // # [roll, pitch, yaw]
+	std::vector<double> max_rpy = { 0.02, 0.02, 6.28 };	 // # [roll, pitch, yaw]
+	double score_threshold_percentage = 0.9;
+	double tar_leaf_size = 0.5;
+	double src_leaf_size = 0.5;
+	// double min_scan_range = 0.2; // off: set 0.0 to both min_scan_range and max_scan_range
+	// double max_scan_range = 100.0;
+
+	double integrate_scan_move_dist_thresh = 0.1;
+};
 struct GICPConfig {
 	int num_threads_ = 4;
 	int correspondence_randomness_ = 20;
@@ -155,6 +173,7 @@ struct RelocalizationConfig {
 	double loop_detection_timediff_threshold_;
 	GICPConfig gicp_config_;
 	kiss_matcher::KISSMatcherConfig matcher_config_;
+	BBS3dConfig bbs3d_config_;
 };
 
 struct RegOutput {
@@ -285,6 +304,19 @@ inline void print_pose(const Eigen::Isometry3d& T) {
 	double roll = ypr[2] * 180.0 / M_PI;
 	TRACE_INFO("Translation (x, y, z): %f, %f, %f", t.x(), t.y(), t.z());
 	TRACE_INFO("Rotation (yaw, pitch, roll) [deg]:  %f, %f, %f", yaw, pitch, roll);
+}
+
+inline Eigen::Vector3d vectorToEigenVec3d(const std::vector<double>& vec) {
+	Eigen::Vector3d eigen_vec;
+	eigen_vec << vec[0], vec[1], vec[2];
+	return eigen_vec;
+}
+
+inline double getSystemTimeSeconds() {
+	using namespace std::chrono;
+	auto now = system_clock::now();
+	auto ns = duration_cast<nanoseconds>(now.time_since_epoch()).count();
+	return static_cast<double>(ns) * 1e-9;
 }
 
 /* comment

@@ -111,7 +111,8 @@ void LidarSlam::reset(SlamWorkMode work_mode, rclcpp::Node::SharedPtr node) {
 	p_imu_->set_param(extrinT, extrinR, V3D(gyr_cov, gyr_cov, gyr_cov), V3D(acc_cov, acc_cov, acc_cov),
 					  V3D(b_gyr_cov, b_gyr_cov, b_gyr_cov), V3D(b_acc_cov, b_acc_cov, b_acc_cov));
 	// 定位
-	localization_.reset(new Localization(config_param_.localization, config_param_.re_localization.relocalize_config));
+	localization_.reset(new Localization(config_param_.common, config_param_.localization,
+										 config_param_.re_localization.relocalize_config));
 
 	global_localization_.reset(new GlobalLocalization());
 	cloud_map_manager_.reset(new CloudMap());
@@ -305,8 +306,16 @@ void LidarSlam::localizationThread() {
 	const float period_local_sec = config_param_.localization.fgicp_peroid_sec;
 	const auto score_thr = config_param_.re_localization.score_thr;
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
+	const auto global_reg_method = config_param_.re_localization.global_reg_method;
 	const int global_localize_times = global_localize_time_out_thr * frequency; // 重定位次数
-	const double integrate_scan_move_dist_thresh_init = config_param_.re_localization.integrate_scan_move_dist_thresh;
+	double integrate_scan_move_dist_thresh_init = 5.0;
+	if (global_reg_method.compare("kiss_matcher") == 0) {
+		integrate_scan_move_dist_thresh_init =
+			config_param_.re_localization.kiss_matcher_integrate_scan_move_dist_thresh;
+	} else if (global_reg_method.compare("bbs3d") == 0) {
+		integrate_scan_move_dist_thresh_init =
+			config_param_.re_localization.relocalize_config.bbs3d_config_.integrate_scan_move_dist_thresh;
+	}
 	double integrate_scan_move_dist_thresh = integrate_scan_move_dist_thresh_init;
 	const auto& relocalize_params = config_param_.re_localization.relocalize_config;
 	const double relocalize_dist_interval = relocalize_params.relocalize_dist_interval_;
@@ -388,8 +397,9 @@ void LidarSlam::localizationThread() {
 										 integrate_scan_move_dist_);
 						double t0 = omp_get_wtime();
 						TRACE_INFO_CLASS("start to global localize, try num = %d ...", global_localize_count_);
-						globalLocalizationSuccess_ = localization_->globalLocalization(
-							global_localize_odom_cloud_sum_, T_odom_lidar_curr_, global_localize_count_);
+						globalLocalizationSuccess_ =
+							localization_->globalLocalization(global_reg_method, global_localize_odom_cloud_sum_,
+															  T_odom_lidar_curr_, global_localize_count_);
 						double t1 = omp_get_wtime();
 						TRACE_INFO_CLASS(
 							"global Localization cost time: %f ms, success: %d, try_num: %d, integrate dist thresh: %f",
@@ -399,9 +409,9 @@ void LidarSlam::localizationThread() {
 						if (!globalLocalizationSuccess_) {
 							TRACE_ERR_CLASS("global localization failed, reset integrate scan.");
 							reset_global_localize_flags();
-							integrate_scan_move_dist_thresh =
-								integrate_scan_move_dist_thresh_init + global_localize_count_; //线性增加
-							// integrate_scan_move_dist_thresh += global_localize_count_; //非线性增加
+							// integrate_scan_move_dist_thresh =
+							// 	integrate_scan_move_dist_thresh_init + global_localize_count_; //线性增加
+							integrate_scan_move_dist_thresh += global_localize_count_; //非线性增加
 						}
 					}
 
@@ -431,7 +441,7 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
-					TRACE_WARN_CLASS("global localization failed: time out \n");
+					TRACE_ERR_CLASS("global localization failed: time out \n");
 					global_localize_count_ = 0;
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
 					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");

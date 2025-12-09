@@ -298,9 +298,41 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("re_localization.score_thr", loaded_param_.re_localization.score_thr);
 		node_->declare_parameter<int>("re_localization.time_out_thr", 30);
 		node_->get_parameter("re_localization.time_out_thr", loaded_param_.re_localization.time_out_thr);
-		node_->declare_parameter<double>("re_localization.integrate_scan_move_dist_thresh", 5.0);
-		node_->get_parameter("re_localization.integrate_scan_move_dist_thresh",
-							 loaded_param_.re_localization.integrate_scan_move_dist_thresh);
+		node_->declare_parameter<std::string>("re_localization.global_reg_method", "kiss_matcher");
+		node_->get_parameter("re_localization.global_reg_method", loaded_param_.re_localization.global_reg_method);
+		node_->declare_parameter<double>("re_localization.kiss_matcher_integrate_scan_move_dist_thresh", 5.0);
+		node_->get_parameter("re_localization.kiss_matcher_integrate_scan_move_dist_thresh",
+							 loaded_param_.re_localization.kiss_matcher_integrate_scan_move_dist_thresh);
+
+		node_->declare_parameter<double>("re_localization.bbs3d.min_level_res", 0.5);
+		node_->get_parameter("re_localization.bbs3d.min_level_res",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.min_level_res);
+		node_->declare_parameter<int>("re_localization.bbs3d.max_level", 6);
+		node_->get_parameter("re_localization.bbs3d.max_level",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.max_level);
+		node_->declare_parameter<int>("re_localization.bbs3d.num_threads", 2);
+		node_->get_parameter("re_localization.bbs3d.num_threads",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.num_threads);
+		node_->declare_parameter<std::vector<double>>("re_localization.bbs3d.min_rpy", std::vector<double>());
+		node_->get_parameter("re_localization.bbs3d.min_rpy",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.min_rpy);
+		node_->declare_parameter<std::vector<double>>("re_localization.bbs3d.max_rpy", std::vector<double>());
+		node_->get_parameter("re_localization.bbs3d.max_rpy",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.max_rpy);
+		node_->declare_parameter<double>("re_localization.bbs3d.score_threshold_percentage", 0.8);
+		node_->get_parameter("re_localization.bbs3d.score_threshold_percentage",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.score_threshold_percentage);
+		node_->declare_parameter<double>("re_localization.bbs3d.tar_leaf_size", 0.5);
+		node_->get_parameter("re_localization.bbs3d.tar_leaf_size",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.tar_leaf_size);
+		node_->declare_parameter<double>("re_localization.bbs3d.src_leaf_size", 0.5);
+		node_->get_parameter("re_localization.bbs3d.src_leaf_size",
+							 loaded_param_.re_localization.relocalize_config.bbs3d_config_.src_leaf_size);
+		node_->declare_parameter<double>("re_localization.bbs3d.integrate_scan_move_dist_thresh", 0.1);
+		node_->get_parameter(
+			"re_localization.bbs3d.integrate_scan_move_dist_thresh",
+			loaded_param_.re_localization.relocalize_config.bbs3d_config_.integrate_scan_move_dist_thresh);
+
 		node_->declare_parameter<double>("re_localization.voxel_resolution", 0.3);
 		node_->get_parameter("re_localization.voxel_resolution",
 							 loaded_param_.re_localization.relocalize_config.voxel_res_);
