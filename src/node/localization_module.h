@@ -196,7 +196,7 @@ class LocalizationModule {
 	void fill_log(const Eigen::Isometry3d& last_lidar_in_odom, const Eigen::Isometry3d& curr_lidar_in_odom);
 
 	// 检查并填充健康消息
-	common_status::HealthStatus check_fill_health_msg(ModuleStatus curr_running_module_status,
+	common_status::HealthStatus check_fill_health_msg(const ModuleStatus curr_running_module_status,
 													  LocalizationModuleHealth& health_msg);
 
 	// 检查并填充模块状态消息

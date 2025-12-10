@@ -304,7 +304,7 @@ void LocalizationModule::process_loginfo() {
 
 // 调试信息（健康状态）， 不影响程序运行
 common_status::HealthStatus LocalizationModule::check_fill_health_msg(
-	ModuleStatus curr_running_module_status, flbot_msgs::msg::LocalizationModuleHealth& health_msg) {
+	const ModuleStatus curr_running_module_status, flbot_msgs::msg::LocalizationModuleHealth& health_msg) {
 	static const double imu_interval = 0.005;
 	static const double lidar_interval = 0.1;
 	static const double slam_interval = 0.1;
@@ -550,6 +550,13 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 		localization_status_.store(LocalizationStatus::Normal);
 	}
 
+	if (!slam_->get_filter_initialized() && curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
+		status_msg.localization_status = static_cast<int>(LocalizationStatus::Inactive);
+		localization_status_.store(LocalizationStatus::Inactive);
+		TRACE_INFO_CLASS("filter not processed first laser yet, localization_status == Inactive");
+		return;
+	}
+
 	auto node_status = local_node_status_.load(); //加载地图成功后，Normal；其他时候为Inactive
 	auto local_thrd_status = slam_->get_local_thrd_status();
 	// 和离线地图匹配情况
@@ -595,6 +602,13 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	} else {
 		status_msg.mapping_status = static_cast<int>(MappingStatus::Standby);
 		// TRACE_INFO_CLASS("mapping_status == Standby by default");
+	}
+
+	if (!slam_->get_filter_initialized() && is_mapping_status(curr_running_module_status)) {
+		status_msg.mapping_status = static_cast<int>(MappingStatus::Inactive);
+		mapping_status_.store(MappingStatus::Inactive);
+		TRACE_INFO_CLASS("filter not processed first laser yet, mapping_status == Inactive");
+		return;
 	}
 
 	auto node_status = mapping_node_status_.load();

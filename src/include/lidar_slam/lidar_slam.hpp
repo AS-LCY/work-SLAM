@@ -270,6 +270,7 @@ class LidarSlam {
 	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
 	SecmapRelocalThrdStatus get_secmap_relocal_thrd_status() { return secmap_relocal_thrd_status_.load(); }
 	inline LocalizeStatus get_localize_status() const { return localize_status_; }
+	inline bool get_filter_initialized() const { return filter_processed_first_laser_; }
 
    private:
 	bool sync_packages(MeasureGroup& meas);
@@ -358,6 +359,7 @@ class LidarSlam {
 	std::mutex mtx_pose_;
 
 	esekfom::esekf kf_;
+	bool filter_processed_first_laser_ = false;
 
 	std::unique_ptr<ImuProcess> p_imu_ = nullptr;
 	std::unique_ptr<BackEnd> back_end_ = nullptr;

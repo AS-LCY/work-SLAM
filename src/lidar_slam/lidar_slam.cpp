@@ -942,6 +942,9 @@ bool LidarSlam::run() {
 		}
 		// lidar_no_point_count_ = 0;
 		slam_run_status_.store(SlamRunStatus::Normal);
+		if (!filter_processed_first_laser_) {
+			filter_processed_first_laser_ = true;
+		}
 		return true;
 	} else {
 		// TRACE_WARN_CLASS("sync measure failed !");
