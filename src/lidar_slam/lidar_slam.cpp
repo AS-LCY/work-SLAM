@@ -540,8 +540,11 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 	if (curr_time < last_timestamp_lidar_) {
 		TRACE_WARN_CLASS("ignore this lidar data, curr lidar time: %f < last lidar time: %f", curr_time,
 						 last_timestamp_lidar_);
-		// lidar_buffer_.clear();
-		// time_buffer_.clear();
+		TRACE_INFO_CLASS("reset last_timestamp_lidar_ to curr lidar time: %f", curr_time);
+		TRACE_WARN_CLASS("lidar buffer cleared.");
+		last_timestamp_lidar_ = curr_time;
+		lidar_buffer_.clear();
+		time_buffer_.clear();
 		return;
 	} else if (curr_time - last_timestamp_lidar_ > 1.) {
 		TRACE_WARN_CLASS("laser lose rate! laser diff: %f > thresh: %f", curr_time - last_timestamp_lidar_, 1.);
@@ -606,6 +609,10 @@ void LidarSlam::imu_cbk(const std::shared_ptr<livox_ros::ImuMsg>& msg_in) {
 	if (curr_timestamp_imu < last_timestamp_imu_) {
 		TRACE_WARN_CLASS("ignore this imu data, curr imu time: %f < last imu time: %f", curr_timestamp_imu,
 						 last_timestamp_imu_);
+		TRACE_INFO_CLASS("reset last_timestamp_imu_ to curr imu time: %f", curr_timestamp_imu);
+		TRACE_WARN_CLASS("imu buffer cleared.");
+		last_timestamp_imu_ = curr_timestamp_imu;
+		imu_buffer_.clear();
 		return;
 	} else if (curr_timestamp_imu - last_timestamp_imu_ > 1.) {
 		TRACE_WARN_CLASS("imu lose rate! imu diff: %f > thresh: %f", curr_timestamp_imu - last_timestamp_imu_, 1.);
