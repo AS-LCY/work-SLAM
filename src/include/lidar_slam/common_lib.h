@@ -477,4 +477,67 @@ static float angle_norm(float a) {
 bool mkdir_p(const std::string& path, mode_t mode);
 bool create_directory_if_not_exists(const std::string& directory_path);
 
+inline std::string LocalizationStatustoString(common_status::LocalizationStatus status) {
+	switch (status) {
+		case common_status::LocalizationStatus::Inactive:
+			return "Inactive";
+		case common_status::LocalizationStatus::Relocalizing:
+			return "Relocalizing";
+		case common_status::LocalizationStatus::RelocalizeFailed:
+			return "RelocalizeFailed";
+		case common_status::LocalizationStatus::Normal:
+			return "Normal";
+		case common_status::LocalizationStatus::LowAccuracy:
+			return "LowAccuracy";
+		case common_status::LocalizationStatus::Failed:
+			return "Failed";
+		default:
+			return "Unknown";
+	}
+}
+
+inline std::string MappingStatustoString(common_status::MappingStatus status) {
+	switch (status) {
+		case common_status::MappingStatus::Inactive:
+			return "Inactive";
+		case common_status::MappingStatus::Relocalizing:
+			return "Relocalizing";
+		case common_status::MappingStatus::RelocalizeFailed:
+			return "RelocalizeFailed";
+		case common_status::MappingStatus::Standby:
+			return "Standby";
+		case common_status::MappingStatus::CreatingEle:
+			return "CreatingEle";
+		case common_status::MappingStatus::Failed:
+			return "Failed";
+		default:
+			return "Unknown";
+	}
+}
+
+inline std::string SlamRunStatustoString(common_status::SlamRunStatus status) {
+	switch (status) {
+		case common_status::SlamRunStatus::Inactive:
+			return "Inactive";
+		case common_status::SlamRunStatus::Normal:
+			return "Normal";
+		case common_status::SlamRunStatus::SyncFailed:
+			return "SyncFailed";
+		case common_status::SlamRunStatus::PointCloudEmpty:
+			return "PointCloudEmpty";
+		case common_status::SlamRunStatus::BeforeDownSampleTooFewPoints:
+			return "BeforeDownSampleTooFewPoints";
+		case common_status::SlamRunStatus::AfterDownSampleTooFewPoints:
+			return "AfterDownSampleTooFewPoints";
+		case common_status::SlamRunStatus::LidarOccluded:
+			return "LidarOccluded";
+		case common_status::SlamRunStatus::LioVelAbnormalInPredict:
+			return "LioVelAbnormalInPredict";
+		case common_status::SlamRunStatus::LioVelAbnormalInUpdate:
+			return "LioVelAbnormalInUpdate";
+		default:
+			return "Unknown";
+	}
+}
+
 #endif

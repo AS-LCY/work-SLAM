@@ -102,7 +102,7 @@ bool LocalizationModule::create_ROS_IO() {
 
 	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 	this->timer_slam_ =
-		node_->create_wall_timer(std::chrono::milliseconds(80), // 100ms = 10Hz
+		node_->create_wall_timer(std::chrono::milliseconds(20), // 100ms = 10Hz
 								 std::bind(&LocalizationModule::slam_dealt_timer, this), slam_callback_group_);
 
 	ctrl_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -537,6 +537,12 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 		publish_odometry_lidar_in_map(T_odom_lidar_time, T_map_baselink, T_odom_imu_updated, "map", "base_link",
 									  curr_running_module_status);
 		publish_OdomToMap_tf(T_odom_lidar_time, slam_->getOdomToMap());
+	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
+		TRACE_ERR_CLASS("localization not OK, not pub odom and tf, current localization status: %s",
+						LocalizationStatustoString(localization_status_.load()).c_str());
+	} else if (is_mapping_status(curr_running_module_status)) {
+		TRACE_ERR_CLASS("mapping not OK, not pub odom and tf, current mapping status: %s",
+						MappingStatustoString(mapping_status_.load()).c_str());
 	}
 }
 
@@ -561,11 +567,10 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 	auto local_thrd_status = slam_->get_local_thrd_status();
 	// 和离线地图匹配情况
 	// RelocalizeFailed, Relocalizing, Normal, LowAccuracy, Failed
-	auto slam_run_status = slam_->get_slam_run_status(); // lio状态
+	// TRACE_INFO_CLASS("local_thrd_status: %s", LocalizationStatustoString(local_thrd_status).c_str());
 
-	// TRACE_ERR_CLASS("node_status: %s", magic_enum::enum_name(node_status));
-	// TRACE_ERR_CLASS("slam_run_status: %s", magic_enum::enum_name(slam_run_status));
-	// TRACE_ERR_CLASS("local_thrd_status: %s", magic_enum::enum_name(local_thrd_status));
+	auto slam_run_status = slam_->get_slam_run_status(); // lio状态
+	// TRACE_INFO_CLASS("slam_run_status: %s", SlamRunStatustoString(slam_run_status).c_str());
 
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
@@ -587,6 +592,7 @@ void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_s
 	}
 
 	status_msg.lio_status = static_cast<int>(slam_run_status);
+	// TODO(jxl): 根据slam_run_status调整localization_status
 
 	log_info_manager_.slam_info.data[2] = static_cast<int>(localization_status_.load());
 }
@@ -614,6 +620,8 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 	auto node_status = mapping_node_status_.load();
 	auto slam_run_status = slam_->get_slam_run_status();
 	auto secmap_relocal_thrd_status = slam_->get_secmap_relocal_thrd_status();
+	// TRACE_INFO_CLASS("slam_run_status: %s", SlamRunStatustoString(slam_run_status).c_str());
+
 	static const bool check_delay = slam_param_.common.check_delay;
 	if (!check_delay) {
 		if (node_status == MappingNodeStatus::LidarCallbackDelay ||
@@ -639,8 +647,12 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 					magic_enum::enum_cast<MappingStatus>(static_cast<int>(secmap_relocal_thrd_status)).value();
 				mapping_status_.store(mapping_status);
 			}
-		} else if (slam_run_status == SlamRunStatus::LioVelAbnormalInPredict ||
-				   slam_run_status == SlamRunStatus::LioVelAbnormalInUpdate) {
+		} else if (slam_run_status == SlamRunStatus::PointCloudEmpty ||
+				   slam_run_status == SlamRunStatus::BeforeDownSampleTooFewPoints ||
+				   slam_run_status == SlamRunStatus::AfterDownSampleTooFewPoints ||
+				   slam_run_status == SlamRunStatus::LidarOccluded ||
+				   slam_run_status == SlamRunStatus::LioVelAbnormalInPredict ||
+				   slam_run_status == SlamRunStatus::LioVelAbnormalInUpdate) { //不包含同步失败
 			status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
 			mapping_status_.store(MappingStatus::Failed);
 		}
@@ -653,9 +665,6 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 		TRACE_ERR_CLASS("loop_closure_thread_delay  !!!");
 	} else {
 		TRACE_ERR_CLASS("mapping status error, set to Failed");
-		// TRACE_ERR_CLASS("node_status:%s ", magic_enum::enum_name(node_status));
-		// TRACE_ERR_CLASS("slam_run_status: :%s ", magic_enum::enum_name(slam_run_status));
-		// TRACE_ERR_CLASS("secmap_relocal_thrd_status::%s ", magic_enum::enum_name(secmap_relocal_thrd_status));
 	}
 	status_msg.mapping_status = static_cast<int>(MappingStatus::Failed);
 	mapping_status_.store(MappingStatus::Failed);

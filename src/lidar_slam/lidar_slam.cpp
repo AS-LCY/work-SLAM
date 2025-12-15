@@ -343,7 +343,7 @@ void LidarSlam::localizationThread() {
 		}
 
 		if (local_thrd_status_.load() == LocalizationStatus::RelocalizeFailed) {
-			TRACE_WARN_CLASS("global Localization failed: time out ");
+			TRACE_ERR_CLASS("global Localization failed: time out ");
 		} else {
 			if (!globalLocalizationSuccess_) {
 				local_thrd_status_.store(LocalizationStatus::Relocalizing);
@@ -379,9 +379,9 @@ void LidarSlam::localizationThread() {
 				}
 
 				if (!globalLocalizationSuccess_ && global_localize_count_ > global_localize_times) {
-					TRACE_WARN_CLASS("global localization failed: time out \n");
+					TRACE_ERR_CLASS("global localization failed: time out \n");
 					local_thrd_status_.store(LocalizationStatus::RelocalizeFailed);
-					TRACE_INFO_CLASS("localization status = RelocalizeFailed...\n");
+					TRACE_ERR_CLASS("localization status = RelocalizeFailed...\n");
 				}
 				if (globalLocalizationSuccess_) {
 					TRACE_INFO_CLASS("global localization success, localization status = Normal...");
@@ -714,15 +714,15 @@ bool LidarSlam::run() {
 		auto points_num = Measures_.lidar->points.size();
 		auto point_thresh = config_param_.common.before_downsample_size_thr;
 		if (points_num < point_thresh) {
-			// TRACE_WARN_CLASS("before downsample too few points: %d, thresh: %d", points_num, point_thresh);
+			TRACE_WARN_CLASS("before downsample too few points: %d, thresh: %d", points_num, point_thresh);
 			slam_run_status_.store(SlamRunStatus::BeforeDownSampleTooFewPoints);
 			return false;
 		}
 
-		bool occluded = check_occlusion(0.8);
+		bool occluded = check_occlusion(0.9);
 		if (occluded) {
 			slam_run_status_.store(SlamRunStatus::LidarOccluded);
-			// TRACE_WARN_CLASS("lidar occluded, skip this scan!");
+			TRACE_WARN_CLASS("lidar occluded, skip this scan!");
 			return false;
 		}
 
@@ -764,12 +764,12 @@ bool LidarSlam::run() {
 
 		state_ikfom state_point;
 		state_point = kf_.get_x(); // 滤波器predict的是状态是，每一imu时刻，imu frame在imu_0_frame(odom)下的状态
-		// bool vel_abnormal = check_lio_vel_abnormal(state_point);
-		// if (vel_abnormal) {
-		// 	slam_run_status_.store(SlamRunStatus::LioVelAbnormalInPredict);
-		// 	TRACE_WARN_CLASS("lio velocity abnormal in predict");
-		// 	return false;
-		// }
+		bool vel_abnormal = check_lio_vel_abnormal(state_point);
+		if (vel_abnormal) {
+			slam_run_status_.store(SlamRunStatus::LioVelAbnormalInPredict);
+			TRACE_WARN_CLASS("lio velocity abnormal in predict");
+			return false;
+		}
 
 		Eigen::Isometry3d T_b_lidar(Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I)
 										.matrix()); // T_imu_laser, laser frame wrt imu
@@ -791,7 +791,7 @@ bool LidarSlam::run() {
 
 		if (undistortCloud_->empty() || (undistortCloud_ == nullptr)) {
 			slam_run_status_.store(SlamRunStatus::PointCloudEmpty);
-			// TRACE_WARN_CLASS("No point, skip this scan!");
+			TRACE_WARN_CLASS("No point, skip this scan!");
 			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
 			// log_info_manager_.slam_info.data[13] = 0;
 			return false;
@@ -815,8 +815,8 @@ bool LidarSlam::run() {
 		if (feats_down_size_ < feats_down_size_thr_) {
 			// log_info_manager_.slam_info.data[15] = lidar_no_point_count_;
 			slam_run_status_.store(SlamRunStatus::AfterDownSampleTooFewPoints);
-			// TRACE_WARN_CLASS("after downsample too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
-			// 				 feats_down_size_thr_);
+			TRACE_WARN_CLASS("after downsample too few points: %d < thresh: %d, skip this scan!", feats_down_size_,
+							 feats_down_size_thr_);
 			return false;
 		}
 
@@ -848,12 +848,12 @@ bool LidarSlam::run() {
 		auto filter_pointcloud_and_laser_update_end = std::chrono::high_resolution_clock::now();
 
 		state_point = kf_.get_x();
-		// vel_abnormal = check_lio_vel_abnormal(state_point);
-		// if (vel_abnormal) {
-		// 	slam_run_status_.store(SlamRunStatus::LioVelAbnormalInUpdate);
-		// 	TRACE_WARN_CLASS("lio velocity abnormal in predict");
-		// 	return false;
-		// }
+		vel_abnormal = check_lio_vel_abnormal(state_point);
+		if (vel_abnormal) {
+			slam_run_status_.store(SlamRunStatus::LioVelAbnormalInUpdate);
+			TRACE_WARN_CLASS("lio velocity abnormal in predict");
+			return false;
+		}
 
 		T_b_lidar = Sophus::SE3d(state_point.offset_R_L_I, state_point.offset_T_L_I).matrix();
 		T_odom_b = Sophus::SE3d(state_point.rot, state_point.pos).matrix(); // b: 指的论文中的body，imu系
@@ -1014,11 +1014,11 @@ bool LidarSlam::check_lio_vel_abnormal(const state_ikfom& imu_state) {
 	const auto& vx = body_vel.x();
 	const auto& vy = body_vel.y();
 	const auto& vz = body_vel.z();
-	double vx_thresh = 1.2;
-	double vy_thresh = 0.3;
-	double vz_thresh = 0.3;
+	double vx_thresh = 1.5;
+	double vy_thresh = 1.5;
+	double vz_thresh = 1.0;
 	if (std::fabs(vx) >= vx_thresh || std::fabs(vy) >= vy_thresh || std::fabs(vz) >= vz_thresh) {
-		TRACE_WARN_CLASS("abnormal lidar velocity, vx: %.2f, vy: %.2f, vz: %.2f", vx, vy, vz);
+		TRACE_ERR_CLASS("abnormal lidar velocity, vx: %.2f, vy: %.2f, vz: %.2f", vx, vy, vz);
 		return true;
 	}
 	return false;
