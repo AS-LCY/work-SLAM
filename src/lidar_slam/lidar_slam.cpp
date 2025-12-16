@@ -396,7 +396,7 @@ void LidarSlam::localizationThread() {
 						TRACE_INFO_CLASS("integrate scan num = %d, move dist = %f", integrate_scan_num_,
 										 integrate_scan_move_dist_);
 						double t0 = omp_get_wtime();
-						TRACE_INFO_CLASS("start to global localize, try num = %d ...", global_localize_count_);
+						TRACE_INFO_CLASS("\n\nstart to global localize, try num = %d ...", global_localize_count_);
 						globalLocalizationSuccess_ =
 							localization_->globalLocalization(global_reg_method, global_localize_odom_cloud_sum_,
 															  T_odom_lidar_curr_, global_localize_count_);
@@ -916,7 +916,7 @@ bool LidarSlam::run() {
 		vel_abnormal = check_lio_vel_abnormal(state_point);
 		if (vel_abnormal) {
 			slam_run_status_.store(SlamRunStatus::LioVelAbnormalInUpdate);
-			TRACE_WARN_CLASS("lio velocity abnormal in predict");
+			TRACE_WARN_CLASS("lio velocity abnormal in update");
 			return false;
 		}
 
@@ -1153,6 +1153,7 @@ void LidarSlam::reset_global_localize_flags() {
 	integrate_scan_num_ = 0;
 	integrate_init_pose_ = false;
 	global_localize_odom_cloud_sum_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+	global_localize_odom_cloud_sum_->clear();
 }
 
 } // namespace lidar_slam

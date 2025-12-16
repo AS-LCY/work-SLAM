@@ -672,12 +672,14 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 }
 
 void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg) {
+	lidar_slam::TicToc timer_lidar_callback;
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
 	last_lidar_msg_time_ = curr_msg_time;
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
+	TRACE_INFO_CLASS("lidar msg time interval = %f ms", lidar_msg_interval_ * 1e3);
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
@@ -700,26 +702,17 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 		return;
 	}
 
-	double t0 = omp_get_wtime();
-	auto start = std::chrono::system_clock::now();
-
 	static const auto ring_count = slam_param_.lidar_preproc.cloud_ring_count;
 	static const auto col_count = slam_param_.lidar_preproc.cloud_column_count;
 	PointCloudType::Ptr cloud_preproc_ptr(new PointCloudType());
 	cloud_preproc_ptr->points.reserve(ring_count * col_count);
 	lidar_ptr_->pre_process(ros_msg, cloud_preproc_ptr); //间隔取点，去NAN, 去盲点
+
 	cloud_size_after_preprocess_.store(cloud_preproc_ptr->points.size());
-
-	double t1 = omp_get_wtime();
 	slam_->lidar_pcl_cbk(cloud_preproc_ptr); // 传入降采样后的点云给算法
-	double t100 = omp_get_wtime();
 
-	auto end = std::chrono::system_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-	if ((t1 - t0) * 1000 > time_cost_thr_print) { // 10ms
-		TRACE_DBG_CLASS("lidar pre_process, time cost: %f ms --------", (t100 - t0) * 1000);
-	}
+	const auto lidar_callback_cost_time = timer_lidar_callback.toc();
+	TRACE_INFO_CLASS("lidar callback cost time = %f ms", lidar_callback_cost_time);
 }
 
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {

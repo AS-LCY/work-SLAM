@@ -556,10 +556,10 @@ RegOutput Localization::icpAlignment() {
 	}
 	if (relocalize_config_.verbose_) {
 		if (overlapness >= relocalize_config_.gicp_config_.overlap_threshold_) {
-			TRACE_INFO_CLASS("global localization: local refine overlapness: %f% >= thresh: %f%", overlapness,
+			TRACE_INFO_CLASS("loca refine OK: local refine overlapness: %f% >= thresh: %f%", overlapness,
 							 relocalize_config_.gicp_config_.overlap_threshold_);
 		} else {
-			TRACE_ERR_CLASS("global localization: local refine overlapness: %f% < thresh: %f%", overlapness,
+			TRACE_ERR_CLASS("local refine failed: local refine overlapness: %f% < thresh: %f%", overlapness,
 							relocalize_config_.gicp_config_.overlap_threshold_);
 		}
 	}
@@ -579,7 +579,7 @@ void Localization::localRefine(const Eigen::Matrix4d& coarse_alignment, RegOutpu
 	const auto& fine_output = icpAlignment(); // local refine
 	const auto t = timer.toc();
 	TRACE_INFO_CLASS("local refine cost time = %f ms", t);
-	reg_output = fine_output;
+	reg_output = fine_output; // icp中不计算num_final_inliers_，默认会置为0
 	reg_output.pose_ = fine_output.pose_ * coarse_alignment;
 
 	if (debug_relocalize_) {
@@ -606,6 +606,7 @@ RegOutput Localization::coarseToFineAlignment() {
 	const auto& solution = global_reg_handler_->estimate(src_vec, tgt_vec);
 	const size_t num_inliers = global_reg_handler_->getNumFinalInliers();
 	reg_output.num_final_inliers_ = num_inliers; // TODO(jxl): 内点个数怎么计算的？
+	global_reg_handler_->print();
 
 	if (relocalize_config_.verbose_) {
 		if (num_inliers >= relocalize_config_.num_inliers_threshold_) {
@@ -626,6 +627,9 @@ RegOutput Localization::coarseToFineAlignment() {
 	coarse_alignment.block<3, 3>(0, 0) = solution.rotation.cast<double>();
 	coarse_alignment.topRightCorner(3, 1) = solution.translation.cast<double>();
 	localRefine(coarse_alignment, reg_output);
+
+	// icp中不计算num_final_inliers_，默认会置为0, 所以恢复成kiss matcher计算的结果
+	reg_output.num_final_inliers_ = num_inliers;
 	return reg_output;
 }
 
@@ -774,12 +778,12 @@ bool Localization::globalLocalization(const std::string& global_reg_method,
 	if (use_kiss_matcher) {
 		lidar_slam::TicToc timer_alignment;
 		reg_output = coarseToFineAlignment();
-		global_reg_handler_->print();
 		const auto t = timer_alignment.toc();
 		TRACE_INFO_CLASS("global localization cost time = %f ms", t);
 
 		if (!reg_output.is_valid_) {
-			TRACE_ERR_CLASS("global localization alignment rejected. # of inliers: %d", reg_output.num_final_inliers_);
+			TRACE_ERR_CLASS("global localization failed # of inliers: %d, overlapness = %f",
+							reg_output.num_final_inliers_, reg_output.overlapness_);
 			return false;
 		}
 	} else { // 3d bbs
@@ -788,7 +792,8 @@ bool Localization::globalLocalization(const std::string& global_reg_method,
 		const auto t = timer_alignment.toc();
 		TRACE_INFO_CLASS("global localization cost time = %f ms", t);
 		if (!reg_output.is_valid_) {
-			TRACE_ERR_CLASS("global localization alignment rejected. # of inliers: %d", reg_output.num_final_inliers_);
+			TRACE_ERR_CLASS("global localization failed # of inliers: %d, overlapness = %f",
+							reg_output.num_final_inliers_, reg_output.overlapness_);
 			return false;
 		}
 	}
