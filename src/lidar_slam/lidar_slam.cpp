@@ -325,6 +325,12 @@ void LidarSlam::localizationThread() {
 	static int wait_time = 0;
 
 	while (thread_run_ && reseting_ == false) {
+		if (!filter_processed_first_laser_) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(300));
+			// TRACE_WARN_CLASS("filter not processed first laser, localize thread do nothing");
+			continue;
+		}
+
 		hb_time_thread_localize_.store(rclcpp::Clock().now().seconds());
 		auto start = std::chrono::steady_clock::now();
 		temp.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -393,10 +399,10 @@ void LidarSlam::localizationThread() {
 										 integrate_scan_move_dist_);
 						continue;
 					} else {
-						TRACE_INFO_CLASS("integrate scan num = %d, move dist = %f", integrate_scan_num_,
+						TRACE_INFO_CLASS("\n\nintegrate scan num = %d, move dist = %f", integrate_scan_num_,
 										 integrate_scan_move_dist_);
 						double t0 = omp_get_wtime();
-						TRACE_INFO_CLASS("\n\nstart to global localize, try num = %d ...", global_localize_count_);
+						TRACE_INFO_CLASS("start to global localize, try num = %d ...", global_localize_count_);
 						globalLocalizationSuccess_ =
 							localization_->globalLocalization(global_reg_method, global_localize_odom_cloud_sum_,
 															  T_odom_lidar_curr_, global_localize_count_);
@@ -409,9 +415,9 @@ void LidarSlam::localizationThread() {
 						if (!globalLocalizationSuccess_) {
 							TRACE_ERR_CLASS("global localization failed, reset integrate scan.");
 							reset_global_localize_flags();
-							// integrate_scan_move_dist_thresh =
-							// 	integrate_scan_move_dist_thresh_init + global_localize_count_; //线性增加
-							integrate_scan_move_dist_thresh += global_localize_count_; //非线性增加
+							integrate_scan_move_dist_thresh =
+								integrate_scan_move_dist_thresh_init + global_localize_count_; //线性增加
+							// integrate_scan_move_dist_thresh += global_localize_count_; //非线性增加
 						}
 					}
 

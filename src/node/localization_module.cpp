@@ -538,11 +538,11 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 									  curr_running_module_status);
 		publish_OdomToMap_tf(T_odom_lidar_time, slam_->getOdomToMap());
 	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-		TRACE_ERR_CLASS("localization not OK, not pub odom and tf, current localization status: %s",
-						LocalizationStatustoString(localization_status_.load()).c_str());
+		// TRACE_ERR_CLASS("localization not OK, not pub odom and tf, current localization status: %s",
+		// 				LocalizationStatustoString(localization_status_.load()).c_str());
 	} else if (is_mapping_status(curr_running_module_status)) {
-		TRACE_ERR_CLASS("mapping not OK, not pub odom and tf, current mapping status: %s",
-						MappingStatustoString(mapping_status_.load()).c_str());
+		// TRACE_ERR_CLASS("mapping not OK, not pub odom and tf, current mapping status: %s",
+		// 				MappingStatustoString(mapping_status_.load()).c_str());
 	}
 }
 
@@ -679,7 +679,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	last_lidar_msg_time_ = curr_msg_time;
 	lidar_msg_interval_ = curr_msg_time - last_msg_time;
 	last_msg_time = curr_msg_time;
-	TRACE_INFO_CLASS("lidar msg time interval = %f ms", lidar_msg_interval_ * 1e3);
+	// TRACE_INFO_CLASS("lidar msg time interval = %f ms", lidar_msg_interval_ * 1e3);
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
@@ -712,7 +712,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	slam_->lidar_pcl_cbk(cloud_preproc_ptr); // 传入降采样后的点云给算法
 
 	const auto lidar_callback_cost_time = timer_lidar_callback.toc();
-	TRACE_INFO_CLASS("lidar callback cost time = %f ms", lidar_callback_cost_time);
+	// TRACE_INFO_CLASS("lidar callback cost time = %f ms", lidar_callback_cost_time);
 }
 
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {

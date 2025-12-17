@@ -143,8 +143,8 @@ class Localization {
 
 	pcl::VoxelGrid<pcl::PointXYZI> ds_source_cloud_filter_;
 	pcl::VoxelGrid<pcl::PointXYZI> ds_target_cloud_filter_;
-	lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> source_voxel_grid_filter_;
-	lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> target_voxel_grid_filter_;
+	// lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> source_voxel_grid_filter_;
+	// lidar_slam::ThreadSafeVoxelGrid<pcl::PointXYZI> target_voxel_grid_filter_;
 
 	pcl::PointCloud<pcl::PointXYZI>::Ptr source_ds_ = nullptr;
 	pcl::PointCloud<pcl::PointXYZI>::Ptr target_ds_ = nullptr;

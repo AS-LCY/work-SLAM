@@ -50,7 +50,7 @@ struct KISSMatcherConfig {
 	// as a default Enabling `use_ratio_test_` may cause a slight slowdown, and
 	// its impact is insignificant at the scan level.
 	bool use_ratio_test_ = false;
-	std::string robin_mode_ = "max_core";
+	std::string robin_mode_ = "max_core"; //"max_core", "None"
 	float tuple_scale_ = 0.95;
 	int num_max_corr_ = 5000;
 
@@ -61,13 +61,15 @@ struct KISSMatcherConfig {
 	float solver_noise_bound_ = voxel_size_ * solver_noise_bound_gain_;
 	bool use_quatro_ = false;
 
-	KISSMatcherConfig(const float voxel_size = 0.3, const float use_voxel_sampling = true,
-					  const float use_quatro = false, const float thr_linearity = 1.0, const int num_max_corr = 5000,
-					  // Below params just works in general cases
-					  const float normal_r_gain = 3.0, const float fpfh_r_gain = 5.0,
-					  // The smaller, more conservative
-					  const float robin_noise_bound_gain = 1.0, const float solver_noise_bound_gain = 0.75,
-					  const bool enable_noise_bound_clamping = true) {
+	KISSMatcherConfig(
+		const float voxel_size = 0.3, const float use_voxel_sampling = true, const float use_quatro = false,
+		const float thr_linearity = 1.0, const int num_max_corr = 5000,
+		// Below params just works in general cases
+		const float normal_r_gain = 3.0, const float fpfh_r_gain = 5.0,
+		// The smaller, more conservative
+		const float robin_noise_bound_gain = 3.0,  // raw: 1.0
+		const float solver_noise_bound_gain = 3.0, // raw: 0.75, solver_noise_bound_gain <= robin_noise_bound_gain
+		const bool enable_noise_bound_clamping = false) { // raw: false
 		if (voxel_size < 5e-3) {
 			throw std::runtime_error("Too small voxel size has been given. Please check your voxel size.");
 		}

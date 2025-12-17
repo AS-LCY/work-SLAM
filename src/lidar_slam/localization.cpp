@@ -70,8 +70,8 @@ void Localization::initGlobalLocalize() {
 
 	ds_source_cloud_filter_.setLeafSize(gc.ds_source_leaf_size_, gc.ds_source_leaf_size_, gc.ds_source_leaf_size_);
 	ds_target_cloud_filter_.setLeafSize(gc.ds_target_leaf_size_, gc.ds_target_leaf_size_, gc.ds_target_leaf_size_);
-	source_voxel_grid_filter_.setLeafSize(gc.ds_source_leaf_size_, gc.ds_source_leaf_size_, gc.ds_source_leaf_size_);
-	target_voxel_grid_filter_.setLeafSize(gc.ds_target_leaf_size_, gc.ds_target_leaf_size_, gc.ds_target_leaf_size_);
+	// source_voxel_grid_filter_.setLeafSize(gc.ds_source_leaf_size_, gc.ds_source_leaf_size_, gc.ds_source_leaf_size_);
+	// target_voxel_grid_filter_.setLeafSize(gc.ds_target_leaf_size_, gc.ds_target_leaf_size_, gc.ds_target_leaf_size_);
 	source_ds_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	target_ds_.reset(new pcl::PointCloud<pcl::PointXYZI>());
 	cropped_target_.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -276,8 +276,8 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		localize_status.num_inliers = num_inliers;
 		localize_status.inlier_fraction = inlier_fraction;
 		localize_status.cost_time = cost_time;
-		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f, cost time = %f",
-						 matching_error, num_inliers, inlier_fraction, cost_time);
+		TRACE_INFO_CLASS("gicp converged with inlier avg score: %f, inlier num = %d, inlier rate = %f%, cost time = %f",
+						 matching_error, num_inliers, inlier_fraction * 100.f, cost_time);
 
 		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
@@ -573,7 +573,8 @@ void Localization::localRefine(const Eigen::Matrix4d& coarse_alignment, RegOutpu
 					 coarse_map_odom_euler[2] * RAD2DEGREE);
 	TRACE_INFO_CLASS("global_localize given init T_map_odom trans x: %f, y: %f, z: %f", coarse_alignment(0, 3),
 					 coarse_alignment(1, 3), coarse_alignment(2, 3));
-	*coarse_aligned_ = transformPcd(*src_cloud_, coarse_alignment);
+	coarse_aligned_ =
+		transformPcd<pcl::PointXYZI>(pcl::PointCloud<pcl::PointXYZI>::ConstPtr(src_cloud_), coarse_alignment);
 
 	lidar_slam::TicToc timer;
 	const auto& fine_output = icpAlignment(); // local refine
@@ -583,7 +584,8 @@ void Localization::localRefine(const Eigen::Matrix4d& coarse_alignment, RegOutpu
 	reg_output.pose_ = fine_output.pose_ * coarse_alignment;
 
 	if (debug_relocalize_) {
-		*debug_cloud_ = transformPcd(*src_cloud_, reg_output.pose_);
+		debug_cloud_ =
+			transformPcd<pcl::PointXYZI>(pcl::PointCloud<pcl::PointXYZI>::ConstPtr(src_cloud_), reg_output.pose_);
 		auto relocalize_dir = common_param_.map_directory + std::string("/relocalize_debug_result/");
 		create_directory_if_not_exists(relocalize_dir);
 		auto pcd_name = std::to_string(getSystemTimeSeconds()) + std::string(".pcd");

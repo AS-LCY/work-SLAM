@@ -210,7 +210,11 @@ void KISSMatcher::print() {
 	TRACE_INFO_CLASS("# initial pairs : %d", robin_matching_->getNumInitialCorrespondences());
 	TRACE_INFO_CLASS("# pruned pairs : %d", robin_matching_->getNumPrunedCorrespondences());
 	TRACE_INFO_CLASS("----------------------------------");
-
+	TRACE_INFO_CLASS("# robin_noise_bound_gain = %f, solver_noise_bound_gain = %f", config_.robin_noise_bound_gain_,
+					 config_.solver_noise_bound_gain_);
+	TRACE_INFO_CLASS("# robin_noise_bound = %f, solver_noise_bound = %f", config_.robin_noise_bound_,
+					 config_.solver_noise_bound_);
+	TRACE_INFO_CLASS("# voxel_size = %f", config_.voxel_size_);
 	TRACE_INFO_CLASS("# rot inliers : %d", solver_->getRotationInliers().size());
 	TRACE_INFO_CLASS("# trans inliers : %d", solver_->getTranslationInliers().size());
 

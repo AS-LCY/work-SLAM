@@ -400,12 +400,14 @@ Eigen::Matrix3d rpy2R(const Eigen::Vector3d& rpy);
 Eigen::Matrix3d g2R(const Eigen::Vector3d& g);
 
 template <typename T>
-inline pcl::PointCloud<T> transformPcd(const pcl::PointCloud<T>& cloud_in, const Eigen::Matrix4d& pose) {
-	if (cloud_in.empty()) {
-		return cloud_in;
+inline typename pcl::PointCloud<T>::Ptr transformPcd(const typename pcl::PointCloud<T>::ConstPtr& cloud_in,
+													 const Eigen::Matrix4d& pose) {
+	if (!cloud_in || cloud_in->empty()) {
+		return typename pcl::PointCloud<T>::Ptr(new pcl::PointCloud<T>());
 	}
-	pcl::PointCloud<T> cloud_out;
-	pcl::transformPointCloud(cloud_in, cloud_out, pose);
+
+	auto cloud_out = typename pcl::PointCloud<T>::Ptr(new pcl::PointCloud<T>());
+	pcl::transformPointCloud(*cloud_in, *cloud_out, pose);
 	return cloud_out;
 }
 
