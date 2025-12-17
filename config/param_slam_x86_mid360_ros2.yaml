@@ -217,9 +217,6 @@
                                         # In cases of partial overlap, this ratio can never reach 100%.
                                         # If you set `num_submap_keyframes` as 1 (i.e., scan-to-scan matching),
                                         # it's recommended to use a higher value.
-
-
-
     ikdtree:
       cube_len: 400.0
       det_range: 40.0

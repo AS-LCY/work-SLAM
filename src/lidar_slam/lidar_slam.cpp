@@ -1085,11 +1085,13 @@ bool LidarSlam::check_lio_vel_abnormal(const state_ikfom& imu_state) {
 	const auto& vx = body_vel.x();
 	const auto& vy = body_vel.y();
 	const auto& vz = body_vel.z();
-	double vx_thresh = 1.5;
-	double vy_thresh = 1.5;
+	double vx_thresh = 2.0;
+	double vy_thresh = 2.0;
 	double vz_thresh = 1.0;
 	if (std::fabs(vx) >= vx_thresh || std::fabs(vy) >= vy_thresh || std::fabs(vz) >= vz_thresh) {
-		TRACE_ERR_CLASS("abnormal lidar velocity, vx: %.2f, vy: %.2f, vz: %.2f", vx, vy, vz);
+		TRACE_WARN_CLASS(
+			"abnormal lidar velocity, vx: %.2f >= thresh = %f, vy: %.2f >= thresh = %f, vz: %.2f >= thresh = %f", vx,
+			vx_thresh, vy, vy_thresh, vz, vz_thresh);
 		return true;
 	}
 	return false;

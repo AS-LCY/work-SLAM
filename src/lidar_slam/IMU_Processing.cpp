@@ -184,6 +184,12 @@ void ImuProcess::UndistortPcl(MeasureGroup& meas, esekfom::esekf& kf_state, Poin
 		} else {
 			dt = tail->time_stamp - head->time_stamp; //两个IMU时刻之间的时间间隔
 		}
+		if (std::fabs(dt) >= 0.1) {
+			dt = 0.1;
+			TRACE_WARN_CLASS("[filter predict]: dt = %f ms > thresh = 100ms, reset dt = 0.1s", dt * 1e3);
+			TRACE_WARN_CLASS("head->time_stamp = %f, tail->time_stamp = %f, last_lidar_end_time = %f", head->time_stamp,
+							 tail->time_stamp, last_lidar_end_time_);
+		}
 
 		in.acc = acc_avr; // 两帧IMU的中值作为输入in  用于前向传播
 		in.gyro = angvel_avr;
