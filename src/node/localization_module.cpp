@@ -405,11 +405,15 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	log_info_manager_.slam_info.data[12] = cloud_size_after_preprocess;
 	log_info_manager_.slam_info.data[14] = slam_->get_feats_down_size();
 
-	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;		   // unit: ms
-	health_msg.delay_cbk_imu = delay_imu_ * 1e3;			   // unit: ms
+	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3; // unit: ms
+	health_msg.delay_cbk_imu = delay_imu_ * 1e3;	 // unit: ms
+
 	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
 	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
-	health_msg.lio_cost_time = lio_cost_time * 1e3;			   // unit: ms
+
+	health_msg.lio_cost_time = lio_cost_time * 1e3;					  // unit: ms
+	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_ * 1e3; // unit: ms
+	health_msg.imu_cbk_cost_time = imu_callback_cost_time_ * 1e3;	  // unit: ms
 
 	auto localize_statue = slam_->get_localize_status();
 	health_msg.localize_converged = localize_statue.converged;
@@ -711,11 +715,12 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	cloud_size_after_preprocess_.store(cloud_preproc_ptr->points.size());
 	slam_->lidar_pcl_cbk(cloud_preproc_ptr); // 传入降采样后的点云给算法
 
-	const auto lidar_callback_cost_time = timer_lidar_callback.toc();
+	lidar_callback_cost_time_ = timer_lidar_callback.toc();
 	// TRACE_INFO_CLASS("lidar callback cost time = %f ms", lidar_callback_cost_time);
 }
 
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
+	lidar_slam::TicToc timer_imu_callback;
 	auto curr_msg_time = rclcpp::Time(msg_in->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
 	last_imu_msg_time_ = curr_msg_time;
@@ -753,8 +758,8 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 		return;
 	} else {
 		slam_->imu_cbk(msg);
-		return;
 	}
+	imu_callback_cost_time_ = timer_imu_callback.toc();
 }
 
 void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
