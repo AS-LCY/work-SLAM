@@ -411,9 +411,9 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
 	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
 
-	health_msg.lio_cost_time = lio_cost_time * 1e3;					  // unit: ms
-	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_ * 1e3; // unit: ms
-	health_msg.imu_cbk_cost_time = imu_callback_cost_time_ * 1e3;	  // unit: ms
+	health_msg.lio_cost_time = lio_cost_time * 1e3;				// unit: ms
+	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_; // unit: ms
+	health_msg.imu_cbk_cost_time = imu_callback_cost_time_;		// unit: ms
 
 	auto localize_statue = slam_->get_localize_status();
 	health_msg.localize_converged = localize_statue.converged;

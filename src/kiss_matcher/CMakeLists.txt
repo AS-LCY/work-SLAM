@@ -19,7 +19,7 @@ message("")
 
 option(USE_CCACHE "Build using Ccache if found on the path" ON)
 option(USE_SYSTEM_EIGEN3 "Use system pre-installed Eigen" ON)
-option(USE_SYSTEM_TBB "Use system pre-installed oneAPI/tbb" OFF)
+option(USE_SYSTEM_TBB "Use system pre-installed oneAPI/tbb" ON)
 option(USE_SYSTEM_ROBIN "Use system pre-installed ROBIN from SPARK @ MIT" ON)
 option(USE_ADDRESS_SANITIZER "Use address sanitizer" OFF)
 
@@ -71,7 +71,7 @@ add_library(${TARGET_NAME} STATIC
     core/kiss_matcher/GncSolver.cpp
 )
 add_library(kiss_matcher::kiss_matcher_core ALIAS kiss_matcher_core)
-
+target_compile_options(kiss_matcher_core PRIVATE -fPIC)
 target_link_libraries(${TARGET_NAME}
     PUBLIC Eigen3::Eigen robin::robin ${OpenMP_LIBS} ${EIGEN3_LIBS} TBB::tbb ${LZ4_LIBRARY} ${logTracer_LIBRARY}
 )
