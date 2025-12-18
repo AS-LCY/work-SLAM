@@ -49,12 +49,12 @@
       # baselink_lidar_rot: [-89.999858, -1.051854, -3.615852] # unit(degree) yaw, pitch, roll
       
       # 正着安装，172.18.0.98(wanji lidar)
-      baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
-      baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
+      # baselink_lidar_trans: [0.37, 0.0, 0.202] # unit: meter, x, y, z
+      # baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
 
       # 正着安装，172.18.2.239(wanji lidar)
-      # baselink_lidar_trans: [0.36, 0.0, 0.189] # unit: meter, x, y, z
-      # baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
+      baselink_lidar_trans: [0.36, 0.0, 0.189] # unit: meter, x, y, z
+      baselink_lidar_rot: [0.0, 3.448, 0.0] # unit(degree) yaw, pitch, roll
 
       # hesai lidar to hesai imu
       # lidar_imu_trans: [0.0, 0.0, 0.0]  # unit: meter, x, y, z
@@ -69,12 +69,12 @@
       # lidar_imu_rot: [0.0, 0.0, 0.0]    # unit(degree) yaw, pitch, roll
 
       # 172.18.0.98(wanji lidar) to mcu imu(+x, +y, +z, 后左下)
-      lidar_imu_trans: [0.0, 0.22, -0.06]  # unit: meter, x, y, z
-      lidar_imu_rot: [0.0, 176.552, 0.0]    # unit(degree) yaw, pitch, roll
+      # lidar_imu_trans: [0.0, 0.22, -0.06]  # unit: meter, x, y, z
+      # lidar_imu_rot: [0.0, 176.552, 0.0]    # unit(degree) yaw, pitch, roll
       
       # 172.18.2.239(wanji lidar) to mcu_3.0 imu(+x, +y, +z, 左前下)
-      # lidar_imu_trans: [-0.36, 0.0, -0.03]  # unit: meter, x, y, z
-      # lidar_imu_rot: [90.0, 0.0, 176.552]   # unit(degree) yaw, pitch, roll
+      lidar_imu_trans: [-0.36, 0.0, -0.03]  # unit: meter, x, y, z
+      lidar_imu_rot: [90.0, 0.0, 176.552]   # unit(degree) yaw, pitch, roll
 
       # lidar(172.18.3.231) to mcu_imu(+x, +y, +z, 后左下) (/mcu_imu)
       # lidar_imu_trans: [0.0, -0.22, -0.06]  # unit: meter, x, y, z
