@@ -18,7 +18,7 @@
       pub_topic_module_loginfo: "/flbot/localization_module/log_info"
       pub_topic_slipping: "/flbot/localization_module/slipping_old"
       receive_lidar_freq: 10 # unit: hz
-      slam_lose_rate_time_thr: 0.01 # unit: second
+      slam_lose_rate_time_thr: 0.12 # unit: second
 
       check_delay: false
       before_downsample_size_thr: 3000 # 降采样前点个数不能小于3000个

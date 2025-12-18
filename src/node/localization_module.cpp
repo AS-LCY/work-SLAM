@@ -335,12 +335,12 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	bool hb_cbk_imu = std::fabs(delay_imu) < imu_interval * imu_ratio ? true : false;
 	bool hb_timer_slam = std::fabs(delay_slam) < slam_interval * slam_ratio ? true : false;
 	if (!hb_cbk_lidar && slam_param_.common.run_on_mower) {
-		TRACE_WARN_CLASS("current time = %f, latest lidar time = %f, time interval >= %f ms", curr_time,
-						 last_lidar_msg_time_, delay_lidar * 1e3);
+		// TRACE_WARN_CLASS("current time = %f, latest lidar time = %f, time interval >= %f ms", curr_time,
+		// 				 last_lidar_msg_time_, delay_lidar * 1e3);
 	}
 	if (!hb_cbk_imu && slam_param_.common.run_on_mower) {
-		TRACE_WARN_CLASS("current time = %f, latest imu time = %f, time interval >= %f ms", curr_time,
-						 last_imu_msg_time_, delay_imu * 1e3);
+		// TRACE_WARN_CLASS("current time = %f, latest imu time = %f, time interval >= %f ms", curr_time,
+		// 				 last_imu_msg_time_, delay_imu * 1e3);
 	}
 
 	bool hb_thread_localize = true;
@@ -524,10 +524,11 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 
 	if (status_msg.localization_status != 0 && status_msg.localization_status != 3 &&
 		status_msg.localization_status != 4) { // Inactive = 0, Normal = 3, LowAccuracy = 4,
-		// TRACE_WARN_CLASS("[Status Timer]: localization_status: %d", int(status_msg.localization_status));
+		TRACE_WARN_CLASS("[Status Timer]: localization_status: %s",
+						 LocalizationStatustoString(localization_status_.load()).c_str());
 	}
 	if (status_msg.mapping_status != 0 && status_msg.mapping_status != 3) { // Inactive = 0, Standby = 3,
-		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %d", int(status_msg.mapping_status));
+		TRACE_WARN_CLASS("[Status Timer]: mapping_status: %s", MappingStatustoString(mapping_status_.load()).c_str());
 	}
 
 	auto localization_ok = curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
