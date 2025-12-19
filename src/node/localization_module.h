@@ -248,6 +248,9 @@ class LocalizationModule {
 	double last_lidar_msg_time_ = 0.f;
 	double delay_imu_ = 0.f;
 	double delay_lidar_ = 0.f;
+	double lidar_callback_interval_ = 0.f;
+	double imu_callback_interval_ = 0.f;
+	double lio_thread_interval_ = 0.f;
 
 	std::atomic<double> hb_time_thread_loop_closure_;
 	std::atomic<double> hb_time_thread_secmap_relocalize_;

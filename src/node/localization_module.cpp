@@ -169,7 +169,6 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		TRACE_DBG_CLASS("slam_ not initialized yet, main thread return");
 		return;
 	}
-
 	double t0 = omp_get_wtime();
 
 	// if (slam_param_.common.cpu_id.size() > 0) {
@@ -180,18 +179,17 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 	// 	}
 	// }
 
-	static double last_slam_hb = hb_time_timer_slam_.load();
 	hb_time_timer_slam_.store(node_->now().seconds());
-	double slam_timer_interval = hb_time_timer_slam_.load() - last_slam_hb;
-
-	log_info_manager_.slam_info.data[29] = slam_timer_interval;
+	static double last_slam_hb = hb_time_timer_slam_.load();
+	lio_thread_interval_ = hb_time_timer_slam_.load() - last_slam_hb;
+	log_info_manager_.slam_info.data[29] = lio_thread_interval_;
 	last_slam_hb = hb_time_timer_slam_.load();
 
-	if (slam_timer_interval < 0) {
-		TRACE_ERR_CLASS("slam main thread time jump back, this_time - last_time = %.3f seconds", slam_timer_interval);
+	if (lio_thread_interval_ < 0) {
+		TRACE_ERR_CLASS("slam main thread time jump back, this_time - last_time = %.3f ms", lio_thread_interval_ * 1e3);
 	}
-	if (slam_timer_interval > 0.3) {
-		// TRACE_ERR_CLASS("main thread cost time = %.3f ms", slam_timer_interval * 1e3);
+	if (lio_thread_interval_ > 0.2) {
+		TRACE_ERR_CLASS("lio thread time interval = %.3f ms > thresh = 200ms", lio_thread_interval_ * 1e3);
 	}
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
@@ -219,7 +217,6 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 
 	// running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
 	bool running_slam_flag = slam_->run();
-	// if (running_slam_flag) {
 	if (pubBodyCloud->get_subscription_count() > 0) {
 		double cloud_time = 0.f;
 		auto cloud = slam_->get_baselink_cloud(cloud_time);
@@ -230,8 +227,6 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		auto cloud = slam_->get_odom_cloud(cloud_time);
 		publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
 	}
-	// process_loginfo();
-	// }
 
 	auto localization_status_now = localization_status_.load();
 	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == MappingStatus::Standby) {
@@ -415,6 +410,10 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_; // unit: ms
 	health_msg.imu_cbk_cost_time = imu_callback_cost_time_;		// unit: ms
 
+	health_msg.lidar_callback_trigger_interval = lidar_callback_interval_ * 1e3; // unit: ms
+	health_msg.imu_callback_trigger_interval = imu_callback_interval_ * 1e3;	 // unit: ms
+	health_msg.lio_thread_interval = lio_thread_interval_ * 1e3;				 // unit: ms
+
 	auto localize_statue = slam_->get_localize_status();
 	health_msg.localize_converged = localize_statue.converged;
 	health_msg.localize_fit_score = localize_statue.fit_score;
@@ -465,7 +464,7 @@ void LocalizationModule::pub_module_status_timer() {
 
 	pub_localization_module_status_->publish(status_msg);
 	pub_localization_module_health_->publish(health_msg);
-	pub_log_->publish(log_info_manager_.slam_info);
+	// pub_log_->publish(log_info_manager_.slam_info);
 }
 
 //局部函数
@@ -688,9 +687,18 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
+	static double last_callback_trigger_time = curr_time;
+	lidar_callback_interval_ = curr_time - last_callback_trigger_time;
+	last_callback_trigger_time = curr_time;
 	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
-	// TRACE_INFO_CLASS("received lidar msg, curr_time: %.3f ms, msg_time: %.3f, time delay: %.3f ms", curr_time * 1e3,
-	// 				 curr_msg_time * 1e3, delay_lidar_ * 1e3);
+	if (delay_lidar_ > 0.2) {
+		TRACE_WARN_CLASS("curr_time: %.3f ms, curr lidar msg_time: %.3f, time delay: %.3f ms > thresh = 200ms",
+						 curr_time * 1e3, curr_msg_time * 1e3, delay_lidar_ * 1e3);
+	}
+	if (lidar_callback_interval_ > 0.2) {
+		TRACE_WARN_CLASS("lidar callback trigger time interval = %.3f ms > thresh = 200ms",
+						 lidar_callback_interval_ * 1e3);
+	}
 
 	// if (slam_param_.common.cpu_id.size() > 0) {
 	// 	pthread_t this_thread = pthread_self(); // 获取当前线程的 ID
@@ -731,7 +739,17 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	auto curr_ros_time = node_->now();
 	double curr_time = rclcpp::Time(curr_ros_time).seconds();
 	delay_imu_ = curr_time - curr_msg_time; //当前时刻和最新imu消息时间差
+	static double last_callback_trigger_time = curr_time;
+	imu_callback_interval_ = curr_time - last_callback_trigger_time;
+	last_callback_trigger_time = curr_time;
 	TRACE_DBG_CLASS("received imu msg, time delay: %.3f ms", delay_imu_ * 1e3);
+	if (delay_imu_ > 0.1) {
+		TRACE_WARN_CLASS("curr_time: %.3f ms, curr imu msg_time: %.3f, time delay: %.3f ms > thresh = 100ms",
+						 curr_time * 1e3, curr_msg_time * 1e3, delay_imu_ * 1e3);
+	}
+	if (imu_callback_interval_ > 0.1) {
+		TRACE_WARN_CLASS("imu callback trigger time interval = %.3f ms > thresh = 100ms", imu_callback_interval_ * 1e3);
+	}
 
 	// transfer IMU : IMU-frame to baselink-frame
 	Eigen::Vector3d ang_before(msg_in->angular_velocity.x, msg_in->angular_velocity.y, msg_in->angular_velocity.z);
