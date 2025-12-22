@@ -60,10 +60,10 @@ bool LocalizationModule::create_ROS_IO() {
 	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(10));
 	lidar_qos.best_effort();
 
-	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(400));
+	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(100));
 	imu_qos.best_effort();
 
-	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(20));
+	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(50));
 	wheel_odom_qos.best_effort();
 
 	sub_pointcloud2_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -692,8 +692,8 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	last_callback_trigger_time = curr_time;
 	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
 	if (delay_lidar_ > 0.2) {
-		TRACE_WARN_CLASS("curr_time: %.3f ms, curr lidar msg_time: %.3f, time delay: %.3f ms > thresh = 200ms",
-						 curr_time * 1e3, curr_msg_time * 1e3, delay_lidar_ * 1e3);
+		TRACE_WARN_CLASS("curr_time: %.3f, curr lidar msg_time: %.3f, time delay: %.3f ms > thresh = 200ms", curr_time,
+						 curr_msg_time, delay_lidar_ * 1e3);
 	}
 	if (lidar_callback_interval_ > 0.2) {
 		TRACE_WARN_CLASS("lidar callback trigger time interval = %.3f ms > thresh = 200ms",
@@ -744,8 +744,8 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	last_callback_trigger_time = curr_time;
 	TRACE_DBG_CLASS("received imu msg, time delay: %.3f ms", delay_imu_ * 1e3);
 	if (delay_imu_ > 0.1) {
-		TRACE_WARN_CLASS("curr_time: %.3f ms, curr imu msg_time: %.3f, time delay: %.3f ms > thresh = 100ms",
-						 curr_time * 1e3, curr_msg_time * 1e3, delay_imu_ * 1e3);
+		TRACE_WARN_CLASS("curr_time: %.3f, curr imu msg_time: %.3f, time delay: %.3f ms > thresh = 100ms", curr_time,
+						 curr_msg_time, delay_imu_ * 1e3);
 	}
 	if (imu_callback_interval_ > 0.1) {
 		TRACE_WARN_CLASS("imu callback trigger time interval = %.3f ms > thresh = 100ms", imu_callback_interval_ * 1e3);
