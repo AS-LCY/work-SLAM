@@ -214,6 +214,12 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 		if (imu_time > lidar_end_time_) {
 			break;
 		}
+		if (imu_time <= meas.lidar_beg_time) {
+			imu_buffer_.pop_front();
+			// TRACE_INFO_CLASS("imu time: %f <= lidar_beg_time: %f, drop this imu data", imu_time,
+			// meas.lidar_beg_time);
+			continue;
+		}
 		meas.imu.push_back(imu_buffer_.front()); //记录当前lidar帧内的imu数据到meas.imu
 		imu_buffer_.pop_front();
 	}

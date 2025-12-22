@@ -113,7 +113,7 @@
       max_distance: 70.0
       z_range: [-5.0, 20.0] # z > 20m点在预处理阶段被过滤掉了
 
-      keep_lidar_num_before_curr: 3 # lidar buffer size
+      keep_lidar_num_before_curr: 2 # lidar buffer size
       cloud_size_to_keep: 3500  # 第一步降采样（预处理阶段）只保留3500个点
 
       extract_cloud_method: 0 ## # 没有起作用  (当前可选0,1,2) #-0:间隔采样 #-1: voxel #-2: 间隔采样&voxel  #-3: feature

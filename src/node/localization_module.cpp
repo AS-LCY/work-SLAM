@@ -691,7 +691,7 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 	lidar_callback_interval_ = curr_time - last_callback_trigger_time;
 	last_callback_trigger_time = curr_time;
 	delay_lidar_ = curr_time - curr_msg_time; //当前时刻和接收到的lidar消息时间差
-	if (delay_lidar_ > 0.2) {
+	if (delay_lidar_ > 0.2 && slam_param_.common.run_on_mower) {
 		TRACE_WARN_CLASS("curr_time: %.3f, curr lidar msg_time: %.3f, time delay: %.3f ms > thresh = 200ms", curr_time,
 						 curr_msg_time, delay_lidar_ * 1e3);
 	}
@@ -743,7 +743,7 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 	imu_callback_interval_ = curr_time - last_callback_trigger_time;
 	last_callback_trigger_time = curr_time;
 	TRACE_DBG_CLASS("received imu msg, time delay: %.3f ms", delay_imu_ * 1e3);
-	if (delay_imu_ > 0.1) {
+	if (delay_imu_ > 0.1 && slam_param_.common.run_on_mower) {
 		TRACE_WARN_CLASS("curr_time: %.3f, curr imu msg_time: %.3f, time delay: %.3f ms > thresh = 100ms", curr_time,
 						 curr_msg_time, delay_imu_ * 1e3);
 	}
