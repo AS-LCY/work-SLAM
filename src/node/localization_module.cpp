@@ -66,19 +66,26 @@ bool LocalizationModule::create_ROS_IO() {
 	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(50));
 	wheel_odom_qos.best_effort();
 
+	sub_imu_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+	sub_lidar_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+	sub_chassis_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+	imu_options_.callback_group = sub_imu_callback_group_;
+	lidar_options_.callback_group = sub_lidar_callback_group_;
+	chassis_options_.callback_group = sub_chassis_callback_group_;
+
 	sub_pointcloud2_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
 		slam_param_.lidar_preproc.sub_lidar_topic, lidar_qos,
-		std::bind(&LocalizationModule::lidar_ros_callback, this, std::placeholders::_1));
+		std::bind(&LocalizationModule::lidar_ros_callback, this, std::placeholders::_1), lidar_options_);
 
 	sub_imu_ = node_->create_subscription<sensor_msgs::msg::Imu>(
 		slam_param_.lidar_preproc.sub_imu_topic, imu_qos,
-		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1));
+		std::bind(&LocalizationModule::imu_callback, this, std::placeholders::_1), imu_options_);
 	// imu和lidar的发布端和订阅端的QoS要都为best_effort, 默认为reliable
 
 	if (slam_param_.common.use_wheel_odom) {
 		sub_wheel_odom_ = node_->create_subscription<ChassisData>(
 			slam_param_.common.sub_wheel_odom_topic, wheel_odom_qos,
-			std::bind(&LocalizationModule::wheel_odom_callback, this, std::placeholders::_1));
+			std::bind(&LocalizationModule::wheel_odom_callback, this, std::placeholders::_1), chassis_options_);
 	}
 
 	pub_localization_module_status_ = node_->create_publisher<flbot_msgs::msg::LocalizationModuleStatus>(
@@ -117,6 +124,7 @@ bool LocalizationModule::create_ROS_IO() {
 	this->timer_module_status_ =
 		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
 								 std::bind(&LocalizationModule::pub_module_status_timer, this), ctrl_callback_group_);
+	// publish在定时器中发布
 
 	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
 

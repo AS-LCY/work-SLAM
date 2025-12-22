@@ -276,6 +276,12 @@ class LocalizationModule {
 
 	rclcpp::CallbackGroup::SharedPtr slam_callback_group_;
 	rclcpp::CallbackGroup::SharedPtr ctrl_callback_group_;
+	rclcpp::CallbackGroup::SharedPtr sub_imu_callback_group_;
+	rclcpp::CallbackGroup::SharedPtr sub_lidar_callback_group_;
+	rclcpp::CallbackGroup::SharedPtr sub_chassis_callback_group_;
+	rclcpp::SubscriptionOptions imu_options_;
+	rclcpp::SubscriptionOptions lidar_options_;
+	rclcpp::SubscriptionOptions chassis_options_;
 
 	std::unique_ptr<lidar_slam::LidarSlam> slam_;
 	bool releasing_slam_flag_ = false;
