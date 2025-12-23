@@ -57,10 +57,10 @@ bool LocalizationModule::create_ROS_IO() {
 		throw std::runtime_error("ROS node not initialized");
 	}
 	// QoS 设置为 Best Effort
-	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(10));
+	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(100));
 	lidar_qos.best_effort();
 
-	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(100));
+	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(200));
 	imu_qos.best_effort();
 
 	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(50));
@@ -684,6 +684,9 @@ void LocalizationModule::fill_module_m_status(ModuleStatus curr_running_module_s
 }
 
 void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg) {
+	auto tid = std::this_thread::get_id();
+	TRACE_INFO_CLASS("Lidar callback in thread id: %lu", tid);
+
 	lidar_slam::TicToc timer_lidar_callback;
 	static const double time_cost_thr_print = slam_param_.lidar_preproc.time_cost_thr_print;
 	auto curr_msg_time = rclcpp::Time(ros_msg->header.stamp).seconds();
@@ -737,6 +740,9 @@ void LocalizationModule::lidar_ros_callback(const PointCloud2::SharedPtr ros_msg
 }
 
 void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
+	auto tid = std::this_thread::get_id();
+	TRACE_INFO_CLASS("Imu callback in thread id: %lu", tid);
+
 	lidar_slam::TicToc timer_imu_callback;
 	auto curr_msg_time = rclcpp::Time(msg_in->header.stamp).seconds();
 	static double last_msg_time = curr_msg_time;
@@ -790,6 +796,9 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 }
 
 void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
+	auto tid = std::this_thread::get_id();
+	TRACE_INFO_CLASS("wheel odom callback in thread id: %lu", tid);
+
 	auto curr_msg_time = rclcpp::Time(msg->header.stamp).seconds();
 	// TODO(jxl): wheel odom msg interval and delay
 	//...
