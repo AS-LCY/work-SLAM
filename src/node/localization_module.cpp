@@ -57,13 +57,13 @@ bool LocalizationModule::create_ROS_IO() {
 		throw std::runtime_error("ROS node not initialized");
 	}
 	// QoS 设置为 Best Effort
-	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(100));
+	auto lidar_qos = rclcpp::QoS(rclcpp::KeepLast(10)); // lidar: 10hz
 	lidar_qos.reliable();
 
-	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(200));
+	auto imu_qos = rclcpp::QoS(rclcpp::KeepLast(200)); // imu: 100hz
 	imu_qos.reliable();
 
-	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(50));
+	auto wheel_odom_qos = rclcpp::QoS(rclcpp::KeepLast(100)); // wheel_odom: 50hz
 	wheel_odom_qos.reliable();
 
 	sub_imu_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
