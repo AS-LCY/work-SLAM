@@ -636,7 +636,7 @@ void LidarSlam::lidar_pcl_cbk(const PointCloudType::Ptr cloud) {
 		TRACE_INFO_CLASS("reset localization_base_ time to curr lidar time: %f", curr_time);
 	}
 
-	const double time_diff_thresh = 0.15;
+	const double time_diff_thresh = 0.2;
 	const double time_diff = abs(last_timestamp_imu - curr_time);
 	auto now = std::chrono::system_clock::now();
 	auto epoch = now.time_since_epoch();
