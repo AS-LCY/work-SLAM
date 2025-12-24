@@ -309,7 +309,7 @@ void LidarSlam::loopClosureThread() {
 void LidarSlam::localizationThread() {
 	const int frequency = 1.0; // 频率为1Hz
 	auto period_relocal = std::chrono::milliseconds(1000 / frequency);
-	const float period_local_sec = config_param_.localization.fgicp_peroid_sec;
+	const float period_local_sec = config_param_.localization.fgicp_period_sec;
 	const auto score_thr = config_param_.re_localization.score_thr;
 	const auto global_localize_time_out_thr = config_param_.re_localization.time_out_thr;
 	const auto global_reg_method = config_param_.re_localization.global_reg_method;

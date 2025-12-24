@@ -72,13 +72,14 @@ struct MappingParam {
 };
 
 struct LocalizationParam {
-	float fgicp_peroid_sec = 1;
+	float fgicp_period_sec = 1;
 	double cloud_leaf_size_localize = 0.3;
 	int fgicp_thread_num = 2;
 	float fgicp_trans_eps = 1e-2;
 	int fgicp_max_iter = 64;
 	float fgicp_max_corres_dist = 2.0;
 	int fgicp_max_corres_num = 20;
+
 	float fgicp_inlier_max_valid_point_dist = 40.0;
 	float fgicp_inlier_max_corres_dist = 0.5;
 	float fgicp_inlier_rate_thr = 0.8;

@@ -266,8 +266,8 @@ class LocalizationModuleParamManager {
 		node_->get_parameter("mapping.save_map_resolution", loaded_param_.mapping.save_map_resolution);
 
 		/// localization params *******************************************
-		node_->declare_parameter<float>("localization.fgicp_peroid_sec", 5.0);
-		node_->get_parameter("localization.fgicp_peroid_sec", loaded_param_.localization.fgicp_peroid_sec);
+		node_->declare_parameter<float>("localization.fgicp_period_sec", 5.0);
+		node_->get_parameter("localization.fgicp_period_sec", loaded_param_.localization.fgicp_period_sec);
 		node_->declare_parameter<double>("localization.cloud_leaf_size_localize", 0.3);
 		node_->get_parameter("localization.cloud_leaf_size_localize",
 							 loaded_param_.localization.cloud_leaf_size_localize);

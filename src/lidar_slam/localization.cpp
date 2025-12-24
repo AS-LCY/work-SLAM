@@ -11,13 +11,24 @@ Localization::Localization(CommonParam common_param, LocalizationParam param,
 	relocalize_config_ = relocalize_params;
 	log_info_manager_.reset_log_info();
 
-	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
-	gicp_->setNumThreads(param_.fgicp_thread_num);
-	gicp_->setTransformationEpsilon(param_.fgicp_trans_eps);
-	gicp_->setRotationEpsilon(0.05);
-	gicp_->setMaximumIterations(param_.fgicp_max_iter);
-	gicp_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
-	gicp_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
+	// gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
+	// gicp_->setNumThreads(param_.fgicp_thread_num);
+	// gicp_->setTransformationEpsilon(param_.fgicp_trans_eps);
+	// gicp_->setRotationEpsilon(0.05);
+	// gicp_->setMaximumIterations(param_.fgicp_max_iter);
+	// gicp_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
+	// gicp_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
+
+	small_gicp_ptr_ = std::make_unique<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>();
+	small_gicp_ptr_->setNumThreads(param_.fgicp_thread_num);
+	small_gicp_ptr_->setTransformationEpsilon(param_.fgicp_trans_eps);
+	small_gicp_ptr_->setRotationEpsilon(0.05);
+	small_gicp_ptr_->setMaximumIterations(param_.fgicp_max_iter);
+	small_gicp_ptr_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
+	small_gicp_ptr_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
+	small_gicp_ptr_->setVoxelResolution(param_.cloud_leaf_size_localize); //影响其内部source和target点云voxelmap_的计算
+	small_gicp_ptr_->setRegistrationType("VGICP");						  // "VGICP" or "GICP"
+
 	max_correspondence_dist_square_ = std::pow(param_.fgicp_inlier_max_corres_dist, 2);
 
 	ndt_.reset(new pcl::NormalDistributionsTransform<PointType, PointType>());
@@ -213,7 +224,8 @@ bool Localization::loadMap(std::string path) {
 
 	// ndt_->setInputTarget(CloudGlobalMapIn_PointType_);
 	// icp_->setInputTarget(CloudGlobalMapIn_PointType_);
-	gicp_->setInputTarget(CloudGlobalMapIn_);
+	// gicp_->setInputTarget(CloudGlobalMapIn_);
+	small_gicp_ptr_->setInputTarget(CloudGlobalMapIn_);
 
 	return true;
 }
@@ -228,12 +240,15 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 		return;
 	}
 
-	gicp_->setInputSource(odomCloud);
-	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ptr(new pcl::PointCloud<pcl::PointXYZI>());
-	gicp_->align(*aligned_ptr, correctionOdomToMap_.matrix().cast<float>());
+	// gicp_->setInputSource(odomCloud);
+	small_gicp_ptr_->setInputSource(odomCloud);
 
-	if (!gicp_->hasConverged()) {
-		TRACE_ERR_CLASS("gicp not converged.");
+	pcl::PointCloud<pcl::PointXYZI>::Ptr aligned_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+	// gicp_->align(*aligned_ptr, correctionOdomToMap_.matrix().cast<float>());
+	small_gicp_ptr_->align(*aligned_ptr, correctionOdomToMap_.matrix().cast<float>());
+
+	if (!small_gicp_ptr_->hasConverged()) {
+		TRACE_ERR_CLASS("small_gicp not converged.");
 		localize_status.converged = false;
 		localize_state_status = LocalizationStatus::Failed;
 		return;
@@ -253,7 +268,8 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 			}
 			num_valid_points++;
 
-			gicp_->getSearchMethodTarget()->nearestKSearch(pt, 1, k_indices, k_sq_dists);
+			// gicp_->getSearchMethodTarget()->nearestKSearch(pt, 1, k_indices, k_sq_dists);
+			small_gicp_ptr_->getSearchMethodTarget()->nearestKSearch(pt, 1, k_indices, k_sq_dists);
 			if (k_sq_dists[0] < max_correspondence_dist_square_) {
 				matching_error += std::sqrt(k_sq_dists[0]);
 				num_inliers++;
@@ -304,7 +320,8 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 								   const Sophus::SE3d& T_lidar_delta,
 								   const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local) {
 	Eigen::Isometry3d matched_result = Eigen::Isometry3d::Identity();
-	matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+	// matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
+	matched_result.matrix() = small_gicp_ptr_->getFinalTransformation().matrix().cast<double>();
 
 	// 直接赋值
 	// correctionOdomToMap_ = matched_result;

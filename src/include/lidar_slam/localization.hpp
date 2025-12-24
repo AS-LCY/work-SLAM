@@ -101,9 +101,10 @@ class Localization {
 	void saveTwoCloudsToOnePCD(const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud1,
 							   const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud2, const std::string& filename);
 
-	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_;
-	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_;
-	fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_;
+	pcl::NormalDistributionsTransform<PointType, PointType>::Ptr ndt_ = nullptr;
+	pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp_ = nullptr;
+	// fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>::Ptr gicp_ = nullptr;
+	std::unique_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>> small_gicp_ptr_ = nullptr;
 
 	KeyMat polarcontext_invkeys_mat_;
 	std::vector<Eigen::MatrixXd> polarcontexts_;
