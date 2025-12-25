@@ -14,6 +14,7 @@ Localization::Localization(CommonParam common_param, LocalizationParam param,
 	gicp_.reset(new fast_gicp::FastGICP<pcl::PointXYZI, pcl::PointXYZI>());
 	gicp_->setNumThreads(param_.fgicp_thread_num);
 	gicp_->setTransformationEpsilon(param_.fgicp_trans_eps);
+	gicp_->setRotationEpsilon(0.05);
 	gicp_->setMaximumIterations(param_.fgicp_max_iter);
 	gicp_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
 	gicp_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
