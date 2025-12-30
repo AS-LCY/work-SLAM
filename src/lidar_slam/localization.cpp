@@ -323,6 +323,13 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 	// matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
 	matched_result.matrix() = small_gicp_ptr_->getFinalTransformation().matrix().cast<double>();
 
+	Eigen::Vector3d reg_trans = correctionOdomToMap_.translation();
+	Eigen::Vector3d reg_euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
+	TRACE_INFO_CLASS("registration T_map_odom translation: x= %f, y= %f, z= %f", reg_trans.x(), reg_trans.y(),
+					 reg_trans.z());
+	TRACE_INFO_CLASS("registration T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", reg_euler.x(), reg_euler.y(),
+					 reg_euler.z());
+
 	// 直接赋值
 	// correctionOdomToMap_ = matched_result;
 
@@ -336,7 +343,7 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 	// double scale_factor = meas_noise / predict_noise;
 	// TRACE_INFO_CLASS("scale_factor = %f", scale_factor);
 
-	matching_error *= 1e-1; //测量噪声比预测噪声大很多，缩小测量噪声
+	// matching_error *= 1e-1; //测量噪声比预测噪声大很多，缩小测量噪声
 	Eigen::Matrix<double, 6, 1> noise_vec(matching_error, matching_error, matching_error, matching_error,
 										  matching_error, matching_error); //前三维平移，后三维旋转
 	Eigen::Matrix<double, 6, 6> meas_cov_global = noise_vec.asDiagonal();
@@ -345,10 +352,10 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 		smootherMatchResult(T_map_odom, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local, meas_cov_global);
 	correctionOdomToMap_ = smoothed_T_map_odom;
 
-	// Eigen::Vector3d trans = correctionOdomToMap_.translation();
-	// Eigen::Vector3d euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
-	// TRACE_INFO_CLASS("T_map_odom translation: x= %f, y= %f, z= %f", trans.x(), trans.y(), trans.z());
-	// TRACE_INFO_CLASS("T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", euler.x(), euler.y(), euler.z());
+	Eigen::Vector3d trans = correctionOdomToMap_.translation();
+	Eigen::Vector3d euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
+	TRACE_INFO_CLASS("smoother T_map_odom translation: x= %f, y= %f, z= %f", trans.x(), trans.y(), trans.z());
+	TRACE_INFO_CLASS("smoother T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", euler.x(), euler.y(), euler.z());
 }
 
 Eigen::Isometry3d Localization::smootherMatchResult(const Sophus::SE3d& T_map_odom, const Sophus::SE3d& T_odom_lidar,
