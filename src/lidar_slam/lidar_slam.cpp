@@ -158,7 +158,7 @@ bool LidarSlam::sync_packages(MeasureGroup& meas) {
 	imu_buffer_lock.unlock();
 
 	if (lidar_buffer_empty || imu_buffer_empty) {
-		TRACE_WARN_CLASS("lidar buffer empty: %d, imu buffer empty: %d", lidar_buffer_empty, imu_buffer_empty);
+		// TRACE_WARN_CLASS("lidar buffer empty: %d, imu buffer empty: %d", lidar_buffer_empty, imu_buffer_empty);
 		return false;
 	}
 	if (reseting_ == true) {
