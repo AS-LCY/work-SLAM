@@ -86,7 +86,7 @@
 
     localization:
       fgicp_period_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
-      cloud_leaf_size_localize: 0.2
+      cloud_leaf_size_localize: 0.05
       fgicp_thread_num: 2
       fgicp_trans_eps: 1e-1
       fgicp_max_iter: 64
@@ -94,7 +94,7 @@
       fgicp_max_corres_num: 20
       fgicp_inlier_max_valid_point_dist: 70.0 #mid-360, 40m @10 反射率
       fgicp_inlier_max_corres_dist: 0.5
-      fgicp_inlier_rate_thr: 0.3
+      fgicp_inlier_rate_thr: 0.2
       fgicp_inlier_avg_error_thr: 0.25
 
     lidar_preproc:
