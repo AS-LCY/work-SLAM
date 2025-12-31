@@ -436,6 +436,8 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	health_msg.error_livox_driver_failed = error_livox_driver_failed; // value: [0] or [1]
 
 	health_msg.health_status = static_cast<int>(health_status_now);
+	health_msg.cpu_usage_percentage = monitor_->getCPUUsage();
+	health_msg.memory_usage_mb = monitor_->getMemoryUsageMB();
 
 	return health_status_now;
 }

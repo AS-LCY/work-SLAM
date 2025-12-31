@@ -22,6 +22,8 @@ class ProcessMonitor {
 			monitor_thread_.join();
 		}
 	}
+	double getCPUUsage() const { return cpu_usage_; }
+	double getMemoryUsageMB() const { return memory_usage_mb_; }
 
    private:
 	struct ProcStat {
@@ -47,8 +49,8 @@ class ProcessMonitor {
 		ProcStat s2 = readProcStat();
 
 		double total_time = (s2.utime + s2.stime) - (s1.utime + s1.stime);
-		double cpu_usage = (total_time / (ticks_per_sec * 0.2)) * 100.0 / sysconf(_SC_NPROCESSORS_ONLN);
-		return cpu_usage;
+		cpu_usage_ = (total_time / (ticks_per_sec * 0.2)) * 100.0 / sysconf(_SC_NPROCESSORS_ONLN);
+		return cpu_usage_;
 	}
 
 	double getProcessMemoryUsageMB() {
@@ -63,7 +65,8 @@ class ProcessMonitor {
 				file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 			}
 		}
-		return rss / 1024.0; // KB -> MB
+		memory_usage_mb_ = rss / 1024.0; // KB -> MB
+		return memory_usage_mb_;
 	}
 
 	void monitorLoop() {
@@ -79,4 +82,6 @@ class ProcessMonitor {
 	std::atomic<bool> running_;
 	std::thread monitor_thread_;
 	double interval_sec_;
+	double cpu_usage_;
+	double memory_usage_mb_;
 };
