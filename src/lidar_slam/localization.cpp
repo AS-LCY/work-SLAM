@@ -298,10 +298,10 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 
 		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
-		if (inlier_fraction < inlier_rate) {
+		if (inlier_fraction < inlier_rate && num_inliers < 100) {
 			localize_state_status = LocalizationStatus::Failed;
-			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f% < %f%", inlier_fraction * 100.f,
-							inlier_rate * 100.f);
+			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f% < %f%, &&  inlier num: %d < 100",
+							inlier_fraction * 100.f, inlier_rate * 100.f, num_inliers);
 		} else if (matching_error < inlier_avg_error) {
 			localize_state_status = LocalizationStatus::Normal;
 			assignMapToOdom(matching_error, T_odom_lidar, T_lidar_delta, T_lidar_delta_cov_local);
