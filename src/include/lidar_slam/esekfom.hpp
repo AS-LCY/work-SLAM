@@ -216,7 +216,7 @@ class esekf {
 				Nearest_Points[i]; // Nearest_Points[i]打印出来发现是按照离point_world距离，从小到大的顺序的vector
 
 			double ta = omp_get_wtime();
-			if (ekfom_data.converge) {
+			if (!ekfom_data.converge) {
 				//寻找point_world的最近邻的平面点
 				ikdtree.Nearest_Search(point_world, NUM_MATCH_POINTS, points_near, pointSearchSqDis);
 				//判断是否是有效匹配点，与loam系列类似，要求特征点最近邻的地图点数量>阈值，距离<阈值
@@ -325,7 +325,7 @@ class esekf {
 
 		dyn_share_datastruct dyn_share;
 		dyn_share.valid = true;
-		dyn_share.converge = true;
+		dyn_share.converge = false;
 		int t = 0;
 		state_ikfom x_propagated = x_;
 		//这里的x_和P_分别是经过正向传播后的状态量和协方差矩阵，因为会先调用predict函数再调用这个函数
@@ -372,11 +372,10 @@ class esekf {
 
 			x_ = boxplus(x_, dx_); //公式(18)
 
-			dyn_share.converge = true;
 			for (int j = 0; j < 24; j++) {
-				if (std::fabs(dx_[j]) > epsi) //如果dx>epsi 认为没有收敛
+				if (std::fabs(dx_[j]) <= epsi) //如果dx>epsi 认为没有收敛
 				{
-					dyn_share.converge = false;
+					dyn_share.converge = true;
 					break;
 				}
 			}
@@ -410,7 +409,7 @@ class esekf {
 											  int maximum_iter = 4) {
 		dyn_share_datastruct dyn_share;
 		dyn_share.valid = true;
-		dyn_share.converge = true;
+		dyn_share.converge = false;
 
 		state_ikfom x_propagated = x_;
 		//这里的x_和P_分别是经过正向传播后的状态量和协方差矩阵，因为会先调用predict函数再调用这个函数
