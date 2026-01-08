@@ -21,7 +21,7 @@
       slam_lose_rate_time_thr: 0.12 # unit: second
 
       check_delay: false
-      before_downsample_size_thr: 3000 # 降采样前点个数不能小于3000个
+      before_downsample_size_thr: 1000 # 降采样前点个数不能小于3000个
       feats_down_size_thr: 100 # 降采样后的点个数不能小于200个
       # cpu_id: []
 
