@@ -86,7 +86,7 @@
 
     localization:
       fgicp_period_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
-      cloud_leaf_size_localize: 0.05
+      cloud_leaf_size_localize: 0.25
       fgicp_thread_num: 2
       fgicp_trans_eps: 1e-1
       fgicp_max_iter: 64
