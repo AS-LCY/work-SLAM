@@ -84,6 +84,8 @@ struct LocalizationParam {
 	float fgicp_inlier_max_corres_dist = 0.5;
 	float fgicp_inlier_rate_thr = 0.8;
 	float fgicp_inlier_avg_error_thr = 0.25;
+
+	float smoother_predict_wrt_meas_weight = 2.0;
 };
 
 struct IkdTreeParam {

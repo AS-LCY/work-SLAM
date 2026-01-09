@@ -86,7 +86,7 @@
 
     localization:
       fgicp_period_sec: 1.0  #定位线程1hz运行，每1s匹配一次，单位： 秒
-      cloud_leaf_size_localize: 0.25
+      cloud_leaf_size_localize: 0.5   # 1.0,  0.5 #VGICP降采样和voxel分辨率。
       fgicp_thread_num: 2
       fgicp_trans_eps: 1e-1
       fgicp_max_iter: 64
@@ -96,6 +96,7 @@
       fgicp_inlier_max_corres_dist: 0.5
       fgicp_inlier_rate_thr: 0.2
       fgicp_inlier_avg_error_thr: 0.25
+      smoother_predict_wrt_meas_weight: 3.0 
 
     lidar_preproc:
       lidar_type: 3 # 1: livox-mid360  # 2: robosense-Airy  #3: wanji-lidar #4: hesai JT16

@@ -292,6 +292,9 @@ class LocalizationModuleParamManager {
 		node_->declare_parameter<float>("localization.fgicp_inlier_avg_error_thr", 0.25);
 		node_->get_parameter("localization.fgicp_inlier_avg_error_thr",
 							 loaded_param_.localization.fgicp_inlier_avg_error_thr);
+		node_->declare_parameter<float>("localization.smoother_predict_wrt_meas_weight", 2.0);
+		node_->get_parameter("localization.smoother_predict_wrt_meas_weight",
+							 loaded_param_.localization.smoother_predict_wrt_meas_weight);
 
 		/// re-localization params *******************************************s
 		node_->declare_parameter<double>("re_localization.score_thr", 0.05);

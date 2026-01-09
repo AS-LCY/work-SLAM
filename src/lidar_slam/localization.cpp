@@ -340,7 +340,8 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 	// 使用EKF平滑滤波器
 	// lio的噪声很小，权重太大，测量(和离线地图匹配模块)噪声很大，权重太小，导致和离线地图匹配几乎很难起作用，
 	// 所以reset预测权重
-	T_lidar_delta_cov_local = Eigen::Matrix<double, 6, 6>::Identity() * matching_error;
+	T_lidar_delta_cov_local =
+		Eigen::Matrix<double, 6, 6>::Identity() * matching_error * (1.0 / param_.smoother_predict_wrt_meas_weight);
 	double predict_noise = T_lidar_delta_cov_local.diagonal().maxCoeff();
 	double meas_noise = matching_error;
 	double scale_factor = meas_noise / predict_noise;
