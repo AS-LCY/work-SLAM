@@ -81,7 +81,7 @@ class Localization {
 										  const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local,
 										  const Eigen::Matrix<double, 6, 6>& meas_cov_global);
 	void assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar, const Sophus::SE3d& T_lidar_delta,
-						 const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local);
+						 Eigen::Matrix<double, 6, 6> T_lidar_delta_cov_local);
 
 	pcl::PointCloud<pcl::PointXYZI>::Ptr cropCloud(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud,
 												   const Eigen::Isometry3d& pose, const double& radius = 40.f);

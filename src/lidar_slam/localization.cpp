@@ -318,17 +318,17 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 
 void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_odom_lidar,
 								   const Sophus::SE3d& T_lidar_delta,
-								   const Eigen::Matrix<double, 6, 6>& T_lidar_delta_cov_local) {
+								   Eigen::Matrix<double, 6, 6> T_lidar_delta_cov_local) {
 	Eigen::Isometry3d matched_result = Eigen::Isometry3d::Identity();
 	// matched_result.matrix() = gicp_->getFinalTransformation().matrix().cast<double>();
 	matched_result.matrix() = small_gicp_ptr_->getFinalTransformation().matrix().cast<double>();
 
 	Eigen::Vector3d reg_trans = correctionOdomToMap_.translation();
 	Eigen::Vector3d reg_euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
-	TRACE_INFO_CLASS("registration T_map_odom translation: x= %f, y= %f, z= %f", reg_trans.x(), reg_trans.y(),
-					 reg_trans.z());
-	TRACE_INFO_CLASS("registration T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", reg_euler.x(), reg_euler.y(),
-					 reg_euler.z());
+	// TRACE_INFO_CLASS("registration T_map_odom translation: x= %f, y= %f, z= %f", reg_trans.x(), reg_trans.y(),
+	// 				 reg_trans.z());
+	// TRACE_INFO_CLASS("registration T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", reg_euler.x(), reg_euler.y(),
+	// 				 reg_euler.z());
 
 	// 直接赋值
 	// correctionOdomToMap_ = matched_result;
@@ -338,12 +338,15 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 	// correctionOdomToMap_last_ = correctionOdomToMap_;
 
 	// 使用EKF平滑滤波器
-	// double predict_noise = T_lidar_delta_cov_local.diagonal().maxCoeff();
-	// double meas_noise = matching_error;
-	// double scale_factor = meas_noise / predict_noise;
-	// TRACE_INFO_CLASS("scale_factor = %f", scale_factor);
+	// lio的噪声很小，权重太大，测量(和离线地图匹配模块)噪声很大，权重太小，导致和离线地图匹配几乎很难起作用，
+	// 所以reset预测权重
+	T_lidar_delta_cov_local = Eigen::Matrix<double, 6, 6>::Identity() * matching_error;
+	double predict_noise = T_lidar_delta_cov_local.diagonal().maxCoeff();
+	double meas_noise = matching_error;
+	double scale_factor = meas_noise / predict_noise;
+	// TRACE_INFO_CLASS("predict_noise = %f, meas_noise= %f, scale_factor(meas_noise / predict_noise) = %f",
+	// predict_noise, meas_noise, scale_factor);
 
-	// matching_error *= 1e-1; //测量噪声比预测噪声大很多，缩小测量噪声
 	Eigen::Matrix<double, 6, 1> noise_vec(matching_error, matching_error, matching_error, matching_error,
 										  matching_error, matching_error); //前三维平移，后三维旋转
 	Eigen::Matrix<double, 6, 6> meas_cov_global = noise_vec.asDiagonal();
@@ -354,8 +357,8 @@ void Localization::assignMapToOdom(double matching_error, const Sophus::SE3d& T_
 
 	Eigen::Vector3d trans = correctionOdomToMap_.translation();
 	Eigen::Vector3d euler = R2ypr(correctionOdomToMap_.rotation()) * RAD2DEGREE;
-	TRACE_INFO_CLASS("smoother T_map_odom translation: x= %f, y= %f, z= %f", trans.x(), trans.y(), trans.z());
-	TRACE_INFO_CLASS("smoother T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", euler.x(), euler.y(), euler.z());
+	// TRACE_INFO_CLASS("smoother T_map_odom translation: x= %f, y= %f, z= %f", trans.x(), trans.y(), trans.z());
+	// TRACE_INFO_CLASS("smoother T_map_odom rotation: yaw= %f, pitch= %f, roll= %f", euler.x(), euler.y(), euler.z());
 }
 
 Eigen::Isometry3d Localization::smootherMatchResult(const Sophus::SE3d& T_map_odom, const Sophus::SE3d& T_odom_lidar,
