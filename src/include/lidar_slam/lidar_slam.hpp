@@ -265,6 +265,8 @@ class LidarSlam {
 	double get_hb_time_thread_secmap_relocalize() { return hb_time_thread_secmap_relocalize_.load(); }
 	inline int get_feats_down_size() const { return feats_down_size_; }
 	inline Eigen::Matrix<double, 6, 1> get_lio_state_diag_cov() { return lio_state_diag_cov_; }
+	inline double get_lio_sync_ok_lidar_msg_interval() const { return sync_ok_lidar_msg_interval_; }
+	inline double get_lio_sync_ok_system_time_interval() const { return sync_ok_system_time_interval_; }
 
 	LocalizationStatus get_local_thrd_status() { return local_thrd_status_.load(); }
 	SlamRunStatus get_slam_run_status() { return slam_run_status_.load(); }
@@ -322,6 +324,8 @@ class LidarSlam {
 	bool time_sync_en_ = false;
 	bool timediff_set_flg_ = false; // 标记是否已经进行了时间补偿
 	bool reseting_ = false;
+	double sync_ok_lidar_msg_interval_ = 0.0;
+	double sync_ok_system_time_interval_ = 0.0;
 
 	std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> optimized_path_;
 

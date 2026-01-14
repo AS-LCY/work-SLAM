@@ -174,7 +174,7 @@ bool LocalizationModule::create_ROS_IO() {
 void LocalizationModule::ros_spinner_start() {}
 
 void LocalizationModule::lio_slam_thread_func() {
-	const double sleep_time_ms = 50.0;
+	const double sleep_time_ms = 5.0;
 	while (rclcpp::ok()) {
 		lidar_slam::TicToc timer_slam;
 		slam_dealt_timer();
@@ -452,6 +452,9 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	health_msg.health_status = static_cast<int>(health_status_now);
 	health_msg.cpu_usage_percentage = monitor_->getCPUUsage();
 	health_msg.memory_usage_mb = monitor_->getMemoryUsageMB();
+
+	health_msg.sync_ok_lidar_msg_interval = slam_->get_lio_sync_ok_lidar_msg_interval() * 1e3;
+	health_msg.sync_ok_system_time_interval = slam_->get_lio_sync_ok_system_time_interval();
 
 	return health_status_now;
 }

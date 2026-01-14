@@ -787,6 +787,12 @@ bool LidarSlam::run() {
 	if (sync_packages(Measures_)) { //在Measure内，储存当前lidar数据及lidar扫描时间内对应的imu数据序列
 		// TRACE_INFO_CLASS("imu lidar sync success");
 		static double last_lidar_time = Measures_.lidar_beg_time;
+		auto system_time_now = std::chrono::high_resolution_clock::now();
+		static auto last_system_time = system_time_now;
+
+		sync_ok_lidar_msg_interval_ = Measures_.lidar_beg_time - last_lidar_time;
+		sync_ok_system_time_interval_ =
+			double(std::chrono::duration_cast<std::chrono::milliseconds>(system_time_now - last_system_time).count());
 
 		auto points_num = Measures_.lidar->points.size();
 		auto point_thresh = config_param_.common.before_downsample_size_thr;
@@ -820,9 +826,9 @@ bool LidarSlam::run() {
 		log_info_manager_.slam_info.data[27] = Measures_.imu.front()->time_stamp - Measures_.lidar_beg_time;
 		log_info_manager_.slam_info.data[28] = Measures_.imu.back()->time_stamp - Measures_.lidar_beg_time;
 		last_lidar_time = Measures_.lidar_beg_time;
+		last_system_time = system_time_now;
 
 		auto pointcloud_deskew_start = std::chrono::high_resolution_clock::now();
-
 		PointCloudType::Ptr pre_undistortCloud_;
 		pre_undistortCloud_.reset(new PointCloudType());
 		pre_undistortCloud_->clear();
