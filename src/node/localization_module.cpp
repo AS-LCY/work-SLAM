@@ -107,10 +107,11 @@ bool LocalizationModule::create_ROS_IO() {
 	// T_lio_imu(里面带线速度)
 	pubLioOdomImu = node_->create_publisher<nav_msgs::msg::Odometry>("/lio_odom_imu", rclcpp::QoS(10));
 
-	slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-	this->timer_slam_ =
-		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
-								 std::bind(&LocalizationModule::slam_dealt_timer, this), slam_callback_group_);
+	// slam_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+	// this->timer_slam_ =
+	// 	node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
+	// 							 std::bind(&LocalizationModule::slam_dealt_timer, this), slam_callback_group_);
+	lio_slam_thread_ = std::thread(&LocalizationModule::lio_slam_thread_func, this);
 
 	ctrl_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -171,6 +172,19 @@ bool LocalizationModule::create_ROS_IO() {
 }
 
 void LocalizationModule::ros_spinner_start() {}
+
+void LocalizationModule::lio_slam_thread_func() {
+	const double sleep_time_ms = 50.0;
+	while (rclcpp::ok()) {
+		lidar_slam::TicToc timer_slam;
+		slam_dealt_timer();
+		const auto slam_cost_time = timer_slam.toc();
+		if (slam_cost_time < sleep_time_ms) {
+			const auto need_sleep_time = static_cast<int>(sleep_time_ms - slam_cost_time);
+			std::this_thread::sleep_for(std::chrono::milliseconds(need_sleep_time));
+		}
+	}
+}
 
 void LocalizationModule::slam_dealt_timer() { //主线程
 	if (!slam_) {
