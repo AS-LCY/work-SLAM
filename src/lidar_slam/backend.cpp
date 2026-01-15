@@ -66,15 +66,18 @@ void BackEnd::addOdomFactor(Eigen::Isometry3d transformTobeMapped) {
 		// 第一帧初始化先验因子
 		gtsam::noiseModel::Diagonal::shared_ptr priorNoise = gtsam::noiseModel::Diagonal::Variances(
 			(gtsam::Vector(6) << 1e-12, 1e-12, 1e-12, 1e-12, 1e-12, 1e-12).finished());
-		gtSAMgraph_.add(gtsam::PriorFactor<gtsam::Pose3>(0, gtsam::Pose3(transformTobeMapped.matrix()), priorNoise));
-
-		initialEstimate_.insert(0, gtsam::Pose3(transformTobeMapped.matrix()));
+		Eigen::Matrix4d T = transformTobeMapped.matrix();
+		gtSAMgraph_.add(gtsam::PriorFactor<gtsam::Pose3>(0, gtsam::Pose3(T), priorNoise));
+		initialEstimate_.insert(0, gtsam::Pose3(T));
 	} else {
 		assert(OdomKeyPoses_.size() >= 2);
-		gtsam::Pose3 poseFrom(OdomKeyPoses_[OdomKeyPoses_.size() - 2].pose.matrix()); // prev
-		gtsam::Pose3 poseTo(OdomKeyPoses_[OdomKeyPoses_.size() - 1].pose.matrix());	  // cur
+		Eigen::Matrix4d prev_T = OdomKeyPoses_[OdomKeyPoses_.size() - 2].pose.matrix();
+		Eigen::Matrix4d curr_T = OdomKeyPoses_[OdomKeyPoses_.size() - 1].pose.matrix();
+		Eigen::Matrix4d T = transformTobeMapped.matrix();
+		gtsam::Pose3 poseFrom(prev_T); // prev
+		gtsam::Pose3 poseTo(curr_T);   // cur
 		gtsam::Pose3 between_pose = poseFrom.between(poseTo);
-		gtsam::Pose3 poseInit(transformTobeMapped.matrix());
+		gtsam::Pose3 poseInit(T);
 		gtsam::noiseModel::Diagonal::shared_ptr odometryNoise =
 			gtsam::noiseModel::Diagonal::Variances((gtsam::Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
 
@@ -527,8 +530,10 @@ void BackEnd::performLoopClosure(double time) {
 	std::shared_lock<std::shared_mutex> keyframe_poses_copy_read_lock(mtxPose_copy_);
 	Eigen::Affine3f tWrong = CopyKeyPoses_[loopKeyCur].pose.cast<float>(); // 闭环优化前当前帧位姿
 	Eigen::Affine3f tCorrect = correctionLidarFrame * tWrong;			   // 闭环优化后当前帧位姿
-	gtsam::Pose3 poseFrom = gtsam::Pose3(tCorrect.matrix().cast<double>());
-	gtsam::Pose3 poseTo = gtsam::Pose3(CopyKeyPoses_[loopKeyPre].pose.matrix().cast<double>());
+	Eigen::Matrix4d T_from = tCorrect.matrix().cast<double>();
+	Eigen::Matrix4d T_to = CopyKeyPoses_[loopKeyPre].pose.matrix().cast<double>();
+	gtsam::Pose3 poseFrom = gtsam::Pose3(T_from);
+	gtsam::Pose3 poseTo = gtsam::Pose3(T_to);
 	keyframe_poses_copy_read_lock.unlock();
 
 	gtsam::Vector Vector6(6);
