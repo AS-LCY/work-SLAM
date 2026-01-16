@@ -244,14 +244,19 @@ class LocalizationModule {
 
 	double imu_msg_interval_ = 0.005;
 	double lidar_msg_interval_ = 0.1;
+	double chassis_msg_interval_ = 0.02;
 	double lidar_callback_cost_time_ = 0.f;
 	double imu_callback_cost_time_ = 0.f;
+	double chassis_callback_cost_time_ = 0.f;
 	double last_imu_msg_time_ = 0.f;
 	double last_lidar_msg_time_ = 0.f;
+	double last_chassis_msg_time_ = 0.f;
 	double delay_imu_ = 0.f;
 	double delay_lidar_ = 0.f;
+	double delay_chassis_ = 0.f;
 	double lidar_callback_interval_ = 0.f;
 	double imu_callback_interval_ = 0.f;
+	double chassis_callback_interval_ = 0.f;
 	double lio_thread_interval_ = 0.f;
 
 	std::atomic<double> hb_time_thread_loop_closure_;

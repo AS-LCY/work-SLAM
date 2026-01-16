@@ -394,19 +394,23 @@ common_status::HealthStatus LocalizationModule::check_fill_health_msg(
 	log_info_manager_.slam_info.data[12] = cloud_size_after_preprocess;
 	log_info_manager_.slam_info.data[14] = slam_->get_feats_down_size();
 
-	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3; // unit: ms
-	health_msg.delay_cbk_imu = delay_imu_ * 1e3;	 // unit: ms
+	health_msg.delay_cbk_lidar = delay_lidar_ * 1e3;	 // unit: ms
+	health_msg.delay_cbk_imu = delay_imu_ * 1e3;		 // unit: ms
+	health_msg.delay_cbk_chassis = delay_chassis_ * 1e3; // unit: ms
 
-	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3; // unit: ms
-	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;	   // unit: ms
+	health_msg.lidar_msg_interval = lidar_msg_interval_ * 1e3;	   // unit: ms
+	health_msg.imu_msg_interval = imu_msg_interval_ * 1e3;		   // unit: ms
+	health_msg.chassis_msg_interval = chassis_msg_interval_ * 1e3; // unit: ms
 
-	health_msg.lio_cost_time = lio_cost_time * 1e3;				// unit: ms
-	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_; // unit: ms
-	health_msg.imu_cbk_cost_time = imu_callback_cost_time_;		// unit: ms
+	health_msg.lio_cost_time = lio_cost_time * 1e3;					// unit: ms
+	health_msg.lidar_cbk_cost_time = lidar_callback_cost_time_;		// unit: ms
+	health_msg.imu_cbk_cost_time = imu_callback_cost_time_;			// unit: ms
+	health_msg.chassis_cbk_cost_time = chassis_callback_cost_time_; // unit: ms
 
-	health_msg.lidar_callback_trigger_interval = lidar_callback_interval_ * 1e3; // unit: ms
-	health_msg.imu_callback_trigger_interval = imu_callback_interval_ * 1e3;	 // unit: ms
-	health_msg.lio_thread_interval = lio_thread_interval_ * 1e3;				 // unit: ms
+	health_msg.lidar_callback_trigger_interval = lidar_callback_interval_ * 1e3;	 // unit: ms
+	health_msg.imu_callback_trigger_interval = imu_callback_interval_ * 1e3;		 // unit: ms
+	health_msg.chassis_callback_trigger_interval = chassis_callback_interval_ * 1e3; // unit: ms
+	health_msg.lio_thread_interval = lio_thread_interval_ * 1e3;					 // unit: ms
 
 	auto localize_statue = slam_->get_localize_status();
 	health_msg.localize_converged = localize_statue.converged;
@@ -815,10 +819,28 @@ void LocalizationModule::imu_callback(Imu::SharedPtr msg_in) {
 }
 
 void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
+	lidar_slam::TicToc timer_chassis_callback;
 	auto curr_msg_time = rclcpp::Time(msg->header.stamp).seconds();
-	// TODO(jxl): wheel odom msg interval and delay
-	//...
-	//...
+	static double last_msg_time = curr_msg_time;
+	last_chassis_msg_time_ = curr_msg_time;
+	chassis_msg_interval_ = curr_msg_time - last_msg_time;
+	last_msg_time = curr_msg_time;
+
+	auto curr_ros_time = node_->now();
+	double curr_time = rclcpp::Time(curr_ros_time).seconds();
+	delay_chassis_ = curr_time - curr_msg_time; //当前时刻和最新chassis消息时间差
+	static double last_callback_trigger_time = curr_time;
+	chassis_callback_interval_ = curr_time - last_callback_trigger_time;
+	last_callback_trigger_time = curr_time;
+	TRACE_DBG_CLASS("received chassis msg, time delay: %.3f ms", delay_chassis_ * 1e3);
+	if (delay_chassis_ > 0.2 && slam_param_.common.run_on_mower) {
+		TRACE_WARN_CLASS("curr_time: %.3f, curr chassis msg_time: %.3f, time delay: %.3f ms > thresh = 200ms",
+						 curr_time, curr_msg_time, delay_chassis_ * 1e3);
+	}
+	if (chassis_callback_interval_ > 0.2) {
+		TRACE_WARN_CLASS("chassis callback trigger time interval = %.3f ms > thresh = 200ms",
+						 chassis_callback_interval_ * 1e3);
+	}
 
 	ModuleStatus curr_running_module_status = running_module_status_.load();
 	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
@@ -831,8 +853,9 @@ void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
 		odom_msg.linear_velocity = msg->ac_linear_velocity;	  // m/s
 		odom_msg.angular_velocity = msg->ac_angular_velocity; // rad/s
 		slam_->wheel_odom_cbk(odom_msg);
-		return;
 	}
+
+	chassis_callback_cost_time_ = timer_chassis_callback.toc();
 }
 
 void LocalizationModule::publish_optimized_path(
