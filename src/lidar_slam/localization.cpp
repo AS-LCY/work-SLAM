@@ -264,7 +264,7 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 			const auto& pt = aligned_ptr->at(i);
 			if (pt.getVector3fMap().norm() > param_.fgicp_inlier_max_valid_point_dist) {
 				too_far_points_num++;
-				continue;
+				// continue;
 			}
 			num_valid_points++;
 
@@ -280,12 +280,8 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 			matching_error /= num_inliers;
 		}
 		double inlier_fraction = static_cast<float>(num_inliers) / std::max(1, num_valid_points);
-		if (num_valid_points == 0) { //在特别空旷的场景下，nearby点个数为0，num_inliers为0，会触发误判逻辑
-			TRACE_INFO_CLASS("points sum num = %d, too far points num = %d, nearby point num = %d, num_inliers = %d",
-							 odomCloud->points.size(), too_far_points_num, num_valid_points, num_inliers);
-			TRACE_INFO_CLASS("reset inlier_fraction = 100%");
-			inlier_fraction = 1.0;
-		}
+		TRACE_INFO_CLASS("points sum num = %d, too far points num = %d,  num_inliers = %d", odomCloud->points.size(),
+						 too_far_points_num, num_inliers);
 
 		double localize_end = omp_get_wtime();
 		double cost_time = (localize_end - localize_start) * 1000;
@@ -298,7 +294,7 @@ void Localization::localize(pcl::PointCloud<pcl::PointXYZI>::Ptr odomCloud, Loca
 
 		const double& inlier_avg_error = param_.fgicp_inlier_avg_error_thr;
 		const double& inlier_rate = param_.fgicp_inlier_rate_thr;
-		if (inlier_fraction < inlier_rate && num_inliers < 100) {
+		if (inlier_fraction < inlier_rate) {
 			localize_state_status = LocalizationStatus::Failed;
 			TRACE_ERR_CLASS("localization failed, for low inlier rate: %f% < %f%, &&  inlier num: %d < 100",
 							inlier_fraction * 100.f, inlier_rate * 100.f, num_inliers);
