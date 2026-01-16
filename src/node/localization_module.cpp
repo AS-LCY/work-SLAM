@@ -48,7 +48,14 @@ LocalizationModule::LocalizationModule(rclcpp::Node::SharedPtr node, ModuleStatu
 	monitor_ = std::make_unique<ProcessMonitor>(10.0);
 }
 
-LocalizationModule::~LocalizationModule() {}
+LocalizationModule::~LocalizationModule() {
+	if (lio_slam_thread_.joinable()) {
+		lio_slam_thread_.join();
+	}
+	if (localization_health_thread_.joinable()) {
+		localization_health_thread_.join();
+	}
+}
 
 float line_length(float dx, float dy) { return std::sqrt(dx * dx + dy * dy); }
 
