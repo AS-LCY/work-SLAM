@@ -4,6 +4,10 @@ namespace localization_module {
 
 void LocalizationModule::publish_cloud(const double& cloud_time, PointCloudType::Ptr pcl_cloud_in,
 									   const std::string& frame_id, rclcpp::Publisher<PointCloud2>::SharedPtr pub) {
+	if (!pcl_cloud_in || pcl_cloud_in->points.empty()) {
+		// TRACE_WARN_CLASS("Empty point cloud, not publishing.");
+		return;
+	}
 	sensor_msgs::msg::PointCloud2 ros_cloud_msg;
 	pcl::toROSMsg(*pcl_cloud_in, ros_cloud_msg);
 	ros_cloud_msg.header.stamp = rclcpp::Time(cloud_time * 1e9);
@@ -17,7 +21,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	const lidar_slam::Localization_base& T_odom_imu, // 10hz，T_odom_imu, imu和lidar和base_link朝向一致
 	const std::string& frameid,						 // map
 	const std::string& child_frameid,				 // base_link
-	ModuleStatus curr_running_module_status) {
+	const bool& publish_odometry) {
 	const auto msg_stamp = rclcpp::Time(lidar_in_map_time * 1e9);
 	nav_msgs::msg::Odometry odomAftMapped;
 	odomAftMapped.header.frame_id = frameid;
@@ -122,7 +126,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	// log_info_manager_->log_info.slam_vel_x = odomAftMapped.twist.twist.linear.x;
 	log_info_manager_.slam_info.data[9] = odomAftMapped.twist.twist.linear.x; // slam_vel_x
 
-	pubOdomAftMapped->publish(odomAftMapped);
+	if (publish_odometry) pubOdomAftMapped->publish(odomAftMapped);
 
 	//发布T_odom_baselink的里程计
 	Eigen::Isometry3d T_odom_imu_eigen = Eigen::Isometry3d::Identity();
@@ -188,7 +192,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 	transform.transform.rotation.y = odomAftMapped.pose.pose.orientation.y;
 	transform.transform.rotation.z = odomAftMapped.pose.pose.orientation.z;
 
-	br_.sendTransform(transform);
+	if (publish_odometry) br_.sendTransform(transform);
 
 	// pub T_map_baselink path
 	if (pubBaseLinkMapPath->get_subscription_count() > 0) {
@@ -200,7 +204,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 		msg.pose = odomAftMapped.pose.pose;
 		baselink_in_map_path_msg.poses.push_back(msg);
 		auto path_size = baselink_in_map_path_msg.poses.size();
-		auto keep_path_length = 5 * 1000; // 10hz, 300s path
+		auto keep_path_length = 3 * 1000; // 10hz, 300s path
 		if (path_size > keep_path_length) {
 			baselink_in_map_path_msg.poses.erase(baselink_in_map_path_msg.poses.begin());
 		}
@@ -217,7 +221,7 @@ void LocalizationModule::publish_odometry_lidar_in_map(
 		odom_msg.pose = lio_odom.pose.pose;
 		baselink_in_odom_path_msg.poses.push_back(odom_msg);
 		auto odom_path_size = baselink_in_odom_path_msg.poses.size();
-		auto odom_keep_path_length = 5 * 1000; // 10hz, 300s path
+		auto odom_keep_path_length = 3 * 1000; // 10hz, 300s path
 		if (odom_path_size > odom_keep_path_length) {
 			baselink_in_odom_path_msg.poses.erase(baselink_in_odom_path_msg.poses.begin());
 		}
@@ -245,6 +249,9 @@ void LocalizationModule::publish_OdomToMap_tf(const double& lidar_in_map_time, c
 
 void LocalizationModule::visualizePoseGraph(const std::vector<KeyPose>& poses,
 											const std::vector<std::pair<int, int>>& loop_edges) {
+	if (poses.empty() || loop_edges.empty()) {
+		return;
+	}
 	visualization_msgs::msg::MarkerArray markerArray;
 	static size_t nodes_id = 0;
 	static size_t edges_id = 0;

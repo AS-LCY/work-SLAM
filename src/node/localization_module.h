@@ -185,7 +185,7 @@ class LocalizationModule {
 	// 发布地图中的激光雷达位姿
 	void publish_odometry_lidar_in_map(const double& lidar_in_map_time, const Eigen::Isometry3d& lidar_in_map,
 									   const lidar_slam::Localization_base& T_odom_imu, const std::string& frameid,
-									   const std::string& child_frameid, ModuleStatus curr_running_module_status);
+									   const std::string& child_frameid, const bool& publish_odometry);
 	void publish_OdomToMap_tf(const double& lidar_in_map_time, const Eigen::Isometry3d& T_map_odom);
 
 	void process_loginfo();

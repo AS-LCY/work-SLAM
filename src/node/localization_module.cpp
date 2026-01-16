@@ -224,40 +224,8 @@ void LocalizationModule::slam_dealt_timer() { //主线程
 		return;
 	}
 
-	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) &&
-		(slam_->getLoadMap())->points.size() > 0 && pubLoadMap->get_subscription_count() > 0 && !global_map_pubed_) {
-		sensor_msgs::msg::PointCloud2 loadMap;
-		pcl::toROSMsg(*(slam_->getLoadMap()), loadMap);
-		loadMap.header.stamp = node_->now();
-		loadMap.header.frame_id = "map";
-		pubLoadMap->publish(loadMap);
-		global_map_pubed_ = true;
-
-		// show_keyframe(slam_->getLoadKeyFrame());
-	}
-
 	// running_slam_flag==false 的情况: 1第一帧; 2无点云； 3点云数量太少；
 	bool running_slam_flag = slam_->run();
-	if (pubBodyCloud->get_subscription_count() > 0) {
-		double cloud_time = 0.f;
-		auto cloud = slam_->get_baselink_cloud(cloud_time);
-		publish_cloud(cloud_time, cloud, "base_link", pubBodyCloud);
-	}
-	if (pubOdomCloud->get_subscription_count() > 0) {
-		double cloud_time = 0.f;
-		auto cloud = slam_->get_odom_cloud(cloud_time);
-		publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
-	}
-
-	auto localization_status_now = localization_status_.load();
-	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == MappingStatus::Standby) {
-		if (pub_pose_graph_->get_subscription_count() > 0) {
-			const auto& keyframe_poses = slam_->getAllKeyframeBaselinkNodes(); // T_map_baselink
-			const auto& all_loop_edges = slam_->getAllLoopEdges();
-			visualizePoseGraph(keyframe_poses, all_loop_edges);
-		}
-		publish_optimized_path(slam_->get_optimized_path(), string("map"));
-	}
 }
 
 //调试信息
@@ -480,6 +448,45 @@ void LocalizationModule::pub_module_status_timer() {
 	}
 
 	auto curr_running_module_status = running_module_status_.load();
+	if (curr_running_module_status == ModuleStatus::MODULE_IDLE ||
+		curr_running_module_status == ModuleStatus::MODULE_STARTING_SLAM ||
+		curr_running_module_status == ModuleStatus::MODULE_STOPPING_SLAM) {
+		// TRACE_INFO_CLASS("do nothing");
+		return;
+	}
+
+	if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION && (slam_->getLoadMap()) &&
+		(slam_->getLoadMap())->points.size() > 0 && pubLoadMap->get_subscription_count() > 0 && !global_map_pubed_) {
+		sensor_msgs::msg::PointCloud2 loadMap;
+		pcl::toROSMsg(*(slam_->getLoadMap()), loadMap);
+		loadMap.header.stamp = node_->now();
+		loadMap.header.frame_id = "map";
+		pubLoadMap->publish(loadMap);
+		global_map_pubed_ = true;
+		// show_keyframe(slam_->getLoadKeyFrame());
+	}
+
+	if (pubBodyCloud->get_subscription_count() > 0) {
+		double cloud_time = 0.f;
+		auto cloud = slam_->get_baselink_cloud(cloud_time);
+		publish_cloud(cloud_time, cloud, "base_link", pubBodyCloud);
+	}
+	if (pubOdomCloud->get_subscription_count() > 0) {
+		double cloud_time = 0.f;
+		auto cloud = slam_->get_odom_cloud(cloud_time);
+		publish_cloud(cloud_time, cloud, "odom", pubOdomCloud);
+	}
+
+	auto localization_status_now = localization_status_.load();
+	if (is_mapping_status(curr_running_module_status) && mapping_status_.load() == MappingStatus::Standby) {
+		if (pub_pose_graph_->get_subscription_count() > 0) {
+			const auto& keyframe_poses = slam_->getAllKeyframeBaselinkNodes(); // T_map_baselink
+			const auto& all_loop_edges = slam_->getAllLoopEdges();
+			visualizePoseGraph(keyframe_poses, all_loop_edges);
+		}
+		publish_optimized_path(slam_->get_optimized_path(), string("map"));
+	}
+
 	auto curr_ros_time = node_->now();
 
 	flbot_msgs::msg::LocalizationModuleHealth health_msg;
@@ -487,14 +494,14 @@ void LocalizationModule::pub_module_status_timer() {
 	health_msg.header.stamp = curr_ros_time;
 	health_msg.header.frame_id = "base_link";
 	health_status_.store(health_status_now);
+	pub_localization_module_health_->publish(health_msg);
 
 	flbot_msgs::msg::LocalizationModuleStatus status_msg;
 	check_fill_module_status_msg(curr_running_module_status, status_msg);
 	status_msg.header.stamp = curr_ros_time;
 	status_msg.header.frame_id = "base_link";
-
 	pub_localization_module_status_->publish(status_msg);
-	pub_localization_module_health_->publish(health_msg);
+
 	// pub_log_->publish(log_info_manager_.slam_info);
 }
 
@@ -564,22 +571,14 @@ void LocalizationModule::check_fill_module_status_msg(ModuleStatus curr_running_
 	auto localization_ok = curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION &&
 						   localization_status_is_ok(localization_status_.load());
 	auto mapping_ok = is_mapping_status(curr_running_module_status) && mapping_status_is_ok(mapping_status_.load());
-
-	if (localization_ok || mapping_ok) {
-		double T_odom_lidar_time = 0.f;
-		auto T_map_baselink = slam_->getLidarInMap(T_odom_lidar_time) * T_lidar_baselink_;
-		auto T_odom_imu_updated = slam_->get_localization_base();
-		// auto T_odom_imu_predict = slam_->get_current_pose();
-		publish_odometry_lidar_in_map(T_odom_lidar_time, T_map_baselink, T_odom_imu_updated, "map", "base_link",
-									  curr_running_module_status);
-		publish_OdomToMap_tf(T_odom_lidar_time, slam_->getOdomToMap());
-	} else if (curr_running_module_status == ModuleStatus::MODULE_LOCALIZATION) {
-		// TRACE_ERR_CLASS("localization not OK, not pub odom and tf, current localization status: %s",
-		// 				LocalizationStatustoString(localization_status_.load()).c_str());
-	} else if (is_mapping_status(curr_running_module_status)) {
-		// TRACE_ERR_CLASS("mapping not OK, not pub odom and tf, current mapping status: %s",
-		// 				MappingStatustoString(mapping_status_.load()).c_str());
-	}
+	bool publish_odometry = (localization_ok || mapping_ok);
+	double T_odom_lidar_time = 0.f;
+	auto T_map_baselink = slam_->getLidarInMap(T_odom_lidar_time) * T_lidar_baselink_;
+	auto T_odom_imu_updated = slam_->get_localization_base();
+	// auto T_odom_imu_predict = slam_->get_current_pose();
+	publish_odometry_lidar_in_map(T_odom_lidar_time, T_map_baselink, T_odom_imu_updated, "map", "base_link",
+								  publish_odometry);
+	if (publish_odometry) publish_OdomToMap_tf(T_odom_lidar_time, slam_->getOdomToMap());
 }
 
 void LocalizationModule::fill_module_l_status(ModuleStatus curr_running_module_status,
@@ -838,6 +837,9 @@ void LocalizationModule::wheel_odom_callback(ChassisData::SharedPtr msg) {
 
 void LocalizationModule::publish_optimized_path(
 	const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>>& path, const std::string& frame) {
+	if (path.empty()) {
+		return;
+	}
 	geometry_msgs::msg::PoseStamped msg;
 
 	optimized_path_msg.poses.clear();
