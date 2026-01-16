@@ -167,6 +167,7 @@ class LocalizationModule {
 
 	void slam_dealt_timer();
 	void lio_slam_thread_func();
+	void localization_health_thread_func();
 
 	void pub_module_status_timer();
 
@@ -274,6 +275,7 @@ class LocalizationModule {
 	rclcpp::TimerBase::SharedPtr timer_module_status_;
 
 	std::thread lio_slam_thread_;
+	std::thread localization_health_thread_;
 
 	std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 

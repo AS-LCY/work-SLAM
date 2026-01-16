@@ -122,10 +122,10 @@ bool LocalizationModule::create_ROS_IO() {
 		rclcpp::QoS(3), // 保持队列大小为3
 		std::bind(&LocalizationModule::localization_module_ctrl_callback, this, std::placeholders::_1), sub_options);
 
-	this->timer_module_status_ =
-		node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
-								 std::bind(&LocalizationModule::pub_module_status_timer, this), ctrl_callback_group_);
-	// publish在定时器中发布
+	// this->timer_module_status_ =
+	// 	node_->create_wall_timer(std::chrono::milliseconds(100), // 100ms = 10Hz
+	// 							 std::bind(&LocalizationModule::pub_module_status_timer, this), ctrl_callback_group_);
+	localization_health_thread_ = std::thread(&LocalizationModule::localization_health_thread_func, this);
 
 	pubOdomCloud = node_->create_publisher<sensor_msgs::msg::PointCloud2>("/odom_cloud", 10); // lio odom系下的点云
 
@@ -309,6 +309,19 @@ void LocalizationModule::process_loginfo() {
 	last_lidar_in_odom = curr_lidar_in_odom;
 	last_lidar_in_map = curr_lidar_in_map;
 }*/
+
+void LocalizationModule::localization_health_thread_func() {
+	const double sleep_time_ms = 100.0;
+	while (rclcpp::ok()) {
+		lidar_slam::TicToc timer_health;
+		pub_module_status_timer();
+		const auto health_cost_time = timer_health.toc();
+		if (health_cost_time < sleep_time_ms) {
+			const auto need_sleep_time = static_cast<int>(sleep_time_ms - health_cost_time);
+			std::this_thread::sleep_for(std::chrono::milliseconds(need_sleep_time));
+		}
+	}
+}
 
 // 调试信息（健康状态）， 不影响程序运行
 common_status::HealthStatus LocalizationModule::check_fill_health_msg(
