@@ -268,6 +268,8 @@ class LocalizationModuleParamManager {
 		/// localization params *******************************************
 		node_->declare_parameter<float>("localization.fgicp_period_sec", 5.0);
 		node_->get_parameter("localization.fgicp_period_sec", loaded_param_.localization.fgicp_period_sec);
+		node_->declare_parameter<std::string>("localization.match_method", "GICP");
+		node_->get_parameter("localization.match_method", loaded_param_.localization.match_method);
 		node_->declare_parameter<double>("localization.cloud_leaf_size_localize", 0.3);
 		node_->get_parameter("localization.cloud_leaf_size_localize",
 							 loaded_param_.localization.cloud_leaf_size_localize);

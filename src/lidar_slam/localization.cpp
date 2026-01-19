@@ -27,7 +27,7 @@ Localization::Localization(CommonParam common_param, LocalizationParam param,
 	small_gicp_ptr_->setMaxCorrespondenceDistance(param_.fgicp_max_corres_dist);
 	small_gicp_ptr_->setCorrespondenceRandomness(param_.fgicp_max_corres_num);
 	small_gicp_ptr_->setVoxelResolution(param_.cloud_leaf_size_localize); //影响其内部source和target点云voxelmap_的计算
-	small_gicp_ptr_->setRegistrationType("VGICP");						  // "VGICP" or "GICP"
+	small_gicp_ptr_->setRegistrationType(param_.match_method);			  // "VGICP" or "GICP"
 
 	max_correspondence_dist_square_ = std::pow(param_.fgicp_inlier_max_corres_dist, 2);
 

@@ -73,6 +73,7 @@ struct MappingParam {
 
 struct LocalizationParam {
 	float fgicp_period_sec = 1;
+	std::string match_method = "GICP";
 	double cloud_leaf_size_localize = 0.3;
 	int fgicp_thread_num = 2;
 	float fgicp_trans_eps = 1e-2;
