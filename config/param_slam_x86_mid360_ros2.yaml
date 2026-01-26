@@ -3,14 +3,14 @@
     common:
       run_on_mower: false # true时, 【map_directory_on_mower】参数会覆盖【map_directory】参数；false时还是由【map_directory】决定
       # map_directory_on_mower: "/home/firefly/fl_localization_ws/maps/"
-      map_directory_on_mower: "/home/nb00085/maps/"
+      map_directory_on_mower: "/home/nb00190/maps/"
       # cpu_id_on_mower: []
       
       init_module_status: 0 # 0: Module_IDLE, 1: Module_MAPPING,  2: Module_SEC_MAPPING, 3: Module_LOCALIZATION
       time_sync_en: false
       
       map_relative_to: 2 # -- 2: 使用绝对路径（recommanded）; --1: 相对路径，相对于 catkin workspace; --0: 相对路径，相对于catkin pkg; # disable---3: 相对路径，相对于 ${HOME};
-      map_directory: "/home/nb00085/maps/" #保存地图的路径
+      map_directory: "/home/nb00190/maps/" #保存地图的路径
       
       sub_topic_ctrl_cmd: "/flbot/localization_module/ctrl_cmd"
       pub_topic_module_status: "/flbot/localization_module/module_status"
