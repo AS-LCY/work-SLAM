@@ -297,6 +297,7 @@ sync_all_deps() {
     sync_third_party_lib "${GDAL[@]}"
     sync_third_party_lib "${GTSAM[@]}"
     sync_third_party_lib "${SOPHUS[@]}"
+    sync_third_party_lib "${FAST_GICP[@]}"
 
     # 6. 同步GDAL依赖库
     echo -e "\n→ 同步GDAL依赖库（armadillo/mfhdfalt/dfalt/ogdi）..."

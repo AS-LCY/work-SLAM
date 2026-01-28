@@ -5,7 +5,7 @@
 # --------------------------
 # 基础设备配置
 # --------------------------
-ARM_IP="172.18.0.16"       # arm设备ip
+ARM_IP="172.18.2.239"       # arm设备ip
 ARM_USER="root"             # 登录用户名
 ARM_PASS="root"             # 登录密码
 SYSROOT_DIR="$HOME/arm-rootfs"  # 本地交叉编译根目录
@@ -33,6 +33,7 @@ CMAKE_CXX_COMPILER="/usr/bin/aarch64-linux-gnu-g++"
 SYS_INCLUDE_DIRS=(
     "/usr/include/stdlib.h"
     "/usr/include/aarch64-linux-gnu/"
+    "/usr/local/include/*"  # 新增
     "/usr/include/"
 )
 SYS_LIB_DIRS=(
@@ -156,6 +157,18 @@ SOPHUS=(
     "DEST_CMAKE:$SYSROOT_DIR/usr/local/share/sophus/cmake/"
 )
 
+# 8. fast_gicp 配置 (更新版)
+FAST_GICP=(
+    "NAME:fast_gicp"
+    "INCLUDE_PATH:/usr/local/include/fast_gicp"
+    "LIB_PATH:/usr/local/lib"
+    "CMAKE_PATH:/usr/local/share/fast_gicp/cmake"        # <--- 修改为 find 找到的真实路径
+    "DEST_INCLUDE:$SYSROOT_DIR/usr/local/include/"
+    "DEST_LIB:$SYSROOT_DIR/usr/local/lib/"
+    "DEST_CMAKE:$SYSROOT_DIR/usr/local/share/fast_gicp/cmake/" # <--- 目标路径也对应修改到 share 目录，保持结构一致
+    "LIB_FILES:libfast_gicp.so*"
+)
+
 
 # 线性代数的依赖库，不需要头文件，只需要库文件
 # BLAS/LAPACK文件列表
@@ -183,7 +196,9 @@ CRITICAL_FILES=(
     "$SYSROOT_DIR/lib/ld-linux-aarch64.so.1"
     "$SYSROOT_DIR/lib/aarch64-linux-gnu/libc.so.6"
     "$TOOLCHAIN_FILE"  # 工具链文件
-    liblapack.so.3.10.0
+    # liblapack.so.3.10.0
+    "$SYSROOT_DIR/usr/lib/aarch64-linux-gnu/lapack/liblapack.so.3.10.0"
+    
     # 项目依赖
     "$SYSROOT_DIR/usr/lib/aarch64-linux-gnu/libpython3.10.so"
     "$SYSROOT_DIR/opt/ros/humble/include/rclcpp/rclcpp/rclcpp.hpp"
